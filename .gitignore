@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment variables - NEVER COMMIT .env TO GIT
+.env
+.env*.local
+**/.env
+**/.env*.local
+!.env.example
+!**/.env.example
+
+# Production & Build outputs
+dist/
+**/dist/
+.next/
+**/.next/
+out/
+build/
+
+# Logs & temp files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+*.log
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.sw?
