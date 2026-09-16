@@ -1,0 +1,353 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 1. USERS
+model User {
+  id            String            @id @default(uuid()) @db.Uuid
+  name          String            @db.VarChar(100)
+  email         String            @unique @db.VarChar(255)
+  password_hash String?           @db.VarChar(255)
+  avatar        String?           @db.Text
+  status        String            @default("ACTIVE") @db.VarChar(20)
+  created_at    DateTime          @default(now()) @db.Timestamptz
+
+  workspaces        Workspace[]
+  workspace_members WorkspaceMember[]
+  board_members     BoardMember[]
+  notifications     Notification[]
+  activity_logs     ActivityLog[]
+  created_cards     Card[]
+  comments          Comment[]
+
+  @@map("users")
+}
+
+// 2. WORKSPACES
+model Workspace {
+  id          String            @id @default(uuid()) @db.Uuid
+  name        String            @db.VarChar(150)
+  description String?           @db.Text
+  owner_id    String            @db.Uuid
+  created_at  DateTime          @default(now()) @db.Timestamptz
+
+  owner       User              @relation(fields: [owner_id], references: [id], onDelete: Restrict)
+  members     WorkspaceMember[]
+  invites     WorkspaceInvite[]
+  boards      Board[]
+  activity_logs ActivityLog[]
+
+  @@map("workspaces")
+}
+
+// 3. WORKSPACE MEMBERS
+model WorkspaceMember {
+  id           String    @id @default(uuid()) @db.Uuid
+  workspace_id String    @db.Uuid
+  user_id      String    @db.Uuid
+  role         String    @default("MEMBER") @db.VarChar(20)
+  joined_at    DateTime  @default(now()) @db.Timestamptz
+
+  workspace    Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+  user         User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([workspace_id, user_id])
+  @@map("workspace_members")
+}
+
+// 4. WORKSPACE INVITES
+model WorkspaceInvite {
+  id           String    @id @default(uuid()) @db.Uuid
+  workspace_id String    @db.Uuid
+  email        String    @db.VarChar(255)
+  role         String    @default("MEMBER") @db.VarChar(20)
+  token        String    @unique @db.VarChar(500)
+  expired_at   DateTime  @db.Timestamptz
+
+  workspace    Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+
+  @@map("workspace_invites")
+}
+
+// 5. NOTIFICATIONS
+model Notification {
+  id         String    @id @default(uuid()) @db.Uuid
+  user_id    String    @db.Uuid
+  title      String    @db.VarChar(200)
+  message    String    @db.Text
+  type       String    @db.VarChar(50)
+  is_read    Boolean   @default(false)
+  created_at DateTime  @default(now()) @db.Timestamptz
+
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+// 6. ACTIVITY LOGS
+model ActivityLog {
+  id           String    @id @default(uuid()) @db.Uuid
+  workspace_id String    @db.Uuid
+  user_id      String    @db.Uuid
+  action       String    @db.VarChar(100)
+  target_type  String    @db.VarChar(50)
+  created_at   DateTime  @default(now()) @db.Timestamptz
+
+  workspace    Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+  user         User      @relation(fields: [user_id], references: [id], onDelete: Restrict)
+
+  @@map("activity_logs")
+}
+
+// 7. BOARDS
+model Board {
+  id               String            @id @default(uuid()) @db.Uuid
+  workspace_id     String            @db.Uuid
+  name             String            @db.VarChar(150)
+  description      String?           @db.Text
+  is_favorite      Boolean           @default(false)
+
+  workspace        Workspace         @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+  members          BoardMember[]
+  lists            List[]
+  labels           Label[]
+  custom_fields    CustomField[]
+  automation_rules AutomationRule[]
+
+  @@map("boards")
+}
+
+// 8. BOARD MEMBERS
+model BoardMember {
+  id             String         @id @default(uuid()) @db.Uuid
+  board_id       String         @db.Uuid
+  user_id        String         @db.Uuid
+  role           String         @default("MEMBER") @db.VarChar(20)
+  joined_at      DateTime       @default(now()) @db.Timestamptz
+
+  board          Board          @relation(fields: [board_id], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  card_assignees CardAssignee[]
+
+  @@unique([board_id, user_id])
+  @@map("board_members")
+}
+
+// 9. LISTS
+model List {
+  id        String   @id @default(uuid()) @db.Uuid
+  board_id  String   @db.Uuid
+  title     String   @db.VarChar(150)
+  position  Int
+  limit     Int?
+
+  board     Board    @relation(fields: [board_id], references: [id], onDelete: Cascade)
+  cards     Card[]
+
+  @@map("lists")
+}
+
+// 10. CARDS
+model Card {
+  id                    String            @id @default(uuid()) @db.Uuid
+  list_id               String            @db.Uuid
+  title                 String            @db.VarChar(255)
+  description           String?           @db.Text
+  position              Int
+  status                String            @default("TODO") @db.VarChar(30)
+  start_date            DateTime?         @db.Timestamptz
+  due_date              DateTime?         @db.Timestamptz
+  reminder_at           DateTime?         @db.Timestamptz
+  is_due_date_completed Boolean           @default(false)
+  created_by            String            @db.Uuid
+
+  list                  List              @relation(fields: [list_id], references: [id], onDelete: Cascade)
+  creator               User              @relation(fields: [created_by], references: [id], onDelete: Restrict)
+  card_assignees        CardAssignee[]
+  card_labels           CardLabel[]
+  checklists            Checklist[]
+  comments              Comment[]
+  attachments           Attachment[]
+  relations_from        CardRelation[]    @relation("CardRelationSource")
+  relations_to          CardRelation[]    @relation("CardRelationTarget")
+  custom_field_values   CustomFieldValue[]
+
+  @@map("cards")
+}
+
+// 11. CARD ASSIGNEES
+model CardAssignee {
+  id              String      @id @default(uuid()) @db.Uuid
+  card_id         String      @db.Uuid
+  board_member_id String      @db.Uuid
+  assigned_at     DateTime    @default(now()) @db.Timestamptz
+
+  card            Card        @relation(fields: [card_id], references: [id], onDelete: Cascade)
+  board_member    BoardMember @relation(fields: [board_member_id], references: [id], onDelete: Cascade)
+
+  @@unique([card_id, board_member_id])
+  @@map("card_assignees")
+}
+
+// 12. LABELS
+model Label {
+  id          String      @id @default(uuid()) @db.Uuid
+  board_id    String      @db.Uuid
+  name        String      @db.VarChar(100)
+  color       String      @db.VarChar(30)
+
+  board       Board       @relation(fields: [board_id], references: [id], onDelete: Cascade)
+  card_labels CardLabel[]
+
+  @@unique([board_id, name])
+  @@map("labels")
+}
+
+// 13. CARD LABELS
+model CardLabel {
+  id       String @id @default(uuid()) @db.Uuid
+  card_id  String @db.Uuid
+  label_id String @db.Uuid
+
+  card     Card   @relation(fields: [card_id], references: [id], onDelete: Cascade)
+  label    Label  @relation(fields: [label_id], references: [id], onDelete: Cascade)
+
+  @@unique([card_id, label_id])
+  @@map("card_labels")
+}
+
+// 14. CHECKLISTS
+model Checklist {
+  id       String          @id @default(uuid()) @db.Uuid
+  card_id  String          @db.Uuid
+  title    String          @db.VarChar(255)
+  position Int
+
+  card     Card            @relation(fields: [card_id], references: [id], onDelete: Cascade)
+  items    ChecklistItem[]
+
+  @@map("checklists")
+}
+
+// 15. CHECKLIST ITEMS
+model ChecklistItem {
+  id           String    @id @default(uuid()) @db.Uuid
+  checklist_id String    @db.Uuid
+  content      String    @db.VarChar(500)
+  is_completed Boolean   @default(false)
+  position     Int
+
+  checklist    Checklist @relation(fields: [checklist_id], references: [id], onDelete: Cascade)
+
+  @@map("checklist_items")
+}
+
+// 16. COMMENTS
+model Comment {
+  id         String   @id @default(uuid()) @db.Uuid
+  card_id    String   @db.Uuid
+  user_id    String   @db.Uuid
+  content    String   @db.Text
+  created_at DateTime @default(now()) @db.Timestamptz
+
+  card       Card     @relation(fields: [card_id], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Restrict)
+
+  @@map("comments")
+}
+
+// 17. ATTACHMENTS
+model Attachment {
+  id        String  @id @default(uuid()) @db.Uuid
+  card_id   String  @db.Uuid
+  file_name String  @db.VarChar(255)
+  file_url  String  @db.Text
+  file_size BigInt?
+
+  card      Card    @relation(fields: [card_id], references: [id], onDelete: Cascade)
+
+  @@map("attachments")
+}
+
+// 18. CARD RELATIONS
+model CardRelation {
+  id              String @id @default(uuid()) @db.Uuid
+  card_id         String @db.Uuid
+  related_card_id String @db.Uuid
+  type            String @db.VarChar(30)
+
+  card            Card   @relation("CardRelationSource", fields: [card_id], references: [id], onDelete: Cascade)
+  related_card    Card   @relation("CardRelationTarget", fields: [related_card_id], references: [id], onDelete: Restrict)
+
+  @@unique([card_id, related_card_id, type])
+  @@map("card_relations")
+}
+
+// 19. CUSTOM FIELDS
+model CustomField {
+  id         String              @id @default(uuid()) @db.Uuid
+  board_id   String              @db.Uuid
+  name       String              @db.VarChar(100)
+  field_type String              @db.VarChar(30)
+
+  board      Board               @relation(fields: [board_id], references: [id], onDelete: Cascade)
+  values     CustomFieldValue[]
+
+  @@unique([board_id, name])
+  @@map("custom_fields")
+}
+
+// 20. CUSTOM FIELD VALUES
+model CustomFieldValue {
+  id       String      @id @default(uuid()) @db.Uuid
+  card_id  String      @db.Uuid
+  field_id String      @db.Uuid
+  value    String      @db.Text
+
+  card     Card        @relation(fields: [card_id], references: [id], onDelete: Cascade)
+  field    CustomField @relation(fields: [field_id], references: [id], onDelete: Cascade)
+
+  @@unique([card_id, field_id])
+  @@map("custom_field_values")
+}
+
+// 21. AUTOMATION RULES
+model AutomationRule {
+  id        String             @id @default(uuid()) @db.Uuid
+  board_id  String             @db.Uuid
+  name      String             @db.VarChar(150)
+  is_active Boolean            @default(true)
+
+  board     Board              @relation(fields: [board_id], references: [id], onDelete: Cascade)
+  trigger   AutomationTrigger?
+  actions   AutomationAction[]
+
+  @@map("automation_rules")
+}
+
+// 22. AUTOMATION TRIGGERS
+model AutomationTrigger {
+  id      String         @id @default(uuid()) @db.Uuid
+  rule_id String         @unique @db.Uuid
+  event   String         @db.VarChar(50)
+
+  rule    AutomationRule @relation(fields: [rule_id], references: [id], onDelete: Cascade)
+
+  @@map("automation_triggers")
+}
+
+// 23. AUTOMATION ACTIONS
+model AutomationAction {
+  id      String         @id @default(uuid()) @db.Uuid
+  rule_id String         @db.Uuid
+  type    String         @db.VarChar(50)
+
+  rule    AutomationRule @relation(fields: [rule_id], references: [id], onDelete: Cascade)
+
+  @@map("automation_actions")
+}
