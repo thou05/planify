@@ -1,0 +1,12 @@
+{
+  "name": "planify",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Planify — Hệ thống quản lý công việc và Kanban đa người dùng thời gian thực",
+  "scripts": {
+    "dev:backend": "npm --prefix backend run start:dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build:backend": "npm --prefix backend run build",
+    "build:frontend": "npm --prefix frontend run build"
+  }
+}

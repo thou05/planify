@@ -1,26 +1,253 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  /* Brand colors */
+  --color-primary: #a6d1fd;
+  --color-primary-strong: #4f91cf;
+  --color-brand: #2b1572;
+  --color-danger: #c40000;
+  --color-ai: #a000c8;
+  --color-success: #358200;
+  --color-white: #ffffff;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Text colors */
+  --text-primary: rgba(43, 21, 114, 0.95);
+  --text-secondary: rgba(43, 21, 114, 0.65);
+  --text-muted: rgba(43, 21, 114, 0.45);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Glass levels */
+  --glass-xs: rgba(255, 255, 255, 0.32);
+  --glass-sm: rgba(255, 255, 255, 0.42);
+  --glass-md: rgba(255, 255, 255, 0.55);
+  --glass-lg: rgba(255, 255, 255, 0.70);
+
+  /* Borders */
+  --border-glass: rgba(255, 255, 255, 0.35);
+  --border-glass-strong: rgba(255, 255, 255, 0.45);
+  --border-dark: rgba(43, 21, 114, 0.10);
+
+  /* Shadows */
+  --shadow-sm: 0 4px 16px rgba(43, 21, 114, 0.08);
+  --shadow-md: 0 8px 32px rgba(43, 21, 114, 0.10);
+  --shadow-lg: 0 18px 50px rgba(43, 21, 114, 0.15);
+
+  /* Radii */
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+
+  /* Blurs */
+  --blur-sm: 12px;
+  --blur-md: 18px;
+  --blur-lg: 24px;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at 15% 15%, rgba(166, 209, 253, 0.55), transparent 34%),
+    radial-gradient(circle at 80% 10%, rgba(160, 0, 200, 0.20), transparent 30%),
+    radial-gradient(circle at 75% 80%, rgba(43, 21, 114, 0.18), transparent 35%),
+    #f5f9ff;
+  background-attachment: fixed;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", Helvetica, Arial, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Glass Surfaces */
+.glass-surface {
+  background: var(--glass-md);
+  backdrop-filter: blur(var(--blur-md));
+  -webkit-backdrop-filter: blur(var(--blur-md));
+  border: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-md);
+}
+
+.glass-weak {
+  background: var(--glass-xs);
+  backdrop-filter: blur(var(--blur-sm));
+  -webkit-backdrop-filter: blur(var(--blur-sm));
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: var(--radius-md);
+}
+
+.glass-strong {
+  background: var(--glass-lg);
+  backdrop-filter: blur(var(--blur-lg));
+  -webkit-backdrop-filter: blur(var(--blur-lg));
+  border: 1px solid var(--border-glass-strong);
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius-xl);
+}
+
+.glass-dark {
+  background: rgba(43, 21, 114, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius-md);
+}
+
+/* Kanban specific glass styles (Section 15) */
+.kanban-list {
+  background: rgba(255, 255, 255, 0.34);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.kanban-card {
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.18s ease;
+}
+
+.kanban-card:hover {
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* Buttons (Section 13) */
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--color-brand);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.40);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.16s ease;
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-strong);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-primary-glass {
+  background: rgba(166, 209, 253, 0.50);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: var(--color-brand);
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.40);
+  border-radius: var(--radius-sm);
+  transition: all 0.16s ease;
+}
+
+.btn-primary-glass:hover {
+  background: rgba(166, 209, 253, 0.75);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.50);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--color-brand);
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.40);
+  border-radius: var(--radius-sm);
+  transition: all 0.16s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.80);
+  transform: translateY(-1px);
+}
+
+.btn-ai {
+  background: linear-gradient(135deg, rgba(160, 0, 200, 0.85), rgba(43, 21, 114, 0.85));
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 18px rgba(160, 0, 200, 0.35);
+  transition: all 0.16s ease;
+}
+
+.btn-ai:hover {
+  box-shadow: 0 6px 24px rgba(160, 0, 200, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-danger {
+  color: var(--color-danger);
+  border-radius: var(--radius-sm);
+  transition: all 0.16s ease;
+}
+
+.btn-danger:hover {
+  background: rgba(196, 0, 0, 0.10);
+}
+
+/* Inputs (Section 20) */
+.glass-input {
+  background: rgba(255, 255, 255, 0.58);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-dark);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  transition: all 0.18s ease;
+}
+
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(166, 209, 253, 0.35);
+  outline: none;
+}
+
+/* Badges (Section 14) */
+.badge-success {
+  background: rgba(53, 130, 0, 0.12);
+  color: var(--color-success);
+}
+
+.badge-error {
+  background: rgba(196, 0, 0, 0.10);
+  color: var(--color-danger);
+}
+
+.badge-ai {
+  background: rgba(160, 0, 200, 0.10);
+  color: var(--color-ai);
+}
+
+.badge-info {
+  background: rgba(166, 209, 253, 0.20);
+  color: #2d6fa8;
+}
+
+/* Smooth scrollbar for Kanban board */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(43, 21, 114, 0.15);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(43, 21, 114, 0.3);
 }
