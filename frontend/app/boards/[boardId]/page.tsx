@@ -1,23 +1,23 @@
 'use client';
 
-import React, { useState, useEffect, use } from 'react';
+import React, { useState, useEffect, use, useRef } from 'react';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import AppShell from '@/components/layout/AppShell';
+import ListColumn from '@/components/board/ListColumn';
 import CreateListModal from '@/components/modals/CreateListModal';
+import CardDetailModal from '@/components/modals/CardDetailModal';
+import CopyListModal from '@/components/modals/CopyListModal';
+import MoveListModal from '@/components/modals/MoveListModal';
+import MoveCardsModal from '@/components/modals/MoveCardsModal';
+import MoveCardModal from '@/components/modals/MoveCardModal';
+import CopyCardModal from '@/components/modals/CopyCardModal';
 import {
-  Kanban,
   Star,
   Plus,
   ArrowLeft,
-  MoreHorizontal,
-  Trash2,
-  Calendar,
-  CheckSquare,
-  MessageSquare,
-  Paperclip,
-  Users,
-  Sparkles,
+  X,
 } from 'lucide-react';
 
 export default function BoardDetailPage({
@@ -27,14 +27,33 @@ export default function BoardDetailPage({
 }) {
   const resolvedParams = use(params);
   const boardId = resolvedParams.boardId;
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   const [board, setBoard] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isCreateListOpen, setIsCreateListOpen] = useState(false);
 
-  // Quick inline add card state for each list: { [listId]: string }
-  const [inlineCardTitles, setInlineCardTitles] = useState<Record<string, string>>({});
-  const [addingCardListId, setAddingCardListId] = useState<string | null>(null);
+  // Modals state
+  const [isCreateListModalOpen, setIsCreateListModalOpen] = useState(false);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [isCardDetailOpen, setIsCardDetailOpen] = useState(false);
+
+  // Sub-modals state
+  const [copyingList, setCopyingList] = useState<any>(null);
+  const [movingList, setMovingList] = useState<any>(null);
+  const [movingCardsList, setMovingCardsList] = useState<any>(null);
+  const [movingCard, setMovingCard] = useState<any>(null);
+  const [copyingCard, setCopyingCard] = useState<any>(null);
+
+  // Inline Add List state at the end of Kanban board
+  const [isAddingListInline, setIsAddingListInline] = useState(false);
+  const [inlineListTitle, setInlineListTitle] = useState('');
+  const [isSubmittingList, setIsSubmittingList] = useState(false);
+  const addListInputRef = useRef<HTMLInputElement>(null);
+
+  // Drag and Drop refs
+  const draggedCardRef = useRef<{ cardId: string; sourceListId: string } | null>(null);
+  const draggedListIdRef = useRef<string | null>(null);
 
   const fetchBoard = async () => {
     try {
@@ -43,7 +62,7 @@ export default function BoardDetailPage({
         setBoard(res.data);
       }
     } catch {
-      // Error
+      // Handle error
     } finally {
       setIsLoading(false);
     }
@@ -52,6 +71,21 @@ export default function BoardDetailPage({
   useEffect(() => {
     fetchBoard();
   }, [boardId]);
+
+  // Deep linking: check URL query for ?cardId=...
+  useEffect(() => {
+    const cardIdParam = searchParams.get('cardId');
+    if (cardIdParam) {
+      setSelectedCardId(cardIdParam);
+      setIsCardDetailOpen(true);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (isAddingListInline) {
+      addListInputRef.current?.focus();
+    }
+  }, [isAddingListInline]);
 
   const handleToggleFavorite = async () => {
     if (!board) return;
@@ -64,28 +98,339 @@ export default function BoardDetailPage({
         data: { is_favorite: newFav },
       });
     } catch {
-      // Revert on error
       setBoard({ ...board, is_favorite: !newFav });
     }
   };
 
-  const handleDeleteList = async (listId: string) => {
-    if (!confirm('Bạn có chắc muốn xóa danh sách này cùng các thẻ bên trong?')) return;
+  // 1. LIST ACTIONS
+  const handleCreateInlineList = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = inlineListTitle.trim();
+    if (!trimmed || isSubmittingList) return;
 
     try {
-      await apiClient(`/lists/${listId}`, {
-        method: 'DELETE',
+      setIsSubmittingList(true);
+      await apiClient(`/boards/${boardId}/lists`, {
+        method: 'POST',
+        data: { title: trimmed },
       });
-      fetchBoard();
+      setInlineListTitle('');
+      setIsAddingListInline(false);
+      await fetchBoard();
+    } catch (err: any) {
+      alert(err.message || 'Không thể tạo danh sách');
+    } finally {
+      setIsSubmittingList(false);
+    }
+  };
+
+  const handleRenameList = async (listId: string, newTitle: string) => {
+    try {
+      await apiClient(`/lists/${listId}`, {
+        method: 'PATCH',
+        data: { title: newTitle },
+      });
+      await fetchBoard();
+    } catch (err: any) {
+      alert(err.message || 'Không thể đổi tên danh sách');
+    }
+  };
+
+  const handleDeleteList = async (listId: string) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa danh sách này cùng tất cả các thẻ bên trong?')) {
+      return;
+    }
+
+    try {
+      await apiClient(`/lists/${listId}`, { method: 'DELETE' });
+      await fetchBoard();
     } catch (err: any) {
       alert(err.message || 'Không thể xóa danh sách');
+    }
+  };
+
+  const handleSortCards = async (
+    listId: string,
+    sortBy: 'due_date' | 'title' | 'created_at',
+    order: 'asc' | 'desc' = 'asc'
+  ) => {
+    try {
+      await apiClient(`/lists/${listId}/sort-cards`, {
+        method: 'POST',
+        data: { sortBy, order },
+      });
+      await fetchBoard();
+    } catch (err: any) {
+      alert(err.message || 'Không thể sắp xếp thẻ');
+    }
+  };
+
+  // 2. CARD ACTIONS
+  const handleQuickAddCard = async (listId: string, title: string) => {
+    const tempId = `temp-${Date.now()}`;
+    const targetList = board?.lists?.find((l: any) => l.id === listId);
+    const newPos = targetList?.cards?.length || 0;
+
+    const optimisticCard = {
+      id: tempId,
+      list_id: listId,
+      title: title.trim(),
+      description: null,
+      position: newPos,
+      status: 'TODO',
+      due_date: null,
+      is_due_date_completed: false,
+      checklists: [],
+      card_labels: [],
+      comments: [],
+      card_assignees: [],
+    };
+
+    // 1. Cập nhật giao diện tức thời (0ms)
+    setBoard((prev: any) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        lists: prev.lists.map((list: any) => {
+          if (list.id === listId) {
+            return {
+              ...list,
+              cards: [...(list.cards || []), optimisticCard],
+            };
+          }
+          return list;
+        }),
+      };
+    });
+
+    // 2. Gọi API ngầm trong nền
+    try {
+      const res = await apiClient<any>(`/lists/${listId}/cards`, {
+        method: 'POST',
+        data: { title: title.trim(), position: newPos },
+      });
+
+      if (res.success && res.data) {
+        const realCard = res.data;
+        setBoard((prev: any) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            lists: prev.lists.map((list: any) => {
+              if (list.id === listId) {
+                return {
+                  ...list,
+                  cards: (list.cards || []).map((c: any) =>
+                    c.id === tempId ? realCard : c
+                  ),
+                };
+              }
+              return list;
+            }),
+          };
+        });
+      }
+    } catch (err: any) {
+      // Revert nếu có lỗi
+      setBoard((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          lists: prev.lists.map((list: any) => {
+            if (list.id === listId) {
+              return {
+                ...list,
+                cards: (list.cards || []).filter((c: any) => c.id !== tempId),
+              };
+            }
+            return list;
+          }),
+        };
+      });
+      alert(err.message || 'Không thể tạo thẻ mới');
+    }
+  };
+
+  const handleQuickEditCardTitle = async (cardId: string, newTitle: string) => {
+    // Optimistic title update
+    setBoard((prev: any) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        lists: prev.lists.map((list: any) => ({
+          ...list,
+          cards: (list.cards || []).map((c: any) =>
+            c.id === cardId ? { ...c, title: newTitle } : c
+          ),
+        })),
+      };
+    });
+
+    try {
+      await apiClient(`/cards/${cardId}`, {
+        method: 'PATCH',
+        data: { title: newTitle },
+      });
+    } catch (err: any) {
+      await fetchBoard();
+      alert(err.message || 'Không thể sửa tên thẻ');
+    }
+  };
+
+  const handleDeleteCard = async (cardId: string) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa thẻ này?')) return;
+    try {
+      await apiClient(`/cards/${cardId}`, { method: 'DELETE' });
+      await fetchBoard();
+    } catch (err: any) {
+      alert(err.message || 'Không thể xóa thẻ');
+    }
+  };
+
+  const handleOpenCardDetail = (cardId: string) => {
+    setSelectedCardId(cardId);
+    setIsCardDetailOpen(true);
+  };
+
+  const handleCloseCardDetail = () => {
+    setIsCardDetailOpen(false);
+    setSelectedCardId(null);
+    if (searchParams.get('cardId')) {
+      router.replace(`/boards/${boardId}`);
+    }
+  };
+
+  // 3. LIST DRAG & DROP HANDLERS
+  const handleListDragStart = (e: React.DragEvent, listId: string) => {
+    if (draggedCardRef.current) return;
+    draggedListIdRef.current = listId;
+    e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'list', listId }));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleListDragEnd = () => {
+    draggedListIdRef.current = null;
+  };
+
+  const handleListDrop = async (e: React.DragEvent, targetListId: string) => {
+    const sourceListId = draggedListIdRef.current;
+    if (!sourceListId || sourceListId === targetListId) return;
+
+    draggedListIdRef.current = null;
+
+    const currentLists = [...(board?.lists || [])];
+    const sourceIndex = currentLists.findIndex((l) => l.id === sourceListId);
+    const targetIndex = currentLists.findIndex((l) => l.id === targetListId);
+
+    if (sourceIndex === -1 || targetIndex === -1) return;
+
+    // Optimistic reorder
+    const [movedList] = currentLists.splice(sourceIndex, 1);
+    currentLists.splice(targetIndex, 0, movedList);
+
+    setBoard((prev: any) => ({
+      ...prev,
+      lists: currentLists,
+    }));
+
+    try {
+      const listIds = currentLists.map((l) => l.id);
+      await apiClient(`/boards/${boardId}/lists/reorder`, {
+        method: 'PATCH',
+        data: { listIds },
+      });
+    } catch {
+      await fetchBoard();
+    }
+  };
+
+  // 4. CARD DRAG & DROP HANDLERS (Both inside same list and across lists)
+  const handleCardDragStart = (
+    e: React.DragEvent,
+    cardId: string,
+    sourceListId: string
+  ) => {
+    e.stopPropagation();
+    draggedCardRef.current = { cardId, sourceListId };
+    e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'card', cardId, sourceListId }));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleCardDragEnd = () => {
+    draggedCardRef.current = null;
+  };
+
+  const handleCardDrop = async (
+    e: React.DragEvent,
+    targetListId: string,
+    targetPosition?: number
+  ) => {
+    const data = draggedCardRef.current;
+    if (!data) return;
+
+    const { cardId, sourceListId } = data;
+    draggedCardRef.current = null;
+
+    const targetList = board?.lists?.find((l: any) => l.id === targetListId);
+    if (!targetList) return;
+
+    const finalTargetPosition =
+      typeof targetPosition === 'number'
+        ? targetPosition
+        : targetList.cards?.length || 0;
+
+    // Optimistic UI update for manual sorting
+    setBoard((prev: any) => {
+      if (!prev) return prev;
+      let movedCard: any = null;
+
+      const newLists = prev.lists.map((list: any) => {
+        if (list.id === sourceListId) {
+          const newCards = [...(list.cards || [])].filter((c: any) => {
+            if (c.id === cardId) {
+              movedCard = { ...c, list_id: targetListId };
+              return false;
+            }
+            return true;
+          });
+          return { ...list, cards: newCards };
+        }
+        return { ...list, cards: [...(list.cards || [])] };
+      });
+
+      if (!movedCard) return prev;
+
+      const targetListIndex = newLists.findIndex((l: any) => l.id === targetListId);
+      if (targetListIndex === -1) return prev;
+
+      const targetCards = newLists[targetListIndex].cards;
+      const insertIndex = Math.min(Math.max(0, finalTargetPosition), targetCards.length);
+      targetCards.splice(insertIndex, 0, movedCard);
+
+      return {
+        ...prev,
+        lists: newLists,
+      };
+    });
+
+    try {
+      await apiClient(`/cards/${cardId}/move`, {
+        method: 'PATCH',
+        data: {
+          targetListId,
+          position: finalTargetPosition,
+        },
+      });
+      await fetchBoard();
+    } catch {
+      await fetchBoard();
     }
   };
 
   return (
     <AppShell activeWorkspaceId={board?.workspace_id} onRefresh={fetchBoard}>
       <div className="h-full flex flex-col -m-6">
-        {/* Board Header (Section 29) */}
+        {/* Board Top Navigation Bar */}
         <div className="h-16 px-6 glass-surface !rounded-none !border-x-0 !border-t-0 border-b border-white/40 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <Link
@@ -126,7 +471,7 @@ export default function BoardDetailPage({
 
           {/* Right Controls */}
           <div className="flex items-center gap-3">
-            {/* Members Avatars */}
+            {/* Board Members */}
             <div className="flex items-center -space-x-2">
               {board?.members?.slice(0, 4).map((m: any) => (
                 <div
@@ -145,7 +490,7 @@ export default function BoardDetailPage({
             </div>
 
             <button
-              onClick={() => setIsCreateListOpen(true)}
+              onClick={() => setIsCreateListModalOpen(true)}
               className="px-3 py-1.5 btn-primary text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -154,7 +499,7 @@ export default function BoardDetailPage({
           </div>
         </div>
 
-        {/* Kanban Canvas Area (Section 15) */}
+        {/* Kanban Board Canvas */}
         <div className="flex-1 overflow-x-auto overflow-y-hidden p-6">
           {isLoading ? (
             <div className="flex items-center gap-5 h-full">
@@ -164,120 +509,147 @@ export default function BoardDetailPage({
             </div>
           ) : (
             <div className="flex items-start gap-5 h-full select-none">
-              {board?.lists?.map((list: any) => {
-                const cardCount = list.cards?.length || 0;
-                const isOverWip = list.limit && cardCount > list.limit;
+              {/* Render List Columns */}
+              {board?.lists?.map((list: any) => (
+                <ListColumn
+                  key={list.id}
+                  list={list}
+                  boardLists={board.lists}
+                  onOpenCardDetail={handleOpenCardDetail}
+                  onRefreshBoard={fetchBoard}
+                  onRenameList={handleRenameList}
+                  onDeleteList={handleDeleteList}
+                  onCopyListRequest={(l) => setCopyingList(l)}
+                  onMoveListRequest={(l) => setMovingList(l)}
+                  onMoveAllCardsRequest={(l) => setMovingCardsList(l)}
+                  onSortCards={handleSortCards}
+                  onQuickAddCard={handleQuickAddCard}
+                  onQuickEditCardTitle={handleQuickEditCardTitle}
+                  onMoveCardRequest={(c) => setMovingCard(c)}
+                  onCopyCardRequest={(c) => setCopyingCard(c)}
+                  onDeleteCard={handleDeleteCard}
+                  onCardDragStart={handleCardDragStart}
+                  onCardDragEnd={handleCardDragEnd}
+                  onCardDrop={handleCardDrop}
+                  onListDragStart={handleListDragStart}
+                  onListDragEnd={handleListDragEnd}
+                  onListDrop={handleListDrop}
+                />
+              ))}
 
-                return (
-                  <div
-                    key={list.id}
-                    className="w-72 max-h-full kanban-list flex flex-col shrink-0 p-3"
+              {/* Add New List Column at End */}
+              <div className="w-72 shrink-0">
+                {isAddingListInline ? (
+                  <form
+                    onSubmit={handleCreateInlineList}
+                    className="p-3.5 kanban-list bg-white/80 border border-white/60 shadow-md space-y-2.5 animate-in fade-in duration-100"
                   >
-                    {/* List Header */}
-                    <div className="flex items-center justify-between pb-2 mb-2 px-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-sm text-[#2b1572]">{list.title}</h3>
-                        <span
-                          className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                            isOverWip
-                              ? 'badge-error'
-                              : 'bg-white/60 text-[#2b1572]/70'
-                          }`}
-                        >
-                          {cardCount}
-                          {list.limit ? ` / ${list.limit}` : ''}
-                        </span>
-                      </div>
-
+                    <input
+                      ref={addListInputRef}
+                      type="text"
+                      value={inlineListTitle}
+                      onChange={(e) => setInlineListTitle(e.target.value)}
+                      placeholder="Nhập tên danh sách mới..."
+                      className="w-full text-xs font-semibold text-[#2b1572] bg-white border border-[#2b1572]/30 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-[#2b1572]/20"
+                    />
+                    <div className="flex items-center gap-2">
                       <button
-                        onClick={() => handleDeleteList(list.id)}
-                        className="p-1 text-[#2b1572]/40 hover:text-[#c40000] hover:bg-white/50 rounded-lg transition-colors cursor-pointer"
-                        title="Xóa danh sách"
+                        type="submit"
+                        disabled={!inlineListTitle.trim() || isSubmittingList}
+                        className="px-3.5 py-1.5 bg-[#2b1572] hover:bg-[#1e0f52] disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        {isSubmittingList ? 'Đang thêm...' : 'Thêm danh sách'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddingListInline(false);
+                          setInlineListTitle('');
+                        }}
+                        className="p-1.5 text-[#2b1572]/60 hover:text-[#2b1572] hover:bg-white/60 rounded-lg transition-colors cursor-pointer"
+                        title="Hủy"
+                      >
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
-
-                    {/* Cards Container */}
-                    <div className="flex-1 overflow-y-auto space-y-2.5 pr-0.5">
-                      {list.cards?.length > 0 ? (
-                        list.cards.map((card: any) => (
-                          <div
-                            key={card.id}
-                            className="kanban-card p-3.5 cursor-pointer group"
-                          >
-                            <h4 className="text-xs font-semibold text-[#2b1572] leading-snug">
-                              {card.title}
-                            </h4>
-
-                            {card.description && (
-                              <p className="text-[11px] text-[#2b1572]/60 mt-1 line-clamp-2">
-                                {card.description}
-                              </p>
-                            )}
-
-                            {/* Card Badges footer */}
-                            <div className="mt-2.5 flex items-center gap-3 text-[11px] text-[#2b1572]/50">
-                              {card.due_date && (
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="w-3 h-3" />
-                                  <span>{new Date(card.due_date).toLocaleDateString()}</span>
-                                </span>
-                              )}
-                              {card.checklists?.length > 0 && (
-                                <span className="flex items-center gap-1">
-                                  <CheckSquare className="w-3 h-3" />
-                                  <span>Checklist</span>
-                                </span>
-                              )}
-                              {card._count?.comments > 0 && (
-                                <span className="flex items-center gap-1">
-                                  <MessageSquare className="w-3 h-3" />
-                                  <span>{card._count.comments}</span>
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="p-3 text-center text-[11px] text-[#2b1572]/40 bg-white/15 rounded-xl border border-dashed border-white/30">
-                          Chưa có thẻ nào trong cột
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Bottom Add Card Button */}
-                    <div className="mt-2 pt-2 border-t border-white/30">
-                      <button
-                        onClick={() => alert('Chức năng thêm và kéo thả thẻ Kanban đầy đủ sẽ được hoàn thiện trong Giai đoạn 3 (Kanban & Cards)!')}
-                        className="w-full py-1.5 px-2 rounded-xl text-xs font-semibold text-[#2b1572]/70 hover:text-[#2b1572] hover:bg-white/40 flex items-center gap-1.5 transition-colors cursor-pointer"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Thêm thẻ</span>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-
-              {/* Add New List Button Column */}
-              <button
-                onClick={() => setIsCreateListOpen(true)}
-                className="w-72 p-4 kanban-list flex items-center justify-center gap-2 text-xs font-bold text-[#2b1572]/80 hover:text-[#2b1572] hover:bg-white/50 transition-all cursor-pointer shrink-0 border-dashed"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Thêm Danh sách khác</span>
-              </button>
+                  </form>
+                ) : (
+                  <button
+                    onClick={() => setIsAddingListInline(true)}
+                    className="w-full p-4 kanban-list flex items-center justify-center gap-2 text-xs font-bold text-[#2b1572]/80 hover:text-[#2b1572] hover:bg-white/50 transition-all cursor-pointer border-dashed"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Thêm Danh sách khác</span>
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
       </div>
 
+      {/* MODALS */}
+      {/* 1. Create List Modal */}
       <CreateListModal
-        isOpen={isCreateListOpen}
+        isOpen={isCreateListModalOpen}
         boardId={boardId}
-        onClose={() => setIsCreateListOpen(false)}
+        onClose={() => setIsCreateListModalOpen(false)}
         onCreated={() => fetchBoard()}
+      />
+
+      {/* 2. Card Detail Modal */}
+      <CardDetailModal
+        cardId={selectedCardId}
+        isOpen={isCardDetailOpen}
+        onClose={handleCloseCardDetail}
+        onCardUpdated={() => fetchBoard()}
+        onMoveRequest={(c) => setMovingCard(c)}
+        onCopyRequest={(c) => setCopyingCard(c)}
+      />
+
+      {/* 3. Copy List Modal */}
+      <CopyListModal
+        list={copyingList}
+        isOpen={!!copyingList}
+        onClose={() => setCopyingList(null)}
+        onCopied={() => fetchBoard()}
+      />
+
+      {/* 4. Move List Modal */}
+      <MoveListModal
+        list={movingList}
+        boardId={boardId}
+        boardLists={board?.lists || []}
+        isOpen={!!movingList}
+        onClose={() => setMovingList(null)}
+        onMoved={() => fetchBoard()}
+      />
+
+      {/* 5. Move All Cards Modal */}
+      <MoveCardsModal
+        sourceList={movingCardsList}
+        boardLists={board?.lists || []}
+        isOpen={!!movingCardsList}
+        onClose={() => setMovingCardsList(null)}
+        onMoved={() => fetchBoard()}
+      />
+
+      {/* 6. Move Single Card Modal */}
+      <MoveCardModal
+        card={movingCard}
+        boardLists={board?.lists || []}
+        isOpen={!!movingCard}
+        onClose={() => setMovingCard(null)}
+        onMoved={() => fetchBoard()}
+      />
+
+      {/* 7. Copy Single Card Modal */}
+      <CopyCardModal
+        card={copyingCard}
+        boardLists={board?.lists || []}
+        isOpen={!!copyingCard}
+        onClose={() => setCopyingCard(null)}
+        onCopied={() => fetchBoard()}
       />
     </AppShell>
   );

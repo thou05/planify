@@ -8,6 +8,7 @@ import { UsersModule } from './modules/users/users.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 import { BoardsModule } from './modules/boards/boards.module';
 import { ListsModule } from './modules/lists/lists.module';
+import { CardsModule } from './modules/cards/cards.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { ListsModule } from './modules/lists/lists.module';
     WorkspacesModule,
     BoardsModule,
     ListsModule,
+    CardsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
