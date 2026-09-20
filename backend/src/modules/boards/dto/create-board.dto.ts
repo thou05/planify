@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsBoolean, IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreateBoardDto {
   @ApiProperty({ example: 'Sprint 1 - Ra mắt MVP', description: 'Tên Board' })
@@ -17,4 +17,23 @@ export class CreateBoardDto {
   @IsOptional()
   @IsBoolean()
   is_favorite?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Quyền hiển thị của Board',
+    enum: ['WORKSPACE', 'PRIVATE', 'PUBLIC'],
+    default: 'WORKSPACE',
+  })
+  @IsOptional()
+  @IsEnum(['WORKSPACE', 'PRIVATE', 'PUBLIC'], {
+    message: 'visibility phải là WORKSPACE, PRIVATE hoặc PUBLIC',
+  })
+  visibility?: 'WORKSPACE' | 'PRIVATE' | 'PUBLIC';
+
+  @ApiPropertyOptional({
+    description: 'Tự động tạo 3 danh sách mặc định: "To Do", "In Progress", "Done"',
+    default: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  create_default_lists?: boolean;
 }
