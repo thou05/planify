@@ -12,6 +12,9 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { BoardsService } from './boards.service';
 import { CreateBoardDto } from './dto/create-board.dto';
 import { UpdateBoardDto } from './dto/update-board.dto';
+import { CopyBoardDto } from './dto/copy-board.dto';
+import { AddBoardMemberDto } from './dto/add-board-member.dto';
+import { UpdateBoardMemberRoleDto } from './dto/update-board-member-role.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
@@ -34,17 +37,27 @@ export class BoardsController {
   }
 
   @Get('workspaces/:workspaceId/boards')
-  @ApiOperation({ summary: 'Lấy danh sách Boards trong Workspace' })
+  @ApiOperation({ summary: 'Lấy danh sách Boards đang hoạt động trong Workspace' })
   @ApiResponse({ status: 200, description: 'Danh sách Boards' })
   async findAllInWorkspace(
     @Param('workspaceId') workspaceId: string,
     @CurrentUser('id') userId: string,
   ) {
-    return this.boardsService.findAllInWorkspace(workspaceId, userId);
+    return this.boardsService.findAllInWorkspace(workspaceId, userId, false);
+  }
+
+  @Get('workspaces/:workspaceId/boards/archived')
+  @ApiOperation({ summary: 'Lấy danh sách Boards đã lưu trữ trong Workspace' })
+  @ApiResponse({ status: 200, description: 'Danh sách Boards lưu trữ' })
+  async findArchivedInWorkspace(
+    @Param('workspaceId') workspaceId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.boardsService.findArchivedInWorkspace(workspaceId, userId);
   }
 
   @Get('boards/:id')
-  @ApiOperation({ summary: 'Chi tiết Board kèm Lists và Cards' })
+  @ApiOperation({ summary: 'Chi tiết Board kèm Lists, Cards, Labels và Members' })
   @ApiResponse({ status: 200, description: 'Chi tiết Board' })
   async findById(
     @Param('id') id: string,
@@ -54,7 +67,7 @@ export class BoardsController {
   }
 
   @Patch('boards/:id')
-  @ApiOperation({ summary: 'Cập nhật Board' })
+  @ApiOperation({ summary: 'Cập nhật thông tin Board (Tên, mô tả, visibility, background)' })
   @ApiResponse({ status: 200, description: 'Cập nhật thành công' })
   async update(
     @Param('id') id: string,
@@ -64,13 +77,109 @@ export class BoardsController {
     return this.boardsService.update(id, userId, dto);
   }
 
+  @Post('boards/:id/favorite')
+  @ApiOperation({ summary: 'Bật / tắt gắn sao yêu thích Board' })
+  @ApiResponse({ status: 200, description: 'Thao tác thành công' })
+  async toggleFavorite(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.boardsService.toggleFavorite(id, userId);
+  }
+
+  @Post('boards/:id/archive')
+  @ApiOperation({ summary: 'Lưu trữ Board (Archived)' })
+  @ApiResponse({ status: 200, description: 'Lưu trữ thành công' })
+  async archive(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.boardsService.archiveBoard(id, userId);
+  }
+
+  @Post('boards/:id/restore')
+  @ApiOperation({ summary: 'Khôi phục Board đã lưu trữ' })
+  @ApiResponse({ status: 200, description: 'Khôi phục thành công' })
+  async restore(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.boardsService.restoreBoard(id, userId);
+  }
+
+  @Post('boards/:id/copy')
+  @ApiOperation({ summary: 'Nhân bản Board (Copy Board)' })
+  @ApiResponse({ status: 201, description: 'Nhân bản thành công' })
+  async copy(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: CopyBoardDto,
+  ) {
+    return this.boardsService.copyBoard(id, userId, dto);
+  }
+
   @Delete('boards/:id')
-  @ApiOperation({ summary: 'Xóa Board' })
+  @ApiOperation({ summary: 'Xóa Board vĩnh viễn' })
   @ApiResponse({ status: 200, description: 'Xóa thành công' })
   async delete(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
   ) {
     return this.boardsService.delete(id, userId);
+  }
+
+  // --- MEMBERS MANAGEMENT ---
+  @Get('boards/:id/members')
+  @ApiOperation({ summary: 'Danh sách thành viên trong Board' })
+  @ApiResponse({ status: 200, description: 'Danh sách thành viên' })
+  async getMembers(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.boardsService.getBoardMembers(id, userId);
+  }
+
+  @Post('boards/:id/members')
+  @ApiOperation({ summary: 'Thêm thành viên từ Workspace vào Board' })
+  @ApiResponse({ status: 201, description: 'Thêm thành viên thành công' })
+  async addMember(
+    @Param('id') id: string,
+    @CurrentUser('id') currentUserId: string,
+    @Body() dto: AddBoardMemberDto,
+  ) {
+    return this.boardsService.addBoardMember(id, currentUserId, dto);
+  }
+
+  @Patch('boards/:id/members/:userId')
+  @ApiOperation({ summary: 'Thay đổi vai trò thành viên trong Board (ADMIN | EDITOR | VIEWER)' })
+  @ApiResponse({ status: 200, description: 'Cập nhật vai trò thành công' })
+  async updateMemberRole(
+    @Param('id') id: string,
+    @Param('userId') targetUserId: string,
+    @CurrentUser('id') currentUserId: string,
+    @Body() dto: UpdateBoardMemberRoleDto,
+  ) {
+    return this.boardsService.updateBoardMemberRole(id, currentUserId, targetUserId, dto);
+  }
+
+  @Delete('boards/:id/members/:userId')
+  @ApiOperation({ summary: 'Xóa thành viên khỏi Board' })
+  @ApiResponse({ status: 200, description: 'Xóa thành viên thành công' })
+  async removeMember(
+    @Param('id') id: string,
+    @Param('userId') targetUserId: string,
+    @CurrentUser('id') currentUserId: string,
+  ) {
+    return this.boardsService.removeBoardMember(id, currentUserId, targetUserId);
+  }
+
+  @Post('boards/:id/leave')
+  @ApiOperation({ summary: 'Rời khỏi Board' })
+  @ApiResponse({ status: 200, description: 'Rời Board thành công' })
+  async leave(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.boardsService.leaveBoard(id, userId);
   }
 }

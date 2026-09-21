@@ -148,6 +148,19 @@ export default function DashboardPage() {
                           {ws.name.charAt(0).toUpperCase()}
                         </div>
                         <h3 className="text-lg font-bold text-[#2b1572]">{ws.name}</h3>
+                        {ws.currentUserRole === 'OWNER' ? (
+                          <span className="badge-ai text-[10px] px-2 py-0.5 rounded-full font-bold">
+                            Owner
+                          </span>
+                        ) : ws.currentUserRole === 'ADMIN' ? (
+                          <span className="badge-info text-[10px] px-2 py-0.5 rounded-full font-bold">
+                            Admin
+                          </span>
+                        ) : (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/70 text-[#2b1572]/70 font-semibold border border-white/80">
+                            Thành viên
+                          </span>
+                        )}
                       </div>
                       {ws.description && (
                         <p className="text-xs text-[#2b1572]/70 mt-1 pl-10.5">
