@@ -11,6 +11,7 @@ import { ListsModule } from './modules/lists/lists.module';
 import { CardsModule } from './modules/cards/cards.module';
 import { ChecklistsModule } from './modules/checklists/checklists.module';
 import { LabelsModule } from './modules/labels/labels.module';
+import { CommentsModule } from './modules/comments/comments.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { LabelsModule } from './modules/labels/labels.module';
     CardsModule,
     ChecklistsModule,
     LabelsModule,
+    CommentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
