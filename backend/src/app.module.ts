@@ -9,6 +9,8 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 import { BoardsModule } from './modules/boards/boards.module';
 import { ListsModule } from './modules/lists/lists.module';
 import { CardsModule } from './modules/cards/cards.module';
+import { ChecklistsModule } from './modules/checklists/checklists.module';
+import { LabelsModule } from './modules/labels/labels.module';
 
 @Module({
   imports: [
@@ -23,8 +25,11 @@ import { CardsModule } from './modules/cards/cards.module';
     BoardsModule,
     ListsModule,
     CardsModule,
+    ChecklistsModule,
+    LabelsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}
+

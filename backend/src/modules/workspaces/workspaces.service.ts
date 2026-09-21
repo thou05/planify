@@ -154,7 +154,7 @@ export class WorkspacesService {
 
     const updateData: Record<string, any> = {};
     if (dto.name) updateData.name = dto.name.trim();
-    if (dto.description !== undefined) updateData.description = dto.description.trim();
+    if (dto.description !== undefined) updateData.description = dto.description ? dto.description.trim() : null;
 
     const { data: updated, error } = await this.supabase
       .from('workspaces')

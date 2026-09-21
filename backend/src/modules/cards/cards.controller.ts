@@ -14,6 +14,7 @@ import { CreateCardDto } from './dto/create-card.dto';
 import { UpdateCardDto } from './dto/update-card.dto';
 import { MoveCardDto } from './dto/move-card.dto';
 import { CopyCardDto } from './dto/copy-card.dto';
+import { AssignMemberDto } from './dto/assign-member.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
@@ -86,5 +87,16 @@ export class CardsController {
     @Body() dto: CopyCardDto,
   ) {
     return this.cardsService.copy(id, userId, dto);
+  }
+
+  @Post('cards/:id/assignees/toggle')
+  @ApiOperation({ summary: 'Bật/tắt gán thành viên vào thẻ' })
+  @ApiResponse({ status: 200, description: 'Thao tác gán thành viên thành công' })
+  async toggleAssignMember(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: AssignMemberDto,
+  ) {
+    return this.cardsService.toggleAssignMember(id, userId, dto.board_member_id);
   }
 }

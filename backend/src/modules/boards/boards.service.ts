@@ -169,8 +169,9 @@ export class BoardsService {
             title,
             description,
             position,
-            status,
+            start_date,
             due_date,
+            reminder_at,
             is_due_date_completed,
             checklists (
               id,
@@ -179,6 +180,15 @@ export class BoardsService {
             ),
             card_labels (
               label:labels (id, name, color)
+            ),
+            card_assignees (
+              id,
+              board_member_id,
+              board_member:board_members (
+                id,
+                role,
+                user:users (id, name, email, avatar)
+              )
             ),
             comments (id)
           )
@@ -248,7 +258,7 @@ export class BoardsService {
 
     const updateData: Record<string, any> = {};
     if (dto.name) updateData.name = dto.name.trim();
-    if (dto.description !== undefined) updateData.description = dto.description.trim();
+    if (dto.description !== undefined) updateData.description = dto.description ? dto.description.trim() : null;
     if (dto.is_favorite !== undefined) updateData.is_favorite = dto.is_favorite;
     if (dto.visibility !== undefined) updateData.visibility = dto.visibility;
     if (dto.is_archived !== undefined) updateData.is_archived = dto.is_archived;
