@@ -1,28 +1,29 @@
 'use client';
 
-import React, { useState, useEffect, use } from 'react';
+import React, { useState, useEffect, use, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth-context';
 import AppShell from '@/components/layout/AppShell';
+import ListColumn from '@/components/board/ListColumn';
 import CreateListModal from '@/components/modals/CreateListModal';
 import EditBoardModal from '@/components/modals/EditBoardModal';
 import ShareBoardModal from '@/components/modals/ShareBoardModal';
 import CopyBoardModal from '@/components/modals/CopyBoardModal';
+import CardDetailModal from '@/components/modals/CardDetailModal';
+import CopyListModal from '@/components/modals/CopyListModal';
+import MoveListModal from '@/components/modals/MoveListModal';
+import MoveCardsModal from '@/components/modals/MoveCardsModal';
+import MoveCardModal from '@/components/modals/MoveCardModal';
+import CopyCardModal from '@/components/modals/CopyCardModal';
 import {
-  Kanban,
   Star,
   Plus,
   ArrowLeft,
   MoreHorizontal,
   Trash2,
-  Calendar,
-  CheckSquare,
-  MessageSquare,
-  Paperclip,
   Users,
-  Sparkles,
   Share2,
   Lock,
   Globe,
@@ -31,8 +32,7 @@ import {
   Copy,
   Edit3,
   LogOut,
-  AlertTriangle,
-  Loader2,
+  X,
 } from 'lucide-react';
 
 export default function BoardDetailPage({
@@ -42,6 +42,7 @@ export default function BoardDetailPage({
 }) {
   const resolvedParams = use(params);
   const boardId = resolvedParams.boardId;
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useAuth();
 
@@ -50,16 +51,34 @@ export default function BoardDetailPage({
   const [userWorkspaces, setUserWorkspaces] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+
+
   // Modals state
   const [isCreateListOpen, setIsCreateListOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isCopyOpen, setIsCopyOpen] = useState(false);
   const [isBoardMenuOpen, setIsBoardMenuOpen] = useState(false);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [isCardDetailOpen, setIsCardDetailOpen] = useState(false);
 
-  // Quick inline add card state
-  const [inlineCardTitles, setInlineCardTitles] = useState<Record<string, string>>({});
-  const [addingCardListId, setAddingCardListId] = useState<string | null>(null);
+  // Sub-modals state
+  const [copyingList, setCopyingList] = useState<any>(null);
+  const [movingList, setMovingList] = useState<any>(null);
+  const [movingCardsList, setMovingCardsList] = useState<any>(null);
+  const [movingCard, setMovingCard] = useState<any>(null);
+  const [copyingCard, setCopyingCard] = useState<any>(null);
+
+  // Inline Add List state at the end of Kanban board
+  const [isAddingListInline, setIsAddingListInline] = useState(false);
+  const [inlineListTitle, setInlineListTitle] = useState('');
+  const [isSubmittingList, setIsSubmittingList] = useState(false);
+  const addListInputRef = useRef<HTMLInputElement>(null);
+
+  // Drag and Drop refs & state
+  const draggedCardRef = useRef<{ cardId: string; sourceListId: string } | null>(null);
+  const draggedListIdRef = useRef<string | null>(null);
+  const [draggedSourceListId, setDraggedSourceListId] = useState<string | null>(null);
 
   const fetchBoard = async () => {
     try {
@@ -71,7 +90,7 @@ export default function BoardDetailPage({
         }
       }
     } catch {
-      // Error
+      // Handle error
     } finally {
       setIsLoading(false);
     }
@@ -99,6 +118,21 @@ export default function BoardDetailPage({
     fetchBoard();
   }, [boardId]);
 
+  // Deep linking: check URL query for ?cardId=...
+  useEffect(() => {
+    const cardIdParam = searchParams.get('cardId');
+    if (cardIdParam) {
+      setSelectedCardId(cardIdParam);
+      setIsCardDetailOpen(true);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (isAddingListInline) {
+      addListInputRef.current?.focus();
+    }
+  }, [isAddingListInline]);
+
   const handleToggleFavorite = async () => {
     if (!board) return;
     const newFav = !board.is_favorite;
@@ -113,8 +147,46 @@ export default function BoardDetailPage({
     }
   };
 
+  // 1. LIST ACTIONS
+  const handleCreateInlineList = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = inlineListTitle.trim();
+    if (!trimmed || isSubmittingList) return;
+
+    try {
+      setIsSubmittingList(true);
+      await apiClient(`/boards/${boardId}/lists`, {
+        method: 'POST',
+        data: { title: trimmed },
+      });
+      setInlineListTitle('');
+      setIsAddingListInline(false);
+      await fetchBoard();
+    } catch (err: any) {
+      alert(err.message || 'Không thể tạo danh sách');
+    } finally {
+      setIsSubmittingList(false);
+    }
+  };
+
+  const handleRenameList = async (listId: string, newTitle: string) => {
+    try {
+      await apiClient(`/lists/${listId}`, {
+        method: 'PATCH',
+        data: { title: newTitle },
+      });
+      await fetchBoard();
+    } catch (err: any) {
+      alert(err.message || 'Không thể đổi tên danh sách');
+    }
+  };
+
   const handleArchiveBoard = async () => {
-    if (!confirm('Bạn có chắc muốn lưu trữ Bảng này? Bảng sẽ chuyển sang chế độ Chỉ xem (Read-only) và ẩn khỏi danh sách chính.')) {
+    if (
+      !confirm(
+        'Bạn có chắc muốn lưu trữ Bảng này? Bảng sẽ chuyển sang chế độ Chỉ xem (Read-only) và ẩn khỏi danh sách chính.'
+      )
+    ) {
       return;
     }
 
@@ -145,7 +217,11 @@ export default function BoardDetailPage({
   };
 
   const handleDeleteBoard = async () => {
-    if (!confirm(`Bạn có CHẮC CHẮN muốn xóa vĩnh viễn Bảng "${board?.name}" cùng toàn bộ thẻ công việc? Hành động này KHÔNG thể hoàn tác.`)) {
+    if (
+      !confirm(
+        `Bạn có CHẮC CHẮN muốn xóa vĩnh viễn Bảng "${board?.name}" cùng toàn bộ thẻ công việc? Hành động này KHÔNG thể hoàn tác.`
+      )
+    ) {
       return;
     }
 
@@ -177,36 +253,318 @@ export default function BoardDetailPage({
   };
 
   const handleDeleteList = async (listId: string) => {
-    if (!confirm('Bạn có chắc muốn xóa danh sách này cùng các thẻ bên trong?')) return;
+    if (!confirm('Bạn có chắc chắn muốn xóa danh sách này cùng tất cả các thẻ bên trong?')) {
+      return;
+    }
 
     try {
-      await apiClient(`/lists/${listId}`, {
-        method: 'DELETE',
-      });
-      fetchBoard();
+      await apiClient(`/lists/${listId}`, { method: 'DELETE' });
+      await fetchBoard();
     } catch (err: any) {
       alert(err.message || 'Không thể xóa danh sách');
     }
   };
 
-  const handleQuickAddCard = async (listId: string) => {
-    const title = inlineCardTitles[listId]?.trim();
-    if (!title) return;
+  const handleSortCards = async (
+    listId: string,
+    sortBy: 'due_date' | 'title' | 'created_at',
+    order: 'asc' | 'desc' = 'asc'
+  ) => {
+    try {
+      await apiClient(`/lists/${listId}/sort-cards`, {
+        method: 'POST',
+        data: { sortBy, order },
+      });
+      await fetchBoard();
+    } catch (err: any) {
+      alert(err.message || 'Không thể sắp xếp thẻ');
+    }
+  };
+
+  // 2. CARD ACTIONS
+  const handleQuickAddCard = async (listId: string, title: string) => {
+    const targetList = board?.lists?.find((l: any) => l.id === listId);
+    if (targetList?.limit && (targetList.cards?.length || 0) >= targetList.limit) {
+      return;
+    }
+
+    const tempId = `temp-${Date.now()}`;
+    const newPos = targetList?.cards?.length || 0;
+
+    const optimisticCard = {
+      id: tempId,
+      list_id: listId,
+      title: title.trim(),
+      description: null,
+      position: newPos,
+      status: 'TODO',
+      due_date: null,
+      is_due_date_completed: false,
+      checklists: [],
+      card_labels: [],
+      comments: [],
+      card_assignees: [],
+    };
+
+    // 1. Cập nhật giao diện tức thời (0ms)
+    setBoard((prev: any) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        lists: prev.lists.map((list: any) => {
+          if (list.id === listId) {
+            return {
+              ...list,
+              cards: [...(list.cards || []), optimisticCard],
+            };
+          }
+          return list;
+        }),
+      };
+    });
+
+    // 2. Gọi API ngầm trong nền
+    try {
+      const res = await apiClient<any>(`/lists/${listId}/cards`, {
+        method: 'POST',
+        data: { title: title.trim(), position: newPos },
+      });
+
+      if (res.success && res.data) {
+        const realCard = res.data;
+        setBoard((prev: any) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            lists: prev.lists.map((list: any) => {
+              if (list.id === listId) {
+                return {
+                  ...list,
+                  cards: (list.cards || []).map((c: any) =>
+                    c.id === tempId ? realCard : c
+                  ),
+                };
+              }
+              return list;
+            }),
+          };
+        });
+      }
+    } catch (err: any) {
+      // Revert nếu có lỗi
+      setBoard((prev: any) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          lists: prev.lists.map((list: any) => {
+            if (list.id === listId) {
+              return {
+                ...list,
+                cards: (list.cards || []).filter((c: any) => c.id !== tempId),
+              };
+            }
+            return list;
+          }),
+        };
+      });
+      console.error('Không thể tạo thẻ:', err);
+    }
+  };
+
+  const handleQuickEditCardTitle = async (cardId: string, newTitle: string) => {
+    // Optimistic title update
+    setBoard((prev: any) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        lists: prev.lists.map((list: any) => ({
+          ...list,
+          cards: (list.cards || []).map((c: any) =>
+            c.id === cardId ? { ...c, title: newTitle } : c
+          ),
+        })),
+      };
+    });
 
     try {
-      await apiClient('/cards', {
-        method: 'POST',
+      await apiClient(`/cards/${cardId}`, {
+        method: 'PATCH',
+        data: { title: newTitle },
+      });
+    } catch (err: any) {
+      await fetchBoard();
+      console.error('Lỗi cập nhật tên thẻ:', err);
+    }
+  };
+
+  const handleDeleteCard = async (cardId: string) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa thẻ này?')) return;
+    try {
+      await apiClient(`/cards/${cardId}`, { method: 'DELETE' });
+      await fetchBoard();
+    } catch (err: any) {
+      console.error('Lỗi xóa thẻ:', err);
+    }
+  };
+
+  const handleOpenCardDetail = (cardId: string) => {
+    setSelectedCardId(cardId);
+    setIsCardDetailOpen(true);
+  };
+
+  const handleCloseCardDetail = () => {
+    setIsCardDetailOpen(false);
+    setSelectedCardId(null);
+    if (searchParams.get('cardId')) {
+      router.replace(`/boards/${boardId}`);
+    }
+  };
+
+  // 3. LIST DRAG & DROP HANDLERS
+  const handleListDragStart = (e: React.DragEvent, listId: string) => {
+    if (draggedCardRef.current) return;
+    draggedListIdRef.current = listId;
+    e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'list', listId }));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleListDragEnd = () => {
+    draggedListIdRef.current = null;
+  };
+
+  const handleListDrop = async (e: React.DragEvent, targetListId: string) => {
+    const sourceListId = draggedListIdRef.current;
+    if (!sourceListId || sourceListId === targetListId) return;
+
+    draggedListIdRef.current = null;
+
+    const currentLists = [...(board?.lists || [])];
+    const sourceIndex = currentLists.findIndex((l) => l.id === sourceListId);
+    const targetIndex = currentLists.findIndex((l) => l.id === targetListId);
+
+    if (sourceIndex === -1 || targetIndex === -1) return;
+
+    // Optimistic reorder
+    const [movedList] = currentLists.splice(sourceIndex, 1);
+    currentLists.splice(targetIndex, 0, movedList);
+
+    setBoard((prev: any) => ({
+      ...prev,
+      lists: currentLists,
+    }));
+
+    try {
+      const listIds = currentLists.map((l) => l.id);
+      await apiClient(`/boards/${boardId}/lists/reorder`, {
+        method: 'PATCH',
+        data: { listIds },
+      });
+    } catch {
+      await fetchBoard();
+    }
+  };
+
+  // 4. CARD DRAG & DROP HANDLERS (Both inside same list and across lists)
+  const handleCardDragStart = (
+    e: React.DragEvent,
+    cardId: string,
+    sourceListId: string
+  ) => {
+    e.stopPropagation();
+    draggedCardRef.current = { cardId, sourceListId };
+    setDraggedSourceListId(sourceListId);
+    e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'card', cardId, sourceListId }));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleCardDragEnd = () => {
+    draggedCardRef.current = null;
+    setDraggedSourceListId(null);
+  };
+
+  const handleCardDrop = async (
+    e: React.DragEvent,
+    targetListId: string,
+    targetPosition?: number
+  ) => {
+    const data = draggedCardRef.current;
+    draggedCardRef.current = null;
+    setDraggedSourceListId(null);
+    if (!data) return;
+
+    const { cardId, sourceListId } = data;
+
+    const targetList = board?.lists?.find((l: any) => l.id === targetListId);
+    if (!targetList) return;
+
+    const isSameList = sourceListId === targetListId;
+
+    // Disallow moving cards from other lists if target list reached its WIP limit
+    if (!isSameList && targetList.limit && (targetList.cards?.length || 0) >= targetList.limit) {
+      return;
+    }
+
+    let finalTargetPosition: number;
+
+    if (typeof targetPosition === 'number') {
+      if (isSameList) {
+        const sourceIndex = targetList.cards?.findIndex((c: any) => c.id === cardId) ?? -1;
+        if (sourceIndex !== -1 && sourceIndex < targetPosition) {
+          finalTargetPosition = Math.max(0, targetPosition - 1);
+        } else {
+          finalTargetPosition = targetPosition;
+        }
+      } else {
+        finalTargetPosition = targetPosition;
+      }
+    } else {
+      finalTargetPosition = targetList.cards?.length || 0;
+    }
+
+    // Optimistic UI update for manual sorting
+    setBoard((prev: any) => {
+      if (!prev) return prev;
+      let movedCard: any = null;
+
+      const newLists = prev.lists.map((list: any) => {
+        if (list.id === sourceListId) {
+          const newCards = [...(list.cards || [])].filter((c: any) => {
+            if (c.id === cardId) {
+              movedCard = { ...c, list_id: targetListId };
+              return false;
+            }
+            return true;
+          });
+          return { ...list, cards: newCards };
+        }
+        return { ...list, cards: [...(list.cards || [])] };
+      });
+
+      if (!movedCard) return prev;
+
+      const targetListIndex = newLists.findIndex((l: any) => l.id === targetListId);
+      if (targetListIndex === -1) return prev;
+
+      const targetCards = newLists[targetListIndex].cards;
+      const insertIndex = Math.min(Math.max(0, finalTargetPosition), targetCards.length);
+      targetCards.splice(insertIndex, 0, movedCard);
+
+      return {
+        ...prev,
+        lists: newLists,
+      };
+    });
+
+    try {
+      await apiClient(`/cards/${cardId}/move`, {
+        method: 'PATCH',
         data: {
-          list_id: listId,
-          title,
+          targetListId,
+          position: finalTargetPosition,
         },
       });
-      setInlineCardTitles((prev) => ({ ...prev, [listId]: '' }));
-      setAddingCardListId(null);
-      fetchBoard();
     } catch {
-      // Fallback
-      alert('Chức năng tạo thẻ nhanh sẽ được cập nhật đồng bộ.');
+      await fetchBoard();
     }
   };
 
@@ -244,8 +602,9 @@ export default function BoardDetailPage({
           </div>
         )}
 
-        {/* Board Header (Section 29) */}
+        {/* Board Top Navigation Bar */}
         <div className="h-16 px-6 glass-surface !rounded-none !border-x-0 !border-t-0 border-b border-white/40 flex items-center justify-between shrink-0 select-none">
+          {/* Left: Back button & Board Name & Badges */}
           <div className="flex items-center gap-3 min-w-0">
             <Link
               href={board?.workspace_id ? `/workspaces/${board.workspace_id}` : '/dashboard'}
@@ -432,8 +791,8 @@ export default function BoardDetailPage({
           </div>
         </div>
 
-        {/* Kanban Board Horizontal Scroll Container (Section 15) */}
-        <div className="flex-1 overflow-x-auto p-6 flex items-start gap-4 select-none">
+        {/* Kanban Board Canvas */}
+        <div className="flex-1 overflow-x-auto overflow-y-hidden p-6">
           {isLoading ? (
             <div className="flex gap-4">
               {[1, 2, 3].map((i) => (
@@ -441,182 +800,91 @@ export default function BoardDetailPage({
               ))}
             </div>
           ) : (
-            <>
-              {board?.lists?.map((list: any) => {
-                const isOverLimit = list.limit && (list.cards?.length || 0) >= list.limit;
+            <div className="flex items-start gap-5 h-full select-none">
+              {/* Render List Columns */}
+              {board?.lists?.map((list: any) => (
+                <ListColumn
+                  key={list.id}
+                  list={list}
+                  boardLists={board.lists}
+                  onOpenCardDetail={handleOpenCardDetail}
+                  onRefreshBoard={fetchBoard}
+                  onRenameList={handleRenameList}
+                  onDeleteList={handleDeleteList}
+                  onCopyListRequest={(l) => setCopyingList(l)}
+                  onMoveListRequest={(l) => setMovingList(l)}
+                  onMoveAllCardsRequest={(l) => setMovingCardsList(l)}
+                  onSortCards={handleSortCards}
+                  onQuickAddCard={handleQuickAddCard}
+                  onQuickEditCardTitle={handleQuickEditCardTitle}
+                  onMoveCardRequest={(c) => setMovingCard(c)}
+                  onCopyCardRequest={(c) => setCopyingCard(c)}
+                  onDeleteCard={handleDeleteCard}
+                  onCardDragStart={handleCardDragStart}
+                  onCardDragEnd={handleCardDragEnd}
+                  onCardDrop={handleCardDrop}
+                  onListDragStart={handleListDragStart}
+                  onListDragEnd={handleListDragEnd}
+                  onListDrop={handleListDrop}
+                  draggedSourceListId={draggedSourceListId}
+                />
+              ))}
 
-                return (
-                  <div key={list.id} className="kanban-list flex flex-col max-h-full">
-                    {/* List Header */}
-                    <div className="p-3.5 flex items-center justify-between border-b border-white/30 shrink-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-[#2b1572] text-sm tracking-tight">
-                          {list.title}
-                        </h3>
-                        <span className="text-[11px] font-bold text-[#2b1572]/60 px-2 py-0.5 rounded-full bg-white/50 border border-white/60">
-                          {list.cards?.length || 0}
-                          {list.limit ? ` / ${list.limit}` : ''}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        {isOverLimit && (
-                          <span className="badge-danger text-[10px] px-1.5 py-0.5 rounded font-bold" title="Đã đạt giới hạn WIP Limit">
-                            WIP Max
-                          </span>
-                        )}
-                        {!board?.is_archived && board?.canEdit && (
-                          <button
-                            onClick={() => handleDeleteList(list.id)}
-                            className="p-1 rounded hover:bg-white/40 text-[#2b1572]/40 hover:text-[#c40000] transition-colors cursor-pointer"
-                            title="Xóa cột"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Cards Container */}
-                    <div className="p-3 flex-1 overflow-y-auto space-y-3">
-                      {list.cards?.map((card: any) => (
-                        <div
-                          key={card.id}
-                          className="kanban-card p-3.5 space-y-2.5 cursor-grab active:cursor-grabbing group transition-all"
-                        >
-                          {/* Labels */}
-                          {card.card_labels && card.card_labels.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5">
-                              {card.card_labels.map((cl: any, idx: number) => {
-                                const lbl = cl.label || cl;
-                                return (
-                                  <span
-                                    key={lbl.id || idx}
-                                    style={{ backgroundColor: `${lbl.color}20`, color: lbl.color }}
-                                    className="text-[10px] font-bold px-2 py-0.5 rounded-md border border-current"
-                                  >
-                                    {lbl.name}
-                                  </span>
-                                );
-                              })}
-                            </div>
-                          )}
-
-                          {/* Title */}
-                          <h4 className="text-xs font-bold text-[#2b1572] leading-snug group-hover:text-[#4f91cf] transition-colors">
-                            {card.title}
-                          </h4>
-
-                          {/* Description preview */}
-                          {card.description && (
-                            <p className="text-[11px] text-[#2b1572]/70 line-clamp-2 leading-relaxed">
-                              {card.description}
-                            </p>
-                          )}
-
-                          {/* Card Footer Badges */}
-                          <div className="pt-2 border-t border-[#2b1572]/10 flex items-center justify-between text-[11px] text-[#2b1572]/60">
-                            <div className="flex items-center gap-3">
-                              {card.due_date && (
-                                <span
-                                  className={`flex items-center gap-1 font-semibold ${
-                                    card.is_due_date_completed
-                                      ? 'text-[#358200]'
-                                      : new Date(card.due_date) < new Date()
-                                      ? 'text-[#c40000]'
-                                      : ''
-                                  }`}
-                                >
-                                  <Calendar className="w-3 h-3" />
-                                  <span>{new Date(card.due_date).toLocaleDateString('vi-VN')}</span>
-                                </span>
-                              )}
-
-                              {card.checklists && card.checklists.length > 0 && (
-                                <span className="flex items-center gap-1 font-semibold">
-                                  <CheckSquare className="w-3 h-3" />
-                                  <span>
-                                    {card.checklists.reduce(
-                                      (acc: number, cl: any) =>
-                                        acc + (cl.items?.filter((i: any) => i.is_completed).length || 0),
-                                      0
-                                    )}
-                                    /
-                                    {card.checklists.reduce(
-                                      (acc: number, cl: any) => acc + (cl.items?.length || 0),
-                                      0
-                                    )}
-                                  </span>
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-
-                      {/* Inline Add Card */}
-                      {!board?.is_archived && board?.canEdit && (
-                        addingCardListId === list.id ? (
-                          <div className="p-2.5 rounded-xl bg-white/60 border border-white/70 space-y-2">
-                            <textarea
-                              rows={2}
-                              autoFocus
-                              value={inlineCardTitles[list.id] || ''}
-                              onChange={(e) =>
-                                setInlineCardTitles((prev) => ({
-                                  ...prev,
-                                  [list.id]: e.target.value,
-                                }))
-                              }
-                              placeholder="Nhập tiêu đề thẻ công việc..."
-                              className="w-full text-xs glass-input p-2 font-medium text-[#2b1572] resize-none"
-                            />
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                onClick={() => setAddingCardListId(null)}
-                                className="px-2.5 py-1 text-xs font-semibold text-[#2b1572]/70 hover:text-[#2b1572]"
-                              >
-                                Hủy
-                              </button>
-                              <button
-                                onClick={() => handleQuickAddCard(list.id)}
-                                className="px-3 py-1 btn-primary text-xs font-semibold"
-                              >
-                                Thêm thẻ
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setAddingCardListId(list.id)}
-                            className="w-full py-2 px-3 rounded-xl hover:bg-white/50 text-[#2b1572]/70 hover:text-[#2b1572] text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                            <span>Thêm thẻ mới</span>
-                          </button>
-                        )
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {/* Add List Column Button */}
+              {/* Add New List Column at End */}
               {!board?.is_archived && board?.canEdit && (
-                <button
-                  onClick={() => setIsCreateListOpen(true)}
-                  className="w-72 h-14 shrink-0 rounded-2xl bg-white/40 hover:bg-white/70 border border-white/60 transition-all flex items-center justify-center gap-2 text-xs font-bold text-[#2b1572] cursor-pointer shadow-sm"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Thêm danh sách cột mới</span>
-                </button>
+                <div className="w-72 shrink-0">
+                  {isAddingListInline ? (
+                    <form
+                      onSubmit={handleCreateInlineList}
+                      className="p-3.5 kanban-list bg-white/80 border border-white/60 shadow-md space-y-2.5 animate-in fade-in duration-100"
+                    >
+                      <input
+                        ref={addListInputRef}
+                        type="text"
+                        value={inlineListTitle}
+                        onChange={(e) => setInlineListTitle(e.target.value)}
+                        placeholder="Nhập tên danh sách mới..."
+                        className="w-full text-xs font-semibold text-[#2b1572] bg-white border border-[#2b1572]/30 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-[#2b1572]/20"
+                      />
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="submit"
+                          disabled={!inlineListTitle.trim() || isSubmittingList}
+                          className="px-3.5 py-1.5 bg-[#2b1572] hover:bg-[#1e0f52] disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                        >
+                          {isSubmittingList ? 'Đang thêm...' : 'Thêm danh sách'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsAddingListInline(false);
+                            setInlineListTitle('');
+                          }}
+                          className="p-1.5 text-[#2b1572]/60 hover:text-[#2b1572] hover:bg-white/60 rounded-lg transition-colors cursor-pointer"
+                          title="Hủy"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <button
+                      onClick={() => setIsAddingListInline(true)}
+                      className="w-full p-4 kanban-list flex items-center justify-center gap-2 text-xs font-bold text-[#2b1572]/80 hover:text-[#2b1572] hover:bg-white/50 transition-all cursor-pointer border-dashed"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Thêm Danh sách khác</span>
+                    </button>
+                  )}
+                </div>
               )}
-            </>
+            </div>
           )}
         </div>
       </div>
 
       {/* MODALS */}
+      {/* 1. Create List Modal */}
       <CreateListModal
         isOpen={isCreateListOpen}
         boardId={boardId}
@@ -646,6 +914,63 @@ export default function BoardDetailPage({
         workspaces={userWorkspaces}
         onClose={() => setIsCopyOpen(false)}
       />
+
+      {/* 2. Card Detail Modal */}
+      <CardDetailModal
+        cardId={selectedCardId}
+        isOpen={isCardDetailOpen}
+        onClose={handleCloseCardDetail}
+        onCardUpdated={() => fetchBoard()}
+        onMoveRequest={(c) => setMovingCard(c)}
+        onCopyRequest={(c) => setCopyingCard(c)}
+      />
+
+      {/* 3. Copy List Modal */}
+      <CopyListModal
+        list={copyingList}
+        isOpen={!!copyingList}
+        onClose={() => setCopyingList(null)}
+        onCopied={() => fetchBoard()}
+      />
+
+      {/* 4. Move List Modal */}
+      <MoveListModal
+        list={movingList}
+        boardId={boardId}
+        boardLists={board?.lists || []}
+        isOpen={!!movingList}
+        onClose={() => setMovingList(null)}
+        onMoved={() => fetchBoard()}
+      />
+
+      {/* 5. Move All Cards Modal */}
+      <MoveCardsModal
+        sourceList={movingCardsList}
+        boardLists={board?.lists || []}
+        isOpen={!!movingCardsList}
+        onClose={() => setMovingCardsList(null)}
+        onMoved={() => fetchBoard()}
+      />
+
+      {/* 6. Move Single Card Modal */}
+      <MoveCardModal
+        card={movingCard}
+        boardLists={board?.lists || []}
+        isOpen={!!movingCard}
+        onClose={() => setMovingCard(null)}
+        onMoved={() => fetchBoard()}
+      />
+
+      {/* 7. Copy Single Card Modal */}
+      <CopyCardModal
+        card={copyingCard}
+        boardLists={board?.lists || []}
+        isOpen={!!copyingCard}
+        onClose={() => setCopyingCard(null)}
+        onCopied={() => fetchBoard()}
+      />
+
+
     </AppShell>
   );
 }

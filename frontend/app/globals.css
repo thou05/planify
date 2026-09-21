@@ -251,3 +251,20 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(43, 21, 114, 0.3);
 }
+
+/* Shake animation for full WIP limit lists */
+@keyframes shake-limit {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  20%, 60% {
+    transform: translateX(-5px);
+  }
+  40%, 80% {
+    transform: translateX(5px);
+  }
+}
+
+.animate-shake {
+  animation: shake-limit 0.45s ease-in-out;
+}
