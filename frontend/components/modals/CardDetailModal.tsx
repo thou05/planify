@@ -42,7 +42,10 @@ import {
   FileArchive,
   Upload,
   Maximize2,
+  History,
+  RefreshCw,
 } from 'lucide-react';
+import { ActivityItem } from '@/components/modals/MyActivityModal';
 
 interface ChecklistItem {
   id: string;
@@ -307,8 +310,27 @@ export default function CardDetailModal({
     isOpen: false,
     title: '',
     message: '',
-    onConfirm: () => {},
+    onConfirm: () => { },
   });
+
+  // --- ACTIVITIES STATE ---
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [isLoadingActivities, setIsLoadingActivities] = useState(false);
+  const [activityTab, setActivityTab] = useState<'comments' | 'activities'>('comments');
+
+  const fetchCardActivities = async (cId: string) => {
+    try {
+      setIsLoadingActivities(true);
+      const res = await apiClient<ActivityItem[]>(`/cards/${cId}/activities`);
+      if (res.success && Array.isArray(res.data)) {
+        setActivities(res.data);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setIsLoadingActivities(false);
+    }
+  };
 
   const fetchBoardMembers = async (boardId: string) => {
     try {
@@ -379,6 +401,7 @@ export default function CardDetailModal({
   useEffect(() => {
     if (isOpen && cardId) {
       fetchCardDetails(cardId);
+      fetchCardActivities(cardId);
       setIsAddingChecklist(false);
       setIsDatesModalOpen(false);
       setIsMembersModalOpen(false);
@@ -410,6 +433,8 @@ export default function CardDetailModal({
       setActiveItemDate(null);
       setActiveItemMember(null);
       setComments([]);
+      setActivities([]);
+      setActivityTab('comments');
       setCommentText('');
       setEditingCommentId(null);
       setIsMentionOpen(false);
@@ -1071,11 +1096,11 @@ export default function CardDetailModal({
       prev.map((cl) =>
         cl.id === checklistId
           ? {
-              ...cl,
-              items: cl.items.map((item) =>
-                item.id === itemId ? { ...item, is_completed: nextCompleted } : item,
-              ),
-            }
+            ...cl,
+            items: cl.items.map((item) =>
+              item.id === itemId ? { ...item, is_completed: nextCompleted } : item,
+            ),
+          }
           : cl,
       ),
     );
@@ -1091,11 +1116,11 @@ export default function CardDetailModal({
         prev.map((cl) =>
           cl.id === checklistId
             ? {
-                ...cl,
-                items: cl.items.map((item) =>
-                  item.id === itemId ? { ...item, is_completed: currentCompleted } : item,
-                ),
-              }
+              ...cl,
+              items: cl.items.map((item) =>
+                item.id === itemId ? { ...item, is_completed: currentCompleted } : item,
+              ),
+            }
             : cl,
         ),
       );
@@ -1112,11 +1137,11 @@ export default function CardDetailModal({
       prev.map((cl) =>
         cl.id === checklistId
           ? {
-              ...cl,
-              items: cl.items.map((item) =>
-                item.id === itemId ? { ...item, content: newContent } : item,
-              ),
-            }
+            ...cl,
+            items: cl.items.map((item) =>
+              item.id === itemId ? { ...item, content: newContent } : item,
+            ),
+          }
           : cl,
       ),
     );
@@ -1163,11 +1188,11 @@ export default function CardDetailModal({
       prev.map((cl) =>
         cl.id === checklistId
           ? {
-              ...cl,
-              items: cl.items.map((it) =>
-                it.id === itemId ? { ...it, due_date: finalDueDate } : it,
-              ),
-            }
+            ...cl,
+            items: cl.items.map((it) =>
+              it.id === itemId ? { ...it, due_date: finalDueDate } : it,
+            ),
+          }
           : cl,
       ),
     );
@@ -1196,17 +1221,17 @@ export default function CardDetailModal({
       prev.map((cl) =>
         cl.id === checklistId
           ? {
-              ...cl,
-              items: cl.items.map((it) =>
-                it.id === itemId
-                  ? {
-                      ...it,
-                      member_id: boardMemberId,
-                      member: memberObj,
-                    }
-                  : it,
-              ),
-            }
+            ...cl,
+            items: cl.items.map((it) =>
+              it.id === itemId
+                ? {
+                  ...it,
+                  member_id: boardMemberId,
+                  member: memberObj,
+                }
+                : it,
+            ),
+          }
           : cl,
       ),
     );
@@ -1351,6 +1376,7 @@ export default function CardDetailModal({
         setIsMentionOpen(false);
         setMentionStartIndex(-1);
         onCardUpdated();
+        fetchCardActivities(cardId);
       }
     } catch (err: any) {
       alert(err.message || 'Không thể gửi bình luận');
@@ -1524,9 +1550,9 @@ export default function CardDetailModal({
     const pattern =
       memberNames.length > 0
         ? new RegExp(
-            `(@(?:${memberNames.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')}|[a-zA-Z0-9_\\u00C0-\\u024F\\u1EA0-\\u1EF9]+))`,
-            'gi',
-          )
+          `(@(?:${memberNames.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')}|[a-zA-Z0-9_\\u00C0-\\u024F\\u1EA0-\\u1EF9]+))`,
+          'gi',
+        )
         : /(@[a-zA-Z0-9_\u00C0-\u024F\u1EA0-\u1EF9]+)/gi;
 
     const parts = content.split(pattern);
@@ -1544,11 +1570,10 @@ export default function CardDetailModal({
             return (
               <span
                 key={idx}
-                className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[11px] font-bold mx-0.5 transition-all ${
-                  isMember
+                className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[11px] font-bold mx-0.5 transition-all ${isMember
                     ? 'bg-[#a6d1fd]/40 text-[#2b1572] border border-[#a6d1fd]/70 shadow-2xs'
                     : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                }`}
+                  }`}
               >
                 <span className="text-[#2b1572]/70 font-black">@</span>
                 <span>{part.slice(1)}</span>
@@ -1612,11 +1637,10 @@ export default function CardDetailModal({
                     setIsMembersModalOpen(true);
                     setMemberSearchQuery('');
                   }}
-                  className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer ${
-                    assignees.length > 0
+                  className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer ${assignees.length > 0
                       ? 'text-[#2b1572] bg-[#a6d1fd]/30 hover:bg-[#a6d1fd]/50 border border-[#a6d1fd]/60'
                       : 'text-[#2b1572] bg-slate-100 hover:bg-slate-200'
-                  }`}
+                    }`}
                 >
                   <Users className="w-3.5 h-3.5 text-[#2b1572]/70" />
                   <span>Thành viên {assignees.length > 0 && `(${assignees.length})`}</span>
@@ -1630,11 +1654,10 @@ export default function CardDetailModal({
                     setEditingLabel(null);
                     setLabelSearchQuery('');
                   }}
-                  className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer ${
-                    cardLabels.length > 0
+                  className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer ${cardLabels.length > 0
                       ? 'text-[#2b1572] bg-[#a6d1fd]/30 hover:bg-[#a6d1fd]/50 border border-[#a6d1fd]/60'
                       : 'text-[#2b1572] bg-slate-100 hover:bg-slate-200'
-                  }`}
+                    }`}
                 >
                   <Tag className="w-3.5 h-3.5 text-[#2b1572]/70" />
                   <span>Nhãn {cardLabels.length > 0 && `(${cardLabels.length})`}</span>
@@ -1655,11 +1678,10 @@ export default function CardDetailModal({
                 <button
                   type="button"
                   onClick={handleOpenDatesModal}
-                  className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer ${
-                    dueDate
+                  className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer ${dueDate
                       ? 'text-[#2b1572] bg-[#a6d1fd]/30 hover:bg-[#a6d1fd]/50 border border-[#a6d1fd]/60'
                       : 'text-[#2b1572] bg-slate-100 hover:bg-slate-200'
-                  }`}
+                    }`}
                 >
                   <Calendar className="w-3.5 h-3.5 text-[#2b1572]/70" />
                   <span>{dueDate ? 'Thời hạn' : 'Ngày hạn'}</span>
@@ -1672,11 +1694,10 @@ export default function CardDetailModal({
                     setAttachmentTab('upload');
                     setSelectedUploadFile(null);
                   }}
-                  className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer ${
-                    attachments.length > 0
+                  className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer ${attachments.length > 0
                       ? 'text-[#2b1572] bg-[#a6d1fd]/30 hover:bg-[#a6d1fd]/50 border border-[#a6d1fd]/60'
                       : 'text-[#2b1572] bg-slate-100 hover:bg-slate-200'
-                  }`}
+                    }`}
                 >
                   <Paperclip className="w-3.5 h-3.5 text-[#2b1572]/70" />
                   <span>Đính kèm {attachments.length > 0 && `(${attachments.length})`}</span>
@@ -1862,24 +1883,22 @@ export default function CardDetailModal({
               {/* Due Date quick status banner */}
               {dueDate && deadlineStatus && (
                 <div
-                  className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs transition-all ${
-                    isCompleted
+                  className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs transition-all ${isCompleted
                       ? 'bg-emerald-50/80 border-emerald-200'
                       : deadlineStatus.status === 'overdue'
-                      ? 'bg-rose-50/80 border-rose-200'
-                      : deadlineStatus.status === 'due_soon'
-                      ? 'bg-amber-50/80 border-amber-200'
-                      : 'bg-slate-50 border-slate-200'
-                  }`}
+                        ? 'bg-rose-50/80 border-rose-200'
+                        : deadlineStatus.status === 'due_soon'
+                          ? 'bg-amber-50/80 border-amber-200'
+                          : 'bg-slate-50 border-slate-200'
+                    }`}
                 >
                   <div className="flex items-start gap-3">
                     <button
                       onClick={handleToggleCompleted}
-                      className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center transition-all cursor-pointer shadow-2xs shrink-0 ${
-                        isCompleted
+                      className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center transition-all cursor-pointer shadow-2xs shrink-0 ${isCompleted
                           ? 'bg-emerald-600 text-white'
                           : 'border-2 border-slate-300 hover:border-[#2b1572] bg-white'
-                      }`}
+                        }`}
                       title={isCompleted ? 'Đánh dấu chưa hoàn thành' : 'Đánh dấu đã hoàn thành'}
                     >
                       {isCompleted && <Check className="w-3.5 h-3.5" />}
@@ -2150,9 +2169,8 @@ export default function CardDetailModal({
                           title={isCollapsed ? 'Mở rộng checklist' : 'Thu gọn checklist'}
                         >
                           <ChevronDown
-                            className={`w-4 h-4 transition-transform duration-200 ${
-                              isCollapsed ? '-rotate-90' : 'rotate-0'
-                            }`}
+                            className={`w-4 h-4 transition-transform duration-200 ${isCollapsed ? '-rotate-90' : 'rotate-0'
+                              }`}
                           />
                         </button>
 
@@ -2206,9 +2224,8 @@ export default function CardDetailModal({
                       </div>
                       <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
                         <div
-                          className={`h-full transition-all duration-300 rounded-full ${
-                            isAllDone ? 'bg-emerald-500' : 'bg-[#2b1572]'
-                          }`}
+                          className={`h-full transition-all duration-300 rounded-full ${isAllDone ? 'bg-emerald-500' : 'bg-[#2b1572]'
+                            }`}
                           style={{ width: `${progressPercent}%` }}
                         />
                       </div>
@@ -2228,11 +2245,10 @@ export default function CardDetailModal({
                                 onClick={() =>
                                   handleToggleChecklistItem(cl.id, item.id, item.is_completed)
                                 }
-                                className={`mt-0.5 w-4 h-4 rounded shrink-0 flex items-center justify-center transition-all cursor-pointer ${
-                                  item.is_completed
+                                className={`mt-0.5 w-4 h-4 rounded shrink-0 flex items-center justify-center transition-all cursor-pointer ${item.is_completed
                                     ? 'bg-emerald-600 text-white shadow-2xs'
                                     : 'border border-slate-300 hover:border-[#2b1572] bg-white'
-                                }`}
+                                  }`}
                               >
                                 {item.is_completed && <Check className="w-3 h-3" />}
                               </button>
@@ -2257,11 +2273,10 @@ export default function CardDetailModal({
                                       setEditingItemId(item.id);
                                       setEditingItemContent(item.content);
                                     }}
-                                    className={`text-xs leading-relaxed cursor-pointer break-words block ${
-                                      item.is_completed
+                                    className={`text-xs leading-relaxed cursor-pointer break-words block ${item.is_completed
                                         ? 'line-through text-slate-400'
                                         : 'text-slate-800 hover:text-[#2b1572]'
-                                    }`}
+                                      }`}
                                   >
                                     {item.content}
                                   </span>
@@ -2278,15 +2293,14 @@ export default function CardDetailModal({
                                           setActiveItemDate({ checklistId: cl.id, item });
                                           setTempItemDueDate(toLocalDatetimeString(item.due_date));
                                         }}
-                                        className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border transition-all cursor-pointer ${
-                                          item.is_completed
+                                        className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border transition-all cursor-pointer ${item.is_completed
                                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200 line-through'
                                             : new Date(item.due_date).getTime() < Date.now()
-                                            ? 'bg-rose-50 text-rose-700 border-rose-200 font-bold'
-                                            : new Date(item.due_date).getTime() - Date.now() < 24 * 60 * 60 * 1000
-                                            ? 'bg-amber-50 text-amber-800 border-amber-200'
-                                            : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
-                                        }`}
+                                              ? 'bg-rose-50 text-rose-700 border-rose-200 font-bold'
+                                              : new Date(item.due_date).getTime() - Date.now() < 24 * 60 * 60 * 1000
+                                                ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                                : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                                          }`}
                                         title="Bấm để chỉnh sửa thời hạn mục này"
                                       >
                                         <Clock className="w-2.5 h-2.5" />
@@ -2441,144 +2455,230 @@ export default function CardDetailModal({
                     <MessageSquare className="w-3.5 h-3.5" />
                   </div>
                   <span className="text-sm font-bold text-[#2b1572]">Hoạt động & Bình luận</span>
-                  {comments.length > 0 && (
-                    <span className="px-2 py-0.5 rounded-full bg-[#2b1572]/10 text-[#2b1572] text-[11px] font-bold">
-                      {comments.length}
-                    </span>
-                  )}
+                  <span className="px-2 py-0.5 rounded-full bg-[#2b1572]/10 text-[#2b1572] text-[11px] font-bold">
+                    {comments.length + activities.length}
+                  </span>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => cardId && fetchCardActivities(cardId)}
+                  disabled={isLoadingActivities}
+                  className="p-1 rounded-lg text-slate-400 hover:text-[#2b1572] hover:bg-slate-100 transition-colors cursor-pointer"
+                  title="Làm mới hoạt động"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingActivities ? 'animate-spin text-[#2b1572]' : ''}`} />
+                </button>
               </div>
 
-              {/* Top Comment Composer */}
-              <div className="p-3.5 sm:p-4 border-b border-slate-200 bg-white shrink-0">
-                <div className="flex items-start gap-2.5 relative">
-                  {/* Current User Avatar */}
-                  {currentUser?.avatar ? (
-                    <img
-                      src={currentUser.avatar}
-                      alt={currentUser.name || 'User'}
-                      className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5 ring-2 ring-[#a6d1fd]/40 shadow-2xs"
-                    />
-                  ) : (
-                    <div className="w-7 h-7 rounded-full bg-[#2b1572] text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 shadow-2xs">
-                      {(currentUser?.name || 'U').charAt(0).toUpperCase()}
-                    </div>
-                  )}
+              {/* Filter Tabs: Bình luận | Hoạt động */}
+              <div className="px-3.5 py-2 border-b border-slate-200 bg-slate-50/70 flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setActivityTab('comments')}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activityTab === 'comments'
+                      ? 'bg-[#2b1572] text-white shadow-xs'
+                      : 'text-slate-600 hover:bg-slate-200/70'
+                    }`}
+                >
+                  Bình luận ({comments.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActivityTab('activities')}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activityTab === 'activities'
+                      ? 'bg-[#2b1572] text-white shadow-xs'
+                      : 'text-slate-600 hover:bg-slate-200/70'
+                    }`}
+                >
+                  Hoạt động ({activities.length})
+                </button>
+              </div>
 
-                  {/* Composer Input Box */}
-                  <div className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl p-2.5 focus-within:border-[#2b1572] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#2b1572]/10 transition-all shadow-2xs relative">
-                    <textarea
-                      ref={commentInputRef}
-                      value={commentText}
-                      onChange={handleCommentChange}
-                      onKeyDown={handleCommentKeyDown}
-                      rows={commentText.length > 50 || isMentionOpen ? 3 : 2}
-                      placeholder="Viết bình luận... (Gõ @ để nhắc tên)"
-                      className="w-full text-xs text-[#2b1572] bg-transparent resize-none focus:outline-none placeholder:text-slate-400 leading-relaxed"
-                    />
-
-                    {/* Mention Autocomplete Dropdown */}
-                    {isMentionOpen && (
-                      <div className="absolute left-0 bottom-full mb-1 z-30 w-64 max-h-48 overflow-y-auto bg-white rounded-xl shadow-xl border border-[#2b1572]/20 p-1 space-y-0.5 animate-in zoom-in-95 duration-100">
-                        <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 flex items-center justify-between">
-                          <span>Nhắc tên thành viên</span>
-                          <span className="text-[9px] text-[#2b1572] font-semibold">Enter chèn</span>
-                        </div>
-                        {filteredMentionMembers.length === 0 ? (
-                          <div className="p-3 text-center text-xs text-slate-400">
-                            Không tìm thấy thành viên
-                          </div>
-                        ) : (
-                          filteredMentionMembers.map((m, idx) => {
-                            const isSelected = idx === selectedMentionIndex;
-                            const mName = m.user?.name || 'Thành viên';
-                            const mAvatar = m.user?.avatar;
-                            const mEmail = m.user?.email || '';
-
-                            return (
-                              <button
-                                key={m.id}
-                                type="button"
-                                onClick={() => handleSelectMention(mName)}
-                                className={`w-full p-1.5 rounded-lg flex items-center gap-2 text-left transition-colors cursor-pointer ${
-                                  isSelected
-                                    ? 'bg-[#a6d1fd]/40 text-[#2b1572]'
-                                    : 'hover:bg-slate-100 text-slate-700'
-                                }`}
-                              >
-                                {mAvatar ? (
-                                  <img
-                                    src={mAvatar}
-                                    alt={mName}
-                                    className="w-5 h-5 rounded-full object-cover shrink-0"
-                                  />
-                                ) : (
-                                  <div className="w-5 h-5 rounded-full bg-[#2b1572] text-white flex items-center justify-center text-[10px] font-bold shrink-0">
-                                    {mName.charAt(0).toUpperCase()}
-                                  </div>
-                                )}
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-xs font-bold truncate leading-tight">{mName}</div>
-                                  {mEmail && (
-                                    <div className="text-[10px] text-slate-400 truncate leading-tight">
-                                      {mEmail}
-                                    </div>
-                                  )}
-                                </div>
-                              </button>
-                            );
-                          })
-                        )}
+              {/* Top Comment Composer (Visible on 'comments' tab) */}
+              {activityTab === 'comments' && (
+                <div className="p-3.5 sm:p-4 border-b border-slate-200 bg-white shrink-0">
+                  <div className="flex items-start gap-2.5 relative">
+                    {/* Current User Avatar */}
+                    {currentUser?.avatar ? (
+                      <img
+                        src={currentUser.avatar}
+                        alt={currentUser.name || 'User'}
+                        className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5 ring-2 ring-[#a6d1fd]/40 shadow-2xs"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-[#2b1572] text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 shadow-2xs">
+                        {(currentUser?.name || 'U').charAt(0).toUpperCase()}
                       </div>
                     )}
 
-                    {/* Composer Toolbar & Submit */}
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 mt-1">
-                      <span className="text-[10px] text-slate-400 select-none">
-                        Gõ <kbd className="px-1 py-0.5 bg-slate-100 text-[#2b1572] font-mono rounded text-[9px] font-bold">@</kbd> để nhắc tên
-                      </span>
+                    {/* Composer Input Box */}
+                    <div className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl p-2.5 focus-within:border-[#2b1572] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#2b1572]/10 transition-all shadow-2xs relative">
+                      <textarea
+                        ref={commentInputRef}
+                        value={commentText}
+                        onChange={handleCommentChange}
+                        onKeyDown={handleCommentKeyDown}
+                        rows={commentText.length > 50 || isMentionOpen ? 3 : 2}
+                        placeholder="Viết bình luận... (Gõ @ để nhắc tên)"
+                        className="w-full text-xs text-[#2b1572] bg-transparent resize-none focus:outline-none placeholder:text-slate-400 leading-relaxed"
+                      />
 
-                      <button
-                        type="button"
-                        onClick={handleSubmitComment}
-                        disabled={!commentText.trim() || isSubmittingComment}
-                        className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] disabled:opacity-40 rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
-                      >
-                        {isSubmittingComment ? (
-                          <span>Đang gửi...</span>
-                        ) : (
-                          <>
-                            <span>Gửi</span>
-                            <Send className="w-3 h-3" />
-                          </>
-                        )}
-                      </button>
+                      {/* Mention Autocomplete Dropdown */}
+                      {isMentionOpen && (
+                        <div className="absolute left-0 bottom-full mb-1 z-30 w-64 max-h-48 overflow-y-auto bg-white rounded-xl shadow-xl border border-[#2b1572]/20 p-1 space-y-0.5 animate-in zoom-in-95 duration-100">
+                          <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 flex items-center justify-between">
+                            <span>Nhắc tên thành viên</span>
+                            <span className="text-[9px] text-[#2b1572] font-semibold">Enter chèn</span>
+                          </div>
+                          {filteredMentionMembers.length === 0 ? (
+                            <div className="p-3 text-center text-xs text-slate-400">
+                              Không tìm thấy thành viên
+                            </div>
+                          ) : (
+                            filteredMentionMembers.map((m, idx) => {
+                              const isSelected = idx === selectedMentionIndex;
+                              const mName = m.user?.name || 'Thành viên';
+                              const mAvatar = m.user?.avatar;
+                              const mEmail = m.user?.email || '';
+
+                              return (
+                                <button
+                                  key={m.id}
+                                  type="button"
+                                  onClick={() => handleSelectMention(mName)}
+                                  className={`w-full p-1.5 rounded-lg flex items-center gap-2 text-left transition-colors cursor-pointer ${isSelected
+                                      ? 'bg-[#a6d1fd]/40 text-[#2b1572]'
+                                      : 'hover:bg-slate-100 text-slate-700'
+                                    }`}
+                                >
+                                  {mAvatar ? (
+                                    <img
+                                      src={mAvatar}
+                                      alt={mName}
+                                      className="w-5 h-5 rounded-full object-cover shrink-0"
+                                    />
+                                  ) : (
+                                    <div className="w-5 h-5 rounded-full bg-[#2b1572] text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                                      {mName.charAt(0).toUpperCase()}
+                                    </div>
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-xs font-bold truncate leading-tight">{mName}</div>
+                                    {mEmail && (
+                                      <div className="text-[10px] text-slate-400 truncate leading-tight">
+                                        {mEmail}
+                                      </div>
+                                    )}
+                                  </div>
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
+                      )}
+
+                      {/* Composer Toolbar & Submit */}
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 mt-1">
+                        <span className="text-[10px] text-slate-400 select-none">
+                          Gõ <kbd className="px-1 py-0.5 bg-slate-100 text-[#2b1572] font-mono rounded text-[9px] font-bold">@</kbd> để nhắc tên
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={handleSubmitComment}
+                          disabled={!commentText.trim() || isSubmittingComment}
+                          className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] disabled:opacity-40 rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+                        >
+                          {isSubmittingComment ? (
+                            <span>Đang gửi...</span>
+                          ) : (
+                            <>
+                              <span>Gửi</span>
+                              <Send className="w-3 h-3" />
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Scrollable Comments List */}
+              {/* Scrollable Feed List */}
               <div className="flex-1 overflow-y-auto p-3.5 sm:p-4 space-y-3 min-h-0">
-                {comments.length === 0 ? (
-                  <div className="py-10 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-2 bg-white/70 rounded-2xl border border-dashed border-slate-200 p-4">
-                    <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
-                      <MessageCircle className="w-4 h-4" />
-                    </div>
-                    <span className="font-semibold text-slate-600">Chưa có bình luận nào</span>
-                    <span className="text-[11px] text-slate-400 max-w-[200px]">
-                      Gõ @ để nhắc tên đồng nghiệp và thảo luận tại đây.
-                    </span>
-                  </div>
-                ) : (
-                  comments.map((cmt) => {
+                {(() => {
+                  const sortedComments = [...comments].sort(
+                    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+                  );
+
+                  const getActivityActionIcon = (action: string) => {
+                    if (action.includes('bình luận')) {
+                      return <MessageSquare className="w-3.5 h-3.5 text-blue-500 shrink-0" />;
+                    }
+                    if (action.includes('đính kèm')) {
+                      return <Paperclip className="w-3.5 h-3.5 text-amber-500 shrink-0" />;
+                    }
+                    if (action.includes('hoàn thành')) {
+                      return <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />;
+                    }
+                    if (action.includes('danh sách') || action.includes('việc cần làm')) {
+                      return <CheckSquare className="w-3.5 h-3.5 text-indigo-500 shrink-0" />;
+                    }
+                    if (action.includes('hạn chót') || action.includes('ngày')) {
+                      return <Clock className="w-3.5 h-3.5 text-rose-500 shrink-0" />;
+                    }
+                    if (action.includes('nhãn')) {
+                      return <Tag className="w-3.5 h-3.5 text-violet-500 shrink-0" />;
+                    }
+                    if (action.includes('thành viên') || action.includes('phụ trách')) {
+                      return <Users className="w-3.5 h-3.5 text-blue-600 shrink-0" />;
+                    }
+                    return <History className="w-3.5 h-3.5 text-[#2b1572] shrink-0" />;
+                  };
+
+                  const renderActivityBlock = (act: ActivityItem) => {
+                    const actorName = act.user?.name || 'Người dùng';
+                    const actorAvatar = act.user?.avatar;
+
+                    return (
+                      <div key={`act-${act.id}`} className="flex items-start gap-2.5 group animate-in fade-in duration-150">
+                        {actorAvatar ? (
+                          <img
+                            src={actorAvatar}
+                            alt={actorName}
+                            className="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5 shadow-2xs"
+                          />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-slate-200 text-[#2b1572] flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 shadow-2xs">
+                            {actorName.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0 bg-slate-100/80 hover:bg-slate-100 rounded-xl p-2.5 border border-slate-200/80 transition-colors shadow-2xs">
+                          <div className="flex items-center justify-between gap-1.5 mb-1">
+                            <span className="text-xs font-bold text-[#2b1572] truncate">
+                              {actorName}
+                            </span>
+                            <span className="text-[10px] text-slate-400 shrink-0" title={act.created_at}>
+                              {formatRelativeTime(act.created_at)}
+                            </span>
+                          </div>
+                          <div className="text-xs text-slate-600 flex items-start gap-1.5 break-words leading-relaxed">
+                            <span className="mt-0.5 shrink-0">{getActivityActionIcon(act.action)}</span>
+                            <span>{act.action}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  };
+
+                  const renderCommentBlock = (cmt: CardComment) => {
                     const isAuthor = currentUser?.id === cmt.user_id;
                     const authorName = cmt.user?.name || 'Người dùng';
                     const authorAvatar = cmt.user?.avatar;
                     const isEditing = editingCommentId === cmt.id;
 
                     return (
-                      <div key={cmt.id} className="flex items-start gap-2.5 group animate-in fade-in duration-150">
+                      <div key={`cmt-${cmt.id}`} className="flex items-start gap-2.5 group animate-in fade-in duration-150">
                         {/* Author Avatar */}
                         {authorAvatar ? (
                           <img
@@ -2667,11 +2767,10 @@ export default function CardDetailModal({
                                           key={m.id}
                                           type="button"
                                           onClick={() => handleSelectEditMention(mName)}
-                                          className={`w-full p-1.5 rounded-lg flex items-center gap-1.5 text-left transition-colors cursor-pointer ${
-                                            isSelected
+                                          className={`w-full p-1.5 rounded-lg flex items-center gap-1.5 text-left transition-colors cursor-pointer ${isSelected
                                               ? 'bg-[#a6d1fd]/40 text-[#2b1572]'
                                               : 'hover:bg-slate-100 text-slate-700'
-                                          }`}
+                                            }`}
                                         >
                                           {mAvatar ? (
                                             <img
@@ -2718,8 +2817,41 @@ export default function CardDetailModal({
                         </div>
                       </div>
                     );
-                  })
-                )}
+                  };
+
+                  if (activityTab === 'activities') {
+                    if (activities.length === 0) {
+                      return (
+                        <div className="py-10 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-2 bg-white/70 rounded-2xl border border-dashed border-slate-200 p-4">
+                          <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                            <History className="w-4 h-4" />
+                          </div>
+                          <span className="font-semibold text-slate-600">Chưa có hoạt động nào</span>
+                          <span className="text-[11px] text-slate-400 max-w-[200px]">
+                            Các thay đổi trên thẻ sẽ được tự động ghi lại tại đây.
+                          </span>
+                        </div>
+                      );
+                    }
+                    return activities.map((act) => renderActivityBlock(act));
+                  }
+
+                  // Default: 'comments'
+                  if (sortedComments.length === 0) {
+                    return (
+                      <div className="py-10 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-2 bg-white/70 rounded-2xl border border-dashed border-slate-200 p-4">
+                        <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                          <MessageCircle className="w-4 h-4" />
+                        </div>
+                        <span className="font-semibold text-slate-600">Chưa có bình luận nào</span>
+                        <span className="text-[11px] text-slate-400 max-w-[200px]">
+                          Gõ @ để nhắc tên đồng nghiệp và thảo luận tại đây.
+                        </span>
+                      </div>
+                    );
+                  }
+                  return sortedComments.map((cmt) => renderCommentBlock(cmt));
+                })()}
               </div>
             </div>
           </div>
@@ -2795,8 +2927,8 @@ export default function CardDetailModal({
                       m.role === 'ADMIN'
                         ? 'Quản trị'
                         : m.role === 'VIEWER'
-                        ? 'Người xem'
-                        : 'Thành viên';
+                          ? 'Người xem'
+                          : 'Thành viên';
 
                     return (
                       <button
@@ -2833,11 +2965,10 @@ export default function CardDetailModal({
                         </div>
 
                         <div
-                          className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
-                            isAssigned
+                          className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${isAssigned
                               ? 'bg-[#2b1572] text-white'
                               : 'border border-slate-200 group-hover:border-[#2b1572]/40'
-                          }`}
+                            }`}
                         >
                           {isAssigned && <Check className="w-3.5 h-3.5" />}
                         </div>
@@ -3068,9 +3199,8 @@ export default function CardDetailModal({
                             type="button"
                             onClick={() => setFormLabelColor(item.color)}
                             title={item.name}
-                            className={`h-8 rounded-lg transition-all cursor-pointer flex items-center justify-center shadow-2xs ${
-                              isSelected ? 'ring-2 ring-offset-2 ring-[#2b1572] scale-105' : 'hover:scale-105'
-                            }`}
+                            className={`h-8 rounded-lg transition-all cursor-pointer flex items-center justify-center shadow-2xs ${isSelected ? 'ring-2 ring-offset-2 ring-[#2b1572] scale-105' : 'hover:scale-105'
+                              }`}
                             style={{ backgroundColor: item.color }}
                           >
                             {isSelected && <Check className="w-4 h-4 text-white" />}
@@ -3151,11 +3281,10 @@ export default function CardDetailModal({
                               </div>
 
                               <div
-                                className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-all ${
-                                  isAssigned
+                                className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-all ${isAssigned
                                     ? 'bg-[#2b1572] text-white'
                                     : 'border border-slate-200 group-hover:border-[#2b1572]/40'
-                                }`}
+                                  }`}
                               >
                                 {isAssigned && <Check className="w-3.5 h-3.5" />}
                               </div>
@@ -3402,11 +3531,10 @@ export default function CardDetailModal({
                         </div>
 
                         <div
-                          className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
-                            isAssigned
+                          className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${isAssigned
                               ? 'bg-[#2b1572] text-white'
                               : 'border border-slate-200 group-hover:border-[#2b1572]/40'
-                          }`}
+                            }`}
                         >
                           {isAssigned && <Check className="w-3.5 h-3.5" />}
                         </div>
@@ -3469,22 +3597,20 @@ export default function CardDetailModal({
                 <button
                   type="button"
                   onClick={() => setAttachmentTab('upload')}
-                  className={`flex-1 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                    attachmentTab === 'upload'
+                  className={`flex-1 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${attachmentTab === 'upload'
                       ? 'bg-white text-[#2b1572] shadow-2xs'
                       : 'text-slate-500 hover:text-slate-800'
-                  }`}
+                    }`}
                 >
                   Tải tệp từ máy tính
                 </button>
                 <button
                   type="button"
                   onClick={() => setAttachmentTab('link')}
-                  className={`flex-1 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                    attachmentTab === 'link'
+                  className={`flex-1 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${attachmentTab === 'link'
                       ? 'bg-white text-[#2b1572] shadow-2xs'
                       : 'text-slate-500 hover:text-slate-800'
-                  }`}
+                    }`}
                 >
                   Đính kèm liên kết
                 </button>

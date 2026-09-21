@@ -7,10 +7,14 @@ import {
 import { SupabaseService } from '../../integrations/supabase/supabase.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
+import { ActivitiesService } from '../activities/activities.service';
 
 @Injectable()
 export class CommentsService {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly activitiesService: ActivitiesService,
+  ) {}
 
   private async verifyBoardAccess(boardId: string, userId: string) {
     const { data: board, error } = await this.supabase
@@ -57,11 +61,13 @@ export class CommentsService {
     }
 
     const boardId = (card.list as any)?.board_id;
+    let workspaceId = '';
     if (boardId) {
-      await this.verifyBoardAccess(boardId, userId);
+      const b = await this.verifyBoardAccess(boardId, userId);
+      workspaceId = b.workspace_id;
     }
 
-    return { card, boardId };
+    return { card, boardId, workspaceId };
   }
 
   // Lấy tất cả bình luận của 1 thẻ
@@ -117,6 +123,16 @@ export class CommentsService {
 
     if (error || !comment) {
       throw new BadRequestException(error?.message || 'Không thể tạo bình luận');
+    }
+
+    const { workspaceId } = await this.verifyCardAccess(cardId, userId);
+    if (workspaceId) {
+      await this.activitiesService.logActivity({
+        workspaceId,
+        userId,
+        action: 'đã bình luận về thẻ này',
+        targetType: `card:${cardId}`,
+      });
     }
 
     // 2. Xử lý @mention và tạo notifications nếu có

@@ -13,10 +13,14 @@ import { AddMemberDto } from './dto/add-member.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 import { InviteMemberDto } from './dto/invite-member.dto';
 import { TransferOwnershipDto } from './dto/transfer-ownership.dto';
+import { ActivitiesService } from '../activities/activities.service';
 
 @Injectable()
 export class WorkspacesService {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly activitiesService: ActivitiesService,
+  ) {}
 
   async create(userId: string, dto: CreateWorkspaceDto) {
     // 1. Tạo workspace
@@ -46,6 +50,13 @@ export class WorkspacesService {
     if (memberError) {
       throw new BadRequestException(memberError.message);
     }
+
+    await this.activitiesService.logActivity({
+      workspaceId: workspace.id,
+      userId,
+      action: `đã tạo Không gian làm việc "${workspace.name}"`,
+      targetType: `workspace:${workspace.id}`,
+    });
 
     return this.findById(workspace.id, userId);
   }
@@ -167,6 +178,13 @@ export class WorkspacesService {
       throw new BadRequestException(error?.message || 'Không thể cập nhật Workspace');
     }
 
+    await this.activitiesService.logActivity({
+      workspaceId,
+      userId,
+      action: `đã cập nhật thông tin Không gian làm việc`,
+      targetType: `workspace:${workspaceId}`,
+    });
+
     return updated;
   }
 
@@ -247,6 +265,13 @@ export class WorkspacesService {
       throw new BadRequestException(error.message);
     }
 
+    await this.activitiesService.logActivity({
+      workspaceId,
+      userId: currentUserId,
+      action: `đã đổi vai trò thành viên thành ${dto.role}`,
+      targetType: `workspace:${workspaceId}`,
+    });
+
     return updated;
   }
 
@@ -299,6 +324,13 @@ export class WorkspacesService {
       .eq('workspace_id', workspaceId)
       .eq('user_id', dto.newOwnerId);
 
+    await this.activitiesService.logActivity({
+      workspaceId,
+      userId: currentUserId,
+      action: `đã chuyển quyền Chủ sở hữu Không gian làm việc`,
+      targetType: `workspace:${workspaceId}`,
+    });
+
     return this.findById(workspaceId, currentUserId);
   }
 
@@ -331,6 +363,13 @@ export class WorkspacesService {
     if (error) {
       throw new BadRequestException(error.message);
     }
+
+    await this.activitiesService.logActivity({
+      workspaceId,
+      userId: currentUserId,
+      action: `đã rời khỏi Không gian làm việc`,
+      targetType: `workspace:${workspaceId}`,
+    });
 
     return { message: 'Bạn đã rời khỏi Workspace thành công' };
   }
@@ -378,6 +417,13 @@ export class WorkspacesService {
     if (error) {
       throw new BadRequestException(error.message);
     }
+
+    await this.activitiesService.logActivity({
+      workspaceId,
+      userId: currentUserId,
+      action: `đã thêm thành viên "${targetUser.name || targetUser.email}" vào Không gian làm việc`,
+      targetType: `workspace:${workspaceId}`,
+    });
 
     return newMember;
   }
@@ -469,6 +515,13 @@ export class WorkspacesService {
     if (error || !invite) {
       throw new BadRequestException(error?.message || 'Không thể tạo lời mời');
     }
+
+    await this.activitiesService.logActivity({
+      workspaceId,
+      userId: currentUserId,
+      action: `đã gửi lời mời tham gia tới ${normalizedEmail}`,
+      targetType: `workspace:${workspaceId}`,
+    });
 
     return {
       type: 'INVITE_CREATED',

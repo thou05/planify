@@ -16,6 +16,8 @@ import { AttachmentsService } from './attachments.service';
 import { CreateLinkAttachmentDto } from './dto/create-link-attachment.dto';
 import { UpdateAttachmentDto } from './dto/update-attachment.dto';
 
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+
 @Controller()
 @UseGuards(JwtAuthGuard)
 export class AttachmentsController {
@@ -31,16 +33,18 @@ export class AttachmentsController {
   async uploadFile(
     @Param('cardId') cardId: string,
     @UploadedFile() file: Express.Multer.File,
+    @CurrentUser('id') userId: string,
   ) {
-    return this.attachmentsService.uploadFile(cardId, file);
+    return this.attachmentsService.uploadFile(cardId, file, userId);
   }
 
   @Post('cards/:cardId/attachments/link')
   async createLink(
     @Param('cardId') cardId: string,
     @Body() dto: CreateLinkAttachmentDto,
+    @CurrentUser('id') userId: string,
   ) {
-    return this.attachmentsService.createLink(cardId, dto);
+    return this.attachmentsService.createLink(cardId, dto, userId);
   }
 
   @Patch('attachments/:id')
@@ -52,7 +56,10 @@ export class AttachmentsController {
   }
 
   @Delete('attachments/:id')
-  async delete(@Param('id') id: string) {
-    return this.attachmentsService.delete(id);
+  async delete(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.attachmentsService.delete(id, userId);
   }
 }

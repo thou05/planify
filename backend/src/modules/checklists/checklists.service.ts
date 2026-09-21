@@ -9,10 +9,14 @@ import { CreateChecklistDto } from './dto/create-checklist.dto';
 import { UpdateChecklistDto } from './dto/update-checklist.dto';
 import { CreateChecklistItemDto } from './dto/create-checklist-item.dto';
 import { UpdateChecklistItemDto } from './dto/update-checklist-item.dto';
+import { ActivitiesService } from '../activities/activities.service';
 
 @Injectable()
 export class ChecklistsService {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly activitiesService: ActivitiesService,
+  ) {}
 
   private async verifyCardAccess(cardId: string, userId: string) {
     const { data: card, error: cError } = await this.supabase
@@ -47,6 +51,8 @@ export class ChecklistsService {
         }
       }
     }
+
+    return { card, workspaceId };
   }
 
   // --- CHECKLIST OPERATIONS ---
@@ -78,6 +84,16 @@ export class ChecklistsService {
 
     if (error || !checklist) {
       throw new BadRequestException(error?.message || 'Không thể tạo danh sách việc cần làm');
+    }
+
+    const { workspaceId } = await this.verifyCardAccess(cardId, userId);
+    if (workspaceId) {
+      await this.activitiesService.logActivity({
+        workspaceId,
+        userId,
+        action: `đã thêm danh sách "${checklist.title}"`,
+        targetType: `card:${cardId}`,
+      });
     }
 
     return { ...checklist, items: [] };
@@ -268,6 +284,18 @@ export class ChecklistsService {
 
     if (error || !updated) {
       throw new BadRequestException(error?.message || 'Không thể cập nhật mục công việc');
+    }
+
+    if (cardId && dto.is_completed !== undefined) {
+      const { workspaceId } = await this.verifyCardAccess(cardId, userId);
+      if (workspaceId) {
+        await this.activitiesService.logActivity({
+          workspaceId,
+          userId,
+          action: dto.is_completed ? `đã hoàn thành "${updated.content || 'công việc'}"` : `đã mở lại "${updated.content || 'công việc'}"`,
+          targetType: `card:${cardId}`,
+        });
+      }
     }
 
     return updated;

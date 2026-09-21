@@ -18,12 +18,17 @@ export interface UploadedFileType {
   buffer: Buffer;
 }
 
+import { ActivitiesService } from '../activities/activities.service';
+
 @Injectable()
 export class AttachmentsService {
   private readonly logger = new Logger(AttachmentsService.name);
   private bucketChecked = false;
 
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly activitiesService: ActivitiesService,
+  ) {}
 
   private async ensureBucket() {
     if (this.bucketChecked) return;
@@ -56,7 +61,7 @@ export class AttachmentsService {
     return data || [];
   }
 
-  async uploadFile(cardId: string, file: UploadedFileType) {
+  async uploadFile(cardId: string, file: UploadedFileType, userId?: string) {
     if (!file || !file.originalname || !file.buffer) {
       throw new BadRequestException('Vui lòng chọn tệp tin hợp lệ để tải lên');
     }
@@ -107,10 +112,23 @@ export class AttachmentsService {
       throw new InternalServerErrorException('Không thể lưu thông tin đính kèm');
     }
 
+    if (userId) {
+      const { data: c } = await this.supabase.from('cards').select('list:lists(board:boards(workspace_id))').eq('id', cardId).maybeSingle();
+      const wsId = (c?.list as any)?.board?.workspace_id;
+      if (wsId) {
+        await this.activitiesService.logActivity({
+          workspaceId: wsId,
+          userId,
+          action: `đã đính kèm tệp "${file.originalname}"`,
+          targetType: `card:${cardId}`,
+        });
+      }
+    }
+
     return data;
   }
 
-  async createLink(cardId: string, dto: CreateLinkAttachmentDto) {
+  async createLink(cardId: string, dto: CreateLinkAttachmentDto, userId?: string) {
     let url = dto.file_url.trim();
     if (!/^https?:\/\//i.test(url)) {
       url = `https://${url}`;
@@ -130,6 +148,19 @@ export class AttachmentsService {
     if (error) {
       this.logger.error(`Error inserting link attachment: ${error.message}`);
       throw new InternalServerErrorException('Không thể tạo đính kèm liên kết');
+    }
+
+    if (userId) {
+      const { data: c } = await this.supabase.from('cards').select('list:lists(board:boards(workspace_id))').eq('id', cardId).maybeSingle();
+      const wsId = (c?.list as any)?.board?.workspace_id;
+      if (wsId) {
+        await this.activitiesService.logActivity({
+          workspaceId: wsId,
+          userId,
+          action: `đã đính kèm liên kết "${dto.file_name.trim()}"`,
+          targetType: `card:${cardId}`,
+        });
+      }
     }
 
     return data;
@@ -153,7 +184,7 @@ export class AttachmentsService {
     return data;
   }
 
-  async delete(id: string) {
+  async delete(id: string, userId?: string) {
     const { data: att } = await this.supabase
       .from('attachments')
       .select('*')
@@ -162,6 +193,19 @@ export class AttachmentsService {
 
     if (!att) {
       return { success: true };
+    }
+
+    if (userId && att.card_id) {
+      const { data: c } = await this.supabase.from('cards').select('list:lists(board:boards(workspace_id))').eq('id', att.card_id).maybeSingle();
+      const wsId = (c?.list as any)?.board?.workspace_id;
+      if (wsId) {
+        await this.activitiesService.logActivity({
+          workspaceId: wsId,
+          userId,
+          action: `đã xóa tệp đính kèm "${att.file_name || 'tệp'}"`,
+          targetType: `card:${att.card_id}`,
+        });
+      }
     }
 
     if (att.file_url && att.file_url.includes('/attachments/')) {

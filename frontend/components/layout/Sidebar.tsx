@@ -13,7 +13,9 @@ import {
   ChevronDown,
   Layers,
   Sparkles,
+  History,
 } from 'lucide-react';
+import MyActivityModal from '@/components/modals/MyActivityModal';
 
 export interface WorkspaceItem {
   id: string;
@@ -39,99 +41,109 @@ export default function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
   const [isWsDropdownOpen, setIsWsDropdownOpen] = useState(false);
+  const [isMyActivityOpen, setIsMyActivityOpen] = useState(false);
 
   const currentWorkspace = workspaces.find((w) => w.id === currentWorkspaceId) || workspaces[0];
 
   return (
-    <aside className="w-64 h-full flex flex-col glass-surface !rounded-r-2xl !rounded-l-none border-r border-white/40 p-4 shrink-0 select-none">
-      {/* Workspace Switcher */}
-      <div className="relative mb-6">
-        <button
-          onClick={() => setIsWsDropdownOpen(!isWsDropdownOpen)}
-          className="w-full flex items-center justify-between p-2.5 rounded-xl bg-white/40 hover:bg-white/60 border border-white/50 transition-all text-left group"
-        >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-[#2b1572] flex items-center justify-center text-[#a6d1fd] shrink-0 font-bold text-sm shadow-sm">
-              {currentWorkspace ? currentWorkspace.name.charAt(0).toUpperCase() : 'W'}
-            </div>
-            <div className="min-w-0">
-              <div className="text-xs text-[#2b1572]/60 font-medium">Workspace</div>
-              <div className="text-sm font-bold text-[#2b1572] truncate">
-                {currentWorkspace ? currentWorkspace.name : 'Chọn Workspace'}
+    <>
+      <aside className="w-64 h-full flex flex-col glass-surface !rounded-r-2xl !rounded-l-none border-r border-white/40 p-4 shrink-0 select-none">
+        {/* Workspace Switcher */}
+        <div className="relative mb-6">
+          <button
+            onClick={() => setIsWsDropdownOpen(!isWsDropdownOpen)}
+            className="w-full flex items-center justify-between p-2.5 rounded-xl bg-white/40 hover:bg-white/60 border border-white/50 transition-all text-left group"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-[#2b1572] flex items-center justify-center text-[#a6d1fd] shrink-0 font-bold text-sm shadow-sm">
+                {currentWorkspace ? currentWorkspace.name.charAt(0).toUpperCase() : 'W'}
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs text-[#2b1572]/60 font-medium">Workspace</div>
+                <div className="text-sm font-bold text-[#2b1572] truncate">
+                  {currentWorkspace ? currentWorkspace.name : 'Chọn Workspace'}
+                </div>
               </div>
             </div>
-          </div>
-          <ChevronDown className="w-4 h-4 text-[#2b1572]/60 group-hover:text-[#2b1572] shrink-0 transition-transform" />
-        </button>
+            <ChevronDown className="w-4 h-4 text-[#2b1572]/60 group-hover:text-[#2b1572] shrink-0 transition-transform" />
+          </button>
 
-        {/* Dropdown Menu */}
-        {isWsDropdownOpen && (
-          <div className="absolute top-full left-0 right-0 mt-2 p-2 glass-strong z-50 shadow-xl border border-white/70">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-[#2b1572]/60 px-2 py-1">
-              Danh sách Không gian làm việc
+          {/* Dropdown Menu */}
+          {isWsDropdownOpen && (
+            <div className="absolute top-full left-0 right-0 mt-2 p-2 glass-strong z-50 shadow-xl border border-white/70">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-[#2b1572]/60 px-2 py-1">
+                Danh sách Không gian làm việc
+              </div>
+              <div className="max-h-48 overflow-y-auto space-y-1 my-1">
+                {workspaces.map((ws) => (
+                  <button
+                    key={ws.id}
+                    onClick={() => {
+                      onSelectWorkspace?.(ws.id);
+                      setIsWsDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors ${
+                      ws.id === currentWorkspace?.id
+                        ? 'bg-[#a6d1fd]/50 text-[#2b1572]'
+                        : 'hover:bg-white/50 text-[#2b1572]/80'
+                    }`}
+                  >
+                    <Layers className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">{ws.name}</span>
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => {
+                  setIsWsDropdownOpen(false);
+                  onOpenCreateWorkspace();
+                }}
+                className="w-full mt-1 pt-2 border-t border-[#2b1572]/10 flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-[#2b1572] hover:bg-white/50 rounded-lg transition-colors cursor-pointer"
+              >
+                <Plus className="w-4 h-4 text-[#2b1572]" />
+                <span>Tạo Workspace mới</span>
+              </button>
             </div>
-            <div className="max-h-48 overflow-y-auto space-y-1 my-1">
-              {workspaces.map((ws) => (
-                <button
-                  key={ws.id}
-                  onClick={() => {
-                    onSelectWorkspace?.(ws.id);
-                    setIsWsDropdownOpen(false);
-                  }}
-                  className={`w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors ${
-                    ws.id === currentWorkspace?.id
-                      ? 'bg-[#a6d1fd]/50 text-[#2b1572]'
-                      : 'hover:bg-white/50 text-[#2b1572]/80'
-                  }`}
-                >
-                  <Layers className="w-3.5 h-3.5 shrink-0" />
-                  <span className="truncate">{ws.name}</span>
-                </button>
-              ))}
-            </div>
+          )}
+        </div>
 
-            <button
-              onClick={() => {
-                setIsWsDropdownOpen(false);
-                onOpenCreateWorkspace();
-              }}
-              className="w-full mt-1 pt-2 border-t border-[#2b1572]/10 flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-[#2b1572] hover:bg-white/50 rounded-lg transition-colors cursor-pointer"
-            >
-              <Plus className="w-4 h-4 text-[#2b1572]" />
-              <span>Tạo Workspace mới</span>
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Main Navigation */}
-      <div className="space-y-1 mb-6">
-        <Link
-          href="/dashboard"
-          className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${
-            pathname === '/dashboard'
-              ? 'bg-[#a6d1fd]/40 text-[#2b1572] shadow-sm border border-white/40'
-              : 'text-[#2b1572]/70 hover:bg-white/40 hover:text-[#2b1572]'
-          }`}
-        >
-          <LayoutDashboard className="w-4 h-4" />
-          <span>Tổng quan</span>
-        </Link>
-
-        {currentWorkspace && (
+        {/* Main Navigation */}
+        <div className="space-y-1 mb-6">
           <Link
-            href={`/workspaces/${currentWorkspace.id}`}
+            href="/dashboard"
             className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${
-              pathname === `/workspaces/${currentWorkspace.id}`
+              pathname === '/dashboard'
                 ? 'bg-[#a6d1fd]/40 text-[#2b1572] shadow-sm border border-white/40'
                 : 'text-[#2b1572]/70 hover:bg-white/40 hover:text-[#2b1572]'
             }`}
           >
-            <Users className="w-4 h-4" />
-            <span>Thành viên & Cài đặt</span>
+            <LayoutDashboard className="w-4 h-4" />
+            <span>Tổng quan</span>
           </Link>
-        )}
-      </div>
+
+          {currentWorkspace && (
+            <Link
+              href={`/workspaces/${currentWorkspace.id}`}
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${
+                pathname === `/workspaces/${currentWorkspace.id}`
+                  ? 'bg-[#a6d1fd]/40 text-[#2b1572] shadow-sm border border-white/40'
+                  : 'text-[#2b1572]/70 hover:bg-white/40 hover:text-[#2b1572]'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              <span>Thành viên & Cài đặt</span>
+            </Link>
+          )}
+
+          <button
+            onClick={() => setIsMyActivityOpen(true)}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold text-[#2b1572]/70 hover:bg-white/40 hover:text-[#2b1572] transition-all cursor-pointer text-left"
+          >
+            <History className="w-4 h-4" />
+            <span>Hoạt động của tôi</span>
+          </button>
+        </div>
 
       {/* Boards Section */}
       <div className="flex-1 flex flex-col min-h-0">
@@ -193,5 +205,11 @@ export default function Sidebar({
         </p>
       </div>
     </aside>
+
+    <MyActivityModal
+      isOpen={isMyActivityOpen}
+      onClose={() => setIsMyActivityOpen(false)}
+    />
+  </>
   );
 }
