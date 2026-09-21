@@ -13,8 +13,28 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
 
   // CORS
+  const configuredOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: (origin, callback) => {
+      // Cho phép requests không có origin (curl, postman, mobile apps, uptime bots)
+      if (!origin) return callback(null, true);
+
+      // Nếu chứa dấu '*' hoặc origin có trong danh sách cho phép
+      if (configuredOrigins.includes('*') || configuredOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      // Cho phép tất cả subdomain vercel.app (cho cả production và preview branch)
+      if (origin.endsWith('.vercel.app')) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`Origin ${origin} not allowed by CORS`), false);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
@@ -50,8 +70,8 @@ async function bootstrap() {
   });
 
   const port = process.env.PORT || 4000;
-  await app.listen(port);
-  logger.log(`🚀 Planify Backend server running on: http://localhost:${port}/api/v1`);
+  await app.listen(port, '0.0.0.0');
+  logger.log(`🚀 Planify Backend server running on: http://0.0.0.0:${port}/api/v1`);
   logger.log(`📚 Swagger documentation available at: http://localhost:${port}/api/docs`);
 }
 
