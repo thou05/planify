@@ -10,6 +10,7 @@ import { BoardsModule } from './modules/boards/boards.module';
 import { ListsModule } from './modules/lists/lists.module';
 import { CardsModule } from './modules/cards/cards.module';
 import { ChecklistsModule } from './modules/checklists/checklists.module';
+import { LabelsModule } from './modules/labels/labels.module';
 
 @Module({
   imports: [
@@ -25,8 +26,10 @@ import { ChecklistsModule } from './modules/checklists/checklists.module';
     ListsModule,
     CardsModule,
     ChecklistsModule,
+    LabelsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}
+

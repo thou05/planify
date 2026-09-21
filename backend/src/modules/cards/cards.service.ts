@@ -177,8 +177,8 @@ export class CardsService {
     }
 
     const updateData: Record<string, any> = {};
-    if (dto.title !== undefined) updateData.title = dto.title.trim();
-    if (dto.description !== undefined) updateData.description = dto.description.trim();
+    if (dto.title !== undefined) updateData.title = dto.title ? dto.title.trim() : dto.title;
+    if (dto.description !== undefined) updateData.description = dto.description ? dto.description.trim() : null;
     if (dto.position !== undefined) updateData.position = dto.position;
     if (dto.status !== undefined) updateData.status = dto.status;
     if (dto.start_date !== undefined) updateData.start_date = dto.start_date;

@@ -258,7 +258,7 @@ export class BoardsService {
 
     const updateData: Record<string, any> = {};
     if (dto.name) updateData.name = dto.name.trim();
-    if (dto.description !== undefined) updateData.description = dto.description.trim();
+    if (dto.description !== undefined) updateData.description = dto.description ? dto.description.trim() : null;
     if (dto.is_favorite !== undefined) updateData.is_favorite = dto.is_favorite;
     if (dto.visibility !== undefined) updateData.visibility = dto.visibility;
     if (dto.is_archived !== undefined) updateData.is_archived = dto.is_archived;

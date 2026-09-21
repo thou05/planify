@@ -25,6 +25,7 @@ import {
   Users,
   UserPlus,
   Search,
+  ArrowLeft,
 } from 'lucide-react';
 
 interface ChecklistItem {
@@ -51,6 +52,19 @@ interface CardDetailModalProps {
   onMoveRequest: (card: any) => void;
   onCopyRequest: (card: any) => void;
 }
+
+const LABEL_COLOR_PALETTE = [
+  { color: '#10b981', name: 'Xanh lá' },
+  { color: '#3b82f6', name: 'Xanh dương' },
+  { color: '#0ea5e9', name: 'Xanh da trời' },
+  { color: '#8b5cf6', name: 'Tím hoa cà' },
+  { color: '#ec4899', name: 'Hồng phấn' },
+  { color: '#ef4444', name: 'Đỏ' },
+  { color: '#f59e0b', name: 'Vàng' },
+  { color: '#f97316', name: 'Cam sáng' },
+  { color: '#6366f1', name: 'Chàm' },
+  { color: '#64748b', name: 'Xám đá' },
+];
 
 const REMINDER_OPTIONS = [
   { value: -1, label: 'Không có lời nhắc' },
@@ -112,6 +126,16 @@ export default function CardDetailModal({
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
 
+  // Labels state
+  const [cardLabels, setCardLabels] = useState<any[]>([]);
+  const [boardLabels, setBoardLabels] = useState<any[]>([]);
+  const [isLabelsModalOpen, setIsLabelsModalOpen] = useState(false);
+  const [labelSearchQuery, setLabelSearchQuery] = useState('');
+  const [editingLabel, setEditingLabel] = useState<any | null>(null);
+  const [isCreatingLabel, setIsCreatingLabel] = useState(false);
+  const [formLabelName, setFormLabelName] = useState('');
+  const [formLabelColor, setFormLabelColor] = useState('#3b82f6');
+
   // Dates modal/popover state
   const [isDatesModalOpen, setIsDatesModalOpen] = useState(false);
   const [tempStartDate, setTempStartDate] = useState('');
@@ -154,6 +178,17 @@ export default function CardDetailModal({
     }
   };
 
+  const fetchBoardLabels = async (boardId: string) => {
+    try {
+      const res = await apiClient<any[]>(`/boards/${boardId}/labels`);
+      if (res.success && res.data) {
+        setBoardLabels(res.data);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
   const fetchCardDetails = async (id: string) => {
     try {
       setIsLoading(true);
@@ -170,6 +205,7 @@ export default function CardDetailModal({
         setReminderAt(c.reminder_at || null);
         setIsCompleted(!!c.is_due_date_completed);
         setAssignees(c.card_assignees || []);
+        setCardLabels(c.card_labels || []);
 
         if (c.due_date && c.reminder_at) {
           const diffMins = Math.round(
@@ -185,6 +221,7 @@ export default function CardDetailModal({
         const boardId = c.list?.board_id;
         if (boardId) {
           fetchBoardMembers(boardId);
+          fetchBoardLabels(boardId);
         }
       }
     } catch {
@@ -200,7 +237,11 @@ export default function CardDetailModal({
       setIsAddingChecklist(false);
       setIsDatesModalOpen(false);
       setIsMembersModalOpen(false);
+      setIsLabelsModalOpen(false);
       setMemberSearchQuery('');
+      setLabelSearchQuery('');
+      setEditingLabel(null);
+      setIsCreatingLabel(false);
       setActiveNewItemChecklistId(null);
       setEditingChecklistId(null);
       setEditingItemId(null);
@@ -209,6 +250,8 @@ export default function CardDetailModal({
       setChecklists([]);
       setAssignees([]);
       setBoardMembers([]);
+      setCardLabels([]);
+      setBoardLabels([]);
     }
   }, [isOpen, cardId]);
 
@@ -341,18 +384,136 @@ export default function CardDetailModal({
     }
   };
 
+  // --- LABEL ACTIONS ---
+  const handleToggleCardLabel = async (labelId: string) => {
+    const isAssigned = cardLabels.some(
+      (cl) => cl.label_id === labelId || cl.label?.id === labelId,
+    );
+
+    // Optimistic
+    if (isAssigned) {
+      setCardLabels((prev) =>
+        prev.filter(
+          (cl) => cl.label_id !== labelId && cl.label?.id !== labelId,
+        ),
+      );
+    } else {
+      const labelObj = boardLabels.find((l) => l.id === labelId);
+      if (labelObj) {
+        setCardLabels((prev) => [
+          ...prev,
+          {
+            id: `temp-${Date.now()}`,
+            card_id: cardId,
+            label_id: labelId,
+            label: labelObj,
+          },
+        ]);
+      }
+    }
+
+    try {
+      const res = await apiClient<any>(`/cards/${cardId}/labels/toggle`, {
+        method: 'POST',
+        data: { label_id: labelId },
+      });
+      if (res.success && res.data) {
+        if (res.data.assigned && res.data.card_label) {
+          setCardLabels((prev) =>
+            prev.map((cl) =>
+              cl.label_id === labelId || cl.label?.id === labelId
+                ? res.data.card_label
+                : cl,
+            ),
+          );
+        }
+        onCardUpdated();
+      }
+    } catch (err: any) {
+      alert(err.message || 'Không thể thay đổi nhãn thẻ');
+      fetchCardDetails(cardId!);
+    }
+  };
+
+  const handleSaveLabel = async () => {
+    if (!formLabelName.trim()) return;
+    const boardId = card?.list?.board_id;
+
+    try {
+      if (editingLabel) {
+        const res = await apiClient<any>(`/labels/${editingLabel.id}`, {
+          method: 'PATCH',
+          data: {
+            name: formLabelName.trim(),
+            color: formLabelColor,
+          },
+        });
+        if (res.success && res.data) {
+          setBoardLabels((prev) =>
+            prev.map((l) => (l.id === editingLabel.id ? res.data : l)),
+          );
+          setCardLabels((prev) =>
+            prev.map((cl) =>
+              cl.label?.id === editingLabel.id
+                ? { ...cl, label: res.data }
+                : cl,
+            ),
+          );
+          setEditingLabel(null);
+          setIsCreatingLabel(false);
+          onCardUpdated();
+        }
+      } else if (isCreatingLabel && boardId) {
+        const res = await apiClient<any>(`/boards/${boardId}/labels`, {
+          method: 'POST',
+          data: {
+            name: formLabelName.trim(),
+            color: formLabelColor,
+          },
+        });
+        if (res.success && res.data) {
+          const newLabel = res.data;
+          setBoardLabels((prev) => [...prev, newLabel]);
+          await handleToggleCardLabel(newLabel.id);
+          setIsCreatingLabel(false);
+          setEditingLabel(null);
+        }
+      }
+    } catch (err: any) {
+      alert(err.message || 'Không thể lưu nhãn');
+    }
+  };
+
+  const handleDeleteLabel = async (labelId: string) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa nhãn này khỏi toàn bộ bảng?')) return;
+    try {
+      await apiClient(`/labels/${labelId}`, { method: 'DELETE' });
+      setBoardLabels((prev) => prev.filter((l) => l.id !== labelId));
+      setCardLabels((prev) =>
+        prev.filter((cl) => cl.label_id !== labelId && cl.label?.id !== labelId),
+      );
+      if (editingLabel?.id === labelId) {
+        setEditingLabel(null);
+        setIsCreatingLabel(false);
+      }
+      onCardUpdated();
+    } catch (err: any) {
+      alert(err.message || 'Không thể xóa nhãn');
+    }
+  };
+
   if (!isOpen || !cardId) return null;
 
   // --- CARD SAVE ---
   const handleSaveAll = async () => {
-    if (!title.trim() || isSaving) return;
+    if (!title?.trim() || isSaving) return;
     try {
       setIsSaving(true);
       await apiClient(`/cards/${cardId}`, {
         method: 'PATCH',
         data: {
           title: title.trim(),
-          description: description.trim() || null,
+          description: description?.trim() || null,
           due_date: dueDate ? new Date(dueDate).toISOString() : null,
           start_date: startDate ? new Date(startDate).toISOString() : null,
           reminder_at: reminderAt,
@@ -458,6 +619,13 @@ export default function CardDetailModal({
     const name = m.user?.name?.toLowerCase() || '';
     const email = m.user?.email?.toLowerCase() || '';
     return name.includes(q) || email.includes(q);
+  });
+
+  // Filter board labels for popover
+  const filteredBoardLabels = boardLabels.filter((l) => {
+    const q = labelSearchQuery.toLowerCase().trim();
+    if (!q) return true;
+    return l.name?.toLowerCase().includes(q);
   });
 
   // --- CHECKLIST ACTIONS ---
@@ -671,57 +839,103 @@ export default function CardDetailModal({
           <div className="flex-1 overflow-y-auto p-5 grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Main Content (2 cols) */}
             <div className="md:col-span-2 space-y-6">
-              {/* Assigned Members Section */}
-              {assignees.length > 0 && (
-                <div className="space-y-1.5">
-                  <div className="text-[11px] font-bold text-[#2b1572]/70 uppercase tracking-wider">
-                    Thành viên
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {assignees.map((a) => {
-                      const member = a.board_member;
-                      const uName = member?.user?.name || 'Thành viên';
-                      const uAvatar = member?.user?.avatar;
-                      const firstLetter = uName.charAt(0).toUpperCase();
+              {/* Top Badges (Members & Labels) */}
+              {(assignees.length > 0 || cardLabels.length > 0) && (
+                <div className="flex flex-wrap items-start gap-6 pb-1">
+                  {/* Assigned Members Section */}
+                  {assignees.length > 0 && (
+                    <div className="space-y-1.5">
+                      <div className="text-[11px] font-bold text-[#2b1572]/70 uppercase tracking-wider">
+                        Thành viên
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {assignees.map((a) => {
+                          const member = a.board_member;
+                          const uName = member?.user?.name || 'Thành viên';
+                          const uAvatar = member?.user?.avatar;
+                          const firstLetter = uName.charAt(0).toUpperCase();
 
-                      return (
-                        <div
-                          key={a.id || member?.id}
+                          return (
+                            <div
+                              key={a.id || member?.id}
+                              onClick={() => {
+                                setIsMembersModalOpen(true);
+                                setMemberSearchQuery('');
+                              }}
+                              className="group flex items-center gap-1.5 pl-1 pr-2.5 py-1 bg-slate-100 hover:bg-[#2b1572]/10 rounded-full border border-slate-200/80 transition-all cursor-pointer shadow-2xs"
+                              title={`${uName} (${member?.role || 'MEMBER'}) - Bấm để thay đổi`}
+                            >
+                              {uAvatar ? (
+                                <img
+                                  src={uAvatar}
+                                  alt={uName}
+                                  className="w-5 h-5 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-5 h-5 rounded-full bg-[#2b1572] text-white flex items-center justify-center text-[10px] font-bold shadow-2xs">
+                                  {firstLetter}
+                                </div>
+                              )}
+                              <span className="text-xs font-semibold text-[#2b1572]">{uName}</span>
+                            </div>
+                          );
+                        })}
+
+                        <button
+                          type="button"
                           onClick={() => {
                             setIsMembersModalOpen(true);
                             setMemberSearchQuery('');
                           }}
-                          className="group flex items-center gap-1.5 pl-1 pr-2.5 py-1 bg-slate-100 hover:bg-[#2b1572]/10 rounded-full border border-slate-200/80 transition-all cursor-pointer shadow-2xs"
-                          title={`${uName} (${member?.role || 'MEMBER'}) - Bấm để thay đổi`}
+                          className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-[#2b1572] flex items-center justify-center transition-colors cursor-pointer"
+                          title="Thêm thành viên"
                         >
-                          {uAvatar ? (
-                            <img
-                              src={uAvatar}
-                              alt={uName}
-                              className="w-5 h-5 rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-5 h-5 rounded-full bg-[#2b1572] text-white flex items-center justify-center text-[10px] font-bold shadow-2xs">
-                              {firstLetter}
-                            </div>
-                          )}
-                          <span className="text-xs font-semibold text-[#2b1572]">{uName}</span>
-                        </div>
-                      );
-                    })}
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsMembersModalOpen(true);
-                        setMemberSearchQuery('');
-                      }}
-                      className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-[#2b1572] flex items-center justify-center transition-colors cursor-pointer"
-                      title="Thêm thành viên"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  {/* Card Labels Section */}
+                  {cardLabels.length > 0 && (
+                    <div className="space-y-1.5">
+                      <div className="text-[11px] font-bold text-[#2b1572]/70 uppercase tracking-wider">
+                        Nhãn
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {cardLabels.map((cl) => (
+                          <button
+                            key={cl.id || cl.label?.id}
+                            type="button"
+                            onClick={() => {
+                              setIsLabelsModalOpen(true);
+                              setIsCreatingLabel(false);
+                              setEditingLabel(null);
+                              setLabelSearchQuery('');
+                            }}
+                            className="px-2.5 py-1 rounded-lg text-xs font-bold text-white shadow-2xs hover:opacity-90 transition-all cursor-pointer"
+                            style={{ backgroundColor: cl.label?.color || '#3b82f6' }}
+                            title={`${cl.label?.name} - Bấm để thay đổi`}
+                          >
+                            {cl.label?.name}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsLabelsModalOpen(true);
+                            setIsCreatingLabel(false);
+                            setEditingLabel(null);
+                            setLabelSearchQuery('');
+                          }}
+                          className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#2b1572] flex items-center justify-center transition-colors cursor-pointer"
+                          title="Thêm nhãn"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1043,6 +1257,24 @@ export default function CardDetailModal({
               >
                 <Users className="w-3.5 h-3.5 text-[#2b1572]/70" />
                 <span>Thành viên {assignees.length > 0 && `(${assignees.length})`}</span>
+              </button>
+
+              {/* Labels Button */}
+              <button
+                onClick={() => {
+                  setIsLabelsModalOpen(true);
+                  setIsCreatingLabel(false);
+                  setEditingLabel(null);
+                  setLabelSearchQuery('');
+                }}
+                className={`w-full px-3 py-2 text-xs font-semibold rounded-xl flex items-center gap-2 transition-colors cursor-pointer ${
+                  cardLabels.length > 0
+                    ? 'text-[#2b1572] bg-[#a6d1fd]/30 hover:bg-[#a6d1fd]/50 border border-[#a6d1fd]/60'
+                    : 'text-[#2b1572] bg-slate-100 hover:bg-slate-200'
+                }`}
+              >
+                <Tag className="w-3.5 h-3.5 text-[#2b1572]/70" />
+                <span>Nhãn {cardLabels.length > 0 && `(${cardLabels.length})`}</span>
               </button>
 
               {/* Add Checklist Action */}
@@ -1402,6 +1634,222 @@ export default function CardDetailModal({
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* LABELS POPOVER / MODAL */}
+        {isLabelsModalOpen && (
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-2xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-100">
+            <div className="bg-white rounded-2xl shadow-2xl border border-[#2b1572]/20 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]">
+              {/* Header */}
+              <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                {isCreatingLabel || editingLabel ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCreatingLabel(false);
+                      setEditingLabel(null);
+                    }}
+                    className="p-1 text-slate-500 hover:text-[#2b1572] hover:bg-slate-100 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-bold"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Quay lại</span>
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs font-bold text-[#2b1572]">
+                    <Tag className="w-4 h-4 text-[#2b1572]" />
+                    <span>Nhãn ({boardLabels.length})</span>
+                  </div>
+                )}
+
+                <div className="text-xs font-bold text-[#2b1572]">
+                  {isCreatingLabel ? 'Tạo nhãn mới' : editingLabel ? 'Chỉnh sửa nhãn' : ''}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsLabelsModalOpen(false);
+                    setIsCreatingLabel(false);
+                    setEditingLabel(null);
+                  }}
+                  className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Body */}
+              {isCreatingLabel || editingLabel ? (
+                /* Create / Edit Sub-view */
+                <div className="p-4 space-y-4 overflow-y-auto">
+                  {/* Preview */}
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex flex-col items-center justify-center gap-1.5">
+                    <span className="text-[11px] font-semibold text-slate-500">Xem trước nhãn</span>
+                    <div
+                      className="px-4 py-1.5 rounded-lg text-xs font-bold text-white shadow-xs"
+                      style={{ backgroundColor: formLabelColor }}
+                    >
+                      {formLabelName.trim() || 'Tên nhãn'}
+                    </div>
+                  </div>
+
+                  {/* Name input */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700">Tên nhãn</label>
+                    <input
+                      type="text"
+                      value={formLabelName}
+                      onChange={(e) => setFormLabelName(e.target.value)}
+                      placeholder="Ví dụ: Backend, Thiết kế..."
+                      autoFocus
+                      className="w-full text-xs text-[#2b1572] bg-white border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-[#2b1572] shadow-2xs"
+                    />
+                  </div>
+
+                  {/* Color palette */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-700">Chọn màu sắc</label>
+                    <div className="grid grid-cols-5 gap-2">
+                      {LABEL_COLOR_PALETTE.map((item) => {
+                        const isSelected = formLabelColor === item.color;
+                        return (
+                          <button
+                            key={item.color}
+                            type="button"
+                            onClick={() => setFormLabelColor(item.color)}
+                            title={item.name}
+                            className={`h-8 rounded-lg transition-all cursor-pointer flex items-center justify-center shadow-2xs ${
+                              isSelected ? 'ring-2 ring-offset-2 ring-[#2b1572] scale-105' : 'hover:scale-105'
+                            }`}
+                            style={{ backgroundColor: item.color }}
+                          >
+                            {isSelected && <Check className="w-4 h-4 text-white" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="pt-2 flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSaveLabel}
+                      disabled={!formLabelName.trim()}
+                      className="w-full py-2 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] disabled:opacity-50 rounded-xl shadow-xs transition-colors cursor-pointer"
+                    >
+                      {editingLabel ? 'Lưu thay đổi' : 'Tạo mới'}
+                    </button>
+
+                    {editingLabel && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteLabel(editingLabel.id)}
+                        className="w-full py-2 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl transition-colors cursor-pointer"
+                      >
+                        Xóa nhãn khỏi bảng
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                /* Browsing / Search List */
+                <>
+                  {/* Search */}
+                  <div className="p-3 border-b border-slate-100">
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={labelSearchQuery}
+                        onChange={(e) => setLabelSearchQuery(e.target.value)}
+                        placeholder="Tìm kiếm nhãn..."
+                        className="w-full text-xs text-[#2b1572] bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-2 focus:outline-none focus:border-[#2b1572] focus:bg-white transition-all shadow-2xs"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Labels List */}
+                  <div className="p-2 overflow-y-auto space-y-1 flex-1">
+                    {filteredBoardLabels.length === 0 ? (
+                      <div className="p-6 text-center text-xs text-slate-400">
+                        {boardLabels.length === 0
+                          ? 'Bảng chưa có nhãn nào'
+                          : 'Không tìm thấy nhãn phù hợp'}
+                      </div>
+                    ) : (
+                      filteredBoardLabels.map((l) => {
+                        const isAssigned = cardLabels.some(
+                          (cl) => cl.label_id === l.id || cl.label?.id === l.id,
+                        );
+
+                        return (
+                          <div
+                            key={l.id}
+                            className="flex items-center gap-1 group"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => handleToggleCardLabel(l.id)}
+                              className="flex-1 p-2 rounded-xl hover:bg-slate-50 flex items-center justify-between gap-2 transition-colors cursor-pointer"
+                            >
+                              <div
+                                className="px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-2xs flex-1 text-left truncate"
+                                style={{ backgroundColor: l.color }}
+                              >
+                                {l.name}
+                              </div>
+
+                              <div
+                                className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-all ${
+                                  isAssigned
+                                    ? 'bg-[#2b1572] text-white'
+                                    : 'border border-slate-200 group-hover:border-[#2b1572]/40'
+                                }`}
+                              >
+                                {isAssigned && <Check className="w-3.5 h-3.5" />}
+                              </div>
+                            </button>
+
+                            {/* Edit button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingLabel(l);
+                                setFormLabelName(l.name);
+                                setFormLabelColor(l.color || '#3b82f6');
+                              }}
+                              className="p-2 text-slate-400 hover:text-[#2b1572] hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                              title="Chỉnh sửa nhãn"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Footer Button: Create New */}
+                  <div className="p-3 bg-slate-50 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCreatingLabel(true);
+                        setEditingLabel(null);
+                        setFormLabelName(labelSearchQuery || '');
+                        setFormLabelColor('#3b82f6');
+                      }}
+                      className="w-full py-2 text-xs font-semibold text-[#2b1572] bg-white hover:bg-slate-100 border border-[#2b1572]/20 rounded-xl shadow-2xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Tạo nhãn mới</span>
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}
