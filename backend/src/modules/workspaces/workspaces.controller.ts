@@ -13,6 +13,9 @@ import { WorkspacesService } from './workspaces.service';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 import { AddMemberDto } from './dto/add-member.dto';
+import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
+import { InviteMemberDto } from './dto/invite-member.dto';
+import { TransferOwnershipDto } from './dto/transfer-ownership.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
@@ -40,6 +43,25 @@ export class WorkspacesController {
     return this.workspacesService.findAllForUser(userId);
   }
 
+  // --- PUBLIC/TOKEN INVITE ROUTES (đặt trước :id để không bị override) ---
+  @Get('invites/:token')
+  @ApiOperation({ summary: 'Xem trước thông tin lời mời qua Token' })
+  @ApiResponse({ status: 200, description: 'Thông tin lời mời' })
+  async getInviteByToken(@Param('token') token: string) {
+    return this.workspacesService.getInviteByToken(token);
+  }
+
+  @Post('invites/:token/accept')
+  @ApiOperation({ summary: 'Chấp nhận lời mời tham gia Workspace' })
+  @ApiResponse({ status: 200, description: 'Gia nhập Workspace thành công' })
+  async acceptInvite(
+    @Param('token') token: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.workspacesService.acceptInvite(token, userId);
+  }
+
+  // --- WORKSPACE DETAIL & CRUD ---
   @Get(':id')
   @ApiOperation({ summary: 'Chi tiết Workspace kèm Boards và Members' })
   @ApiResponse({ status: 200, description: 'Chi tiết Workspace' })
@@ -51,7 +73,7 @@ export class WorkspacesController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Cập nhật Workspace' })
+  @ApiOperation({ summary: 'Cập nhật tên hoặc mô tả Workspace' })
   @ApiResponse({ status: 200, description: 'Cập nhật thành công' })
   async update(
     @Param('id') id: string,
@@ -71,8 +93,31 @@ export class WorkspacesController {
     return this.workspacesService.delete(id, userId);
   }
 
+  // --- LEAVE & TRANSFER OWNERSHIP ---
+  @Post(':id/leave')
+  @ApiOperation({ summary: 'Rời khỏi Workspace' })
+  @ApiResponse({ status: 200, description: 'Rời thành công' })
+  async leave(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.workspacesService.leaveWorkspace(id, userId);
+  }
+
+  @Post(':id/transfer-ownership')
+  @ApiOperation({ summary: 'Chuyển giao quyền Chủ sở hữu (Owner) cho thành viên khác' })
+  @ApiResponse({ status: 200, description: 'Chuyển quyền thành công' })
+  async transferOwnership(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: TransferOwnershipDto,
+  ) {
+    return this.workspacesService.transferOwnership(id, userId, dto);
+  }
+
+  // --- MEMBERS MANAGEMENT ---
   @Post(':id/members')
-  @ApiOperation({ summary: 'Thêm thành viên vào Workspace' })
+  @ApiOperation({ summary: 'Thêm thành viên trực tiếp vào Workspace' })
   @ApiResponse({ status: 201, description: 'Thêm thành viên thành công' })
   async addMember(
     @Param('id') workspaceId: string,
@@ -80,6 +125,18 @@ export class WorkspacesController {
     @Body() dto: AddMemberDto,
   ) {
     return this.workspacesService.addMember(workspaceId, userId, dto);
+  }
+
+  @Patch(':id/members/:userId')
+  @ApiOperation({ summary: 'Thay đổi vai trò của thành viên (ADMIN | MEMBER)' })
+  @ApiResponse({ status: 200, description: 'Thay đổi vai trò thành công' })
+  async updateMemberRole(
+    @Param('id') workspaceId: string,
+    @Param('userId') targetUserId: string,
+    @CurrentUser('id') currentUserId: string,
+    @Body() dto: UpdateMemberRoleDto,
+  ) {
+    return this.workspacesService.updateMemberRole(workspaceId, currentUserId, targetUserId, dto);
   }
 
   @Delete(':id/members/:userId')
@@ -91,5 +148,38 @@ export class WorkspacesController {
     @CurrentUser('id') currentUserId: string,
   ) {
     return this.workspacesService.removeMember(workspaceId, currentUserId, targetUserId);
+  }
+
+  // --- INVITATIONS ---
+  @Post(':id/invites')
+  @ApiOperation({ summary: 'Mời thành viên qua email (tạo liên kết mời)' })
+  @ApiResponse({ status: 201, description: 'Tạo lời mời thành công' })
+  async createInvite(
+    @Param('id') workspaceId: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: InviteMemberDto,
+  ) {
+    return this.workspacesService.createInvite(workspaceId, userId, dto);
+  }
+
+  @Get(':id/invites')
+  @ApiOperation({ summary: 'Danh sách các lời mời đang chờ của Workspace' })
+  @ApiResponse({ status: 200, description: 'Danh sách lời mời' })
+  async getPendingInvites(
+    @Param('id') workspaceId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.workspacesService.getPendingInvites(workspaceId, userId);
+  }
+
+  @Delete(':id/invites/:inviteId')
+  @ApiOperation({ summary: 'Thu hồi / Xóa lời mời' })
+  @ApiResponse({ status: 200, description: 'Thu hồi thành công' })
+  async revokeInvite(
+    @Param('id') workspaceId: string,
+    @Param('inviteId') inviteId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.workspacesService.revokeInvite(workspaceId, userId, inviteId);
   }
 }
