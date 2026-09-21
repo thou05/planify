@@ -17,7 +17,7 @@ export class CardsService {
   async create(listId: string, userId: string, dto: CreateCardDto) {
     const { data: list, error: lError } = await this.supabase
       .from('lists')
-      .select('board_id, board:boards (workspace_id)')
+      .select('board_id, limit, board:boards (workspace_id)')
       .eq('id', listId)
       .maybeSingle();
 
@@ -28,6 +28,17 @@ export class CardsService {
     const workspaceId = (list.board as any)?.workspace_id;
     if (workspaceId) {
       await this.verifyWorkspaceAccess(workspaceId, userId);
+    }
+
+    if (list.limit && list.limit > 0) {
+      const { count } = await this.supabase
+        .from('cards')
+        .select('*', { count: 'exact', head: true })
+        .eq('list_id', listId);
+
+      if (count !== null && count >= list.limit) {
+        throw new BadRequestException(`Danh sách đã đạt giới hạn tối đa (${list.limit} thẻ)`);
+      }
     }
 
     let position = dto.position;
@@ -261,7 +272,7 @@ export class CardsService {
 
     const { data: targetList } = await this.supabase
       .from('lists')
-      .select('id, board_id')
+      .select('id, board_id, limit')
       .eq('id', dto.targetListId)
       .maybeSingle();
 
@@ -274,94 +285,79 @@ export class CardsService {
     await this.verifyBoardAccess(targetList.board_id, userId);
 
     const isSameList = sourceCard.list_id === dto.targetListId;
-    const oldPosition = sourceCard.position;
-    const newPosition = dto.position;
+    const targetPosition = Math.max(0, dto.position);
+
+    if (!isSameList && targetList.limit && targetList.limit > 0) {
+      const { count } = await this.supabase
+        .from('cards')
+        .select('*', { count: 'exact', head: true })
+        .eq('list_id', dto.targetListId);
+
+      if (count !== null && count >= targetList.limit) {
+        throw new BadRequestException(`Danh sách đích đã đạt giới hạn tối đa (${targetList.limit} thẻ)`);
+      }
+    }
 
     if (isSameList) {
-      if (oldPosition !== newPosition) {
-        if (oldPosition < newPosition) {
-          // Moving down: shift items between oldPosition+1 and newPosition down (decrease by 1)
-          const { data: itemsToShift } = await this.supabase
-            .from('cards')
-            .select('id, position')
-            .eq('list_id', sourceCard.list_id)
-            .gt('position', oldPosition)
-            .lte('position', newPosition);
-
-          if (itemsToShift) {
-            for (const item of itemsToShift) {
-              await this.supabase
-                .from('cards')
-                .update({ position: item.position - 1 })
-                .eq('id', item.id);
-            }
-          }
-        } else {
-          // Moving up: shift items between newPosition and oldPosition-1 up (increase by 1)
-          const { data: itemsToShift } = await this.supabase
-            .from('cards')
-            .select('id, position')
-            .eq('list_id', sourceCard.list_id)
-            .gte('position', newPosition)
-            .lt('position', oldPosition);
-
-          if (itemsToShift) {
-            for (const item of itemsToShift) {
-              await this.supabase
-                .from('cards')
-                .update({ position: item.position + 1 })
-                .eq('id', item.id);
-            }
-          }
-        }
-
-        await this.supabase
-          .from('cards')
-          .update({ position: newPosition })
-          .eq('id', cardId);
-      }
-    } else {
-      // Moving to different list
-      // 1. Shift remaining items in source list down
-      const { data: sourceItemsToShift } = await this.supabase
+      // 1. Fetch all cards in this list ordered by position
+      const { data: listCards } = await this.supabase
         .from('cards')
         .select('id, position')
         .eq('list_id', sourceCard.list_id)
-        .gt('position', oldPosition);
+        .order('position', { ascending: true });
 
-      if (sourceItemsToShift) {
-        for (const item of sourceItemsToShift) {
-          await this.supabase
-            .from('cards')
-            .update({ position: item.position - 1 })
-            .eq('id', item.id);
-        }
-      }
+      const cards = listCards || [];
+      const filtered = cards.filter((c) => c.id !== cardId);
+      const insertIdx = Math.min(targetPosition, filtered.length);
+      filtered.splice(insertIdx, 0, { id: cardId, position: insertIdx });
 
-      // 2. Shift items in target list at >= newPosition up
-      const { data: targetItemsToShift } = await this.supabase
+      // Update positions for all cards in parallel
+      const updatePromises = filtered.map((c, index) =>
+        this.supabase
+          .from('cards')
+          .update({ position: index })
+          .eq('id', c.id)
+      );
+      await Promise.all(updatePromises);
+    } else {
+      // Moving across lists
+      // 1. Re-normalize source list cards (excluding moved card)
+      const { data: sourceCards } = await this.supabase
+        .from('cards')
+        .select('id, position')
+        .eq('list_id', sourceCard.list_id)
+        .order('position', { ascending: true });
+
+      const filteredSource = (sourceCards || []).filter((c) => c.id !== cardId);
+      const sourceUpdatePromises = filteredSource.map((c, index) =>
+        this.supabase
+          .from('cards')
+          .update({ position: index })
+          .eq('id', c.id)
+      );
+
+      // 2. Insert into target list and re-normalize target list cards
+      const { data: targetCards } = await this.supabase
         .from('cards')
         .select('id, position')
         .eq('list_id', dto.targetListId)
-        .gte('position', newPosition);
+        .order('position', { ascending: true });
 
-      if (targetItemsToShift) {
-        for (const item of targetItemsToShift) {
-          await this.supabase
-            .from('cards')
-            .update({ position: item.position + 1 })
-            .eq('id', item.id);
-        }
-      }
+      const filteredTarget = (targetCards || []).filter((c) => c.id !== cardId);
+      const insertIdx = Math.min(targetPosition, filteredTarget.length);
+      filteredTarget.splice(insertIdx, 0, { id: cardId, position: insertIdx });
 
-      // 3. Move card to target list
-      await this.supabase
-        .from('cards')
-        .update({
-          list_id: dto.targetListId,
-          position: newPosition,
-        })
-        .eq('id', cardId);
+      const targetUpdatePromises = filteredTarget.map((c, index) =>
+        this.supabase
+          .from('cards')
+          .update({
+            position: index,
+            ...(c.id === cardId ? { list_id: dto.targetListId } : {}),
+          })
+          .eq('id', c.id)
+      );
+
+      await Promise.all([...sourceUpdatePromises, ...targetUpdatePromises]);
     }
 
     return this.findById(cardId, userId);
@@ -396,6 +392,23 @@ export class CardsService {
     await this.verifyBoardAccess(sourceBoardId, userId);
 
     const targetListId = dto.targetListId || sourceCard.list_id;
+
+    const { data: targetList } = await this.supabase
+      .from('lists')
+      .select('id, limit')
+      .eq('id', targetListId)
+      .maybeSingle();
+
+    if (targetList?.limit && targetList.limit > 0) {
+      const { count } = await this.supabase
+        .from('cards')
+        .select('*', { count: 'exact', head: true })
+        .eq('list_id', targetListId);
+
+      if (count !== null && count >= targetList.limit) {
+        throw new BadRequestException(`Danh sách đích đã đạt giới hạn tối đa (${targetList.limit} thẻ)`);
+      }
+    }
 
     let targetPosition = dto.position;
     if (targetPosition === undefined) {

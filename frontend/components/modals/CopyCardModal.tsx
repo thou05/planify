@@ -32,9 +32,13 @@ export default function CopyCardModal({
 
   if (!isOpen || !card) return null;
 
+  const selectedList = (boardLists || []).find((l) => l.id === targetListId);
+  const cardCountInSelectedList = selectedList?.cards?.length || 0;
+  const isTargetLimitReached = Boolean(selectedList?.limit && cardCountInSelectedList >= selectedList.limit);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !targetListId || isLoading) return;
+    if (!title.trim() || !targetListId || isLoading || isTargetLimitReached) return;
 
     try {
       setIsLoading(true);
@@ -98,10 +102,15 @@ export default function CopyCardModal({
             >
               {(boardLists || []).map((l) => (
                 <option key={l.id} value={l.id}>
-                  {l.title} {l.id === card.list_id ? '(Hiện tại)' : ''}
+                  {l.title} {l.id === card.list_id ? '(Hiện tại)' : ''} {l.limit ? `(${l.cards?.length || 0}/${l.limit})` : ''}
                 </option>
               ))}
             </select>
+            {isTargetLimitReached && (
+              <p className="mt-1.5 text-xs text-rose-600 font-semibold">
+                ⚠️ Danh sách này đã đạt giới hạn tối đa ({selectedList?.limit} thẻ). Vui lòng chọn danh sách khác.
+              </p>
+            )}
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-2">
@@ -114,7 +123,7 @@ export default function CopyCardModal({
             </button>
             <button
               type="submit"
-              disabled={!title.trim() || !targetListId || isLoading}
+              disabled={!title.trim() || !targetListId || isLoading || isTargetLimitReached}
               className="px-4 py-2 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] disabled:opacity-50 rounded-xl shadow-xs transition-colors cursor-pointer"
             >
               {isLoading ? 'Đang sao chép...' : 'Tạo bản sao'}

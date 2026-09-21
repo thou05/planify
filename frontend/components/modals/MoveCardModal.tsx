@@ -99,10 +99,15 @@ export default function MoveCardModal({
             >
               {(boardLists || []).map((l) => (
                 <option key={l.id} value={l.id}>
-                  {l.title} {l.id === card.list_id ? '(Hiện tại)' : ''}
+                  {l.title} {l.id === card.list_id ? '(Hiện tại)' : ''} {l.limit ? `(${l.cards?.length || 0}/${l.limit})` : ''}
                 </option>
               ))}
             </select>
+            {!isSameList && selectedList?.limit && cardCountInSelectedList >= selectedList.limit && (
+              <p className="mt-1.5 text-xs text-rose-600 font-semibold">
+                ⚠️ Danh sách này đã đạt giới hạn tối đa ({selectedList.limit} thẻ). Vui lòng chọn danh sách khác.
+              </p>
+            )}
           </div>
 
           <div>
@@ -112,7 +117,8 @@ export default function MoveCardModal({
             <select
               value={position}
               onChange={(e) => setPosition(Number(e.target.value))}
-              className="w-full text-xs text-[#2b1572] bg-slate-50 border border-slate-200 focus:border-[#2b1572] rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-[#2b1572]/15"
+              disabled={!isSameList && selectedList?.limit && cardCountInSelectedList >= selectedList.limit}
+              className="w-full text-xs text-[#2b1572] bg-slate-50 border border-slate-200 focus:border-[#2b1572] rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-[#2b1572]/15 disabled:opacity-50"
             >
               {Array.from({ length: Math.max(1, maxPosition + 1) }).map((_, idx) => (
                 <option key={idx} value={idx}>
@@ -132,7 +138,7 @@ export default function MoveCardModal({
             </button>
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || (!isSameList && Boolean(selectedList?.limit && cardCountInSelectedList >= selectedList.limit))}
               className="px-4 py-2 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] disabled:opacity-50 rounded-xl shadow-xs transition-colors cursor-pointer"
             >
               {isLoading ? 'Đang di chuyển...' : 'Di chuyển'}

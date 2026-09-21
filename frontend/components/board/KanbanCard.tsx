@@ -29,6 +29,8 @@ interface KanbanCardProps {
   onDragStart: (e: React.DragEvent, cardId: string, sourceListId: string) => void;
   onDragEnd: (e: React.DragEvent) => void;
   onDropOnCard?: (e: React.DragEvent, targetListId: string, targetIndex: number) => void;
+  isDropDisabled?: boolean;
+  onShakeError?: () => void;
 }
 
 export default function KanbanCard({
@@ -45,6 +47,8 @@ export default function KanbanCard({
   onDragStart,
   onDragEnd,
   onDropOnCard,
+  isDropDisabled = false,
+  onShakeError,
 }: KanbanCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuCoords, setMenuCoords] = useState<{
@@ -207,6 +211,11 @@ export default function KanbanCard({
   // Handle Drag Over relative to card height (top half vs bottom half)
   const handleCardDragOver = (e: React.DragEvent) => {
     if (isMenuOpen || isEditingTitle) return;
+    if (isDropDisabled) {
+      e.dataTransfer.dropEffect = 'none';
+      onShakeError?.();
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
@@ -230,8 +239,14 @@ export default function KanbanCard({
     if (isMenuOpen || isEditingTitle) return;
     e.preventDefault();
     e.stopPropagation();
-    const targetIdx = dropPosition === 'bottom' ? index + 1 : index;
     setDropPosition(null);
+
+    if (isDropDisabled) {
+      onShakeError?.();
+      return;
+    }
+
+    const targetIdx = dropPosition === 'bottom' ? index + 1 : index;
     if (onDropOnCard) {
       onDropOnCard(e, listId, targetIdx);
     }

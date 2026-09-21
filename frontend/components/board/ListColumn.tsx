@@ -41,6 +41,7 @@ interface ListColumnProps {
   onListDragStart: (e: React.DragEvent, listId: string) => void;
   onListDragEnd: (e: React.DragEvent) => void;
   onListDrop: (e: React.DragEvent, targetListId: string) => void;
+  draggedSourceListId?: string | null;
 }
 
 export default function ListColumn({
@@ -65,6 +66,7 @@ export default function ListColumn({
   onListDragStart,
   onListDragEnd,
   onListDrop,
+  draggedSourceListId = null,
 }: ListColumnProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
@@ -76,8 +78,18 @@ export default function ListColumn({
   const [newCardTitle, setNewCardTitle] = useState('');
   const [isSubmittingCard, setIsSubmittingCard] = useState(false);
 
-  // Drag over styling state
+  // Drag over & Shake error styling state
   const [isDragOverList, setIsDragOverList] = useState(false);
+  const [isShakeError, setIsShakeError] = useState(false);
+  const shakeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const triggerShake = () => {
+    setIsShakeError(true);
+    if (shakeTimeoutRef.current) clearTimeout(shakeTimeoutRef.current);
+    shakeTimeoutRef.current = setTimeout(() => {
+      setIsShakeError(false);
+    }, 550);
+  };
 
   const menuRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -157,7 +169,8 @@ export default function ListColumn({
   };
 
   const cardCount = list.cards?.length || 0;
-  const isOverWip = list.limit && cardCount > list.limit;
+  const isLimitReached = Boolean(list.limit && list.limit > 0 && cardCount >= list.limit);
+  const isDropDisabled = Boolean(isLimitReached && draggedSourceListId !== null && draggedSourceListId !== list.id);
 
   return (
     <div
@@ -167,6 +180,13 @@ export default function ListColumn({
       }}
       onDragEnd={onListDragEnd}
       onDragOver={(e) => {
+        if (isDropDisabled) {
+          e.dataTransfer.dropEffect = 'none';
+          if (!isShakeError) {
+            triggerShake();
+          }
+          return;
+        }
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
         setIsDragOverList(true);
@@ -179,12 +199,20 @@ export default function ListColumn({
       onDrop={(e) => {
         e.preventDefault();
         setIsDragOverList(false);
+        if (isDropDisabled) {
+          triggerShake();
+          return;
+        }
         // List drop or card drop to the end of list
         onListDrop(e, list.id);
         onCardDrop(e, list.id, list.cards?.length || 0);
       }}
       className={`w-72 max-h-full kanban-list flex flex-col shrink-0 p-3.5 transition-all duration-200 cursor-default ${
-        isDragOverList ? 'ring-2 ring-[#2b1572] bg-white/80 shadow-xl scale-[1.01]' : ''
+        isShakeError
+          ? '!border-rose-500 !ring-2 !ring-rose-500/80 !bg-rose-50/25 animate-shake shadow-lg shadow-rose-500/25'
+          : isDragOverList
+          ? 'ring-2 ring-[#2b1572] bg-white/80 shadow-xl scale-[1.01]'
+          : ''
       }`}
     >
       {/* List Header */}
@@ -220,8 +248,8 @@ export default function ListColumn({
 
           {/* WIP badge */}
           <span
-            className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 shadow-2xs ${
-              isOverWip
+            className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 shadow-2xs transition-colors ${
+              isLimitReached
                 ? 'badge-error bg-rose-500 text-white'
                 : 'bg-white/80 text-[#2b1572]/80 border border-white'
             }`}
@@ -402,6 +430,8 @@ export default function ListColumn({
               onDragStart={onCardDragStart}
               onDragEnd={onCardDragEnd}
               onDropOnCard={onCardDrop}
+              isDropDisabled={isDropDisabled}
+              onShakeError={triggerShake}
             />
           ))
         ) : (
@@ -413,52 +443,54 @@ export default function ListColumn({
         )}
       </div>
 
-      {/* Bottom Inline Add Card Section */}
-      <div className="mt-2 pt-2 border-t border-white/40">
-        {isAddingCard ? (
-          <div className="space-y-2 animate-in fade-in duration-100">
-            <textarea
-              ref={cardInputRef}
-              rows={2}
-              value={newCardTitle}
-              onChange={(e) => setNewCardTitle(e.target.value)}
-              onKeyDown={handleCardKeyDown}
-              placeholder="Nhập tiêu đề cho thẻ này..."
-              className="w-full text-xs text-[#2b1572] bg-white border border-[#2b1572]/30 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-[#2b1572]/20 shadow-xs resize-none"
-            />
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleCreateCard()}
-                disabled={!newCardTitle.trim() || isSubmittingCard}
-                className="px-3 py-1.5 bg-[#2b1572] hover:bg-[#1e0f52] disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>{isSubmittingCard ? 'Đang thêm...' : 'Thêm thẻ'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsAddingCard(false);
-                  setNewCardTitle('');
-                }}
-                className="p-1.5 text-[#2b1572]/60 hover:text-[#2b1572] hover:bg-white/60 rounded-lg transition-colors cursor-pointer"
-                title="Hủy"
-              >
-                <X className="w-4 h-4" />
-              </button>
+      {/* Bottom Inline Add Card Section (Hidden if limit reached) */}
+      {!isLimitReached && (
+        <div className="mt-2 pt-2 border-t border-white/40">
+          {isAddingCard ? (
+            <div className="space-y-2 animate-in fade-in duration-100">
+              <textarea
+                ref={cardInputRef}
+                rows={2}
+                value={newCardTitle}
+                onChange={(e) => setNewCardTitle(e.target.value)}
+                onKeyDown={handleCardKeyDown}
+                placeholder="Nhập tiêu đề cho thẻ này..."
+                className="w-full text-xs text-[#2b1572] bg-white border border-[#2b1572]/30 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-[#2b1572]/20 shadow-xs resize-none"
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleCreateCard()}
+                  disabled={!newCardTitle.trim() || isSubmittingCard}
+                  className="px-3 py-1.5 bg-[#2b1572] hover:bg-[#1e0f52] disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{isSubmittingCard ? 'Đang thêm...' : 'Thêm thẻ'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddingCard(false);
+                    setNewCardTitle('');
+                  }}
+                  className="p-1.5 text-[#2b1572]/60 hover:text-[#2b1572] hover:bg-white/60 rounded-lg transition-colors cursor-pointer"
+                  title="Hủy"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => setIsAddingCard(true)}
-            className="w-full py-1.5 px-2 rounded-xl text-xs font-semibold text-[#2b1572]/70 hover:text-[#2b1572] hover:bg-white/50 flex items-center gap-1.5 transition-colors cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Thêm thẻ</span>
-          </button>
-        )}
-      </div>
+          ) : (
+            <button
+              onClick={() => setIsAddingCard(true)}
+              className="w-full py-1.5 px-2 rounded-xl text-xs font-semibold text-[#2b1572]/70 hover:text-[#2b1572] hover:bg-white/50 flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Thêm thẻ</span>
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
