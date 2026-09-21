@@ -9,6 +9,7 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 import { BoardsModule } from './modules/boards/boards.module';
 import { ListsModule } from './modules/lists/lists.module';
 import { CardsModule } from './modules/cards/cards.module';
+import { ChecklistsModule } from './modules/checklists/checklists.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { CardsModule } from './modules/cards/cards.module';
     BoardsModule,
     ListsModule,
     CardsModule,
+    ChecklistsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
