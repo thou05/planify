@@ -12,6 +12,7 @@ import { CardsModule } from './modules/cards/cards.module';
 import { ChecklistsModule } from './modules/checklists/checklists.module';
 import { LabelsModule } from './modules/labels/labels.module';
 import { CommentsModule } from './modules/comments/comments.module';
+import { AttachmentsModule } from './modules/attachments/attachments.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { CommentsModule } from './modules/comments/comments.module';
     ChecklistsModule,
     LabelsModule,
     CommentsModule,
+    AttachmentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

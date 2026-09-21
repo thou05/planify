@@ -32,6 +32,16 @@ import {
   AtSign,
   CornerDownLeft,
   MessageCircle,
+  Paperclip,
+  FileText,
+  File,
+  Download,
+  ExternalLink,
+  Image as ImageIcon,
+  FileCode,
+  FileArchive,
+  Upload,
+  Maximize2,
 } from 'lucide-react';
 
 interface ChecklistItem {
@@ -76,6 +86,15 @@ interface CardComment {
   content: string;
   created_at: string;
   user?: CommentUser;
+}
+
+export interface CardAttachment {
+  id: string;
+  card_id: string;
+  file_name?: string | null;
+  file_url?: string | null;
+  file_size?: number | null;
+  created_at?: string | null;
 }
 
 interface CardDetailModalProps {
@@ -260,6 +279,21 @@ export default function CardDetailModal({
   const [selectedEditMentionIndex, setSelectedEditMentionIndex] = useState<number>(0);
   const editCommentInputRef = useRef<HTMLTextAreaElement>(null);
 
+  // --- ATTACHMENTS STATE ---
+  const [attachments, setAttachments] = useState<CardAttachment[]>([]);
+  const [isAttachmentsModalOpen, setIsAttachmentsModalOpen] = useState(false);
+  const [attachmentTab, setAttachmentTab] = useState<'upload' | 'link'>('upload');
+  const [selectedUploadFile, setSelectedUploadFile] = useState<File | null>(null);
+  const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
+  const [linkAttachmentName, setLinkAttachmentName] = useState('');
+  const [linkAttachmentUrl, setLinkAttachmentUrl] = useState('');
+  const [isAttachingLink, setIsAttachingLink] = useState(false);
+  const [editingAttachmentId, setEditingAttachmentId] = useState<string | null>(null);
+  const [editingAttachmentName, setEditingAttachmentName] = useState('');
+  const [isUpdatingAttachment, setIsUpdatingAttachment] = useState(false);
+  const [previewImageAttachment, setPreviewImageAttachment] = useState<CardAttachment | null>(null);
+  const attachmentFileInputRef = useRef<HTMLInputElement>(null);
+
   // Custom Confirmation Popup Dialog State
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
@@ -327,6 +361,7 @@ export default function CardDetailModal({
 
         setChecklists(c.checklists || []);
         setComments(c.comments || []);
+        setAttachments(c.attachments || []);
 
         const boardId = c.list?.board_id;
         if (boardId) {
@@ -348,6 +383,9 @@ export default function CardDetailModal({
       setIsDatesModalOpen(false);
       setIsMembersModalOpen(false);
       setIsLabelsModalOpen(false);
+      setIsAttachmentsModalOpen(false);
+      setSelectedUploadFile(null);
+      setPreviewImageAttachment(null);
       setActiveItemDate(null);
       setActiveItemMember(null);
       setMemberSearchQuery('');
@@ -662,6 +700,159 @@ export default function CardDetailModal({
       message: 'Bạn có chắc chắn muốn xóa bình luận này không? Hành động này không thể hoàn tác.',
       confirmText: 'Xóa bình luận',
       onConfirm: () => handleDeleteComment(commentId),
+    });
+  };
+
+  // --- ATTACHMENT HELPERS & HANDLERS ---
+  const formatFileSize = (bytes?: number | null) => {
+    if (!bytes || bytes <= 0) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const isImageFile = (filename?: string | null, url?: string | null) => {
+    const name = (filename || '').toLowerCase();
+    const ext = (name.split('.').pop() || '').toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext)) return true;
+    if (url?.startsWith('data:image/')) return true;
+    if (url && /\.(jpg|jpeg|png|webp|gif|svg)(\?|$)/i.test(url)) return true;
+    return false;
+  };
+
+  const getFileIcon = (filename?: string | null, url?: string | null) => {
+    const name = (filename || '').toLowerCase();
+    const ext = (name.split('.').pop() || '').toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext) || url?.startsWith('data:image/')) {
+      return <ImageIcon className="w-5 h-5 text-emerald-600" />;
+    }
+    if (['pdf'].includes(ext)) {
+      return <FileText className="w-5 h-5 text-rose-600" />;
+    }
+    if (['doc', 'docx', 'txt', 'rtf', 'odt'].includes(ext)) {
+      return <FileText className="w-5 h-5 text-blue-600" />;
+    }
+    if (['xls', 'xlsx', 'csv'].includes(ext)) {
+      return <FileText className="w-5 h-5 text-emerald-700" />;
+    }
+    if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) {
+      return <FileArchive className="w-5 h-5 text-amber-600" />;
+    }
+    if (['js', 'ts', 'tsx', 'jsx', 'json', 'html', 'css', 'py', 'java', 'cpp', 'c', 'sql'].includes(ext)) {
+      return <FileCode className="w-5 h-5 text-indigo-600" />;
+    }
+    if (url && !url.includes('/attachments/') && (url.startsWith('http://') || url.startsWith('https://'))) {
+      return <ExternalLink className="w-5 h-5 text-[#2b1572]" />;
+    }
+    return <File className="w-5 h-5 text-slate-600" />;
+  };
+
+  const handleUploadAttachment = async (file?: File) => {
+    const fileToUpload = file || selectedUploadFile;
+    if (!fileToUpload || !cardId || isUploadingAttachment) return;
+
+    try {
+      setIsUploadingAttachment(true);
+      const formData = new FormData();
+      formData.append('file', fileToUpload);
+      const res = await apiClient<CardAttachment>(`/cards/${cardId}/attachments/upload`, {
+        method: 'POST',
+        data: formData,
+      });
+
+      if (res.success && res.data) {
+        const item: CardAttachment = (res.data as any)?.data || res.data;
+        setAttachments((prev) => [...prev, item]);
+        setSelectedUploadFile(null);
+        setIsAttachmentsModalOpen(false);
+        onCardUpdated();
+      }
+    } catch (err: any) {
+      alert(err.message || 'Không thể tải tệp lên');
+    } finally {
+      setIsUploadingAttachment(false);
+    }
+  };
+
+  const handleAttachLink = async () => {
+    if (!linkAttachmentUrl.trim() || !cardId || isAttachingLink) return;
+    const name = linkAttachmentName.trim() || linkAttachmentUrl.trim();
+
+    try {
+      setIsAttachingLink(true);
+      const res = await apiClient<CardAttachment>(`/cards/${cardId}/attachments/link`, {
+        method: 'POST',
+        data: {
+          file_name: name,
+          file_url: linkAttachmentUrl.trim(),
+        },
+      });
+
+      if (res.success && res.data) {
+        const item: CardAttachment = (res.data as any)?.data || res.data;
+        setAttachments((prev) => [...prev, item]);
+        setLinkAttachmentName('');
+        setLinkAttachmentUrl('');
+        setIsAttachmentsModalOpen(false);
+        onCardUpdated();
+      }
+    } catch (err: any) {
+      alert(err.message || 'Không thể đính kèm liên kết');
+    } finally {
+      setIsAttachingLink(false);
+    }
+  };
+
+  const handleUpdateAttachmentName = async (attachmentId: string) => {
+    if (!editingAttachmentName.trim() || isUpdatingAttachment) {
+      setEditingAttachmentId(null);
+      return;
+    }
+
+    try {
+      setIsUpdatingAttachment(true);
+      const res = await apiClient<CardAttachment>(`/attachments/${attachmentId}`, {
+        method: 'PATCH',
+        data: { file_name: editingAttachmentName.trim() },
+      });
+
+      if (res.success && res.data) {
+        const item: CardAttachment = (res.data as any)?.data || res.data;
+        setAttachments((prev) =>
+          prev.map((a) => (a.id === attachmentId ? { ...a, file_name: item.file_name || editingAttachmentName.trim() } : a)),
+        );
+        setEditingAttachmentId(null);
+        onCardUpdated();
+      }
+    } catch (err: any) {
+      alert(err.message || 'Không thể cập nhật tên đính kèm');
+    } finally {
+      setIsUpdatingAttachment(false);
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    try {
+      const res = await apiClient(`/attachments/${attachmentId}`, {
+        method: 'DELETE',
+      });
+
+      if (res.success) {
+        setAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
+        onCardUpdated();
+      }
+    } catch (err: any) {
+      alert(err.message || 'Không thể xóa tệp đính kèm');
+    }
+  };
+
+  const requestDeleteAttachment = (attachmentId: string, fileName: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Xóa đính kèm?',
+      message: `Bạn có chắc chắn muốn xóa tệp "${fileName}" không? Hành động này không thể hoàn tác.`,
+      confirmText: 'Xóa đính kèm',
+      onConfirm: () => handleDeleteAttachment(attachmentId),
     });
   };
 
@@ -1474,6 +1665,23 @@ export default function CardDetailModal({
                   <span>{dueDate ? 'Thời hạn' : 'Ngày hạn'}</span>
                 </button>
 
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAttachmentsModalOpen(true);
+                    setAttachmentTab('upload');
+                    setSelectedUploadFile(null);
+                  }}
+                  className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer ${
+                    attachments.length > 0
+                      ? 'text-[#2b1572] bg-[#a6d1fd]/30 hover:bg-[#a6d1fd]/50 border border-[#a6d1fd]/60'
+                      : 'text-[#2b1572] bg-slate-100 hover:bg-slate-200'
+                  }`}
+                >
+                  <Paperclip className="w-3.5 h-3.5 text-[#2b1572]/70" />
+                  <span>Đính kèm {attachments.length > 0 && `(${attachments.length})`}</span>
+                </button>
+
                 <div className="h-4 w-[1px] bg-slate-200 mx-0.5" />
 
                 <button
@@ -1740,6 +1948,187 @@ export default function CardDetailModal({
                   className="w-full text-xs text-[#2b1572] bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-[#2b1572]/40 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#2b1572]/15 transition-all resize-y"
                 />
               </div>
+
+              {/* Attachments Section */}
+              {attachments.length > 0 && (
+                <div className="space-y-3 pt-4 border-t border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-bold text-[#2b1572] uppercase tracking-wider">
+                      <Paperclip className="w-4 h-4 text-[#2b1572]/70" />
+                      <span>Tệp đính kèm</span>
+                      <span className="px-2 py-0.5 rounded-full bg-[#2b1572]/10 text-[#2b1572] text-[11px] font-bold">
+                        {attachments.length}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAttachmentsModalOpen(true);
+                        setAttachmentTab('upload');
+                        setSelectedUploadFile(null);
+                      }}
+                      className="text-xs font-semibold text-[#2b1572] hover:bg-[#a6d1fd]/30 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Thêm</span>
+                    </button>
+                  </div>
+
+                  {/* Attachments List */}
+                  <div className="space-y-2.5">
+                    {attachments.map((att) => {
+                      const isImg = isImageFile(att.file_name, att.file_url);
+                      const isEditing = editingAttachmentId === att.id;
+
+                      return (
+                        <div
+                          key={att.id}
+                          className="group flex items-start gap-3 p-2.5 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-slate-50 transition-all shadow-2xs relative"
+                        >
+                          {/* Thumbnail / File Icon */}
+                          {isImg ? (
+                            <div
+                              onClick={() => setPreviewImageAttachment(att)}
+                              className="w-16 h-14 rounded-lg overflow-hidden bg-slate-200 shrink-0 cursor-pointer relative group/thumb border border-slate-200"
+                              title="Bấm để xem ảnh phóng to"
+                            >
+                              {att.file_url ? (
+                                <img
+                                  src={att.file_url}
+                                  alt={att.file_name || 'Ảnh đính kèm'}
+                                  className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-slate-100">
+                                  <ImageIcon className="w-5 h-5 text-slate-400" />
+                                </div>
+                              )}
+                              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center text-white transition-opacity">
+                                <Maximize2 className="w-4 h-4" />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="w-12 h-12 rounded-xl bg-white border border-slate-200/90 flex items-center justify-center shrink-0 shadow-2xs">
+                              {getFileIcon(att.file_name, att.file_url)}
+                            </div>
+                          )}
+
+                          {/* Info and Actions */}
+                          <div className="flex-1 min-w-0 space-y-1">
+                            {isEditing ? (
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="text"
+                                  value={editingAttachmentName}
+                                  onChange={(e) => setEditingAttachmentName(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleUpdateAttachmentName(att.id);
+                                    if (e.key === 'Escape') setEditingAttachmentId(null);
+                                  }}
+                                  autoFocus
+                                  className="text-xs text-[#2b1572] font-semibold bg-white border border-[#2b1572] rounded-lg px-2 py-1 focus:outline-none flex-1 shadow-2xs"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateAttachmentName(att.id)}
+                                  disabled={isUpdatingAttachment}
+                                  className="px-2.5 py-1 text-xs font-semibold text-white bg-[#2b1572] rounded-lg cursor-pointer"
+                                >
+                                  Lưu
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingAttachmentId(null)}
+                                  className="px-2 py-1 text-xs text-slate-500 hover:bg-slate-200 rounded-lg cursor-pointer"
+                                >
+                                  Hủy
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="flex items-center gap-2">
+                                  <a
+                                    href={att.file_url || '#'}
+                                    target={att.file_url ? '_blank' : undefined}
+                                    rel="noopener noreferrer"
+                                    className="text-xs font-bold text-[#2b1572] hover:underline truncate"
+                                    title={att.file_name || att.file_url || ''}
+                                  >
+                                    {att.file_name || att.file_url || 'Tệp đính kèm'}
+                                  </a>
+                                  {att.file_url && (att.file_url.startsWith('http://') || att.file_url.startsWith('https://')) && (
+                                    <a
+                                      href={att.file_url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-slate-400 hover:text-[#2b1572] shrink-0"
+                                      title="Mở trong tab mới"
+                                    >
+                                      <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center gap-3 text-[11px] text-slate-400 font-medium">
+                                  {att.file_size ? <span>{formatFileSize(att.file_size)}</span> : null}
+                                  {att.created_at && <span>{formatRelativeTime(att.created_at)}</span>}
+                                </div>
+                              </>
+                            )}
+
+                            {/* Action Buttons Row */}
+                            {!isEditing && (
+                              <div className="flex items-center gap-3 pt-0.5 text-xs text-slate-500">
+                                {isImg && att.file_url && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setPreviewImageAttachment(att)}
+                                    className="hover:text-[#2b1572] hover:underline cursor-pointer flex items-center gap-0.5 text-[11px]"
+                                  >
+                                    <span>Xem trước</span>
+                                  </button>
+                                )}
+
+                                {att.file_url && (
+                                  <a
+                                    href={att.file_url}
+                                    download={att.file_name || 'attachment'}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:text-[#2b1572] hover:underline cursor-pointer flex items-center gap-0.5 text-[11px]"
+                                  >
+                                    <span>Tải xuống</span>
+                                  </a>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingAttachmentId(att.id);
+                                    setEditingAttachmentName(att.file_name || '');
+                                  }}
+                                  className="hover:text-[#2b1572] hover:underline cursor-pointer text-[11px]"
+                                >
+                                  <span>Đổi tên</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => requestDeleteAttachment(att.id, att.file_name || 'Tệp đính kèm')}
+                                  className="text-rose-500 hover:text-rose-700 hover:underline cursor-pointer text-[11px]"
+                                >
+                                  <span>Xóa</span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Checklists Section */}
               {checklists.map((cl) => {
@@ -3052,6 +3441,243 @@ export default function CardDetailModal({
                   Đóng
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ATTACHMENT MODAL / POPOVER */}
+        {isAttachmentsModalOpen && (
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-2xs flex items-center justify-center p-4 z-60 animate-in fade-in duration-100">
+            <div className="bg-white rounded-2xl shadow-2xl border border-[#2b1572]/20 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]">
+              {/* Header */}
+              <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#2b1572]">
+                  <Paperclip className="w-4 h-4 text-[#2b1572]" />
+                  <span>Đính kèm tệp & liên kết</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAttachmentsModalOpen(false)}
+                  className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Tabs */}
+              <div className="flex border-b border-slate-100 bg-slate-50/60 p-1 gap-1">
+                <button
+                  type="button"
+                  onClick={() => setAttachmentTab('upload')}
+                  className={`flex-1 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                    attachmentTab === 'upload'
+                      ? 'bg-white text-[#2b1572] shadow-2xs'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Tải tệp từ máy tính
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAttachmentTab('link')}
+                  className={`flex-1 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                    attachmentTab === 'link'
+                      ? 'bg-white text-[#2b1572] shadow-2xs'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Đính kèm liên kết
+                </button>
+              </div>
+
+              {/* Tab Content */}
+              <div className="p-4 overflow-y-auto">
+                {attachmentTab === 'upload' ? (
+                  <div className="space-y-4">
+                    {/* Hidden input */}
+                    <input
+                      type="file"
+                      ref={attachmentFileInputRef}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) setSelectedUploadFile(file);
+                      }}
+                      className="hidden"
+                    />
+
+                    {/* Drag & Drop Box */}
+                    <div
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const file = e.dataTransfer.files?.[0];
+                        if (file) setSelectedUploadFile(file);
+                      }}
+                      onClick={() => attachmentFileInputRef.current?.click()}
+                      className="border-2 border-dashed border-[#2b1572]/20 hover:border-[#2b1572]/50 hover:bg-[#a6d1fd]/10 rounded-2xl p-6 flex flex-col items-center justify-center gap-2.5 transition-all cursor-pointer bg-slate-50/40"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-[#a6d1fd]/30 text-[#2b1572] flex items-center justify-center">
+                        <Upload className="w-5 h-5" />
+                      </div>
+                      <div className="text-center">
+                        <span className="text-xs font-bold text-[#2b1572]">
+                          Kéo thả tệp vào đây hoặc{' '}
+                          <span className="underline text-[#2b1572]">Chọn từ máy tính</span>
+                        </span>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          Hỗ trợ ảnh, PDF, tài liệu, file nén (tối đa 25MB)
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Selected File Info */}
+                    {selectedUploadFile && (
+                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-3 animate-in fade-in duration-150">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {getFileIcon(selectedUploadFile.name)}
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-[#2b1572] truncate">
+                              {selectedUploadFile.name}
+                            </p>
+                            <p className="text-[10px] text-slate-400">
+                              {formatFileSize(selectedUploadFile.size)}
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setSelectedUploadFile(null)}
+                          className="p-1 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Upload button */}
+                    <div className="flex items-center justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsAttachmentsModalOpen(false)}
+                        className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleUploadAttachment()}
+                        disabled={!selectedUploadFile || isUploadingAttachment}
+                        className="px-4 py-1.5 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] disabled:opacity-40 rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                      >
+                        {isUploadingAttachment ? (
+                          <>
+                            <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            <span>Đang tải lên...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-3.5 h-3.5" />
+                            <span>Tải lên</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3.5">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700">Đường dẫn liên kết (URL) *</label>
+                      <input
+                        type="url"
+                        value={linkAttachmentUrl}
+                        onChange={(e) => setLinkAttachmentUrl(e.target.value)}
+                        placeholder="https://example.com/tai-lieu"
+                        autoFocus
+                        className="w-full text-xs text-[#2b1572] bg-white border border-slate-200 focus:border-[#2b1572] rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-[#2b1572]/15 shadow-2xs"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700">Tên hiển thị (Tùy chọn)</label>
+                      <input
+                        type="text"
+                        value={linkAttachmentName}
+                        onChange={(e) => setLinkAttachmentName(e.target.value)}
+                        placeholder="Ví dụ: Thiết kế Figma, Google Docs..."
+                        className="w-full text-xs text-[#2b1572] bg-white border border-slate-200 focus:border-[#2b1572] rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-[#2b1572]/15 shadow-2xs"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsAttachmentsModalOpen(false)}
+                        className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleAttachLink}
+                        disabled={!linkAttachmentUrl.trim() || isAttachingLink}
+                        className="px-4 py-1.5 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] disabled:opacity-40 rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                      >
+                        {isAttachingLink ? 'Đang lưu...' : 'Đính kèm liên kết'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* IMAGE LIGHTBOX MODAL */}
+        {previewImageAttachment && (
+          <div
+            className="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 z-80 animate-in fade-in duration-150"
+            onClick={() => setPreviewImageAttachment(null)}
+          >
+            <div
+              className="max-w-4xl max-h-[90vh] flex flex-col items-center gap-3 animate-in zoom-in-95 duration-150 relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between w-full text-white px-2">
+                <span className="text-sm font-bold truncate max-w-md">
+                  {previewImageAttachment.file_name || 'Ảnh đính kèm'}
+                </span>
+                <div className="flex items-center gap-2">
+                  {previewImageAttachment.file_url && (
+                    <a
+                      href={previewImageAttachment.file_url}
+                      download={previewImageAttachment.file_name || 'image'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors cursor-pointer flex items-center gap-1 text-xs"
+                      title="Tải xuống"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>Tải về</span>
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setPreviewImageAttachment(null)}
+                    className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {previewImageAttachment.file_url && (
+                <img
+                  src={previewImageAttachment.file_url}
+                  alt={previewImageAttachment.file_name || 'Ảnh đính kèm'}
+                  className="max-h-[80vh] max-w-full rounded-xl object-contain shadow-2xl border border-white/20"
+                />
+              )}
             </div>
           </div>
         )}
