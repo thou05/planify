@@ -163,16 +163,45 @@ export class ChecklistsService {
       position = (lastItem?.[0]?.position ?? -1) + 1;
     }
 
-    const { data: item, error } = await this.supabase
+    const insertPayload: Record<string, any> = {
+      checklist_id: checklistId,
+      content: dto.content.trim(),
+      position,
+      is_completed: false,
+    };
+    if (dto.due_date !== undefined) insertPayload.due_date = dto.due_date;
+    if (dto.member_id !== undefined) insertPayload.member_id = dto.member_id;
+
+    let { data: item, error } = await this.supabase
       .from('checklist_items')
-      .insert({
-        checklist_id: checklistId,
-        content: dto.content.trim(),
+      .insert(insertPayload)
+      .select(`
+        id,
+        checklist_id,
+        content,
+        is_completed,
         position,
-        is_completed: false,
-      })
-      .select()
-      .single();
+        due_date,
+        member_id,
+        member:board_members (
+          id,
+          role,
+          user:users (id, name, email, avatar)
+        )
+      `)
+      .maybeSingle();
+
+    if (error) {
+      delete insertPayload.due_date;
+      delete insertPayload.member_id;
+      const fallbackRes = await this.supabase
+        .from('checklist_items')
+        .insert(insertPayload)
+        .select()
+        .maybeSingle();
+      item = fallbackRes.data;
+      error = fallbackRes.error;
+    }
 
     if (error || !item) {
       throw new BadRequestException(error?.message || 'Không thể tạo mục công việc');
@@ -201,13 +230,41 @@ export class ChecklistsService {
     if (dto.content !== undefined) updatePayload.content = dto.content.trim();
     if (dto.is_completed !== undefined) updatePayload.is_completed = dto.is_completed;
     if (dto.position !== undefined) updatePayload.position = dto.position;
+    if (dto.due_date !== undefined) updatePayload.due_date = dto.due_date;
+    if (dto.member_id !== undefined) updatePayload.member_id = dto.member_id;
 
-    const { data: updated, error } = await this.supabase
+    let { data: updated, error } = await this.supabase
       .from('checklist_items')
       .update(updatePayload)
       .eq('id', id)
-      .select()
-      .single();
+      .select(`
+        id,
+        checklist_id,
+        content,
+        is_completed,
+        position,
+        due_date,
+        member_id,
+        member:board_members (
+          id,
+          role,
+          user:users (id, name, email, avatar)
+        )
+      `)
+      .maybeSingle();
+
+    if (error) {
+      delete updatePayload.due_date;
+      delete updatePayload.member_id;
+      const fallbackRes = await this.supabase
+        .from('checklist_items')
+        .update(updatePayload)
+        .eq('id', id)
+        .select()
+        .maybeSingle();
+      updated = fallbackRes.data;
+      error = fallbackRes.error;
+    }
 
     if (error || !updated) {
       throw new BadRequestException(error?.message || 'Không thể cập nhật mục công việc');

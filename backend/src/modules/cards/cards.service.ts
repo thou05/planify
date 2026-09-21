@@ -105,7 +105,7 @@ export class CardsService {
   }
 
   async findById(cardId: string, userId: string) {
-    const { data: card, error } = await this.supabase
+    let { data: card, error } = await this.supabase
       .from('cards')
       .select(`
         *,
@@ -119,7 +119,14 @@ export class CardsService {
             id,
             content,
             is_completed,
-            position
+            position,
+            due_date,
+            member_id,
+            member:board_members (
+              id,
+              role,
+              user:users (id, name, email, avatar)
+            )
           )
         ),
         card_labels (
@@ -147,6 +154,53 @@ export class CardsService {
       `)
       .eq('id', cardId)
       .maybeSingle();
+
+    if (error) {
+      const fallback = await this.supabase
+        .from('cards')
+        .select(`
+          *,
+          list:lists (id, title, board_id),
+          creator:users (id, name, email, avatar),
+          checklists (
+            id,
+            title,
+            position,
+            items:checklist_items (
+              id,
+              content,
+              is_completed,
+              position
+            )
+          ),
+          card_labels (
+            label:labels (id, name, color)
+          ),
+          card_assignees (
+            board_member:board_members (
+              id,
+              role,
+              user:users (id, name, email, avatar)
+            )
+          ),
+          comments (
+            id,
+            content,
+            created_at,
+            user:users (id, name, avatar)
+          ),
+          attachments (
+            id,
+            file_name,
+            file_url,
+            file_size
+          )
+        `)
+        .eq('id', cardId)
+        .maybeSingle();
+      card = fallback.data;
+      error = fallback.error;
+    }
 
     if (error || !card) {
       throw new NotFoundException('Không tìm thấy thông tin thẻ');
@@ -188,7 +242,7 @@ export class CardsService {
       updateData.is_due_date_completed = dto.is_due_date_completed;
     }
 
-    const { data: updated, error } = await this.supabase
+    let { data: updated, error } = await this.supabase
       .from('cards')
       .update(updateData)
       .eq('id', cardId)
@@ -202,7 +256,14 @@ export class CardsService {
             id,
             content,
             is_completed,
-            position
+            position,
+            due_date,
+            member_id,
+            member:board_members (
+              id,
+              role,
+              user:users (id, name, email, avatar)
+            )
           )
         ),
         card_labels (
@@ -210,7 +271,35 @@ export class CardsService {
         ),
         comments (id)
       `)
-      .single();
+      .maybeSingle();
+
+    if (error) {
+      const fallback = await this.supabase
+        .from('cards')
+        .update(updateData)
+        .eq('id', cardId)
+        .select(`
+          *,
+          checklists (
+            id,
+            title,
+            position,
+            items:checklist_items (
+              id,
+              content,
+              is_completed,
+              position
+            )
+          ),
+          card_labels (
+            label:labels (id, name, color)
+          ),
+          comments (id)
+        `)
+        .maybeSingle();
+      updated = fallback.data;
+      error = fallback.error;
+    }
 
     if (error || !updated) {
       throw new BadRequestException(error?.message || 'Không thể cập nhật thẻ');
