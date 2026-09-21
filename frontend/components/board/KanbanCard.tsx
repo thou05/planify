@@ -398,16 +398,39 @@ export default function KanbanCard({
 
           {/* Card Assignee avatar */}
           {card.card_assignees?.length > 0 && (
-            <div className="flex items-center -space-x-1.5">
-              {card.card_assignees.slice(0, 3).map((ca: any) => (
+            <div className="flex items-center -space-x-1.5 ml-auto">
+              {card.card_assignees.slice(0, 3).map((ca: any) => {
+                const uName = ca.board_member?.user?.name || 'Thành viên';
+                const uAvatar = ca.board_member?.user?.avatar;
+                const firstLetter = uName.charAt(0).toUpperCase();
+
+                return uAvatar ? (
+                  <img
+                    key={ca.id || Math.random()}
+                    src={uAvatar}
+                    alt={uName}
+                    className="w-5 h-5 rounded-full object-cover border-2 border-white shadow-2xs shrink-0"
+                    title={uName}
+                  />
+                ) : (
+                  <div
+                    key={ca.id || Math.random()}
+                    className="w-5 h-5 rounded-full bg-[#2b1572] border-2 border-white text-white flex items-center justify-center text-[9px] font-bold shadow-2xs shrink-0"
+                    title={uName}
+                  >
+                    {firstLetter}
+                  </div>
+                );
+              })}
+
+              {card.card_assignees.length > 3 && (
                 <div
-                  key={ca.id || Math.random()}
-                  className="w-5 h-5 rounded-full bg-[#2b1572] border border-white text-white flex items-center justify-center text-[9px] font-bold shadow-2xs"
-                  title={ca.board_member?.user?.name || 'Thành viên'}
+                  className="w-5 h-5 rounded-full bg-slate-200 border-2 border-white text-[#2b1572] flex items-center justify-center text-[8px] font-bold shadow-2xs shrink-0"
+                  title={`+${card.card_assignees.length - 3} thành viên khác`}
                 >
-                  {ca.board_member?.user?.name?.charAt(0).toUpperCase() || 'U'}
+                  +{card.card_assignees.length - 3}
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>

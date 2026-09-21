@@ -169,8 +169,9 @@ export class BoardsService {
             title,
             description,
             position,
-            status,
+            start_date,
             due_date,
+            reminder_at,
             is_due_date_completed,
             checklists (
               id,
@@ -179,6 +180,15 @@ export class BoardsService {
             ),
             card_labels (
               label:labels (id, name, color)
+            ),
+            card_assignees (
+              id,
+              board_member_id,
+              board_member:board_members (
+                id,
+                role,
+                user:users (id, name, email, avatar)
+              )
             ),
             comments (id)
           )

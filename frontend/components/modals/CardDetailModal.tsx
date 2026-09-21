@@ -22,6 +22,9 @@ import {
   ChevronDown,
   Bell,
   BellOff,
+  Users,
+  UserPlus,
+  Search,
 } from 'lucide-react';
 
 interface ChecklistItem {
@@ -103,6 +106,12 @@ export default function CardDetailModal({
   const [isCompleted, setIsCompleted] = useState(false);
   const [copyLinkSuccess, setCopyLinkSuccess] = useState(false);
 
+  // Members state
+  const [assignees, setAssignees] = useState<any[]>([]);
+  const [boardMembers, setBoardMembers] = useState<any[]>([]);
+  const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
+  const [memberSearchQuery, setMemberSearchQuery] = useState('');
+
   // Dates modal/popover state
   const [isDatesModalOpen, setIsDatesModalOpen] = useState(false);
   const [tempStartDate, setTempStartDate] = useState('');
@@ -134,6 +143,17 @@ export default function CardDetailModal({
 
   const newItemInputRef = useRef<HTMLInputElement>(null);
 
+  const fetchBoardMembers = async (boardId: string) => {
+    try {
+      const res = await apiClient<any[]>(`/boards/${boardId}/members`);
+      if (res.success && res.data) {
+        setBoardMembers(res.data);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
   const fetchCardDetails = async (id: string) => {
     try {
       setIsLoading(true);
@@ -149,6 +169,7 @@ export default function CardDetailModal({
         setDueDate(dDate);
         setReminderAt(c.reminder_at || null);
         setIsCompleted(!!c.is_due_date_completed);
+        setAssignees(c.card_assignees || []);
 
         if (c.due_date && c.reminder_at) {
           const diffMins = Math.round(
@@ -160,6 +181,11 @@ export default function CardDetailModal({
         }
 
         setChecklists(c.checklists || []);
+
+        const boardId = c.list?.board_id;
+        if (boardId) {
+          fetchBoardMembers(boardId);
+        }
       }
     } catch {
       // Failed to load card
@@ -173,12 +199,16 @@ export default function CardDetailModal({
       fetchCardDetails(cardId);
       setIsAddingChecklist(false);
       setIsDatesModalOpen(false);
+      setIsMembersModalOpen(false);
+      setMemberSearchQuery('');
       setActiveNewItemChecklistId(null);
       setEditingChecklistId(null);
       setEditingItemId(null);
     } else {
       setCard(null);
       setChecklists([]);
+      setAssignees([]);
+      setBoardMembers([]);
     }
   }, [isOpen, cardId]);
 
@@ -258,6 +288,56 @@ export default function CardDetailModal({
       alert(err.message || 'Không thể gỡ bỏ thời hạn');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Toggle Assign Member
+  const handleToggleAssignee = async (boardMemberId: string) => {
+    const isAssigned = assignees.some(
+      (a) => a.board_member_id === boardMemberId || a.board_member?.id === boardMemberId,
+    );
+
+    // Optimistic
+    if (isAssigned) {
+      setAssignees((prev) =>
+        prev.filter(
+          (a) => a.board_member_id !== boardMemberId && a.board_member?.id !== boardMemberId,
+        ),
+      );
+    } else {
+      const memberObj = boardMembers.find((m) => m.id === boardMemberId);
+      if (memberObj) {
+        setAssignees((prev) => [
+          ...prev,
+          {
+            id: `temp-${Date.now()}`,
+            board_member_id: boardMemberId,
+            board_member: memberObj,
+          },
+        ]);
+      }
+    }
+
+    try {
+      const res = await apiClient<any>(`/cards/${cardId}/assignees/toggle`, {
+        method: 'POST',
+        data: { board_member_id: boardMemberId },
+      });
+      if (res.success && res.data) {
+        if (res.data.assigned && res.data.assignee) {
+          setAssignees((prev) =>
+            prev.map((a) =>
+              a.board_member_id === boardMemberId || a.board_member?.id === boardMemberId
+                ? res.data.assignee
+                : a,
+            ),
+          );
+        }
+        onCardUpdated();
+      }
+    } catch (err: any) {
+      alert(err.message || 'Không thể thay đổi thành viên gán');
+      fetchCardDetails(cardId!);
     }
   };
 
@@ -370,6 +450,15 @@ export default function CardDetailModal({
     reminderMinutes >= 0
       ? REMINDER_OPTIONS.find((r) => r.value === reminderMinutes)?.label || 'Có lời nhắc'
       : null;
+
+  // Filter board members for popover
+  const filteredBoardMembers = boardMembers.filter((m) => {
+    const q = memberSearchQuery.toLowerCase().trim();
+    if (!q) return true;
+    const name = m.user?.name?.toLowerCase() || '';
+    const email = m.user?.email?.toLowerCase() || '';
+    return name.includes(q) || email.includes(q);
+  });
 
   // --- CHECKLIST ACTIONS ---
   const handleCreateChecklist = async () => {
@@ -582,408 +671,478 @@ export default function CardDetailModal({
           <div className="flex-1 overflow-y-auto p-5 grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Main Content (2 cols) */}
             <div className="md:col-span-2 space-y-6">
+              {/* Assigned Members Section */}
+              {assignees.length > 0 && (
+                <div className="space-y-1.5">
+                  <div className="text-[11px] font-bold text-[#2b1572]/70 uppercase tracking-wider">
+                    Thành viên
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {assignees.map((a) => {
+                      const member = a.board_member;
+                      const uName = member?.user?.name || 'Thành viên';
+                      const uAvatar = member?.user?.avatar;
+                      const firstLetter = uName.charAt(0).toUpperCase();
+
+                      return (
+                        <div
+                          key={a.id || member?.id}
+                          onClick={() => {
+                            setIsMembersModalOpen(true);
+                            setMemberSearchQuery('');
+                          }}
+                          className="group flex items-center gap-1.5 pl-1 pr-2.5 py-1 bg-slate-100 hover:bg-[#2b1572]/10 rounded-full border border-slate-200/80 transition-all cursor-pointer shadow-2xs"
+                          title={`${uName} (${member?.role || 'MEMBER'}) - Bấm để thay đổi`}
+                        >
+                          {uAvatar ? (
+                            <img
+                              src={uAvatar}
+                              alt={uName}
+                              className="w-5 h-5 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-5 h-5 rounded-full bg-[#2b1572] text-white flex items-center justify-center text-[10px] font-bold shadow-2xs">
+                              {firstLetter}
+                            </div>
+                          )}
+                          <span className="text-xs font-semibold text-[#2b1572]">{uName}</span>
+                        </div>
+                      );
+                    })}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMembersModalOpen(true);
+                        setMemberSearchQuery('');
+                      }}
+                      className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-[#2b1572] flex items-center justify-center transition-colors cursor-pointer"
+                      title="Thêm thành viên"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Due Date quick status banner */}
               {dueDate && deadlineStatus && (
-              <div
-                className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs transition-all ${
-                  isCompleted
-                    ? 'bg-emerald-50/80 border-emerald-200'
-                    : deadlineStatus.status === 'overdue'
-                    ? 'bg-rose-50/80 border-rose-200'
-                    : deadlineStatus.status === 'due_soon'
-                    ? 'bg-amber-50/80 border-amber-200'
-                    : 'bg-slate-50 border-slate-200'
-                }`}
-              >
-                <div className="flex items-start gap-3">
+                <div
+                  className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs transition-all ${
+                    isCompleted
+                      ? 'bg-emerald-50/80 border-emerald-200'
+                      : deadlineStatus.status === 'overdue'
+                      ? 'bg-rose-50/80 border-rose-200'
+                      : deadlineStatus.status === 'due_soon'
+                      ? 'bg-amber-50/80 border-amber-200'
+                      : 'bg-slate-50 border-slate-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <button
+                      onClick={handleToggleCompleted}
+                      className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center transition-all cursor-pointer shadow-2xs shrink-0 ${
+                        isCompleted
+                          ? 'bg-emerald-600 text-white'
+                          : 'border-2 border-slate-300 hover:border-[#2b1572] bg-white'
+                      }`}
+                      title={isCompleted ? 'Đánh dấu chưa hoàn thành' : 'Đánh dấu đã hoàn thành'}
+                    >
+                      {isCompleted && <Check className="w-3.5 h-3.5" />}
+                    </button>
+
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-bold text-[#2b1572]">
+                          {startDate ? (
+                            <>
+                              {new Date(startDate).toLocaleDateString('vi-VN', {
+                                day: 'numeric',
+                                month: 'short',
+                              })}{' '}
+                              -{' '}
+                            </>
+                          ) : null}
+                          {new Date(dueDate).toLocaleString('vi-VN', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+
+                        <span
+                          className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md border ${deadlineStatus.badgeBg}`}
+                        >
+                          <deadlineStatus.icon className="w-3 h-3" />
+                          <span>{deadlineStatus.label}</span>
+                        </span>
+                      </div>
+
+                      {reminderLabel && (
+                        <div className="flex items-center gap-1.5 text-[11px] text-[#2b1572]/70 font-medium">
+                          <Bell className="w-3 h-3 text-[#2b1572]/60" />
+                          <span>{reminderLabel}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   <button
-                    onClick={handleToggleCompleted}
-                    className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center transition-all cursor-pointer shadow-2xs shrink-0 ${
-                      isCompleted
-                        ? 'bg-emerald-600 text-white'
-                        : 'border-2 border-slate-300 hover:border-[#2b1572] bg-white'
-                    }`}
-                    title={isCompleted ? 'Đánh dấu chưa hoàn thành' : 'Đánh dấu đã hoàn thành'}
+                    type="button"
+                    onClick={handleOpenDatesModal}
+                    className="self-end sm:self-center px-2.5 py-1 text-xs font-semibold text-[#2b1572] hover:bg-[#2b1572]/10 bg-white/70 border border-[#2b1572]/20 rounded-lg transition-colors cursor-pointer"
                   >
-                    {isCompleted && <Check className="w-3.5 h-3.5" />}
+                    Sửa ngày
                   </button>
+                </div>
+              )}
 
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-bold text-[#2b1572]">
-                        {startDate ? (
-                          <>
-                            {new Date(startDate).toLocaleDateString('vi-VN', {
-                              day: 'numeric',
-                              month: 'short',
-                            })}{' '}
-                            -{' '}
-                          </>
-                        ) : null}
-                        {new Date(dueDate).toLocaleString('vi-VN', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </span>
+              {/* Description Section */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#2b1572] uppercase tracking-wider">
+                  <AlignLeft className="w-4 h-4 text-[#2b1572]/70" />
+                  <span>Mô tả chi tiết</span>
+                </div>
+                <textarea
+                  rows={4}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  onBlur={handleSaveAll}
+                  placeholder="Thêm mô tả chi tiết hơn về công việc này..."
+                  className="w-full text-xs text-[#2b1572] bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-[#2b1572]/40 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#2b1572]/15 transition-all resize-y"
+                />
+              </div>
 
-                      <span
-                        className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md border ${deadlineStatus.badgeBg}`}
-                      >
-                        <deadlineStatus.icon className="w-3 h-3" />
-                        <span>{deadlineStatus.label}</span>
-                      </span>
+              {/* Checklists Section */}
+              {checklists.map((cl) => {
+                const totalItems = cl.items?.length || 0;
+                const completedItems = cl.items?.filter((i) => i.is_completed).length || 0;
+                const progressPercent = totalItems === 0 ? 0 : Math.round((completedItems / totalItems) * 100);
+                const isAllDone = totalItems > 0 && completedItems === totalItems;
+                const isCollapsed = !!collapsedChecklists[cl.id];
+
+                return (
+                  <div key={cl.id} className="space-y-3 pt-4 border-t border-slate-100">
+                    {/* Checklist Header */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => toggleChecklistCollapse(cl.id)}
+                          className="p-1 -ml-1 text-[#2b1572]/60 hover:text-[#2b1572] hover:bg-slate-100 rounded-lg transition-colors cursor-pointer shrink-0"
+                          title={isCollapsed ? 'Mở rộng checklist' : 'Thu gọn checklist'}
+                        >
+                          <ChevronDown
+                            className={`w-4 h-4 transition-transform duration-200 ${
+                              isCollapsed ? '-rotate-90' : 'rotate-0'
+                            }`}
+                          />
+                        </button>
+
+                        <CheckSquare className="w-4 h-4 text-[#2b1572] shrink-0" />
+                        {editingChecklistId === cl.id ? (
+                          <input
+                            type="text"
+                            value={editingChecklistTitle}
+                            onChange={(e) => setEditingChecklistTitle(e.target.value)}
+                            onBlur={() => handleUpdateChecklistTitle(cl.id)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleUpdateChecklistTitle(cl.id);
+                              if (e.key === 'Escape') setEditingChecklistId(null);
+                            }}
+                            autoFocus
+                            className="text-xs font-bold text-[#2b1572] bg-white border border-[#2b1572]/40 rounded-md px-2 py-1 focus:outline-none w-full"
+                          />
+                        ) : (
+                          <span
+                            onClick={() => {
+                              setEditingChecklistId(cl.id);
+                              setEditingChecklistTitle(cl.title);
+                            }}
+                            className="text-xs font-bold text-[#2b1572] uppercase tracking-wider cursor-pointer hover:bg-slate-100 px-1.5 py-0.5 rounded-md transition-colors truncate"
+                            title="Bấm để đổi tên checklist"
+                          >
+                            {cl.title}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleDeleteChecklist(cl.id)}
+                          className="px-2 py-1 text-[11px] font-medium text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                        >
+                          Xóa
+                        </button>
+                      </div>
                     </div>
 
-                    {reminderLabel && (
-                      <div className="flex items-center gap-1.5 text-[11px] text-[#2b1572]/70 font-medium">
-                        <Bell className="w-3 h-3 text-[#2b1572]/60" />
-                        <span>{reminderLabel}</span>
+                    {/* Progress Bar */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px] text-slate-500 font-medium">
+                        <span>
+                          {completedItems}/{totalItems} hoàn thành
+                        </span>
+                        <span className={isAllDone ? 'text-emerald-600 font-bold' : ''}>
+                          {progressPercent}%
+                        </span>
+                      </div>
+                      <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
+                        <div
+                          className={`h-full transition-all duration-300 rounded-full ${
+                            isAllDone ? 'bg-emerald-500' : 'bg-[#2b1572]'
+                          }`}
+                          style={{ width: `${progressPercent}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Items List (Collapsible) */}
+                    {!isCollapsed && (
+                      <div className="space-y-1.5 pt-1 animate-in fade-in duration-150">
+                        {cl.items?.map((item) => (
+                          <div
+                            key={item.id}
+                            className="group flex items-start justify-between gap-2.5 p-1.5 hover:bg-slate-50 rounded-xl transition-colors"
+                          >
+                            <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleToggleChecklistItem(cl.id, item.id, item.is_completed)
+                                }
+                                className={`mt-0.5 w-4 h-4 rounded shrink-0 flex items-center justify-center transition-all cursor-pointer ${
+                                  item.is_completed
+                                    ? 'bg-emerald-600 text-white'
+                                    : 'border border-slate-300 hover:border-[#2b1572] bg-white'
+                                }`}
+                              >
+                                {item.is_completed && <Check className="w-3 h-3" />}
+                              </button>
+
+                              {editingItemId === item.id ? (
+                                <input
+                                  type="text"
+                                  value={editingItemContent}
+                                  onChange={(e) => setEditingItemContent(e.target.value)}
+                                  onBlur={() => handleUpdateItemContent(cl.id, item.id)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleUpdateItemContent(cl.id, item.id);
+                                    if (e.key === 'Escape') setEditingItemId(null);
+                                  }}
+                                  autoFocus
+                                  className="text-xs text-[#2b1572] bg-white border border-[#2b1572]/40 rounded-md px-2 py-0.5 focus:outline-none w-full"
+                                />
+                              ) : (
+                                <span
+                                  onClick={() => {
+                                    setEditingItemId(item.id);
+                                    setEditingItemContent(item.content);
+                                  }}
+                                  className={`text-xs leading-relaxed cursor-pointer break-words flex-1 ${
+                                    item.is_completed
+                                      ? 'line-through text-slate-400'
+                                      : 'text-slate-800 hover:text-[#2b1572]'
+                                  }`}
+                                >
+                                  {item.content}
+                                </span>
+                              )}
+                            </div>
+
+                            <button
+                              onClick={() => handleDeleteChecklistItem(cl.id, item.id)}
+                              className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all cursor-pointer shrink-0"
+                              title="Xóa mục này"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+
+                        {/* Add Item Form */}
+                        {activeNewItemChecklistId === cl.id ? (
+                          <div className="pt-2 space-y-2">
+                            <input
+                              ref={newItemInputRef}
+                              type="text"
+                              value={newItemContent}
+                              onChange={(e) => setNewItemContent(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleCreateChecklistItem(cl.id);
+                                }
+                                if (e.key === 'Escape') {
+                                  setActiveNewItemChecklistId(null);
+                                  setNewItemContent('');
+                                }
+                              }}
+                              placeholder="Nhập nội dung công việc cần làm..."
+                              className="w-full text-xs text-[#2b1572] bg-slate-50 border border-[#2b1572]/30 focus:border-[#2b1572] rounded-xl px-3 py-2 focus:outline-none focus:bg-white shadow-2xs"
+                            />
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleCreateChecklistItem(cl.id)}
+                                className="px-3 py-1.5 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] rounded-lg transition-colors cursor-pointer shadow-2xs"
+                              >
+                                Thêm
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveNewItemChecklistId(null);
+                                  setNewItemContent('');
+                                }}
+                                className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveNewItemChecklistId(cl.id);
+                              setNewItemContent('');
+                            }}
+                            className="mt-2 text-xs font-semibold text-[#2b1572] bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Thêm một mục</span>
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleOpenDatesModal}
-                  className="self-end sm:self-center px-2.5 py-1 text-xs font-semibold text-[#2b1572] hover:bg-[#2b1572]/10 bg-white/70 border border-[#2b1572]/20 rounded-lg transition-colors cursor-pointer"
-                >
-                  Sửa ngày
-                </button>
-              </div>
-            )}
-
-            {/* Description Section */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-[#2b1572] uppercase tracking-wider">
-                <AlignLeft className="w-4 h-4 text-[#2b1572]/70" />
-                <span>Mô tả chi tiết</span>
-              </div>
-              <textarea
-                rows={4}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                onBlur={handleSaveAll}
-                placeholder="Thêm mô tả chi tiết hơn về công việc này..."
-                className="w-full text-xs text-[#2b1572] bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-[#2b1572]/40 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#2b1572]/15 transition-all resize-y"
-              />
+                );
+              })}
             </div>
 
-            {/* Checklists Section */}
-            {checklists.map((cl) => {
-              const totalItems = cl.items?.length || 0;
-              const completedItems = cl.items?.filter((i) => i.is_completed).length || 0;
-              const progressPercent = totalItems === 0 ? 0 : Math.round((completedItems / totalItems) * 100);
-              const isAllDone = totalItems > 0 && completedItems === totalItems;
-              const isCollapsed = !!collapsedChecklists[cl.id];
-
-              return (
-                <div key={cl.id} className="space-y-3 pt-4 border-t border-slate-100">
-                  {/* Checklist Header */}
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                      <button
-                        type="button"
-                        onClick={() => toggleChecklistCollapse(cl.id)}
-                        className="p-1 -ml-1 text-[#2b1572]/60 hover:text-[#2b1572] hover:bg-slate-100 rounded-lg transition-colors cursor-pointer shrink-0"
-                        title={isCollapsed ? 'Mở rộng checklist' : 'Thu gọn checklist'}
-                      >
-                        <ChevronDown
-                          className={`w-4 h-4 transition-transform duration-200 ${
-                            isCollapsed ? '-rotate-90' : 'rotate-0'
-                          }`}
-                        />
-                      </button>
-
-                      <CheckSquare className="w-4 h-4 text-[#2b1572] shrink-0" />
-                      {editingChecklistId === cl.id ? (
-                        <input
-                          type="text"
-                          value={editingChecklistTitle}
-                          onChange={(e) => setEditingChecklistTitle(e.target.value)}
-                          onBlur={() => handleUpdateChecklistTitle(cl.id)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleUpdateChecklistTitle(cl.id);
-                            if (e.key === 'Escape') setEditingChecklistId(null);
-                          }}
-                          autoFocus
-                          className="text-xs font-bold text-[#2b1572] bg-white border border-[#2b1572]/40 rounded-md px-2 py-1 focus:outline-none w-full"
-                        />
-                      ) : (
-                        <span
-                          onClick={() => {
-                            setEditingChecklistId(cl.id);
-                            setEditingChecklistTitle(cl.title);
-                          }}
-                          className="text-xs font-bold text-[#2b1572] uppercase tracking-wider cursor-pointer hover:bg-slate-100 px-1.5 py-0.5 rounded-md transition-colors truncate"
-                          title="Bấm để đổi tên checklist"
-                        >
-                          {cl.title}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleDeleteChecklist(cl.id)}
-                        className="px-2 py-1 text-[11px] font-medium text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                      >
-                        Xóa
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Progress Bar */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-[11px] text-slate-500 font-medium">
-                      <span>
-                        {completedItems}/{totalItems} hoàn thành
-                      </span>
-                      <span className={isAllDone ? 'text-emerald-600 font-bold' : ''}>
-                        {progressPercent}%
-                      </span>
-                    </div>
-                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
-                      <div
-                        className={`h-full transition-all duration-300 rounded-full ${
-                          isAllDone ? 'bg-emerald-500' : 'bg-[#2b1572]'
-                        }`}
-                        style={{ width: `${progressPercent}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Items List (Collapsible) */}
-                  {!isCollapsed && (
-                    <div className="space-y-1.5 pt-1 animate-in fade-in duration-150">
-                      {cl.items?.map((item) => (
-                        <div
-                          key={item.id}
-                          className="group flex items-start justify-between gap-2.5 p-1.5 hover:bg-slate-50 rounded-xl transition-colors"
-                        >
-                          <div className="flex items-start gap-2.5 flex-1 min-w-0">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleToggleChecklistItem(cl.id, item.id, item.is_completed)
-                              }
-                              className={`mt-0.5 w-4 h-4 rounded shrink-0 flex items-center justify-center transition-all cursor-pointer ${
-                                item.is_completed
-                                  ? 'bg-emerald-600 text-white'
-                                  : 'border border-slate-300 hover:border-[#2b1572] bg-white'
-                              }`}
-                            >
-                              {item.is_completed && <Check className="w-3 h-3" />}
-                            </button>
-
-                            {editingItemId === item.id ? (
-                              <input
-                                type="text"
-                                value={editingItemContent}
-                                onChange={(e) => setEditingItemContent(e.target.value)}
-                                onBlur={() => handleUpdateItemContent(cl.id, item.id)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') handleUpdateItemContent(cl.id, item.id);
-                                  if (e.key === 'Escape') setEditingItemId(null);
-                                }}
-                                autoFocus
-                                className="text-xs text-[#2b1572] bg-white border border-[#2b1572]/40 rounded-md px-2 py-0.5 focus:outline-none w-full"
-                              />
-                            ) : (
-                              <span
-                                onClick={() => {
-                                  setEditingItemId(item.id);
-                                  setEditingItemContent(item.content);
-                                }}
-                                className={`text-xs leading-relaxed cursor-pointer break-words flex-1 ${
-                                  item.is_completed
-                                    ? 'line-through text-slate-400'
-                                    : 'text-slate-800 hover:text-[#2b1572]'
-                                }`}
-                              >
-                                {item.content}
-                              </span>
-                            )}
-                          </div>
-
-                          <button
-                            onClick={() => handleDeleteChecklistItem(cl.id, item.id)}
-                            className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-all cursor-pointer shrink-0"
-                            title="Xóa mục này"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
-
-                      {/* Add Item Form */}
-                      {activeNewItemChecklistId === cl.id ? (
-                        <div className="pt-2 space-y-2">
-                          <input
-                            ref={newItemInputRef}
-                            type="text"
-                            value={newItemContent}
-                            onChange={(e) => setNewItemContent(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleCreateChecklistItem(cl.id);
-                              }
-                              if (e.key === 'Escape') {
-                                setActiveNewItemChecklistId(null);
-                                setNewItemContent('');
-                              }
-                            }}
-                            placeholder="Nhập nội dung công việc cần làm..."
-                            className="w-full text-xs text-[#2b1572] bg-slate-50 border border-[#2b1572]/30 focus:border-[#2b1572] rounded-xl px-3 py-2 focus:outline-none focus:bg-white shadow-2xs"
-                          />
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleCreateChecklistItem(cl.id)}
-                              className="px-3 py-1.5 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] rounded-lg transition-colors cursor-pointer shadow-2xs"
-                            >
-                              Thêm
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setActiveNewItemChecklistId(null);
-                                setNewItemContent('');
-                              }}
-                              className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActiveNewItemChecklistId(cl.id);
-                            setNewItemContent('');
-                          }}
-                          className="mt-2 text-xs font-semibold text-[#2b1572] bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>Thêm một mục</span>
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Sidebar Actions (1 col) */}
-          <div className="space-y-3">
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              Thêm vào thẻ
-            </div>
-
-            {/* Add Checklist Action */}
-            {isAddingChecklist ? (
-              <div className="p-3 bg-slate-50 border border-[#2b1572]/20 rounded-xl space-y-2 animate-in fade-in duration-150">
-                <div className="text-xs font-bold text-[#2b1572]">Tiêu đề Checklist</div>
-                <input
-                  type="text"
-                  value={newChecklistTitle}
-                  onChange={(e) => setNewChecklistTitle(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleCreateChecklist();
-                    if (e.key === 'Escape') setIsAddingChecklist(false);
-                  }}
-                  autoFocus
-                  className="w-full text-xs text-[#2b1572] bg-white border border-slate-200 focus:border-[#2b1572] rounded-lg p-2 focus:outline-none shadow-2xs"
-                  placeholder="Ví dụ: Việc cần làm..."
-                />
-                <div className="flex items-center gap-2 pt-1">
-                  <button
-                    onClick={handleCreateChecklist}
-                    className="flex-1 px-3 py-1.5 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] rounded-lg transition-colors cursor-pointer shadow-2xs"
-                  >
-                    Thêm
-                  </button>
-                  <button
-                    onClick={() => setIsAddingChecklist(false)}
-                    className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
+            {/* Sidebar Actions (1 col) */}
+            <div className="space-y-3">
+              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                Thêm vào thẻ
               </div>
-            ) : (
+
+              {/* Members Button */}
               <button
                 onClick={() => {
-                  setIsAddingChecklist(true);
-                  setNewChecklistTitle('Việc cần làm');
+                  setIsMembersModalOpen(true);
+                  setMemberSearchQuery('');
                 }}
+                className={`w-full px-3 py-2 text-xs font-semibold rounded-xl flex items-center gap-2 transition-colors cursor-pointer ${
+                  assignees.length > 0
+                    ? 'text-[#2b1572] bg-[#a6d1fd]/30 hover:bg-[#a6d1fd]/50 border border-[#a6d1fd]/60'
+                    : 'text-[#2b1572] bg-slate-100 hover:bg-slate-200'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5 text-[#2b1572]/70" />
+                <span>Thành viên {assignees.length > 0 && `(${assignees.length})`}</span>
+              </button>
+
+              {/* Add Checklist Action */}
+              {isAddingChecklist ? (
+                <div className="p-3 bg-slate-50 border border-[#2b1572]/20 rounded-xl space-y-2 animate-in fade-in duration-150">
+                  <div className="text-xs font-bold text-[#2b1572]">Tiêu đề Checklist</div>
+                  <input
+                    type="text"
+                    value={newChecklistTitle}
+                    onChange={(e) => setNewChecklistTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleCreateChecklist();
+                      if (e.key === 'Escape') setIsAddingChecklist(false);
+                    }}
+                    autoFocus
+                    className="w-full text-xs text-[#2b1572] bg-white border border-slate-200 focus:border-[#2b1572] rounded-lg p-2 focus:outline-none shadow-2xs"
+                    placeholder="Ví dụ: Việc cần làm..."
+                  />
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      onClick={handleCreateChecklist}
+                      className="flex-1 px-3 py-1.5 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] rounded-lg transition-colors cursor-pointer shadow-2xs"
+                    >
+                      Thêm
+                    </button>
+                    <button
+                      onClick={() => setIsAddingChecklist(false)}
+                      className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setIsAddingChecklist(true);
+                    setNewChecklistTitle('Việc cần làm');
+                  }}
+                  className="w-full px-3 py-2 text-xs font-semibold text-[#2b1572] bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
+                >
+                  <CheckSquare className="w-3.5 h-3.5 text-[#2b1572]/70" />
+                  <span>Việc cần làm (Checklist)</span>
+                </button>
+              )}
+
+              {/* Dates / Deadline Button */}
+              <button
+                onClick={handleOpenDatesModal}
+                className={`w-full px-3 py-2 text-xs font-semibold rounded-xl flex items-center gap-2 transition-colors cursor-pointer ${
+                  dueDate
+                    ? 'text-[#2b1572] bg-[#a6d1fd]/30 hover:bg-[#a6d1fd]/50 border border-[#a6d1fd]/60'
+                    : 'text-[#2b1572] bg-slate-100 hover:bg-slate-200'
+                }`}
+              >
+                <Calendar className="w-3.5 h-3.5 text-[#2b1572]/70" />
+                <span>{dueDate ? 'Thời hạn (Đã đặt)' : 'Ngày hạn'}</span>
+              </button>
+
+              <div className="h-[1px] bg-slate-200 my-2" />
+
+              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                Thao tác với thẻ
+              </div>
+
+              <button
+                onClick={() => onMoveRequest(card)}
                 className="w-full px-3 py-2 text-xs font-semibold text-[#2b1572] bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
               >
-                <CheckSquare className="w-3.5 h-3.5 text-[#2b1572]/70" />
-                <span>Việc cần làm (Checklist)</span>
+                <ArrowRightLeft className="w-3.5 h-3.5 text-[#2b1572]/70" />
+                <span>Di chuyển thẻ...</span>
               </button>
-            )}
 
-            {/* Dates / Deadline Button */}
-            <button
-              onClick={handleOpenDatesModal}
-              className={`w-full px-3 py-2 text-xs font-semibold rounded-xl flex items-center gap-2 transition-colors cursor-pointer ${
-                dueDate
-                  ? 'text-[#2b1572] bg-[#a6d1fd]/30 hover:bg-[#a6d1fd]/50 border border-[#a6d1fd]/60'
-                  : 'text-[#2b1572] bg-slate-100 hover:bg-slate-200'
-              }`}
-            >
-              <Calendar className="w-3.5 h-3.5 text-[#2b1572]/70" />
-              <span>{dueDate ? 'Thời hạn (Đã đặt)' : 'Ngày hạn'}</span>
-            </button>
+              <button
+                onClick={() => onCopyRequest(card)}
+                className="w-full px-3 py-2 text-xs font-semibold text-[#2b1572] bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                <Copy className="w-3.5 h-3.5 text-[#2b1572]/70" />
+                <span>Sao chép thẻ...</span>
+              </button>
 
-            <div className="h-[1px] bg-slate-200 my-2" />
+              <button
+                onClick={handleCopyLink}
+                className="w-full px-3 py-2 text-xs font-semibold text-[#2b1572] bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center gap-2 transition-colors cursor-pointer relative"
+              >
+                <LinkIcon className="w-3.5 h-3.5 text-[#2b1572]/70" />
+                <span>{copyLinkSuccess ? 'Đã sao chép link!' : 'Sao chép liên kết'}</span>
+              </button>
 
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              Thao tác với thẻ
+              <div className="h-[1px] bg-slate-200 my-2" />
+
+              <button
+                onClick={handleDelete}
+                className="w-full px-3 py-2 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                <span>Xóa thẻ này</span>
+              </button>
             </div>
-
-            <button
-              onClick={() => onMoveRequest(card)}
-              className="w-full px-3 py-2 text-xs font-semibold text-[#2b1572] bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
-            >
-              <ArrowRightLeft className="w-3.5 h-3.5 text-[#2b1572]/70" />
-              <span>Di chuyển thẻ...</span>
-            </button>
-
-            <button
-              onClick={() => onCopyRequest(card)}
-              className="w-full px-3 py-2 text-xs font-semibold text-[#2b1572] bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
-            >
-              <Copy className="w-3.5 h-3.5 text-[#2b1572]/70" />
-              <span>Sao chép thẻ...</span>
-            </button>
-
-            <button
-              onClick={handleCopyLink}
-              className="w-full px-3 py-2 text-xs font-semibold text-[#2b1572] bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center gap-2 transition-colors cursor-pointer relative"
-            >
-              <LinkIcon className="w-3.5 h-3.5 text-[#2b1572]/70" />
-              <span>{copyLinkSuccess ? 'Đã sao chép link!' : 'Sao chép liên kết'}</span>
-            </button>
-
-            <div className="h-[1px] bg-slate-200 my-2" />
-
-            <button
-              onClick={handleDelete}
-              className="w-full px-3 py-2 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl flex items-center gap-2 transition-colors cursor-pointer"
-            >
-              <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-              <span>Xóa thẻ này</span>
-            </button>
           </div>
-        </div>
         )}
 
         {/* Modal Footer */}
@@ -1002,6 +1161,125 @@ export default function CardDetailModal({
             {isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
           </button>
         </div>
+
+        {/* MEMBERS ASSIGNMENT POPOVER / MODAL */}
+        {isMembersModalOpen && (
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-2xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-100">
+            <div className="bg-white rounded-2xl shadow-2xl border border-[#2b1572]/20 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[80vh]">
+              {/* Header */}
+              <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#2b1572]">
+                  <Users className="w-4 h-4 text-[#2b1572]" />
+                  <span>Thành viên trong bảng ({boardMembers.length})</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsMembersModalOpen(false)}
+                  className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Search */}
+              <div className="p-3 border-b border-slate-100">
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={memberSearchQuery}
+                    onChange={(e) => setMemberSearchQuery(e.target.value)}
+                    placeholder="Tìm kiếm thành viên..."
+                    className="w-full text-xs text-[#2b1572] bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-2 focus:outline-none focus:border-[#2b1572] focus:bg-white transition-all shadow-2xs"
+                  />
+                </div>
+              </div>
+
+              {/* Members list */}
+              <div className="p-2 overflow-y-auto space-y-1 flex-1">
+                {filteredBoardMembers.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-slate-400">
+                    {boardMembers.length === 0
+                      ? 'Chưa có thành viên nào khác trong bảng'
+                      : 'Không tìm thấy thành viên phù hợp'}
+                  </div>
+                ) : (
+                  filteredBoardMembers.map((m) => {
+                    const uName = m.user?.name || 'Thành viên';
+                    const uEmail = m.user?.email || '';
+                    const uAvatar = m.user?.avatar;
+                    const isAssigned = assignees.some(
+                      (a) => a.board_member_id === m.id || a.board_member?.id === m.id,
+                    );
+                    const roleName =
+                      m.role === 'ADMIN'
+                        ? 'Quản trị'
+                        : m.role === 'VIEWER'
+                        ? 'Người xem'
+                        : 'Thành viên';
+
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => handleToggleAssignee(m.id)}
+                        className="w-full p-2.5 rounded-xl hover:bg-slate-50 flex items-center justify-between gap-3 text-left transition-colors cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                          {uAvatar ? (
+                            <img
+                              src={uAvatar}
+                              alt={uName}
+                              className="w-7 h-7 rounded-full object-cover shrink-0"
+                            />
+                          ) : (
+                            <div className="w-7 h-7 rounded-full bg-[#2b1572] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
+                              {uName.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-bold text-[#2b1572] truncate">
+                                {uName}
+                              </span>
+                              <span className="text-[10px] px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded font-medium">
+                                {roleName}
+                              </span>
+                            </div>
+                            {uEmail && (
+                              <div className="text-[11px] text-slate-400 truncate">{uEmail}</div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div
+                          className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
+                            isAssigned
+                              ? 'bg-[#2b1572] text-white'
+                              : 'border border-slate-200 group-hover:border-[#2b1572]/40'
+                          }`}
+                        >
+                          {isAssigned && <Check className="w-3.5 h-3.5" />}
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsMembersModalOpen(false)}
+                  className="px-4 py-1.5 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] rounded-xl shadow-xs transition-colors cursor-pointer"
+                >
+                  Hoàn tất
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* DATES CONFIGURATION POPOVER / MODAL */}
         {isDatesModalOpen && (

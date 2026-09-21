@@ -486,6 +486,76 @@ export class CardsService {
     return this.findById(newCard.id, userId);
   }
 
+  async toggleAssignMember(cardId: string, userId: string, boardMemberId: string) {
+    const { data: card } = await this.supabase
+      .from('cards')
+      .select('id, list:lists (board_id)')
+      .eq('id', cardId)
+      .maybeSingle();
+
+    if (!card) {
+      throw new NotFoundException('Không tìm thấy thẻ');
+    }
+
+    const boardId = (card.list as any)?.board_id;
+    if (boardId) {
+      await this.verifyBoardAccess(boardId, userId);
+    }
+
+    // Verify boardMemberId belongs to this board
+    const { data: bMember } = await this.supabase
+      .from('board_members')
+      .select('id, board_id, role, user:users (id, name, email, avatar)')
+      .eq('id', boardMemberId)
+      .eq('board_id', boardId)
+      .maybeSingle();
+
+    if (!bMember) {
+      throw new BadRequestException('Thành viên không thuộc về bảng này');
+    }
+
+    // Check if already assigned
+    const { data: existing } = await this.supabase
+      .from('card_assignees')
+      .select('id')
+      .eq('card_id', cardId)
+      .eq('board_member_id', boardMemberId)
+      .maybeSingle();
+
+    if (existing) {
+      await this.supabase
+        .from('card_assignees')
+        .delete()
+        .eq('id', existing.id);
+
+      return { assigned: false, board_member_id: boardMemberId };
+    } else {
+      const { data: newAssignee, error } = await this.supabase
+        .from('card_assignees')
+        .insert({
+          card_id: cardId,
+          board_member_id: boardMemberId,
+        })
+        .select(`
+          id,
+          board_member_id,
+          assigned_at,
+          board_member:board_members (
+            id,
+            role,
+            user:users (id, name, email, avatar)
+          )
+        `)
+        .single();
+
+      if (error || !newAssignee) {
+        throw new BadRequestException('Không thể gán thành viên vào thẻ');
+      }
+
+      return { assigned: true, assignee: newAssignee };
+    }
+  }
+
   private async verifyBoardAccess(boardId: string, userId: string) {
     const { data: board } = await this.supabase
       .from('boards')
