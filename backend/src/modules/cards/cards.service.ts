@@ -63,6 +63,7 @@ export class CardsService {
         status: dto.status || 'TODO',
         start_date: dto.start_date || null,
         due_date: dto.due_date || null,
+        reminder_at: dto.reminder_at || null,
         is_due_date_completed: dto.is_due_date_completed ?? false,
         created_by: userId,
       })
@@ -148,10 +149,13 @@ export class CardsService {
       .maybeSingle();
 
     if (error || !card) {
-      throw new NotFoundException('Không tìm thấy thẻ');
+      throw new NotFoundException('Không tìm thấy thông tin thẻ');
     }
 
-    await this.verifyBoardAccess(card.list.board_id, userId);
+    const boardId = (card.list as any)?.board_id;
+    if (boardId) {
+      await this.verifyBoardAccess(boardId, userId);
+    }
 
     return card;
   }
@@ -159,7 +163,7 @@ export class CardsService {
   async update(cardId: string, userId: string, dto: UpdateCardDto) {
     const { data: card } = await this.supabase
       .from('cards')
-      .select('id, list:lists (board_id)')
+      .select('id, list_id, position, list:lists (board_id)')
       .eq('id', cardId)
       .maybeSingle();
 
@@ -179,6 +183,7 @@ export class CardsService {
     if (dto.status !== undefined) updateData.status = dto.status;
     if (dto.start_date !== undefined) updateData.start_date = dto.start_date;
     if (dto.due_date !== undefined) updateData.due_date = dto.due_date;
+    if (dto.reminder_at !== undefined) updateData.reminder_at = dto.reminder_at;
     if (dto.is_due_date_completed !== undefined) {
       updateData.is_due_date_completed = dto.is_due_date_completed;
     }

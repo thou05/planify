@@ -20,6 +20,8 @@ import {
   Edit2,
   ListTodo,
   ChevronDown,
+  Bell,
+  BellOff,
 } from 'lucide-react';
 
 interface ChecklistItem {
@@ -47,6 +49,38 @@ interface CardDetailModalProps {
   onCopyRequest: (card: any) => void;
 }
 
+const REMINDER_OPTIONS = [
+  { value: -1, label: 'Không có lời nhắc' },
+  { value: 0, label: 'Vào thời điểm hết hạn' },
+  { value: 5, label: 'Trước 5 phút' },
+  { value: 10, label: 'Trước 10 phút' },
+  { value: 15, label: 'Trước 15 phút' },
+  { value: 60, label: 'Trước 1 giờ' },
+  { value: 120, label: 'Trước 2 giờ' },
+  { value: 1440, label: 'Trước 1 ngày' },
+  { value: 2880, label: 'Trước 2 ngày' },
+];
+
+function toLocalDatetimeString(dateStr: string | Date | null | undefined): string {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return '';
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function getDefaultDueDateString(): string {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(17, 0, 0, 0);
+  return toLocalDatetimeString(tomorrow);
+}
+
 export default function CardDetailModal({
   cardId,
   isOpen,
@@ -64,8 +98,18 @@ export default function CardDetailModal({
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [startDate, setStartDate] = useState('');
+  const [reminderAt, setReminderAt] = useState<string | null>(null);
+  const [reminderMinutes, setReminderMinutes] = useState<number>(-1);
   const [isCompleted, setIsCompleted] = useState(false);
   const [copyLinkSuccess, setCopyLinkSuccess] = useState(false);
+
+  // Dates modal/popover state
+  const [isDatesModalOpen, setIsDatesModalOpen] = useState(false);
+  const [tempStartDate, setTempStartDate] = useState('');
+  const [tempDueDate, setTempDueDate] = useState('');
+  const [tempEnableStart, setTempEnableStart] = useState(false);
+  const [tempEnableDue, setTempEnableDue] = useState(false);
+  const [tempReminderMinutes, setTempReminderMinutes] = useState<number>(-1);
 
   // Checklists state
   const [checklists, setChecklists] = useState<Checklist[]>([]);
@@ -99,9 +143,22 @@ export default function CardDetailModal({
         setCard(c);
         setTitle(c.title || '');
         setDescription(c.description || '');
-        setDueDate(c.due_date ? new Date(c.due_date).toISOString().slice(0, 16) : '');
-        setStartDate(c.start_date ? new Date(c.start_date).toISOString().slice(0, 16) : '');
+        const sDate = toLocalDatetimeString(c.start_date);
+        const dDate = toLocalDatetimeString(c.due_date);
+        setStartDate(sDate);
+        setDueDate(dDate);
+        setReminderAt(c.reminder_at || null);
         setIsCompleted(!!c.is_due_date_completed);
+
+        if (c.due_date && c.reminder_at) {
+          const diffMins = Math.round(
+            (new Date(c.due_date).getTime() - new Date(c.reminder_at).getTime()) / 60000,
+          );
+          setReminderMinutes(diffMins >= 0 ? diffMins : -1);
+        } else {
+          setReminderMinutes(-1);
+        }
+
         setChecklists(c.checklists || []);
       }
     } catch {
@@ -115,6 +172,7 @@ export default function CardDetailModal({
     if (isOpen && cardId) {
       fetchCardDetails(cardId);
       setIsAddingChecklist(false);
+      setIsDatesModalOpen(false);
       setActiveNewItemChecklistId(null);
       setEditingChecklistId(null);
       setEditingItemId(null);
@@ -130,6 +188,79 @@ export default function CardDetailModal({
     }
   }, [activeNewItemChecklistId]);
 
+  // Open Dates Config Popup
+  const handleOpenDatesModal = () => {
+    setTempStartDate(startDate);
+    setTempDueDate(dueDate || getDefaultDueDateString());
+    setTempEnableStart(!!startDate);
+    setTempEnableDue(!!dueDate);
+    setTempReminderMinutes(reminderMinutes);
+    setIsDatesModalOpen(true);
+  };
+
+  // Save Dates from Popup
+  const handleSaveDates = async () => {
+    const finalStartDate = tempEnableStart && tempStartDate ? new Date(tempStartDate).toISOString() : null;
+    const finalDueDate = tempEnableDue && tempDueDate ? new Date(tempDueDate).toISOString() : null;
+
+    let finalReminderAt: string | null = null;
+    if (finalDueDate && tempReminderMinutes >= 0) {
+      const dueTime = new Date(finalDueDate).getTime();
+      finalReminderAt = new Date(dueTime - tempReminderMinutes * 60 * 1000).toISOString();
+    }
+
+    try {
+      setIsSaving(true);
+      await apiClient(`/cards/${cardId}`, {
+        method: 'PATCH',
+        data: {
+          start_date: finalStartDate,
+          due_date: finalDueDate,
+          reminder_at: finalReminderAt,
+        },
+      });
+
+      setStartDate(tempEnableStart && tempStartDate ? tempStartDate : '');
+      setDueDate(tempEnableDue && tempDueDate ? tempDueDate : '');
+      setReminderAt(finalReminderAt);
+      setReminderMinutes(tempReminderMinutes);
+      setIsDatesModalOpen(false);
+      onCardUpdated();
+    } catch (err: any) {
+      alert(err.message || 'Không thể lưu thời hạn');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Remove Dates
+  const handleRemoveDates = async () => {
+    try {
+      setIsSaving(true);
+      await apiClient(`/cards/${cardId}`, {
+        method: 'PATCH',
+        data: {
+          start_date: null,
+          due_date: null,
+          reminder_at: null,
+          is_due_date_completed: false,
+        },
+      });
+
+      setStartDate('');
+      setDueDate('');
+      setReminderAt(null);
+      setReminderMinutes(-1);
+      setIsCompleted(false);
+      setIsDatesModalOpen(false);
+      onCardUpdated();
+    } catch (err: any) {
+      alert(err.message || 'Không thể gỡ bỏ thời hạn');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (!isOpen || !cardId) return null;
 
   // --- CARD SAVE ---
@@ -144,6 +275,7 @@ export default function CardDetailModal({
           description: description.trim() || null,
           due_date: dueDate ? new Date(dueDate).toISOString() : null,
           start_date: startDate ? new Date(startDate).toISOString() : null,
+          reminder_at: reminderAt,
           is_due_date_completed: isCompleted,
         },
       });
@@ -187,6 +319,58 @@ export default function CardDetailModal({
     }
   };
 
+  // Calculate Due Date Status
+  const getDeadlineStatus = () => {
+    if (!dueDate) return null;
+    if (isCompleted) {
+      return {
+        status: 'completed',
+        label: 'Đã hoàn thành',
+        badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        dotBg: 'bg-emerald-500',
+        icon: CheckCircle2,
+      };
+    }
+    const dueTime = new Date(dueDate).getTime();
+    const now = Date.now();
+    const diffHours = (dueTime - now) / (1000 * 60 * 60);
+
+    if (diffHours < 0) {
+      const hoursAgo = Math.abs(Math.round(diffHours));
+      const text = hoursAgo >= 24 ? `${Math.round(hoursAgo / 24)} ngày trước` : `${hoursAgo} giờ trước`;
+      return {
+        status: 'overdue',
+        label: `Quá hạn (${text})`,
+        badgeBg: 'bg-rose-50 text-rose-700 border-rose-200 font-bold',
+        dotBg: 'bg-rose-500',
+        icon: AlertCircle,
+      };
+    }
+    if (diffHours <= 24) {
+      const hoursLeft = Math.max(1, Math.round(diffHours));
+      return {
+        status: 'due_soon',
+        label: `Gần đến hạn (còn ${hoursLeft} giờ)`,
+        badgeBg: 'bg-amber-50 text-amber-800 border-amber-200 font-semibold',
+        dotBg: 'bg-amber-500',
+        icon: Clock,
+      };
+    }
+    return {
+      status: 'normal',
+      label: 'Đang thực hiện',
+      badgeBg: 'bg-slate-50 text-slate-700 border-slate-200',
+      dotBg: 'bg-[#2b1572]',
+      icon: Calendar,
+    };
+  };
+
+  const deadlineStatus = getDeadlineStatus();
+  const reminderLabel =
+    reminderMinutes >= 0
+      ? REMINDER_OPTIONS.find((r) => r.value === reminderMinutes)?.label || 'Có lời nhắc'
+      : null;
+
   // --- CHECKLIST ACTIONS ---
   const handleCreateChecklist = async () => {
     if (!newChecklistTitle.trim()) return;
@@ -214,7 +398,6 @@ export default function CardDetailModal({
       return;
     }
     const newTitle = editingChecklistTitle.trim();
-    // Optimistic
     setChecklists((prev) =>
       prev.map((cl) => (cl.id === checklistId ? { ...cl, title: newTitle } : cl)),
     );
@@ -233,7 +416,6 @@ export default function CardDetailModal({
 
   const handleDeleteChecklist = async (checklistId: string) => {
     if (!confirm('Bạn có chắc muốn xóa danh sách việc cần làm này?')) return;
-    // Optimistic
     setChecklists((prev) => prev.filter((cl) => cl.id !== checklistId));
     try {
       await apiClient(`/checklists/${checklistId}`, { method: 'DELETE' });
@@ -276,7 +458,6 @@ export default function CardDetailModal({
     currentCompleted: boolean,
   ) => {
     const nextCompleted = !currentCompleted;
-    // Optimistic
     setChecklists((prev) =>
       prev.map((cl) =>
         cl.id === checklistId
@@ -297,7 +478,6 @@ export default function CardDetailModal({
       });
       onCardUpdated();
     } catch {
-      // Revert if error
       setChecklists((prev) =>
         prev.map((cl) =>
           cl.id === checklistId
@@ -364,7 +544,7 @@ export default function CardDetailModal({
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-      <div className="bg-white rounded-2xl shadow-2xl border border-[#2b1572]/15 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl border border-[#2b1572]/15 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden relative">
         {/* Modal Header */}
         <div className="p-5 pb-3 border-b border-[#2b1572]/10 flex items-start justify-between gap-4">
           <div className="flex-1">
@@ -393,35 +573,86 @@ export default function CardDetailModal({
         </div>
 
         {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-5 grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Main Content (2 cols) */}
-          <div className="md:col-span-2 space-y-6">
-            {/* Due Date quick status indicator */}
-            {card?.due_date && (
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
-                <div className="flex items-center gap-3">
+        {isLoading && !card ? (
+          <div className="flex-1 p-12 flex flex-col items-center justify-center gap-3">
+            <div className="w-8 h-8 border-3 border-[#2b1572]/20 border-t-[#2b1572] rounded-full animate-spin" />
+            <span className="text-xs text-[#2b1572]/60 font-medium">Đang tải thông tin thẻ...</span>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto p-5 grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Main Content (2 cols) */}
+            <div className="md:col-span-2 space-y-6">
+              {/* Due Date quick status banner */}
+              {dueDate && deadlineStatus && (
+              <div
+                className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs transition-all ${
+                  isCompleted
+                    ? 'bg-emerald-50/80 border-emerald-200'
+                    : deadlineStatus.status === 'overdue'
+                    ? 'bg-rose-50/80 border-rose-200'
+                    : deadlineStatus.status === 'due_soon'
+                    ? 'bg-amber-50/80 border-amber-200'
+                    : 'bg-slate-50 border-slate-200'
+                }`}
+              >
+                <div className="flex items-start gap-3">
                   <button
                     onClick={handleToggleCompleted}
-                    className={`w-5 h-5 rounded flex items-center justify-center transition-colors cursor-pointer ${
+                    className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center transition-all cursor-pointer shadow-2xs shrink-0 ${
                       isCompleted
                         ? 'bg-emerald-600 text-white'
-                        : 'border-2 border-slate-300 hover:border-[#2b1572]'
+                        : 'border-2 border-slate-300 hover:border-[#2b1572] bg-white'
                     }`}
+                    title={isCompleted ? 'Đánh dấu chưa hoàn thành' : 'Đánh dấu đã hoàn thành'}
                   >
                     {isCompleted && <Check className="w-3.5 h-3.5" />}
                   </button>
-                  <div>
-                    <div className="text-xs font-semibold text-[#2b1572]">
-                      Hạn chót:{' '}
-                      <span className="font-normal text-slate-600">
-                        {new Date(card.due_date).toLocaleString('vi-VN')}
+
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-bold text-[#2b1572]">
+                        {startDate ? (
+                          <>
+                            {new Date(startDate).toLocaleDateString('vi-VN', {
+                              day: 'numeric',
+                              month: 'short',
+                            })}{' '}
+                            -{' '}
+                          </>
+                        ) : null}
+                        {new Date(dueDate).toLocaleString('vi-VN', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
+
+                      <span
+                        className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md border ${deadlineStatus.badgeBg}`}
+                      >
+                        <deadlineStatus.icon className="w-3 h-3" />
+                        <span>{deadlineStatus.label}</span>
                       </span>
                     </div>
-                    <div className="text-[11px] text-slate-500">
-                      {isCompleted ? '✓ Đã hoàn thành' : 'Đang thực hiện'}
-                    </div>
+
+                    {reminderLabel && (
+                      <div className="flex items-center gap-1.5 text-[11px] text-[#2b1572]/70 font-medium">
+                        <Bell className="w-3 h-3 text-[#2b1572]/60" />
+                        <span>{reminderLabel}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={handleOpenDatesModal}
+                  className="self-end sm:self-center px-2.5 py-1 text-xs font-semibold text-[#2b1572] hover:bg-[#2b1572]/10 bg-white/70 border border-[#2b1572]/20 rounded-lg transition-colors cursor-pointer"
+                >
+                  Sửa ngày
+                </button>
               </div>
             )}
 
@@ -647,46 +878,6 @@ export default function CardDetailModal({
                 </div>
               );
             })}
-
-            {/* Dates Configuration */}
-            <div className="space-y-3 pt-3 border-t border-slate-100">
-              <div className="flex items-center gap-2 text-xs font-bold text-[#2b1572] uppercase tracking-wider">
-                <Calendar className="w-4 h-4 text-[#2b1572]/70" />
-                <span>Thời hạn thực hiện</span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                    Ngày bắt đầu
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={startDate}
-                    onChange={(e) => {
-                      setStartDate(e.target.value);
-                    }}
-                    onBlur={handleSaveAll}
-                    className="w-full text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded-lg p-2 focus:outline-none focus:border-[#2b1572]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                    Ngày hết hạn (Due Date)
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={dueDate}
-                    onChange={(e) => {
-                      setDueDate(e.target.value);
-                    }}
-                    onBlur={handleSaveAll}
-                    className="w-full text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded-lg p-2 focus:outline-none focus:border-[#2b1572]"
-                  />
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Sidebar Actions (1 col) */}
@@ -739,6 +930,19 @@ export default function CardDetailModal({
               </button>
             )}
 
+            {/* Dates / Deadline Button */}
+            <button
+              onClick={handleOpenDatesModal}
+              className={`w-full px-3 py-2 text-xs font-semibold rounded-xl flex items-center gap-2 transition-colors cursor-pointer ${
+                dueDate
+                  ? 'text-[#2b1572] bg-[#a6d1fd]/30 hover:bg-[#a6d1fd]/50 border border-[#a6d1fd]/60'
+                  : 'text-[#2b1572] bg-slate-100 hover:bg-slate-200'
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5 text-[#2b1572]/70" />
+              <span>{dueDate ? 'Thời hạn (Đã đặt)' : 'Ngày hạn'}</span>
+            </button>
+
             <div className="h-[1px] bg-slate-200 my-2" />
 
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
@@ -780,6 +984,7 @@ export default function CardDetailModal({
             </button>
           </div>
         </div>
+        )}
 
         {/* Modal Footer */}
         <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
@@ -797,6 +1002,131 @@ export default function CardDetailModal({
             {isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
           </button>
         </div>
+
+        {/* DATES CONFIGURATION POPOVER / MODAL */}
+        {isDatesModalOpen && (
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-2xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-100">
+            <div className="bg-white rounded-2xl shadow-2xl border border-[#2b1572]/20 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150">
+              {/* Header */}
+              <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#2b1572]">
+                  <Calendar className="w-4 h-4 text-[#2b1572]" />
+                  <span>Thời hạn thực hiện & Nhắc nhở</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsDatesModalOpen(false)}
+                  className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="p-4 space-y-4">
+                {/* Start Date */}
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={tempEnableStart}
+                      onChange={(e) => {
+                        setTempEnableStart(e.target.checked);
+                        if (e.target.checked && !tempStartDate) {
+                          setTempStartDate(toLocalDatetimeString(new Date()));
+                        }
+                      }}
+                      className="w-4 h-4 accent-[#2b1572] rounded cursor-pointer"
+                    />
+                    <span className="text-xs font-semibold text-slate-700">Ngày bắt đầu</span>
+                  </label>
+                  {tempEnableStart && (
+                    <input
+                      type="datetime-local"
+                      value={tempStartDate}
+                      onChange={(e) => setTempStartDate(e.target.value)}
+                      className="w-full text-xs text-slate-800 bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-[#2b1572] focus:bg-white transition-all"
+                    />
+                  )}
+                </div>
+
+                {/* Due Date */}
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={tempEnableDue}
+                      onChange={(e) => {
+                        setTempEnableDue(e.target.checked);
+                        if (e.target.checked && !tempDueDate) {
+                          setTempDueDate(getDefaultDueDateString());
+                        }
+                      }}
+                      className="w-4 h-4 accent-[#2b1572] rounded cursor-pointer"
+                    />
+                    <span className="text-xs font-semibold text-slate-700">Ngày hết hạn (Due date)</span>
+                  </label>
+                  {tempEnableDue && (
+                    <input
+                      type="datetime-local"
+                      value={tempDueDate}
+                      onChange={(e) => setTempDueDate(e.target.value)}
+                      className="w-full text-xs text-slate-800 bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-[#2b1572] focus:bg-white transition-all"
+                    />
+                  )}
+                </div>
+
+                {/* Reminder selector */}
+                {tempEnableDue && (
+                  <div className="space-y-1.5 pt-1">
+                    <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                      <Bell className="w-3.5 h-3.5 text-[#2b1572]" />
+                      <span>Đặt lời nhắc nhở</span>
+                    </label>
+                    <select
+                      value={tempReminderMinutes}
+                      onChange={(e) => setTempReminderMinutes(Number(e.target.value))}
+                      className="w-full text-xs text-slate-800 bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-[#2b1572] focus:bg-white cursor-pointer"
+                    >
+                      {REMINDER_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={handleRemoveDates}
+                  className="px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                >
+                  Gỡ bỏ
+                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsDatesModalOpen(false)}
+                    className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveDates}
+                    className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] rounded-lg shadow-xs transition-colors cursor-pointer"
+                  >
+                    Lưu
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

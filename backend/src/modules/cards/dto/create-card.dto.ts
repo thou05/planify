@@ -43,6 +43,11 @@ export class CreateCardDto {
   @IsDateString()
   due_date?: string;
 
+  @ApiPropertyOptional({ example: '2026-09-30T22:59:59.000Z', description: 'Thời gian nhắc nhở trước hạn' })
+  @IsOptional()
+  @IsDateString()
+  reminder_at?: string;
+
   @ApiPropertyOptional({ example: false, description: 'Đã hoàn thành hạn chót hay chưa' })
   @IsOptional()
   @IsBoolean()
