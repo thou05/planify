@@ -11,6 +11,9 @@ import { ListsModule } from './modules/lists/lists.module';
 import { CardsModule } from './modules/cards/cards.module';
 import { ChecklistsModule } from './modules/checklists/checklists.module';
 import { LabelsModule } from './modules/labels/labels.module';
+import { CommentsModule } from './modules/comments/comments.module';
+import { AttachmentsModule } from './modules/attachments/attachments.module';
+import { ActivitiesModule } from './modules/activities/activities.module';
 
 @Module({
   imports: [
@@ -27,6 +30,9 @@ import { LabelsModule } from './modules/labels/labels.module';
     CardsModule,
     ChecklistsModule,
     LabelsModule,
+    CommentsModule,
+    AttachmentsModule,
+    ActivitiesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

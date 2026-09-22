@@ -11,10 +11,14 @@ import { UpdateBoardDto } from './dto/update-board.dto';
 import { CopyBoardDto } from './dto/copy-board.dto';
 import { AddBoardMemberDto } from './dto/add-board-member.dto';
 import { UpdateBoardMemberRoleDto } from './dto/update-board-member-role.dto';
+import { ActivitiesService } from '../activities/activities.service';
 
 @Injectable()
 export class BoardsService {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly activitiesService: ActivitiesService,
+  ) {}
 
   async create(workspaceId: string, userId: string, dto: CreateBoardDto) {
     await this.verifyWorkspaceAccess(workspaceId, userId);
@@ -81,6 +85,13 @@ export class BoardsService {
       { board_id: board.id, name: 'UI/UX', color: '#a855f7' },
       { board_id: board.id, name: 'Gấp (Urgent)', color: '#ef4444' },
     ]);
+
+    await this.activitiesService.logActivity({
+      workspaceId,
+      userId,
+      action: `đã tạo Bảng "${board.name}"`,
+      targetType: `board:${board.id}`,
+    });
 
     return this.findById(board.id, userId);
   }
@@ -293,6 +304,13 @@ export class BoardsService {
       updated = data;
     }
 
+    await this.activitiesService.logActivity({
+      workspaceId: board.workspace_id,
+      userId,
+      action: `đã cập nhật thông tin Bảng "${updated?.name || board.name}"`,
+      targetType: `board:${boardId}`,
+    });
+
     return this.findById(boardId, userId);
   }
 
@@ -335,6 +353,13 @@ export class BoardsService {
       throw new BadRequestException(error.message);
     }
 
+    await this.activitiesService.logActivity({
+      workspaceId: board.workspace_id,
+      userId,
+      action: `đã lưu trữ Bảng "${board.name}"`,
+      targetType: `board:${boardId}`,
+    });
+
     return { message: 'Đã lưu trữ Board thành công', is_archived: true };
   }
 
@@ -350,6 +375,13 @@ export class BoardsService {
       .eq('id', boardId);
 
     if (error) throw new BadRequestException(error.message);
+
+    await this.activitiesService.logActivity({
+      workspaceId: board.workspace_id,
+      userId,
+      action: `đã khôi phục Bảng "${board.name}"`,
+      targetType: `board:${boardId}`,
+    });
 
     return { message: 'Đã khôi phục Board thành công', is_archived: false };
   }
@@ -380,6 +412,13 @@ export class BoardsService {
       board_id: newBoard.id,
       user_id: userId,
       role: 'ADMIN',
+    });
+
+    await this.activitiesService.logActivity({
+      workspaceId: targetWorkspaceId,
+      userId,
+      action: `đã nhân bản Bảng thành "${newBoard.name}"`,
+      targetType: `board:${newBoard.id}`,
     });
 
     // 3. Sao chép Labels và tạo map ID cũ -> mới
@@ -571,6 +610,13 @@ export class BoardsService {
 
     if (error) throw new BadRequestException(error.message);
 
+    await this.activitiesService.logActivity({
+      workspaceId: board.workspace_id,
+      userId: currentUserId,
+      action: `đã thêm thành viên "${(newMember as any)?.user?.name || 'thành viên'}" vào Bảng`,
+      targetType: `board:${boardId}`,
+    });
+
     return newMember;
   }
 
@@ -624,6 +670,13 @@ export class BoardsService {
 
     if (error) throw new BadRequestException(error.message);
 
+    await this.activitiesService.logActivity({
+      workspaceId: board.workspace_id,
+      userId: currentUserId,
+      action: `đã đổi vai trò thành viên thành ${dto.role}`,
+      targetType: `board:${boardId}`,
+    });
+
     return updated;
   }
 
@@ -660,6 +713,13 @@ export class BoardsService {
       .eq('user_id', targetUserId);
 
     if (error) throw new BadRequestException(error.message);
+
+    await this.activitiesService.logActivity({
+      workspaceId: board.workspace_id,
+      userId: currentUserId,
+      action: `đã xóa thành viên khỏi Bảng`,
+      targetType: `board:${boardId}`,
+    });
 
     return { message: 'Đã xóa thành viên khỏi Board' };
   }

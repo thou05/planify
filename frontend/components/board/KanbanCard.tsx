@@ -13,6 +13,7 @@ import {
   Trash2,
   Edit2,
   Check,
+  Paperclip,
 } from 'lucide-react';
 
 interface KanbanCardProps {
@@ -392,6 +393,14 @@ export default function KanbanCard({
               <span className="flex items-center gap-1 text-[#2b1572]/60">
                 <MessageSquare className="w-3 h-3 shrink-0" />
                 <span>{card.comments?.length || card._count?.comments}</span>
+              </span>
+            )}
+
+            {/* Attachments count */}
+            {(card.attachments?.length > 0 || card._count?.attachments > 0) && (
+              <span className="flex items-center gap-1 text-[#2b1572]/60" title="Tệp đính kèm">
+                <Paperclip className="w-3 h-3 shrink-0" />
+                <span>{card.attachments?.length || card._count?.attachments}</span>
               </span>
             )}
           </div>

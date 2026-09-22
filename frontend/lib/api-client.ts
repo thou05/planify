@@ -24,10 +24,15 @@ export async function apiClient<T = any>(
     token = localStorage.getItem('planify_token');
   }
 
+  const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
+
   const defaultHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
     Accept: 'application/json',
   };
+
+  if (!isFormData) {
+    defaultHeaders['Content-Type'] = 'application/json';
+  }
 
   if (token) {
     defaultHeaders['Authorization'] = `Bearer ${token}`;
@@ -43,7 +48,7 @@ export async function apiClient<T = any>(
   };
 
   if (data) {
-    config.body = JSON.stringify(data);
+    config.body = isFormData ? data : JSON.stringify(data);
   }
 
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;

@@ -11,10 +11,14 @@ import { ReorderListsDto } from './dto/reorder-lists.dto';
 import { CopyListDto } from './dto/copy-list.dto';
 import { MoveAllCardsDto } from './dto/move-all-cards.dto';
 import { SortCardsDto } from './dto/sort-cards.dto';
+import { ActivitiesService } from '../activities/activities.service';
 
 @Injectable()
 export class ListsService {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly activitiesService: ActivitiesService,
+  ) {}
 
   async create(boardId: string, userId: string, dto: CreateListDto) {
     await this.verifyBoardAccess(boardId, userId);
@@ -44,6 +48,21 @@ export class ListsService {
 
     if (error || !list) {
       throw new BadRequestException(error?.message || 'Không thể tạo danh sách');
+    }
+
+    const { data: board } = await this.supabase
+      .from('boards')
+      .select('workspace_id')
+      .eq('id', boardId)
+      .maybeSingle();
+
+    if (board?.workspace_id) {
+      await this.activitiesService.logActivity({
+        workspaceId: board.workspace_id,
+        userId,
+        action: `đã tạo danh sách "${list.title}"`,
+        targetType: `board:${boardId}`,
+      });
     }
 
     return { ...list, cards: [] };
@@ -76,6 +95,21 @@ export class ListsService {
 
     if (error || !updated) {
       throw new BadRequestException(error?.message || 'Không thể cập nhật danh sách');
+    }
+
+    const { data: board } = await this.supabase
+      .from('boards')
+      .select('workspace_id')
+      .eq('id', list.board_id)
+      .maybeSingle();
+
+    if (board?.workspace_id && dto.title) {
+      await this.activitiesService.logActivity({
+        workspaceId: board.workspace_id,
+        userId,
+        action: `đã đổi tên danh sách thành "${dto.title.trim()}"`,
+        targetType: `board:${list.board_id}`,
+      });
     }
 
     return updated;

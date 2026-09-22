@@ -9,10 +9,14 @@ import { CreateCardDto } from './dto/create-card.dto';
 import { UpdateCardDto } from './dto/update-card.dto';
 import { MoveCardDto } from './dto/move-card.dto';
 import { CopyCardDto } from './dto/copy-card.dto';
+import { ActivitiesService } from '../activities/activities.service';
 
 @Injectable()
 export class CardsService {
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly activitiesService: ActivitiesService,
+  ) { }
 
   async create(listId: string, userId: string, dto: CreateCardDto) {
     const { data: list, error: lError } = await this.supabase
@@ -72,6 +76,15 @@ export class CardsService {
 
     if (error || !card) {
       throw new BadRequestException(error?.message || 'Không thể tạo thẻ mới');
+    }
+
+    if (workspaceId) {
+      await this.activitiesService.logActivity({
+        workspaceId,
+        userId,
+        action: 'đã tạo thẻ này',
+        targetType: `card:${card.id}`,
+      });
     }
 
     return {
@@ -217,7 +230,7 @@ export class CardsService {
   async update(cardId: string, userId: string, dto: UpdateCardDto) {
     const { data: card } = await this.supabase
       .from('cards')
-      .select('id, list_id, position, list:lists (board_id)')
+      .select('id, title, list_id, position, list:lists (board_id)')
       .eq('id', cardId)
       .maybeSingle();
 
@@ -303,6 +316,38 @@ export class CardsService {
 
     if (error || !updated) {
       throw new BadRequestException(error?.message || 'Không thể cập nhật thẻ');
+    }
+
+    const { data: bInfo } = await this.supabase
+      .from('boards')
+      .select('workspace_id')
+      .eq('id', boardId)
+      .maybeSingle();
+
+    if (bInfo?.workspace_id) {
+      if (dto.title !== undefined && dto.title.trim() !== card.title) {
+        await this.activitiesService.logActivity({
+          workspaceId: bInfo.workspace_id,
+          userId,
+          action: `đã đổi tên thẻ thành "${dto.title.trim()}"`,
+          targetType: `card:${cardId}`,
+        });
+      }
+      if (dto.is_due_date_completed !== undefined) {
+        await this.activitiesService.logActivity({
+          workspaceId: bInfo.workspace_id,
+          userId,
+          action: dto.is_due_date_completed ? 'đã đánh dấu hoàn thành hạn chót' : 'đã bỏ đánh dấu hoàn thành hạn chót',
+          targetType: `card:${cardId}`,
+        });
+      } else if (dto.due_date !== undefined) {
+        await this.activitiesService.logActivity({
+          workspaceId: bInfo.workspace_id,
+          userId,
+          action: dto.due_date ? 'đã cập nhật ngày hết hạn' : 'đã xóa ngày hết hạn',
+          targetType: `card:${cardId}`,
+        });
+      }
     }
 
     return updated;
@@ -452,6 +497,18 @@ export class CardsService {
       );
 
       await Promise.all([...sourceUpdatePromises, ...targetUpdatePromises]);
+
+      const { data: sList } = await this.supabase.from('lists').select('title, board:boards(workspace_id)').eq('id', sourceCard.list_id).maybeSingle();
+      const { data: tList } = await this.supabase.from('lists').select('title').eq('id', dto.targetListId).maybeSingle();
+      const wsId = (sList?.board as any)?.workspace_id;
+      if (wsId) {
+        await this.activitiesService.logActivity({
+          workspaceId: wsId,
+          userId,
+          action: `đã chuyển thẻ từ "${sList?.title || 'danh sách cũ'}" sang "${tList?.title || 'danh sách mới'}"`,
+          targetType: `card:${cardId}`,
+        });
+      }
     }
 
     return this.findById(cardId, userId);
@@ -611,11 +668,23 @@ export class CardsService {
       .eq('board_member_id', boardMemberId)
       .maybeSingle();
 
+    const { data: bForWs } = await this.supabase.from('boards').select('workspace_id').eq('id', boardId).maybeSingle();
+    const wsIdForToggle = bForWs?.workspace_id;
+
     if (existing) {
       await this.supabase
         .from('card_assignees')
         .delete()
         .eq('id', existing.id);
+
+      if (wsIdForToggle) {
+        await this.activitiesService.logActivity({
+          workspaceId: wsIdForToggle,
+          userId,
+          action: `đã hủy gán thẻ cho "${(bMember as any)?.user?.name || 'thành viên'}"`,
+          targetType: `card:${cardId}`,
+        });
+      }
 
       return { assigned: false, board_member_id: boardMemberId };
     } else {
@@ -639,6 +708,15 @@ export class CardsService {
 
       if (error || !newAssignee) {
         throw new BadRequestException('Không thể gán thành viên vào thẻ');
+      }
+
+      if (wsIdForToggle) {
+        await this.activitiesService.logActivity({
+          workspaceId: wsIdForToggle,
+          userId,
+          action: `đã gán thẻ cho "${(bMember as any)?.user?.name || 'thành viên'}"`,
+          targetType: `card:${cardId}`,
+        });
       }
 
       return { assigned: true, assignee: newAssignee };

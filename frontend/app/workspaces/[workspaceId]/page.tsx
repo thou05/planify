@@ -34,7 +34,15 @@ import {
   Edit3,
   ExternalLink,
   Archive,
+  History,
+  RefreshCw,
+  Clock,
+  CheckSquare,
+  Paperclip,
+  MessageSquare,
+  Sparkles,
 } from 'lucide-react';
+import { ActivityItem } from '@/components/modals/MyActivityModal';
 
 export default function WorkspaceDetailPage({
   params,
@@ -49,7 +57,26 @@ export default function WorkspaceDetailPage({
   const [workspace, setWorkspace] = useState<any>(null);
   const [pendingInvites, setPendingInvites] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'boards' | 'members' | 'settings'>('boards');
+  const [activeTab, setActiveTab] = useState<'boards' | 'members' | 'settings' | 'activities'>('boards');
+
+  // Workspace Activities State
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [isLoadingActivities, setIsLoadingActivities] = useState(false);
+  const [activityFilter, setActivityFilter] = useState<'all' | 'board' | 'card' | 'workspace'>('all');
+
+  const fetchWorkspaceActivities = async () => {
+    try {
+      setIsLoadingActivities(true);
+      const res = await apiClient<ActivityItem[]>(`/workspaces/${workspaceId}/activities`);
+      if (res.success && Array.isArray(res.data)) {
+        setActivities(res.data);
+      }
+    } catch {
+      // Error
+    } finally {
+      setIsLoadingActivities(false);
+    }
+  };
 
   // Modals state
   const [isCreateBoardOpen, setIsCreateBoardOpen] = useState(false);
@@ -109,6 +136,12 @@ export default function WorkspaceDetailPage({
       fetchInvites();
     }
   }, [workspace]);
+
+  useEffect(() => {
+    if (activeTab === 'activities') {
+      fetchWorkspaceActivities();
+    }
+  }, [activeTab, workspaceId]);
 
   const handleUpdateRole = async (targetUserId: string, newRole: 'ADMIN' | 'MEMBER') => {
     try {
@@ -376,6 +409,18 @@ export default function WorkspaceDetailPage({
           >
             <Settings className="w-4 h-4" />
             <span>Cài đặt Không gian</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('activities')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+              activeTab === 'activities'
+                ? 'bg-[#2b1572] text-[#a6d1fd] shadow-md shadow-[#2b1572]/20'
+                : 'text-[#2b1572]/70 hover:bg-white/40 hover:text-[#2b1572]'
+            }`}
+          >
+            <History className="w-4 h-4" />
+            <span>Lịch sử hoạt động ({activities.length})</span>
           </button>
         </div>
 
@@ -773,6 +818,232 @@ export default function WorkspaceDetailPage({
                 </form>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ==================================================================== */}
+        {/* TAB 4: ACTIVITIES */}
+        {/* ==================================================================== */}
+        {activeTab === 'activities' && (
+          <div className="space-y-6">
+            {/* Header / Filter Toolbar Card */}
+            <div className="glass-surface p-6 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-[#2b1572] flex items-center justify-center text-[#a6d1fd] shadow-sm">
+                    <History className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-base font-bold text-[#2b1572]">Lịch sử hoạt động</h3>
+                </div>
+                <p className="text-xs text-[#2b1572]/70 mt-1">
+                  Toàn bộ diễn biến thao tác trong Không gian làm việc, bao gồm Bảng Kanban và Thẻ công việc
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={fetchWorkspaceActivities}
+                  disabled={isLoadingActivities}
+                  className="px-3 py-1.5 rounded-xl border border-white/60 bg-white/40 hover:bg-white/70 text-[#2b1572] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingActivities ? 'animate-spin text-[#2b1572]' : ''}`} />
+                  <span>Làm mới</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Category Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+              <button
+                type="button"
+                onClick={() => setActivityFilter('all')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  activityFilter === 'all'
+                    ? 'bg-[#2b1572] text-white shadow-xs'
+                    : 'glass-surface text-[#2b1572]/80 hover:bg-white/60'
+                }`}
+              >
+                Tất cả ({activities.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActivityFilter('board')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  activityFilter === 'board'
+                    ? 'bg-[#2b1572] text-white shadow-xs'
+                    : 'glass-surface text-[#2b1572]/80 hover:bg-white/60'
+                }`}
+              >
+                Bảng & Cột ({activities.filter((a) => a.target_type.startsWith('board:') || a.action.includes('bảng') || a.action.includes('danh sách')).length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActivityFilter('card')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  activityFilter === 'card'
+                    ? 'bg-[#2b1572] text-white shadow-xs'
+                    : 'glass-surface text-[#2b1572]/80 hover:bg-white/60'
+                }`}
+              >
+                Thẻ công việc ({activities.filter((a) => a.target_type.startsWith('card:')).length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActivityFilter('workspace')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  activityFilter === 'workspace'
+                    ? 'bg-[#2b1572] text-white shadow-xs'
+                    : 'glass-surface text-[#2b1572]/80 hover:bg-white/60'
+                }`}
+              >
+                Thành viên & Cài đặt ({activities.filter((a) => a.target_type.startsWith('workspace:') || a.action.includes('thành viên') || a.action.includes('vai trò')).length})
+              </button>
+            </div>
+
+            {/* Timeline Activities List */}
+            {isLoadingActivities ? (
+              <div className="glass-surface p-12 text-center rounded-2xl flex flex-col items-center justify-center gap-3">
+                <RefreshCw className="w-6 h-6 animate-spin text-[#2b1572]" />
+                <span className="text-xs text-[#2b1572]/70 font-medium">Đang tải dòng thời gian hoạt động...</span>
+              </div>
+            ) : (() => {
+              const filtered = activities.filter((act) => {
+                if (activityFilter === 'board') {
+                  return act.target_type.startsWith('board:') || act.action.includes('bảng') || act.action.includes('danh sách');
+                }
+                if (activityFilter === 'card') {
+                  return act.target_type.startsWith('card:');
+                }
+                if (activityFilter === 'workspace') {
+                  return act.target_type.startsWith('workspace:') || act.action.includes('thành viên') || act.action.includes('vai trò');
+                }
+                return true;
+              });
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="glass-surface p-12 text-center rounded-2xl flex flex-col items-center justify-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-white/50 flex items-center justify-center text-[#2b1572]/50 shadow-inner">
+                      <History className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-[#2b1572]">Chưa có hoạt động nào</h4>
+                      <p className="text-xs text-[#2b1572]/60 mt-1 max-w-sm">
+                        Mọi diễn biến tạo bảng, giao việc thẻ hay thay đổi vai trò thành viên sẽ được ghi nhận tại đây.
+                      </p>
+                    </div>
+                  </div>
+                );
+              }
+
+              const getActivityIcon = (action: string, targetType: string) => {
+                if (action.includes('bình luận')) return <MessageSquare className="w-3.5 h-3.5 text-blue-500 shrink-0" />;
+                if (action.includes('đính kèm')) return <Paperclip className="w-3.5 h-3.5 text-amber-500 shrink-0" />;
+                if (action.includes('hoàn thành')) return <CheckSquare className="w-3.5 h-3.5 text-emerald-600 shrink-0" />;
+                if (action.includes('hạn chót') || action.includes('ngày')) return <Clock className="w-3.5 h-3.5 text-rose-500 shrink-0" />;
+                if (targetType.startsWith('board:') || action.includes('bảng')) return <Kanban className="w-3.5 h-3.5 text-[#2b1572] shrink-0" />;
+                if (targetType.startsWith('workspace:') || action.includes('thành viên')) return <Users className="w-3.5 h-3.5 text-indigo-600 shrink-0" />;
+                return <Sparkles className="w-3.5 h-3.5 text-[#2b1572] shrink-0" />;
+              };
+
+              const formatTime = (ts: string) => {
+                try {
+                  const diff = Date.now() - new Date(ts).getTime();
+                  const mins = Math.floor(diff / 60000);
+                  if (mins < 1) return 'Vừa xong';
+                  if (mins < 60) return `${mins} phút trước`;
+                  const hours = Math.floor(mins / 60);
+                  if (hours < 24) return `${hours} giờ trước`;
+                  const days = Math.floor(hours / 24);
+                  if (days < 30) return `${days} ngày trước`;
+                  return new Date(ts).toLocaleDateString('vi-VN', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                  });
+                } catch {
+                  return '';
+                }
+              };
+
+              return (
+                <div className="space-y-2.5">
+                  {filtered.map((act) => {
+                    const actorName = act.user?.name || 'Người dùng';
+                    const actorAvatar = act.user?.avatar;
+                    const isBoard = act.target_type.startsWith('board:');
+                    const isCard = act.target_type.startsWith('card:');
+                    const boardId = isBoard ? act.target_type.replace('board:', '') : null;
+
+                    return (
+                      <div
+                        key={act.id}
+                        className="glass-surface p-3.5 sm:p-4 rounded-2xl flex items-start gap-3.5 hover:bg-white/60 transition-all border border-white/60 shadow-2xs group"
+                      >
+                        {actorAvatar ? (
+                          <img
+                            src={actorAvatar}
+                            alt={actorName}
+                            className="w-8 h-8 rounded-full object-cover shrink-0 mt-0.5 shadow-xs ring-1 ring-white"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-[#2b1572] text-[#a6d1fd] flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 shadow-xs">
+                            {actorName.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <div className="flex items-center gap-2 flex-wrap min-w-0">
+                              <span className="text-xs font-bold text-[#2b1572] truncate">
+                                {actorName}
+                              </span>
+                              {isBoard && (
+                                <span className="text-[10px] font-semibold px-2 py-0.2 rounded-md bg-[#2b1572]/10 text-[#2b1572]">
+                                  Bảng
+                                </span>
+                              )}
+                              {isCard && (
+                                <span className="text-[10px] font-semibold px-2 py-0.2 rounded-md bg-blue-50 text-blue-700">
+                                  Thẻ
+                                </span>
+                              )}
+                              {act.target_type.startsWith('workspace:') && (
+                                <span className="text-[10px] font-semibold px-2 py-0.2 rounded-md bg-purple-50 text-purple-700">
+                                  Workspace
+                                </span>
+                              )}
+                            </div>
+
+                            <span className="text-[11px] text-[#2b1572]/50 shrink-0" title={act.created_at}>
+                              {formatTime(act.created_at)}
+                            </span>
+                          </div>
+
+                          <div className="text-xs text-[#2b1572]/85 flex items-start gap-1.5 leading-relaxed break-words">
+                            <span className="mt-0.5 shrink-0">{getActivityIcon(act.action, act.target_type)}</span>
+                            <span>{act.action}</span>
+                          </div>
+
+                          {boardId && (
+                            <div className="mt-2">
+                              <Link
+                                href={`/boards/${boardId}`}
+                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#2b1572] bg-[#a6d1fd]/30 hover:bg-[#a6d1fd]/50 px-2 py-0.5 rounded-lg transition-colors"
+                              >
+                                <span>Đi đến Bảng</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </Link>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         )}
       </div>
