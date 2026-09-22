@@ -984,6 +984,7 @@ export default function BoardDetailPage({
         onCardUpdated={() => fetchBoard()}
         onMoveRequest={(c) => setMovingCard(c)}
         onCopyRequest={(c) => setCopyingCard(c)}
+        onSelectCard={(cId) => setSelectedCardId(cId)}
       />
 
       {/* 3. Copy List Modal */}

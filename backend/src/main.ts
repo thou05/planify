@@ -75,4 +75,5 @@ async function bootstrap() {
   logger.log(`📚 Swagger documentation available at: http://localhost:${port}/api/docs`);
 }
 
+// Planify Server Bootstrap
 bootstrap();

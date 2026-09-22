@@ -257,6 +257,29 @@ export class CardsService {
       updateData.is_due_date_completed = dto.is_due_date_completed;
     }
 
+    // Nếu đánh dấu hoàn thành (is_due_date_completed = true hoặc status = DONE), kiểm tra xem có bị chặn bởi thẻ chưa hoàn thành không
+    if (dto.is_due_date_completed === true || dto.status === 'DONE') {
+      const { data: blockers } = await this.supabase
+        .from('card_relations')
+        .select('id, type, related_card:cards!related_card_id(id, title, is_due_date_completed, status)')
+        .eq('card_id', cardId)
+        .eq('type', 'BLOCKED_BY');
+
+      const unresolvedBlockers = (blockers || []).filter((b: any) => {
+        const rc = b.related_card;
+        return rc && !rc.is_due_date_completed && rc.status !== 'DONE';
+      });
+
+      if (unresolvedBlockers.length > 0) {
+        const titles = unresolvedBlockers
+          .map((b: any) => `"${b.related_card?.title || 'Thẻ'}"`)
+          .join(', ');
+        throw new BadRequestException(
+          `Không thể hoàn thành thẻ này vì đang bị chặn bởi các thẻ chưa hoàn thành: ${titles}`,
+        );
+      }
+    }
+
     let { data: updated, error } = await this.supabase
       .from('cards')
       .update(updateData)
