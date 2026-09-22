@@ -132,7 +132,16 @@ export default function BoardDetailPage({
       ]);
 
       if (wsRes.success && wsRes.data) {
-        setWorkspaceMembers(wsRes.data.members || []);
+        const members = [...(wsRes.data.members || [])];
+        if (wsRes.data.owner && !members.some((m: any) => (m.user?.id || m.user_id) === wsRes.data.owner_id)) {
+          members.unshift({
+            id: wsRes.data.owner.id,
+            user_id: wsRes.data.owner.id,
+            role: 'OWNER',
+            user: wsRes.data.owner,
+          });
+        }
+        setWorkspaceMembers(members);
       }
       if (allWsRes.success && allWsRes.data) {
         setUserWorkspaces(allWsRes.data);

@@ -634,7 +634,7 @@ export class CardsService {
     return this.findById(newCard.id, userId);
   }
 
-  async toggleAssignMember(cardId: string, userId: string, boardMemberId: string) {
+  async toggleAssignMember(cardId: string, userId: string, memberIdOrUserId: string) {
     const { data: card } = await this.supabase
       .from('cards')
       .select('id, title, list:lists (board_id)')
@@ -650,28 +650,95 @@ export class CardsService {
       await this.verifyBoardAccess(boardId, userId);
     }
 
-    // Verify boardMemberId belongs to this board
-    const { data: bMember } = await this.supabase
+    const { data: bForWs } = await this.supabase
+      .from('boards')
+      .select('workspace_id')
+      .eq('id', boardId)
+      .maybeSingle();
+    const wsIdForToggle = bForWs?.workspace_id;
+
+    // 1. Tìm bản ghi board_members tương ứng (theo id hoặc user_id)
+    let bMember: any = null;
+    const { data: foundById } = await this.supabase
       .from('board_members')
       .select('id, board_id, role, user:users (id, name, email, avatar)')
-      .eq('id', boardMemberId)
+      .eq('id', memberIdOrUserId)
       .eq('board_id', boardId)
       .maybeSingle();
+
+    if (foundById) {
+      bMember = foundById;
+    } else {
+      const { data: foundByUserId } = await this.supabase
+        .from('board_members')
+        .select('id, board_id, role, user:users (id, name, email, avatar)')
+        .eq('user_id', memberIdOrUserId)
+        .eq('board_id', boardId)
+        .maybeSingle();
+
+      if (foundByUserId) {
+        bMember = foundByUserId;
+      }
+    }
+
+    // 2. Nếu chưa có trong board_members nhưng thuộc workspace, tự động thêm vào board_members
+    if (!bMember && wsIdForToggle) {
+      let targetUserId = memberIdOrUserId;
+
+      const { data: wsMember } = await this.supabase
+        .from('workspace_members')
+        .select('user_id, role')
+        .eq('workspace_id', wsIdForToggle)
+        .or(`id.eq.${memberIdOrUserId},user_id.eq.${memberIdOrUserId}`)
+        .maybeSingle();
+
+      if (wsMember) {
+        targetUserId = wsMember.user_id;
+      } else {
+        const { data: ws } = await this.supabase
+          .from('workspaces')
+          .select('owner_id')
+          .eq('id', wsIdForToggle)
+          .maybeSingle();
+
+        if (ws?.owner_id === memberIdOrUserId) {
+          targetUserId = ws.owner_id;
+        } else {
+          throw new BadRequestException('Thành viên không thuộc về bảng hoặc không gian làm việc này');
+        }
+      }
+
+      // Thêm vào board_members
+      const { data: addedBM, error: addErr } = await this.supabase
+        .from('board_members')
+        .insert({
+          board_id: boardId,
+          user_id: targetUserId,
+          role: 'EDITOR',
+        })
+        .select('id, board_id, role, user:users (id, name, email, avatar)')
+        .single();
+
+      if (addErr || !addedBM) {
+        throw new BadRequestException('Không thể liên kết thành viên vào bảng');
+      }
+
+      bMember = addedBM;
+    }
 
     if (!bMember) {
       throw new BadRequestException('Thành viên không thuộc về bảng này');
     }
+
+    const effectiveBoardMemberId = bMember.id;
 
     // Check if already assigned
     const { data: existing } = await this.supabase
       .from('card_assignees')
       .select('id')
       .eq('card_id', cardId)
-      .eq('board_member_id', boardMemberId)
+      .eq('board_member_id', effectiveBoardMemberId)
       .maybeSingle();
-
-    const { data: bForWs } = await this.supabase.from('boards').select('workspace_id').eq('id', boardId).maybeSingle();
-    const wsIdForToggle = bForWs?.workspace_id;
 
     if (existing) {
       await this.supabase
@@ -688,13 +755,13 @@ export class CardsService {
         });
       }
 
-      return { assigned: false, board_member_id: boardMemberId };
+      return { assigned: false, board_member_id: effectiveBoardMemberId };
     } else {
       const { data: newAssignee, error } = await this.supabase
         .from('card_assignees')
         .insert({
           card_id: cardId,
-          board_member_id: boardMemberId,
+          board_member_id: effectiveBoardMemberId,
         })
         .select(`
           id,

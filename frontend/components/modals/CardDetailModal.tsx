@@ -107,6 +107,8 @@ interface CardDetailModalProps {
   onCardUpdated: () => void;
   onMoveRequest: (card: any) => void;
   onCopyRequest: (card: any) => void;
+  workspaceMembers?: any[];
+  workspaceId?: string;
 }
 
 const LABEL_COLOR_PALETTE = [
@@ -176,6 +178,14 @@ function formatRelativeTime(dateStr: string | Date | null | undefined): string {
   return `${hours}:${mins} ${d}/${m}/${y}`;
 }
 
+function removeVietnameseTones(str: string): string {
+  return (str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D');
+}
+
 export default function CardDetailModal({
   cardId,
   isOpen,
@@ -183,6 +193,8 @@ export default function CardDetailModal({
   onCardUpdated,
   onMoveRequest,
   onCopyRequest,
+  workspaceMembers: externalWsMembers = [],
+  workspaceId: externalWorkspaceId,
 }: CardDetailModalProps) {
   const [card, setCard] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -201,8 +213,15 @@ export default function CardDetailModal({
   // Members state
   const [assignees, setAssignees] = useState<any[]>([]);
   const [boardMembers, setBoardMembers] = useState<any[]>([]);
+  const [workspaceMembersList, setWorkspaceMembersList] = useState<any[]>(externalWsMembers || []);
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
+
+  useEffect(() => {
+    if (externalWsMembers && externalWsMembers.length > 0) {
+      setWorkspaceMembersList(externalWsMembers);
+    }
+  }, [externalWsMembers]);
 
   // Labels state
   const [cardLabels, setCardLabels] = useState<any[]>([]);
@@ -522,26 +541,36 @@ export default function CardDetailModal({
   };
 
   // Toggle Assign Member
-  const handleToggleAssignee = async (boardMemberId: string) => {
+  const handleToggleAssignee = async (memberId: string) => {
     const isAssigned = assignees.some(
-      (a) => a.board_member_id === boardMemberId || a.board_member?.id === boardMemberId,
+      (a) =>
+        a.board_member_id === memberId ||
+        a.board_member?.id === memberId ||
+        a.board_member?.user_id === memberId ||
+        a.board_member?.user?.id === memberId,
     );
 
     // Optimistic
     if (isAssigned) {
       setAssignees((prev) =>
         prev.filter(
-          (a) => a.board_member_id !== boardMemberId && a.board_member?.id !== boardMemberId,
+          (a) =>
+            a.board_member_id !== memberId &&
+            a.board_member?.id !== memberId &&
+            a.board_member?.user_id !== memberId &&
+            a.board_member?.user?.id !== memberId,
         ),
       );
     } else {
-      const memberObj = boardMembers.find((m) => m.id === boardMemberId);
+      const memberObj = assignableMembers.find(
+        (m) => m.id === memberId || m.user_id === memberId || m.user?.id === memberId,
+      );
       if (memberObj) {
         setAssignees((prev) => [
           ...prev,
           {
             id: `temp-${Date.now()}`,
-            board_member_id: boardMemberId,
+            board_member_id: memberObj.id || memberId,
             board_member: memberObj,
           },
         ]);
@@ -551,18 +580,10 @@ export default function CardDetailModal({
     try {
       const res = await apiClient<any>(`/cards/${cardId}/assignees/toggle`, {
         method: 'POST',
-        data: { board_member_id: boardMemberId },
+        data: { board_member_id: memberId },
       });
       if (res.success && res.data) {
-        if (res.data.assigned && res.data.assignee) {
-          setAssignees((prev) =>
-            prev.map((a) =>
-              a.board_member_id === boardMemberId || a.board_member?.id === boardMemberId
-                ? res.data.assignee
-                : a,
-            ),
-          );
-        }
+        fetchCardDetails(cardId!);
         onCardUpdated();
       }
     } catch (err: any) {
@@ -990,15 +1011,6 @@ export default function CardDetailModal({
       ? REMINDER_OPTIONS.find((r) => r.value === reminderMinutes)?.label || 'Có lời nhắc'
       : null;
 
-  // Filter board members for popover
-  const filteredBoardMembers = boardMembers.filter((m) => {
-    const q = memberSearchQuery.toLowerCase().trim();
-    if (!q) return true;
-    const name = m.user?.name?.toLowerCase() || '';
-    const email = m.user?.email?.toLowerCase() || '';
-    return name.includes(q) || email.includes(q);
-  });
-
   // Filter board labels for popover
   const filteredBoardLabels = boardLabels.filter((l) => {
     const q = labelSearchQuery.toLowerCase().trim();
@@ -1249,7 +1261,51 @@ export default function CardDetailModal({
     }
   };
 
-  const filteredItemBoardMembers = boardMembers.filter((m) => {
+  // Danh sách thành viên hợp nhất từ cả Workspace và Board (loại bỏ trùng lặp user_id)
+  const assignableMembers = (() => {
+    const map = new Map<string, any>();
+
+    // 1. Thêm thành viên Workspace trước
+    (workspaceMembersList || []).forEach((m) => {
+      const uId = m.user?.id || m.user_id;
+      if (uId && !map.has(uId)) {
+        map.set(uId, {
+          id: m.id || uId,
+          user_id: uId,
+          user: m.user || { id: uId, name: 'Thành viên' },
+          role: m.role || 'MEMBER',
+          isBoardMember: false,
+        });
+      }
+    });
+
+    // 2. Thêm hoặc cập nhật thành viên Board
+    (boardMembers || []).forEach((m) => {
+      const uId = m.user?.id || m.user_id;
+      if (uId) {
+        const existing = map.get(uId);
+        map.set(uId, {
+          id: m.id || uId,
+          user_id: uId,
+          user: m.user || existing?.user || { id: uId, name: 'Thành viên' },
+          role: m.role || existing?.role || 'MEMBER',
+          isBoardMember: true,
+        });
+      }
+    });
+
+    return Array.from(map.values());
+  })();
+
+  const filteredBoardMembers = assignableMembers.filter((m) => {
+    const q = memberSearchQuery.toLowerCase().trim();
+    if (!q) return true;
+    const name = m.user?.name?.toLowerCase() || '';
+    const email = m.user?.email?.toLowerCase() || '';
+    return name.includes(q) || email.includes(q);
+  });
+
+  const filteredItemBoardMembers = assignableMembers.filter((m) => {
     const q = itemMemberSearchQuery.toLowerCase().trim();
     if (!q) return true;
     const name = m.user?.name?.toLowerCase() || '';
@@ -1257,23 +1313,45 @@ export default function CardDetailModal({
     return name.includes(q) || email.includes(q);
   });
 
-  // Filtered members for new comment mention autocomplete
-  const filteredMentionMembers = boardMembers.filter((m) => {
-    const q = mentionQuery.toLowerCase().trim();
-    if (!q) return true;
-    const name = m.user?.name?.toLowerCase() || '';
-    const email = m.user?.email?.toLowerCase() || '';
-    return name.includes(q) || email.includes(q);
-  });
+  // Filtered members for new comment mention autocomplete - LOẠI BỎ CHÍNH MÌNH (currentUser)
+  const filteredMentionMembers = assignableMembers
+    .filter((m) => {
+      const uId = m.user?.id || m.user_id;
+      return uId !== currentUser?.id;
+    })
+    .filter((m) => {
+      const q = mentionQuery.toLowerCase().trim();
+      if (!q) return true;
+      const name = m.user?.name || '';
+      const email = m.user?.email || '';
+      const nameClean = removeVietnameseTones(name).toLowerCase();
+      const queryClean = removeVietnameseTones(q);
+      return (
+        name.toLowerCase().includes(q) ||
+        nameClean.includes(queryClean) ||
+        email.toLowerCase().includes(q)
+      );
+    });
 
-  // Filtered members for edit comment mention autocomplete
-  const filteredEditMentionMembers = boardMembers.filter((m) => {
-    const q = editMentionQuery.toLowerCase().trim();
-    if (!q) return true;
-    const name = m.user?.name?.toLowerCase() || '';
-    const email = m.user?.email?.toLowerCase() || '';
-    return name.includes(q) || email.includes(q);
-  });
+  // Filtered members for edit comment mention autocomplete - LOẠI BỎ CHÍNH MÌNH (currentUser)
+  const filteredEditMentionMembers = assignableMembers
+    .filter((m) => {
+      const uId = m.user?.id || m.user_id;
+      return uId !== currentUser?.id;
+    })
+    .filter((m) => {
+      const q = editMentionQuery.toLowerCase().trim();
+      if (!q) return true;
+      const name = m.user?.name || '';
+      const email = m.user?.email || '';
+      const nameClean = removeVietnameseTones(name).toLowerCase();
+      const queryClean = removeVietnameseTones(q);
+      return (
+        name.toLowerCase().includes(q) ||
+        nameClean.includes(queryClean) ||
+        email.toLowerCase().includes(q)
+      );
+    });
 
   // --- COMMENT HANDLERS ---
   const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -1541,7 +1619,7 @@ export default function CardDetailModal({
   const renderCommentContent = (content: string) => {
     if (!content) return null;
 
-    const memberNames = boardMembers
+    const memberNames = assignableMembers
       .map((m) => m.user?.name)
       .filter(Boolean) as string[];
 
@@ -2519,7 +2597,7 @@ export default function CardDetailModal({
                         onChange={handleCommentChange}
                         onKeyDown={handleCommentKeyDown}
                         rows={commentText.length > 50 || isMentionOpen ? 3 : 2}
-                        placeholder="Viết bình luận... (Gõ @ để nhắc tên)"
+                        placeholder="Viết bình luận..."
                         className="w-full text-xs text-[#2b1572] bg-transparent resize-none focus:outline-none placeholder:text-slate-400 leading-relaxed"
                       />
 
@@ -2546,10 +2624,11 @@ export default function CardDetailModal({
                                   key={m.id}
                                   type="button"
                                   onClick={() => handleSelectMention(mName)}
-                                  className={`w-full p-1.5 rounded-lg flex items-center gap-2 text-left transition-colors cursor-pointer ${isSelected
+                                  className={`w-full p-1.5 rounded-lg flex items-center gap-2 text-left transition-colors cursor-pointer ${
+                                    isSelected
                                       ? 'bg-[#a6d1fd]/40 text-[#2b1572]'
                                       : 'hover:bg-slate-100 text-slate-700'
-                                    }`}
+                                  }`}
                                 >
                                   {mAvatar ? (
                                     <img
@@ -2563,7 +2642,18 @@ export default function CardDetailModal({
                                     </div>
                                   )}
                                   <div className="flex-1 min-w-0">
-                                    <div className="text-xs font-bold truncate leading-tight">{mName}</div>
+                                    <div className="text-xs font-bold truncate leading-tight flex items-center gap-1.5">
+                                      <span className="truncate">{mName}</span>
+                                      {m.isBoardMember ? (
+                                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#a6d1fd]/40 text-[#2b1572] font-semibold shrink-0">
+                                          Bảng
+                                        </span>
+                                      ) : (
+                                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-100 text-purple-700 font-semibold shrink-0">
+                                          Workspace
+                                        </span>
+                                      )}
+                                    </div>
                                     {mEmail && (
                                       <div className="text-[10px] text-slate-400 truncate leading-tight">
                                         {mEmail}
@@ -2578,11 +2668,7 @@ export default function CardDetailModal({
                       )}
 
                       {/* Composer Toolbar & Submit */}
-                      <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 mt-1">
-                        <span className="text-[10px] text-slate-400 select-none">
-                          Gõ <kbd className="px-1 py-0.5 bg-slate-100 text-[#2b1572] font-mono rounded text-[9px] font-bold">@</kbd> để nhắc tên
-                        </span>
-
+                      <div className="flex items-center justify-end pt-2 border-t border-slate-200/60 mt-1">
                         <button
                           type="button"
                           onClick={handleSubmitComment}
@@ -2844,8 +2930,8 @@ export default function CardDetailModal({
                           <MessageCircle className="w-4 h-4" />
                         </div>
                         <span className="font-semibold text-slate-600">Chưa có bình luận nào</span>
-                        <span className="text-[11px] text-slate-400 max-w-[200px]">
-                          Gõ @ để nhắc tên đồng nghiệp và thảo luận tại đây.
+                        <span className="text-[11px] text-slate-400">
+                          Hãy là người đầu tiên để lại bình luận cho thẻ này.
                         </span>
                       </div>
                     );
@@ -2882,7 +2968,7 @@ export default function CardDetailModal({
               <div className="p-4 border-b border-slate-100 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs font-bold text-[#2b1572]">
                   <Users className="w-4 h-4 text-[#2b1572]" />
-                  <span>Thành viên trong bảng ({boardMembers.length})</span>
+                  <span>Thành viên ({assignableMembers.length})</span>
                 </div>
                 <button
                   type="button"
@@ -2911,8 +2997,8 @@ export default function CardDetailModal({
               <div className="p-2 overflow-y-auto space-y-1 flex-1">
                 {filteredBoardMembers.length === 0 ? (
                   <div className="p-6 text-center text-xs text-slate-400">
-                    {boardMembers.length === 0
-                      ? 'Chưa có thành viên nào khác trong bảng'
+                    {assignableMembers.length === 0
+                      ? 'Chưa có thành viên nào trong không gian làm việc'
                       : 'Không tìm thấy thành viên phù hợp'}
                   </div>
                 ) : (
@@ -2920,11 +3006,16 @@ export default function CardDetailModal({
                     const uName = m.user?.name || 'Thành viên';
                     const uEmail = m.user?.email || '';
                     const uAvatar = m.user?.avatar;
+                    const uId = m.user?.id || m.user_id;
                     const isAssigned = assignees.some(
-                      (a) => a.board_member_id === m.id || a.board_member?.id === m.id,
+                      (a) =>
+                        a.board_member_id === m.id ||
+                        a.board_member?.id === m.id ||
+                        a.board_member?.user_id === uId ||
+                        a.board_member?.user?.id === uId,
                     );
                     const roleName =
-                      m.role === 'ADMIN'
+                      m.role === 'ADMIN' || m.role === 'OWNER'
                         ? 'Quản trị'
                         : m.role === 'VIEWER'
                           ? 'Người xem'
@@ -2932,9 +3023,9 @@ export default function CardDetailModal({
 
                     return (
                       <button
-                        key={m.id}
+                        key={m.id || uId}
                         type="button"
-                        onClick={() => handleToggleAssignee(m.id)}
+                        onClick={() => handleToggleAssignee(m.id || uId)}
                         className="w-full p-2.5 rounded-xl hover:bg-slate-50 flex items-center justify-between gap-3 text-left transition-colors cursor-pointer group"
                       >
                         <div className="flex items-center gap-2.5 flex-1 min-w-0">
@@ -2954,7 +3045,16 @@ export default function CardDetailModal({
                               <span className="text-xs font-bold text-[#2b1572] truncate">
                                 {uName}
                               </span>
-                              <span className="text-[10px] px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded font-medium">
+                              {m.isBoardMember ? (
+                                <span className="text-[10px] px-1.5 py-0.2 bg-[#a6d1fd]/40 text-[#2b1572] rounded font-semibold shrink-0">
+                                  Bảng
+                                </span>
+                              ) : (
+                                <span className="text-[10px] px-1.5 py-0.2 bg-purple-100 text-purple-700 rounded font-semibold shrink-0">
+                                  Workspace
+                                </span>
+                              )}
+                              <span className="text-[10px] px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded font-medium shrink-0">
                                 {roleName}
                               </span>
                             </div>
@@ -2965,10 +3065,11 @@ export default function CardDetailModal({
                         </div>
 
                         <div
-                          className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${isAssigned
+                          className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
+                            isAssigned
                               ? 'bg-[#2b1572] text-white'
                               : 'border border-slate-200 group-hover:border-[#2b1572]/40'
-                            }`}
+                          }`}
                         >
                           {isAssigned && <Check className="w-3.5 h-3.5" />}
                         </div>
@@ -3491,19 +3592,22 @@ export default function CardDetailModal({
                     const uName = m.user?.name || 'Thành viên';
                     const uEmail = m.user?.email || '';
                     const uAvatar = m.user?.avatar;
+                    const uId = m.user?.id || m.user_id;
                     const isAssigned =
                       activeItemMember.item.member_id === m.id ||
-                      activeItemMember.item.member?.id === m.id;
+                      activeItemMember.item.member_id === uId ||
+                      activeItemMember.item.member?.id === m.id ||
+                      activeItemMember.item.member?.user?.id === uId;
 
                     return (
                       <button
-                        key={m.id}
+                        key={m.id || uId}
                         type="button"
                         onClick={() =>
                           handleAssignItemMember(
                             activeItemMember.checklistId,
                             activeItemMember.item.id,
-                            isAssigned ? null : m.id,
+                            isAssigned ? null : (m.id || uId),
                           )
                         }
                         className="w-full p-2.5 rounded-xl hover:bg-slate-50 flex items-center justify-between gap-3 text-left transition-colors cursor-pointer group"
@@ -3521,9 +3625,20 @@ export default function CardDetailModal({
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <span className="text-xs font-bold text-[#2b1572] truncate block">
-                              {uName}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-bold text-[#2b1572] truncate">
+                                {uName}
+                              </span>
+                              {m.isBoardMember ? (
+                                <span className="text-[10px] px-1.5 py-0.2 bg-[#a6d1fd]/40 text-[#2b1572] rounded font-semibold shrink-0">
+                                  Bảng
+                                </span>
+                              ) : (
+                                <span className="text-[10px] px-1.5 py-0.2 bg-purple-100 text-purple-700 rounded font-semibold shrink-0">
+                                  Workspace
+                                </span>
+                              )}
+                            </div>
                             {uEmail && (
                               <div className="text-[11px] text-slate-400 truncate">{uEmail}</div>
                             )}
@@ -3531,10 +3646,11 @@ export default function CardDetailModal({
                         </div>
 
                         <div
-                          className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${isAssigned
+                          className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
+                            isAssigned
                               ? 'bg-[#2b1572] text-white'
                               : 'border border-slate-200 group-hover:border-[#2b1572]/40'
-                            }`}
+                          }`}
                         >
                           {isAssigned && <Check className="w-3.5 h-3.5" />}
                         </div>
