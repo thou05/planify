@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
+import { apiClient } from '@/lib/api-client';
 import {
   LayoutGrid,
   Search,
@@ -13,6 +14,7 @@ import {
   History,
 } from 'lucide-react';
 import MyActivityModal from '@/components/modals/MyActivityModal';
+import NotificationPopover from '@/components/notifications/NotificationPopover';
 
 interface TopBarProps {
   onOpenCreateWorkspace?: () => void;
@@ -25,6 +27,31 @@ export default function TopBar({
 }: TopBarProps) {
   const { user, logout } = useAuth();
   const [isMyActivityOpen, setIsMyActivityOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Poll unread count periodically
+  useEffect(() => {
+    let isMounted = true;
+    const fetchUnread = async () => {
+      try {
+        const res = await apiClient<{ count: number }>('/notifications/unread-count');
+        if (isMounted && res.success && typeof res.data?.count === 'number') {
+          setUnreadCount(res.data.count);
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    fetchUnread();
+    const timer = setInterval(fetchUnread, 25000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(timer);
+    };
+  }, []);
 
   return (
     <>
@@ -76,13 +103,32 @@ export default function TopBar({
             <History className="w-4 h-4" />
           </button>
 
-          <button
-            className="p-2 text-[#2b1572]/70 hover:text-[#2b1572] hover:bg-white/40 rounded-xl transition-colors relative"
-            title="Thông báo"
-          >
-            <Bell className="w-4 h-4" />
-            <span className="w-2 h-2 rounded-full bg-[#c40000] absolute top-1.5 right-1.5" />
-          </button>
+          {/* Notification Button & Popover */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsNotificationOpen((prev) => !prev)}
+              className={`p-2 rounded-xl transition-all cursor-pointer relative ${
+                isNotificationOpen
+                  ? 'bg-white text-[#2b1572] shadow-xs'
+                  : 'text-[#2b1572]/70 hover:text-[#2b1572] hover:bg-white/40'
+              }`}
+              title="Thông báo"
+            >
+              <Bell className="w-4 h-4" />
+              {unreadCount > 0 && (
+                <span className="min-w-[16px] h-4 px-1 rounded-full bg-[#c40000] text-white text-[9px] font-black flex items-center justify-center absolute -top-0.5 -right-0.5 ring-2 ring-white shadow-xs animate-in zoom-in-50">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+
+            <NotificationPopover
+              isOpen={isNotificationOpen}
+              onClose={() => setIsNotificationOpen(false)}
+              onUnreadCountChange={setUnreadCount}
+            />
+          </div>
 
           {user && (
             <div className="flex items-center gap-3 pl-2 border-l border-[#2b1572]/15">

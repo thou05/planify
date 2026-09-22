@@ -14,12 +14,14 @@ import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 import { InviteMemberDto } from './dto/invite-member.dto';
 import { TransferOwnershipDto } from './dto/transfer-ownership.dto';
 import { ActivitiesService } from '../activities/activities.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class WorkspacesService {
   constructor(
     private readonly supabase: SupabaseService,
     private readonly activitiesService: ActivitiesService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(userId: string, dto: CreateWorkspaceDto) {
@@ -424,6 +426,22 @@ export class WorkspacesService {
       action: `đã thêm thành viên "${targetUser.name || targetUser.email}" vào Không gian làm việc`,
       targetType: `workspace:${workspaceId}`,
     });
+
+    if (targetUser.id !== currentUserId) {
+      const { data: ws } = await this.supabase
+        .from('workspaces')
+        .select('name')
+        .eq('id', workspaceId)
+        .maybeSingle();
+
+      const wsName = ws?.name || 'Không gian làm việc';
+      await this.notificationsService.createNotification({
+        userId: targetUser.id,
+        title: 'Lời mời vào Không gian làm việc',
+        message: `Bạn đã được thêm vào không gian làm việc "${wsName}"||/workspace/${workspaceId}`,
+        type: 'WORKSPACE_INVITE',
+      }).catch(() => {});
+    }
 
     return newMember;
   }

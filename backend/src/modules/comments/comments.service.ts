@@ -163,7 +163,7 @@ export class CommentsService {
               await this.supabase.from('notifications').insert({
                 user_id: memberUserId,
                 title: `${authorName} đã nhắc đến bạn trong một bình luận`,
-                message: `${authorName} đã nhắc đến bạn trong thẻ "${cardTitle}": "${content.slice(0, 100)}${content.length > 100 ? '...' : ''}"`,
+                message: `${authorName} đã nhắc đến bạn trong thẻ "${cardTitle}": "${content.slice(0, 100)}${content.length > 100 ? '...' : ''}"||/boards/${boardId}?cardId=${cardId}`,
                 type: 'MENTION',
                 is_read: false,
               });

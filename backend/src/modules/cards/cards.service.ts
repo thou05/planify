@@ -10,12 +10,14 @@ import { UpdateCardDto } from './dto/update-card.dto';
 import { MoveCardDto } from './dto/move-card.dto';
 import { CopyCardDto } from './dto/copy-card.dto';
 import { ActivitiesService } from '../activities/activities.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class CardsService {
   constructor(
     private readonly supabase: SupabaseService,
     private readonly activitiesService: ActivitiesService,
+    private readonly notificationsService: NotificationsService,
   ) { }
 
   async create(listId: string, userId: string, dto: CreateCardDto) {
@@ -635,7 +637,7 @@ export class CardsService {
   async toggleAssignMember(cardId: string, userId: string, boardMemberId: string) {
     const { data: card } = await this.supabase
       .from('cards')
-      .select('id, list:lists (board_id)')
+      .select('id, title, list:lists (board_id)')
       .eq('id', cardId)
       .maybeSingle();
 
@@ -717,6 +719,18 @@ export class CardsService {
           action: `đã gán thẻ cho "${(bMember as any)?.user?.name || 'thành viên'}"`,
           targetType: `card:${cardId}`,
         });
+      }
+
+      // Gửi thông báo phân công thẻ nếu người được gán khác người thực hiện
+      const targetUserId = (bMember as any)?.user?.id;
+      if (targetUserId && targetUserId !== userId) {
+        const cardTitle = card.title || 'Thẻ';
+        await this.notificationsService.createNotification({
+          userId: targetUserId,
+          title: `Phân công thẻ mới`,
+          message: `Bạn đã được phân công vào thẻ "${cardTitle}"||/boards/${boardId}?cardId=${cardId}`,
+          type: 'ASSIGN',
+        }).catch(() => {});
       }
 
       return { assigned: true, assignee: newAssignee };
