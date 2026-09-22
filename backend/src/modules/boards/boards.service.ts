@@ -12,12 +12,14 @@ import { CopyBoardDto } from './dto/copy-board.dto';
 import { AddBoardMemberDto } from './dto/add-board-member.dto';
 import { UpdateBoardMemberRoleDto } from './dto/update-board-member-role.dto';
 import { ActivitiesService } from '../activities/activities.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class BoardsService {
   constructor(
     private readonly supabase: SupabaseService,
     private readonly activitiesService: ActivitiesService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(workspaceId: string, userId: string, dto: CreateBoardDto) {
@@ -616,6 +618,16 @@ export class BoardsService {
       action: `đã thêm thành viên "${(newMember as any)?.user?.name || 'thành viên'}" vào Bảng`,
       targetType: `board:${boardId}`,
     });
+
+    if (dto.userId && dto.userId !== currentUserId) {
+      const boardTitle = board.name || 'Bảng';
+      await this.notificationsService.createNotification({
+        userId: dto.userId,
+        title: 'Lời mời tham gia bảng',
+        message: `Bạn đã được thêm vào bảng "${boardTitle}"||/boards/${boardId}`,
+        type: 'BOARD_INVITE',
+      }).catch(() => {});
+    }
 
     return newMember;
   }

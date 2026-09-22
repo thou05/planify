@@ -15,6 +15,7 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
+  Ban,
   Tag,
   Check,
   Plus,
@@ -44,8 +45,58 @@ import {
   Maximize2,
   History,
   RefreshCw,
+  GitBranch,
+  Link2,
+  Unlink,
+  ShieldAlert,
+  FolderTree,
+  Layers,
+  CopyCheck,
+  ChevronRight,
 } from 'lucide-react';
 import { ActivityItem } from '@/components/modals/MyActivityModal';
+
+export interface CardRelationItem {
+  id: string;
+  card_id: string;
+  related_card_id: string;
+  type: 'BLOCKS' | 'BLOCKED_BY' | 'PARENT' | 'SUBTASK' | 'RELATES_TO' | 'DUPLICATE';
+  related_card?: {
+    id: string;
+    title: string;
+    status: string;
+    start_date?: string | null;
+    due_date?: string | null;
+    is_due_date_completed?: boolean;
+    list_id: string;
+    list?: {
+      id: string;
+      title?: string;
+      name?: string;
+      board_id: string;
+      board?: {
+        id: string;
+        name: string;
+        workspace_id: string;
+      };
+    };
+    card_assignees?: Array<{
+      user?: {
+        id: string;
+        name: string;
+        avatar?: string | null;
+        email?: string;
+      };
+    }>;
+    card_labels?: Array<{
+      label?: {
+        id: string;
+        name: string;
+        color: string;
+      };
+    }>;
+  };
+}
 
 interface ChecklistItem {
   id: string;
@@ -107,6 +158,9 @@ interface CardDetailModalProps {
   onCardUpdated: () => void;
   onMoveRequest: (card: any) => void;
   onCopyRequest: (card: any) => void;
+  workspaceMembers?: any[];
+  workspaceId?: string;
+  onSelectCard?: (cardId: string) => void;
 }
 
 const LABEL_COLOR_PALETTE = [
@@ -176,6 +230,14 @@ function formatRelativeTime(dateStr: string | Date | null | undefined): string {
   return `${hours}:${mins} ${d}/${m}/${y}`;
 }
 
+function removeVietnameseTones(str: string): string {
+  return (str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D');
+}
+
 export default function CardDetailModal({
   cardId,
   isOpen,
@@ -183,10 +245,41 @@ export default function CardDetailModal({
   onCardUpdated,
   onMoveRequest,
   onCopyRequest,
+  workspaceMembers: externalWsMembers = [],
+  workspaceId: externalWorkspaceId,
+  onSelectCard,
 }: CardDetailModalProps) {
+  const [activeCardId, setActiveCardId] = useState<string | null>(cardId);
+
+  useEffect(() => {
+    setActiveCardId(cardId);
+  }, [cardId]);
+
   const [card, setCard] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // --- CARD RELATIONS STATE ---
+  const [relations, setRelations] = useState<CardRelationItem[]>([]);
+  const [isLoadingRelations, setIsLoadingRelations] = useState(false);
+  const [isRelationsModalOpen, setIsRelationsModalOpen] = useState(false);
+  const [relationTypeToCreate, setRelationTypeToCreate] = useState<
+    'BLOCKS' | 'BLOCKED_BY' | 'PARENT' | 'SUBTASK' | 'RELATES_TO' | 'DUPLICATE'
+  >('RELATES_TO');
+  const [candidateCards, setCandidateCards] = useState<any[]>([]);
+  const [candidateSearchQuery, setCandidateSearchQuery] = useState('');
+  const [isLoadingCandidates, setIsLoadingCandidates] = useState(false);
+  const [selectedCandidateCardId, setSelectedCandidateCardId] = useState<string | null>(null);
+  const [isCreatingRelation, setIsCreatingRelation] = useState(false);
+  const [relationError, setRelationError] = useState<string | null>(null);
+  const [isDeletingRelationId, setIsDeletingRelationId] = useState<string | null>(null);
+  const [blockedPopup, setBlockedPopup] = useState<{
+    isOpen: boolean;
+    blockers: CardRelationItem[];
+  }>({
+    isOpen: false,
+    blockers: [],
+  });
 
   // Editable card fields
   const [title, setTitle] = useState('');
@@ -201,8 +294,15 @@ export default function CardDetailModal({
   // Members state
   const [assignees, setAssignees] = useState<any[]>([]);
   const [boardMembers, setBoardMembers] = useState<any[]>([]);
+  const [workspaceMembersList, setWorkspaceMembersList] = useState<any[]>(externalWsMembers || []);
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
+
+  useEffect(() => {
+    if (externalWsMembers && externalWsMembers.length > 0) {
+      setWorkspaceMembersList(externalWsMembers);
+    }
+  }, [externalWsMembers]);
 
   // Labels state
   const [cardLabels, setCardLabels] = useState<any[]>([]);
@@ -332,6 +432,106 @@ export default function CardDetailModal({
     }
   };
 
+  const fetchCardRelations = async (cId: string) => {
+    try {
+      setIsLoadingRelations(true);
+      const res = await apiClient<CardRelationItem[]>(`/cards/${cId}/relations`);
+      if (res.success && Array.isArray(res.data)) {
+        setRelations(res.data);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setIsLoadingRelations(false);
+    }
+  };
+
+  const searchCandidateCards = async (cId: string, q: string) => {
+    try {
+      setIsLoadingCandidates(true);
+      const res = await apiClient<any[]>(`/cards/${cId}/relations/search-candidates?q=${encodeURIComponent(q)}`);
+      if (res.success && Array.isArray(res.data)) {
+        setCandidateCards(res.data);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setIsLoadingCandidates(false);
+    }
+  };
+
+  const handleOpenRelationsModal = () => {
+    const targetId = activeCardId || cardId;
+    if (!targetId) return;
+    setIsRelationsModalOpen(true);
+    setSelectedCandidateCardId(null);
+    setRelationError(null);
+    setCandidateSearchQuery('');
+    searchCandidateCards(targetId, '');
+  };
+
+  const handleCreateRelation = async () => {
+    const currentId = activeCardId || cardId;
+    if (!currentId || !selectedCandidateCardId || isCreatingRelation) return;
+
+    try {
+      setIsCreatingRelation(true);
+      setRelationError(null);
+      const res = await apiClient<CardRelationItem>(`/cards/${currentId}/relations`, {
+        method: 'POST',
+        data: {
+          relatedCardId: selectedCandidateCardId,
+          type: relationTypeToCreate,
+        },
+      });
+
+      if (res.success) {
+        setIsRelationsModalOpen(false);
+        setSelectedCandidateCardId(null);
+        await fetchCardRelations(currentId);
+        await fetchCardActivities(currentId);
+        onCardUpdated();
+      } else {
+        setRelationError(res.message || 'Không thể tạo mối quan hệ giữa 2 thẻ');
+      }
+    } catch (err: any) {
+      setRelationError(err?.message || 'Không thể tạo mối quan hệ');
+    } finally {
+      setIsCreatingRelation(false);
+    }
+  };
+
+  const handleDeleteRelation = async (relationId: string) => {
+    const currentId = activeCardId || cardId;
+    if (!currentId || isDeletingRelationId) return;
+
+    try {
+      setIsDeletingRelationId(relationId);
+      const res = await apiClient(`/cards/${currentId}/relations/${relationId}`, {
+        method: 'DELETE',
+      });
+      if (res.success) {
+        setRelations((prev) => prev.filter((r) => r.id !== relationId));
+        await fetchCardActivities(currentId);
+        onCardUpdated();
+      }
+    } catch {
+      // ignore
+    } finally {
+      setIsDeletingRelationId(null);
+    }
+  };
+
+  const handleNavigateToRelatedCard = (targetCardId: string) => {
+    if (onSelectCard) {
+      onSelectCard(targetCardId);
+    }
+    setActiveCardId(targetCardId);
+    fetchCardDetails(targetCardId);
+    fetchCardActivities(targetCardId);
+    fetchCardRelations(targetCardId);
+  };
+
   const fetchBoardMembers = async (boardId: string) => {
     try {
       const res = await apiClient<any[]>(`/boards/${boardId}/members`);
@@ -399,14 +599,17 @@ export default function CardDetailModal({
   };
 
   useEffect(() => {
-    if (isOpen && cardId) {
-      fetchCardDetails(cardId);
-      fetchCardActivities(cardId);
+    const currentId = activeCardId || cardId;
+    if (isOpen && currentId) {
+      fetchCardDetails(currentId);
+      fetchCardActivities(currentId);
+      fetchCardRelations(currentId);
       setIsAddingChecklist(false);
       setIsDatesModalOpen(false);
       setIsMembersModalOpen(false);
       setIsLabelsModalOpen(false);
       setIsAttachmentsModalOpen(false);
+      setIsRelationsModalOpen(false);
       setSelectedUploadFile(null);
       setPreviewImageAttachment(null);
       setActiveItemDate(null);
@@ -434,13 +637,15 @@ export default function CardDetailModal({
       setActiveItemMember(null);
       setComments([]);
       setActivities([]);
+      setRelations([]);
       setActivityTab('comments');
       setCommentText('');
       setEditingCommentId(null);
       setIsMentionOpen(false);
       setIsEditMentionOpen(false);
+      setIsRelationsModalOpen(false);
     }
-  }, [isOpen, cardId]);
+  }, [isOpen, cardId, activeCardId]);
 
   useEffect(() => {
     if (activeNewItemChecklistId) {
@@ -522,26 +727,36 @@ export default function CardDetailModal({
   };
 
   // Toggle Assign Member
-  const handleToggleAssignee = async (boardMemberId: string) => {
+  const handleToggleAssignee = async (memberId: string) => {
     const isAssigned = assignees.some(
-      (a) => a.board_member_id === boardMemberId || a.board_member?.id === boardMemberId,
+      (a) =>
+        a.board_member_id === memberId ||
+        a.board_member?.id === memberId ||
+        a.board_member?.user_id === memberId ||
+        a.board_member?.user?.id === memberId,
     );
 
     // Optimistic
     if (isAssigned) {
       setAssignees((prev) =>
         prev.filter(
-          (a) => a.board_member_id !== boardMemberId && a.board_member?.id !== boardMemberId,
+          (a) =>
+            a.board_member_id !== memberId &&
+            a.board_member?.id !== memberId &&
+            a.board_member?.user_id !== memberId &&
+            a.board_member?.user?.id !== memberId,
         ),
       );
     } else {
-      const memberObj = boardMembers.find((m) => m.id === boardMemberId);
+      const memberObj = assignableMembers.find(
+        (m) => m.id === memberId || m.user_id === memberId || m.user?.id === memberId,
+      );
       if (memberObj) {
         setAssignees((prev) => [
           ...prev,
           {
             id: `temp-${Date.now()}`,
-            board_member_id: boardMemberId,
+            board_member_id: memberObj.id || memberId,
             board_member: memberObj,
           },
         ]);
@@ -551,18 +766,10 @@ export default function CardDetailModal({
     try {
       const res = await apiClient<any>(`/cards/${cardId}/assignees/toggle`, {
         method: 'POST',
-        data: { board_member_id: boardMemberId },
+        data: { board_member_id: memberId },
       });
       if (res.success && res.data) {
-        if (res.data.assigned && res.data.assignee) {
-          setAssignees((prev) =>
-            prev.map((a) =>
-              a.board_member_id === boardMemberId || a.board_member?.id === boardMemberId
-                ? res.data.assignee
-                : a,
-            ),
-          );
-        }
+        fetchCardDetails(cardId!);
         onCardUpdated();
       }
     } catch (err: any) {
@@ -886,6 +1093,15 @@ export default function CardDetailModal({
   // --- CARD SAVE ---
   const handleSaveAll = async () => {
     if (!title?.trim() || isSaving) return;
+    if (isCompleted) {
+      const activeBlockers = relations.filter(
+        (r) => r.type === 'BLOCKED_BY' && !r.related_card?.is_due_date_completed && r.related_card?.status !== 'DONE'
+      );
+      if (activeBlockers.length > 0) {
+        setBlockedPopup({ isOpen: true, blockers: activeBlockers });
+        return;
+      }
+    }
     try {
       setIsSaving(true);
       await apiClient(`/cards/${cardId}`, {
@@ -909,6 +1125,16 @@ export default function CardDetailModal({
 
   const handleToggleCompleted = async () => {
     const nextVal = !isCompleted;
+    if (nextVal) {
+      const activeBlockers = relations.filter(
+        (r) => r.type === 'BLOCKED_BY' && !r.related_card?.is_due_date_completed && r.related_card?.status !== 'DONE'
+      );
+      if (activeBlockers.length > 0) {
+        setBlockedPopup({ isOpen: true, blockers: activeBlockers });
+        return;
+      }
+    }
+
     setIsCompleted(nextVal);
     try {
       await apiClient(`/cards/${cardId}`, {
@@ -916,8 +1142,16 @@ export default function CardDetailModal({
         data: { is_due_date_completed: nextVal },
       });
       onCardUpdated();
-    } catch {
+    } catch (err: any) {
       setIsCompleted(!nextVal);
+      const activeBlockers = relations.filter(
+        (r) => r.type === 'BLOCKED_BY' && !r.related_card?.is_due_date_completed && r.related_card?.status !== 'DONE'
+      );
+      if (activeBlockers.length > 0) {
+        setBlockedPopup({ isOpen: true, blockers: activeBlockers });
+      } else {
+        alert(err.message || 'Không thể cập nhật trạng thái hoàn thành');
+      }
     }
   };
 
@@ -989,15 +1223,6 @@ export default function CardDetailModal({
     reminderMinutes >= 0
       ? REMINDER_OPTIONS.find((r) => r.value === reminderMinutes)?.label || 'Có lời nhắc'
       : null;
-
-  // Filter board members for popover
-  const filteredBoardMembers = boardMembers.filter((m) => {
-    const q = memberSearchQuery.toLowerCase().trim();
-    if (!q) return true;
-    const name = m.user?.name?.toLowerCase() || '';
-    const email = m.user?.email?.toLowerCase() || '';
-    return name.includes(q) || email.includes(q);
-  });
 
   // Filter board labels for popover
   const filteredBoardLabels = boardLabels.filter((l) => {
@@ -1249,7 +1474,51 @@ export default function CardDetailModal({
     }
   };
 
-  const filteredItemBoardMembers = boardMembers.filter((m) => {
+  // Danh sách thành viên hợp nhất từ cả Workspace và Board (loại bỏ trùng lặp user_id)
+  const assignableMembers = (() => {
+    const map = new Map<string, any>();
+
+    // 1. Thêm thành viên Workspace trước
+    (workspaceMembersList || []).forEach((m) => {
+      const uId = m.user?.id || m.user_id;
+      if (uId && !map.has(uId)) {
+        map.set(uId, {
+          id: m.id || uId,
+          user_id: uId,
+          user: m.user || { id: uId, name: 'Thành viên' },
+          role: m.role || 'MEMBER',
+          isBoardMember: false,
+        });
+      }
+    });
+
+    // 2. Thêm hoặc cập nhật thành viên Board
+    (boardMembers || []).forEach((m) => {
+      const uId = m.user?.id || m.user_id;
+      if (uId) {
+        const existing = map.get(uId);
+        map.set(uId, {
+          id: m.id || uId,
+          user_id: uId,
+          user: m.user || existing?.user || { id: uId, name: 'Thành viên' },
+          role: m.role || existing?.role || 'MEMBER',
+          isBoardMember: true,
+        });
+      }
+    });
+
+    return Array.from(map.values());
+  })();
+
+  const filteredBoardMembers = assignableMembers.filter((m) => {
+    const q = memberSearchQuery.toLowerCase().trim();
+    if (!q) return true;
+    const name = m.user?.name?.toLowerCase() || '';
+    const email = m.user?.email?.toLowerCase() || '';
+    return name.includes(q) || email.includes(q);
+  });
+
+  const filteredItemBoardMembers = assignableMembers.filter((m) => {
     const q = itemMemberSearchQuery.toLowerCase().trim();
     if (!q) return true;
     const name = m.user?.name?.toLowerCase() || '';
@@ -1257,23 +1526,45 @@ export default function CardDetailModal({
     return name.includes(q) || email.includes(q);
   });
 
-  // Filtered members for new comment mention autocomplete
-  const filteredMentionMembers = boardMembers.filter((m) => {
-    const q = mentionQuery.toLowerCase().trim();
-    if (!q) return true;
-    const name = m.user?.name?.toLowerCase() || '';
-    const email = m.user?.email?.toLowerCase() || '';
-    return name.includes(q) || email.includes(q);
-  });
+  // Filtered members for new comment mention autocomplete - LOẠI BỎ CHÍNH MÌNH (currentUser)
+  const filteredMentionMembers = assignableMembers
+    .filter((m) => {
+      const uId = m.user?.id || m.user_id;
+      return uId !== currentUser?.id;
+    })
+    .filter((m) => {
+      const q = mentionQuery.toLowerCase().trim();
+      if (!q) return true;
+      const name = m.user?.name || '';
+      const email = m.user?.email || '';
+      const nameClean = removeVietnameseTones(name).toLowerCase();
+      const queryClean = removeVietnameseTones(q);
+      return (
+        name.toLowerCase().includes(q) ||
+        nameClean.includes(queryClean) ||
+        email.toLowerCase().includes(q)
+      );
+    });
 
-  // Filtered members for edit comment mention autocomplete
-  const filteredEditMentionMembers = boardMembers.filter((m) => {
-    const q = editMentionQuery.toLowerCase().trim();
-    if (!q) return true;
-    const name = m.user?.name?.toLowerCase() || '';
-    const email = m.user?.email?.toLowerCase() || '';
-    return name.includes(q) || email.includes(q);
-  });
+  // Filtered members for edit comment mention autocomplete - LOẠI BỎ CHÍNH MÌNH (currentUser)
+  const filteredEditMentionMembers = assignableMembers
+    .filter((m) => {
+      const uId = m.user?.id || m.user_id;
+      return uId !== currentUser?.id;
+    })
+    .filter((m) => {
+      const q = editMentionQuery.toLowerCase().trim();
+      if (!q) return true;
+      const name = m.user?.name || '';
+      const email = m.user?.email || '';
+      const nameClean = removeVietnameseTones(name).toLowerCase();
+      const queryClean = removeVietnameseTones(q);
+      return (
+        name.toLowerCase().includes(q) ||
+        nameClean.includes(queryClean) ||
+        email.toLowerCase().includes(q)
+      );
+    });
 
   // --- COMMENT HANDLERS ---
   const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -1541,7 +1832,7 @@ export default function CardDetailModal({
   const renderCommentContent = (content: string) => {
     if (!content) return null;
 
-    const memberNames = boardMembers
+    const memberNames = assignableMembers
       .map((m) => m.user?.name)
       .filter(Boolean) as string[];
 
@@ -1701,6 +1992,19 @@ export default function CardDetailModal({
                 >
                   <Paperclip className="w-3.5 h-3.5 text-[#2b1572]/70" />
                   <span>Đính kèm {attachments.length > 0 && `(${attachments.length})`}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleOpenRelationsModal}
+                  className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer ${relations.length > 0
+                      ? 'text-[#2b1572] bg-[#a6d1fd]/30 hover:bg-[#a6d1fd]/50 border border-[#a6d1fd]/60'
+                      : 'text-[#2b1572] bg-slate-100 hover:bg-slate-200'
+                    }`}
+                  title="Quản lý mối quan hệ giữa các thẻ (cha/con, chặn/bị chặn, liên quan)"
+                >
+                  <GitBranch className="w-3.5 h-3.5 text-[#2b1572]/70" />
+                  <span>Liên kết {relations.length > 0 && `(${relations.length})`}</span>
                 </button>
 
                 <div className="h-4 w-[1px] bg-slate-200 mx-0.5" />
@@ -1897,11 +2201,23 @@ export default function CardDetailModal({
                       onClick={handleToggleCompleted}
                       className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center transition-all cursor-pointer shadow-2xs shrink-0 ${isCompleted
                           ? 'bg-emerald-600 text-white'
-                          : 'border-2 border-slate-300 hover:border-[#2b1572] bg-white'
+                          : relations.some(r => r.type === 'BLOCKED_BY' && !r.related_card?.is_due_date_completed && r.related_card?.status !== 'DONE')
+                            ? 'border-2 border-rose-400 bg-rose-50 text-rose-600 hover:border-rose-600'
+                            : 'border-2 border-slate-300 hover:border-[#2b1572] bg-white'
                         }`}
-                      title={isCompleted ? 'Đánh dấu chưa hoàn thành' : 'Đánh dấu đã hoàn thành'}
+                      title={
+                        isCompleted
+                          ? 'Đánh dấu chưa hoàn thành'
+                          : relations.some(r => r.type === 'BLOCKED_BY' && !r.related_card?.is_due_date_completed && r.related_card?.status !== 'DONE')
+                            ? '⛔ Thẻ đang bị chặn bởi thẻ khác chưa hoàn thành (Bấm để xem chi tiết)'
+                            : 'Đánh dấu đã hoàn thành'
+                      }
                     >
-                      {isCompleted && <Check className="w-3.5 h-3.5" />}
+                      {isCompleted ? (
+                        <Check className="w-3.5 h-3.5" />
+                      ) : relations.some(r => r.type === 'BLOCKED_BY' && !r.related_card?.is_due_date_completed && r.related_card?.status !== 'DONE') ? (
+                        <Ban className="w-3 h-3 text-rose-500" />
+                      ) : null}
                     </button>
 
                     <div className="space-y-1">
@@ -2148,6 +2464,384 @@ export default function CardDetailModal({
                   </div>
                 </div>
               )}
+
+              {/* CARD RELATIONSHIPS SECTION */}
+              {relations.length > 0 && (() => {
+                const parentRelation = relations.find((r) => r.type === 'SUBTASK');
+                const subtasks = relations.filter((r) => r.type === 'PARENT');
+                const blockedBy = relations.filter((r) => r.type === 'BLOCKED_BY');
+                const blocks = relations.filter((r) => r.type === 'BLOCKS');
+                const relatesTo = relations.filter((r) => r.type === 'RELATES_TO');
+                const duplicates = relations.filter((r) => r.type === 'DUPLICATE');
+
+                const completedSubtasksCount = subtasks.filter(
+                  (st) => st.related_card?.is_due_date_completed || st.related_card?.status === 'DONE'
+                ).length;
+                const subtaskProgress = subtasks.length > 0 ? Math.round((completedSubtasksCount / subtasks.length) * 100) : 0;
+
+                const hasUncompletedBlocker = blockedBy.some(
+                  (b) => !b.related_card?.is_due_date_completed && b.related_card?.status !== 'DONE'
+                );
+
+                return (
+                  <div className="space-y-4 pt-4 border-t border-slate-100">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs font-bold text-[#2b1572] uppercase tracking-wider">
+                        <GitBranch className="w-4 h-4 text-[#2b1572]/70" />
+                        <span>Mối quan hệ thẻ</span>
+                        <span className="px-2 py-0.5 rounded-full bg-[#2b1572]/10 text-[#2b1572] text-[11px] font-bold">
+                          {relations.length}
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleOpenRelationsModal}
+                        className="text-xs font-semibold text-[#2b1572] hover:bg-[#a6d1fd]/30 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Thêm</span>
+                      </button>
+                    </div>
+
+                    {/* 1. Parent Card (if this card is a subtask of another card) */}
+                    {parentRelation?.related_card && (
+                      <div className="p-3.5 bg-purple-50/70 border border-purple-200/80 rounded-2xl space-y-2 shadow-2xs">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 text-[11px] font-bold text-purple-800 uppercase tracking-wider">
+                            <FolderTree className="w-3.5 h-3.5" />
+                            <span>Thuộc thẻ cha (Parent Task)</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteRelation(parentRelation.id)}
+                            className="p-1 text-slate-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer"
+                            title="Gỡ bỏ liên kết thẻ cha"
+                          >
+                            <Unlink className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <div
+                          onClick={() => handleNavigateToRelatedCard(parentRelation.related_card!.id)}
+                          className="flex items-center justify-between gap-3 p-2.5 bg-white rounded-xl border border-purple-100 hover:border-purple-300 hover:shadow-2xs cursor-pointer transition-all"
+                        >
+                          <div className="min-w-0 flex items-center gap-2">
+                            <span className="text-xs font-bold text-[#2b1572] hover:underline truncate">
+                              {parentRelation.related_card.title}
+                            </span>
+                            {parentRelation.related_card.list?.name && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium shrink-0">
+                                {parentRelation.related_card.list.name}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {parentRelation.related_card.status && (
+                              <span className="text-[10px] px-2 py-0.5 rounded-md font-semibold bg-purple-100 text-purple-700">
+                                {parentRelation.related_card.status}
+                              </span>
+                            )}
+                            <ExternalLink className="w-3.5 h-3.5 text-purple-400" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 2. Subtasks (if this card has subtasks) */}
+                    {subtasks.length > 0 && (
+                      <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3 shadow-2xs">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <ListTodo className="w-4 h-4 text-[#2b1572]" />
+                            <span className="text-xs font-bold text-[#2b1572]">Thẻ con (Subtasks)</span>
+                            <span className="text-[11px] font-semibold text-slate-500">
+                              {completedSubtasksCount}/{subtasks.length} hoàn thành ({subtaskProgress}%)
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                            style={{ width: `${subtaskProgress}%` }}
+                          />
+                        </div>
+
+                        {/* Subtasks List */}
+                        <div className="space-y-1.5">
+                          {subtasks.map((st) => {
+                            const relCard = st.related_card;
+                            if (!relCard) return null;
+                            const isDone = relCard.is_due_date_completed || relCard.status === 'DONE';
+
+                            return (
+                              <div
+                                key={st.id}
+                                className="flex items-center justify-between gap-2 p-2 bg-white rounded-xl border border-slate-200/80 hover:border-[#a6d1fd] hover:shadow-2xs transition-all group"
+                              >
+                                <div
+                                  onClick={() => handleNavigateToRelatedCard(relCard.id)}
+                                  className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer"
+                                >
+                                  <div
+                                    className={`w-4 h-4 rounded flex items-center justify-center text-[10px] shrink-0 border ${
+                                      isDone
+                                        ? 'bg-emerald-500 border-emerald-500 text-white'
+                                        : 'border-slate-300 text-transparent'
+                                    }`}
+                                  >
+                                    <Check className="w-3 h-3" />
+                                  </div>
+                                  <span
+                                    className={`text-xs font-semibold truncate ${
+                                      isDone ? 'line-through text-slate-400' : 'text-[#2b1572] hover:underline'
+                                    }`}
+                                  >
+                                    {relCard.title}
+                                  </span>
+                                  {(relCard.list?.title || relCard.list?.name) && (
+                                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 shrink-0">
+                                      {relCard.list?.title || relCard.list?.name}
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteRelation(st.id)}
+                                    className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-600 rounded transition-all cursor-pointer"
+                                    title="Gỡ bỏ liên kết thẻ con"
+                                  >
+                                    <Unlink className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 3. Blocked By Warning & List */}
+                    {blockedBy.length > 0 && (
+                      <div
+                        className={`p-3.5 rounded-2xl border space-y-2.5 shadow-2xs ${
+                          hasUncompletedBlocker
+                            ? 'bg-rose-50/90 border-rose-200 text-rose-900'
+                            : 'bg-slate-50 border-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 text-xs font-bold">
+                          <ShieldAlert className={`w-4 h-4 ${hasUncompletedBlocker ? 'text-rose-600' : 'text-slate-500'}`} />
+                          <span>Bị chặn bởi (Blocked by) - {blockedBy.length} thẻ</span>
+                          {hasUncompletedBlocker && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-200/80 text-rose-800 font-semibold">
+                              Cần hoàn thành trước
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="space-y-1.5">
+                          {blockedBy.map((b) => {
+                            const relCard = b.related_card;
+                            if (!relCard) return null;
+                            const isDone = relCard.is_due_date_completed || relCard.status === 'DONE';
+
+                            return (
+                              <div
+                                key={b.id}
+                                className="flex items-center justify-between gap-2 p-2 bg-white rounded-xl border border-slate-200 hover:border-rose-300 hover:shadow-2xs transition-all group"
+                              >
+                                <div
+                                  onClick={() => handleNavigateToRelatedCard(relCard.id)}
+                                  className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer"
+                                >
+                                  <span
+                                    className={`text-xs font-semibold truncate ${
+                                      isDone ? 'line-through text-slate-400' : 'text-[#2b1572] hover:underline'
+                                    }`}
+                                  >
+                                    {relCard.title}
+                                  </span>
+                                  {(relCard.list?.title || relCard.list?.name) && (
+                                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 shrink-0">
+                                      {relCard.list?.title || relCard.list?.name}
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span
+                                    className={`text-[10px] px-2 py-0.5 rounded-md font-semibold ${
+                                      isDone
+                                        ? 'bg-emerald-100 text-emerald-700'
+                                        : 'bg-rose-100 text-rose-700'
+                                    }`}
+                                  >
+                                    {isDone ? 'Đã xong' : 'Chưa xong'}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteRelation(b.id)}
+                                    className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-600 rounded transition-all cursor-pointer"
+                                    title="Gỡ bỏ liên kết"
+                                  >
+                                    <Unlink className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 4. Blocks (Chặn thẻ khác) */}
+                    {blocks.length > 0 && (
+                      <div className="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-2xl space-y-2 shadow-2xs">
+                        <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
+                          <AlertCircle className="w-4 h-4 text-amber-600" />
+                          <span>Thẻ này đang chặn tiến độ của ({blocks.length}) thẻ</span>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          {blocks.map((blk) => {
+                            const relCard = blk.related_card;
+                            if (!relCard) return null;
+
+                            return (
+                              <div
+                                key={blk.id}
+                                className="flex items-center justify-between gap-2 p-2 bg-white rounded-xl border border-amber-100 hover:border-amber-300 hover:shadow-2xs transition-all group"
+                              >
+                                <div
+                                  onClick={() => handleNavigateToRelatedCard(relCard.id)}
+                                  className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer"
+                                >
+                                  <span className="text-xs font-semibold text-[#2b1572] hover:underline truncate">
+                                    {relCard.title}
+                                  </span>
+                                  {(relCard.list?.title || relCard.list?.name) && (
+                                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 shrink-0">
+                                      {relCard.list?.title || relCard.list?.name}
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteRelation(blk.id)}
+                                    className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-600 rounded transition-all cursor-pointer"
+                                    title="Gỡ bỏ liên kết"
+                                  >
+                                    <Unlink className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 5. Relates to & Duplicate */}
+                    {(relatesTo.length > 0 || duplicates.length > 0) && (
+                      <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-2.5 shadow-2xs">
+                        {relatesTo.length > 0 && (
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-[#2b1572]">
+                              <Link2 className="w-3.5 h-3.5 text-[#2b1572]/70" />
+                              <span>Thẻ liên quan ({relatesTo.length})</span>
+                            </div>
+                            <div className="space-y-1">
+                              {relatesTo.map((rel) => {
+                                const relCard = rel.related_card;
+                                if (!relCard) return null;
+
+                                return (
+                                  <div
+                                    key={rel.id}
+                                    className="flex items-center justify-between gap-2 p-2 bg-white rounded-xl border border-slate-200 hover:border-[#a6d1fd] hover:shadow-2xs transition-all group"
+                                  >
+                                    <div
+                                      onClick={() => handleNavigateToRelatedCard(relCard.id)}
+                                      className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer"
+                                    >
+                                      <span className="text-xs font-semibold text-[#2b1572] hover:underline truncate">
+                                        {relCard.title}
+                                      </span>
+                                      {relCard.list?.name && (
+                                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 shrink-0">
+                                          {relCard.list.name}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteRelation(rel.id)}
+                                      className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-600 rounded transition-all cursor-pointer"
+                                      title="Gỡ bỏ liên kết"
+                                    >
+                                      <Unlink className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {duplicates.length > 0 && (
+                          <div className="space-y-1.5 pt-2 border-t border-slate-200/60">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-[#2b1572]">
+                              <CopyCheck className="w-3.5 h-3.5 text-indigo-600" />
+                              <span>Trùng lặp với ({duplicates.length})</span>
+                            </div>
+                            <div className="space-y-1">
+                              {duplicates.map((dup) => {
+                                const relCard = dup.related_card;
+                                if (!relCard) return null;
+
+                                return (
+                                  <div
+                                    key={dup.id}
+                                    className="flex items-center justify-between gap-2 p-2 bg-white rounded-xl border border-indigo-100 hover:border-indigo-300 hover:shadow-2xs transition-all group"
+                                  >
+                                    <div
+                                      onClick={() => handleNavigateToRelatedCard(relCard.id)}
+                                      className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer"
+                                    >
+                                      <span className="text-xs font-semibold text-[#2b1572] hover:underline truncate">
+                                        {relCard.title}
+                                      </span>
+                                      {relCard.list?.name && (
+                                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 shrink-0">
+                                          {relCard.list.name}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteRelation(dup.id)}
+                                      className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-600 rounded transition-all cursor-pointer"
+                                      title="Gỡ bỏ liên kết"
+                                    >
+                                      <Unlink className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Checklists Section */}
               {checklists.map((cl) => {
@@ -2519,7 +3213,7 @@ export default function CardDetailModal({
                         onChange={handleCommentChange}
                         onKeyDown={handleCommentKeyDown}
                         rows={commentText.length > 50 || isMentionOpen ? 3 : 2}
-                        placeholder="Viết bình luận... (Gõ @ để nhắc tên)"
+                        placeholder="Viết bình luận..."
                         className="w-full text-xs text-[#2b1572] bg-transparent resize-none focus:outline-none placeholder:text-slate-400 leading-relaxed"
                       />
 
@@ -2546,10 +3240,11 @@ export default function CardDetailModal({
                                   key={m.id}
                                   type="button"
                                   onClick={() => handleSelectMention(mName)}
-                                  className={`w-full p-1.5 rounded-lg flex items-center gap-2 text-left transition-colors cursor-pointer ${isSelected
+                                  className={`w-full p-1.5 rounded-lg flex items-center gap-2 text-left transition-colors cursor-pointer ${
+                                    isSelected
                                       ? 'bg-[#a6d1fd]/40 text-[#2b1572]'
                                       : 'hover:bg-slate-100 text-slate-700'
-                                    }`}
+                                  }`}
                                 >
                                   {mAvatar ? (
                                     <img
@@ -2563,7 +3258,18 @@ export default function CardDetailModal({
                                     </div>
                                   )}
                                   <div className="flex-1 min-w-0">
-                                    <div className="text-xs font-bold truncate leading-tight">{mName}</div>
+                                    <div className="text-xs font-bold truncate leading-tight flex items-center gap-1.5">
+                                      <span className="truncate">{mName}</span>
+                                      {m.isBoardMember ? (
+                                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#a6d1fd]/40 text-[#2b1572] font-semibold shrink-0">
+                                          Bảng
+                                        </span>
+                                      ) : (
+                                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-100 text-purple-700 font-semibold shrink-0">
+                                          Workspace
+                                        </span>
+                                      )}
+                                    </div>
                                     {mEmail && (
                                       <div className="text-[10px] text-slate-400 truncate leading-tight">
                                         {mEmail}
@@ -2578,11 +3284,7 @@ export default function CardDetailModal({
                       )}
 
                       {/* Composer Toolbar & Submit */}
-                      <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 mt-1">
-                        <span className="text-[10px] text-slate-400 select-none">
-                          Gõ <kbd className="px-1 py-0.5 bg-slate-100 text-[#2b1572] font-mono rounded text-[9px] font-bold">@</kbd> để nhắc tên
-                        </span>
-
+                      <div className="flex items-center justify-end pt-2 border-t border-slate-200/60 mt-1">
                         <button
                           type="button"
                           onClick={handleSubmitComment}
@@ -2844,8 +3546,8 @@ export default function CardDetailModal({
                           <MessageCircle className="w-4 h-4" />
                         </div>
                         <span className="font-semibold text-slate-600">Chưa có bình luận nào</span>
-                        <span className="text-[11px] text-slate-400 max-w-[200px]">
-                          Gõ @ để nhắc tên đồng nghiệp và thảo luận tại đây.
+                        <span className="text-[11px] text-slate-400">
+                          Hãy là người đầu tiên để lại bình luận cho thẻ này.
                         </span>
                       </div>
                     );
@@ -2882,7 +3584,7 @@ export default function CardDetailModal({
               <div className="p-4 border-b border-slate-100 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs font-bold text-[#2b1572]">
                   <Users className="w-4 h-4 text-[#2b1572]" />
-                  <span>Thành viên trong bảng ({boardMembers.length})</span>
+                  <span>Thành viên ({assignableMembers.length})</span>
                 </div>
                 <button
                   type="button"
@@ -2911,8 +3613,8 @@ export default function CardDetailModal({
               <div className="p-2 overflow-y-auto space-y-1 flex-1">
                 {filteredBoardMembers.length === 0 ? (
                   <div className="p-6 text-center text-xs text-slate-400">
-                    {boardMembers.length === 0
-                      ? 'Chưa có thành viên nào khác trong bảng'
+                    {assignableMembers.length === 0
+                      ? 'Chưa có thành viên nào trong không gian làm việc'
                       : 'Không tìm thấy thành viên phù hợp'}
                   </div>
                 ) : (
@@ -2920,11 +3622,16 @@ export default function CardDetailModal({
                     const uName = m.user?.name || 'Thành viên';
                     const uEmail = m.user?.email || '';
                     const uAvatar = m.user?.avatar;
+                    const uId = m.user?.id || m.user_id;
                     const isAssigned = assignees.some(
-                      (a) => a.board_member_id === m.id || a.board_member?.id === m.id,
+                      (a) =>
+                        a.board_member_id === m.id ||
+                        a.board_member?.id === m.id ||
+                        a.board_member?.user_id === uId ||
+                        a.board_member?.user?.id === uId,
                     );
                     const roleName =
-                      m.role === 'ADMIN'
+                      m.role === 'ADMIN' || m.role === 'OWNER'
                         ? 'Quản trị'
                         : m.role === 'VIEWER'
                           ? 'Người xem'
@@ -2932,9 +3639,9 @@ export default function CardDetailModal({
 
                     return (
                       <button
-                        key={m.id}
+                        key={m.id || uId}
                         type="button"
-                        onClick={() => handleToggleAssignee(m.id)}
+                        onClick={() => handleToggleAssignee(m.id || uId)}
                         className="w-full p-2.5 rounded-xl hover:bg-slate-50 flex items-center justify-between gap-3 text-left transition-colors cursor-pointer group"
                       >
                         <div className="flex items-center gap-2.5 flex-1 min-w-0">
@@ -2954,7 +3661,16 @@ export default function CardDetailModal({
                               <span className="text-xs font-bold text-[#2b1572] truncate">
                                 {uName}
                               </span>
-                              <span className="text-[10px] px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded font-medium">
+                              {m.isBoardMember ? (
+                                <span className="text-[10px] px-1.5 py-0.2 bg-[#a6d1fd]/40 text-[#2b1572] rounded font-semibold shrink-0">
+                                  Bảng
+                                </span>
+                              ) : (
+                                <span className="text-[10px] px-1.5 py-0.2 bg-purple-100 text-purple-700 rounded font-semibold shrink-0">
+                                  Workspace
+                                </span>
+                              )}
+                              <span className="text-[10px] px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded font-medium shrink-0">
                                 {roleName}
                               </span>
                             </div>
@@ -2965,10 +3681,11 @@ export default function CardDetailModal({
                         </div>
 
                         <div
-                          className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${isAssigned
+                          className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
+                            isAssigned
                               ? 'bg-[#2b1572] text-white'
                               : 'border border-slate-200 group-hover:border-[#2b1572]/40'
-                            }`}
+                          }`}
                         >
                           {isAssigned && <Check className="w-3.5 h-3.5" />}
                         </div>
@@ -3491,19 +4208,22 @@ export default function CardDetailModal({
                     const uName = m.user?.name || 'Thành viên';
                     const uEmail = m.user?.email || '';
                     const uAvatar = m.user?.avatar;
+                    const uId = m.user?.id || m.user_id;
                     const isAssigned =
                       activeItemMember.item.member_id === m.id ||
-                      activeItemMember.item.member?.id === m.id;
+                      activeItemMember.item.member_id === uId ||
+                      activeItemMember.item.member?.id === m.id ||
+                      activeItemMember.item.member?.user?.id === uId;
 
                     return (
                       <button
-                        key={m.id}
+                        key={m.id || uId}
                         type="button"
                         onClick={() =>
                           handleAssignItemMember(
                             activeItemMember.checklistId,
                             activeItemMember.item.id,
-                            isAssigned ? null : m.id,
+                            isAssigned ? null : (m.id || uId),
                           )
                         }
                         className="w-full p-2.5 rounded-xl hover:bg-slate-50 flex items-center justify-between gap-3 text-left transition-colors cursor-pointer group"
@@ -3521,9 +4241,20 @@ export default function CardDetailModal({
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <span className="text-xs font-bold text-[#2b1572] truncate block">
-                              {uName}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs font-bold text-[#2b1572] truncate">
+                                {uName}
+                              </span>
+                              {m.isBoardMember ? (
+                                <span className="text-[10px] px-1.5 py-0.2 bg-[#a6d1fd]/40 text-[#2b1572] rounded font-semibold shrink-0">
+                                  Bảng
+                                </span>
+                              ) : (
+                                <span className="text-[10px] px-1.5 py-0.2 bg-purple-100 text-purple-700 rounded font-semibold shrink-0">
+                                  Workspace
+                                </span>
+                              )}
+                            </div>
                             {uEmail && (
                               <div className="text-[11px] text-slate-400 truncate">{uEmail}</div>
                             )}
@@ -3531,10 +4262,11 @@ export default function CardDetailModal({
                         </div>
 
                         <div
-                          className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${isAssigned
+                          className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
+                            isAssigned
                               ? 'bg-[#2b1572] text-white'
                               : 'border border-slate-200 group-hover:border-[#2b1572]/40'
-                            }`}
+                          }`}
                         >
                           {isAssigned && <Check className="w-3.5 h-3.5" />}
                         </div>
@@ -3845,6 +4577,316 @@ export default function CardDetailModal({
                   className="px-4 py-1.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
                 >
                   {confirmDialog.isLoading ? 'Đang xóa...' : confirmDialog.confirmText || 'Xóa'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ADD CARD RELATION MODAL POPUP */}
+        {isRelationsModalOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-70 animate-in fade-in duration-150">
+            <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-150">
+              {/* Header */}
+              <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+                <div className="flex items-center gap-2 text-sm font-bold text-[#2b1572]">
+                  <GitBranch className="w-4 h-4 text-[#2b1572]" />
+                  <span>Thêm mối quan hệ thẻ</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsRelationsModalOpen(false)}
+                  className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-5 overflow-y-auto space-y-4">
+                {/* 1. Choose Relationship Type */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Loại mối quan hệ
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {[
+                      {
+                        type: 'RELATES_TO',
+                        title: 'Liên quan đến',
+                        desc: 'Liên kết tham chiếu 2 chiều',
+                        icon: Link2,
+                        color: 'text-blue-600 bg-blue-50 border-blue-200',
+                      },
+                      {
+                        type: 'BLOCKS',
+                        title: 'Chặn thẻ này',
+                        desc: 'Thẻ này phải xong trước thẻ đích',
+                        icon: ShieldAlert,
+                        color: 'text-amber-600 bg-amber-50 border-amber-200',
+                      },
+                      {
+                        type: 'BLOCKED_BY',
+                        title: 'Bị chặn bởi',
+                        desc: 'Thẻ này cần chờ thẻ đích xong',
+                        icon: AlertCircle,
+                        color: 'text-rose-600 bg-rose-50 border-rose-200',
+                      },
+                      {
+                        type: 'PARENT',
+                        title: 'Là thẻ cha của',
+                        desc: 'Thẻ đích sẽ là thẻ con (Subtask)',
+                        icon: FolderTree,
+                        color: 'text-purple-600 bg-purple-50 border-purple-200',
+                      },
+                      {
+                        type: 'SUBTASK',
+                        title: 'Là thẻ con của',
+                        desc: 'Đặt thẻ này làm con của thẻ đích',
+                        icon: ListTodo,
+                        color: 'text-emerald-600 bg-emerald-50 border-emerald-200',
+                      },
+                      {
+                        type: 'DUPLICATE',
+                        title: 'Trùng lặp với',
+                        desc: 'Đánh dấu trùng nội dung',
+                        icon: CopyCheck,
+                        color: 'text-indigo-600 bg-indigo-50 border-indigo-200',
+                      },
+                    ].map((opt) => {
+                      const isSelected = relationTypeToCreate === opt.type;
+                      const Icon = opt.icon;
+
+                      return (
+                        <button
+                          key={opt.type}
+                          type="button"
+                          onClick={() => {
+                            setRelationTypeToCreate(opt.type as any);
+                            setRelationError(null);
+                          }}
+                          className={`p-2.5 rounded-xl border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
+                            isSelected
+                              ? 'border-[#2b1572] bg-[#2b1572]/5 ring-2 ring-[#2b1572]/15 shadow-2xs'
+                              : 'border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-slate-50'
+                          }`}
+                        >
+                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border ${opt.color}`}>
+                            <Icon className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold text-[#2b1572]">{opt.title}</div>
+                            <div className="text-[10px] text-slate-500 leading-tight mt-0.5">{opt.desc}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 2. Candidate Cards Search & Selection */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Chọn thẻ để liên kết
+                  </label>
+                  <div className="relative">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={candidateSearchQuery}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setCandidateSearchQuery(val);
+                        const targetId = activeCardId || cardId;
+                        if (targetId) searchCandidateCards(targetId, val);
+                      }}
+                      placeholder="Tìm kiếm thẻ theo tên..."
+                      className="w-full text-xs text-[#2b1572] bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-[#2b1572] rounded-xl pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#2b1572]/15 shadow-2xs transition-all"
+                    />
+                  </div>
+
+                  {/* Candidate List */}
+                  <div className="border border-slate-200 rounded-xl overflow-hidden max-h-56 overflow-y-auto divide-y divide-slate-100 bg-slate-50/40">
+                    {isLoadingCandidates ? (
+                      <div className="p-6 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+                        <RefreshCw className="w-4 h-4 animate-spin text-[#2b1572]" />
+                        <span>Đang tìm kiếm thẻ...</span>
+                      </div>
+                    ) : candidateCards.length === 0 ? (
+                      <div className="p-6 text-center text-xs text-slate-400">
+                        Không tìm thấy thẻ nào phù hợp trong bảng/workspace.
+                      </div>
+                    ) : (
+                      candidateCards.map((c) => {
+                        const isSelected = selectedCandidateCardId === c.id;
+
+                        return (
+                          <div
+                            key={c.id}
+                            onClick={() => {
+                              setSelectedCandidateCardId(c.id);
+                              setRelationError(null);
+                            }}
+                            className={`p-2.5 flex items-center justify-between gap-3 cursor-pointer transition-colors ${
+                              isSelected
+                                ? 'bg-[#a6d1fd]/30 border-l-4 border-[#2b1572]'
+                                : 'hover:bg-white bg-transparent'
+                            }`}
+                          >
+                            <div className="min-w-0 space-y-0.5">
+                              <div className="text-xs font-bold text-[#2b1572] truncate">{c.title}</div>
+                              <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                                {(c.list?.title || c.list?.name) && (
+                                  <span className="px-1.5 py-0.2 rounded bg-slate-200/70 text-slate-700 font-medium">
+                                    {c.list?.title || c.list?.name}
+                                  </span>
+                                )}
+                                {c.list?.board?.name && (
+                                  <span>• {c.list.board.name}</span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              {c.status && (
+                                <span className="text-[10px] px-2 py-0.5 rounded-md font-semibold bg-slate-100 text-slate-600">
+                                  {c.status}
+                                </span>
+                              )}
+                              <div
+                                className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                                  isSelected
+                                    ? 'border-[#2b1572] bg-[#2b1572] text-white'
+                                    : 'border-slate-300 bg-white'
+                                }`}
+                              >
+                                {isSelected && <Check className="w-2.5 h-2.5" />}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+
+                {/* Error Banner */}
+                {relationError && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs flex items-start gap-2 animate-in fade-in duration-150">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                    <span className="leading-relaxed font-medium">{relationError}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="px-5 py-3.5 border-t border-slate-100 bg-slate-50/70 flex items-center justify-end gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsRelationsModalOpen(false)}
+                  className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateRelation}
+                  disabled={!selectedCandidateCardId || isCreatingRelation}
+                  className="px-4 py-1.5 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] disabled:opacity-40 rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  {isCreatingRelation ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Đang tạo liên kết...</span>
+                    </>
+                  ) : (
+                    <>
+                      <GitBranch className="w-3.5 h-3.5" />
+                      <span>Tạo liên kết</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Blocked Warning Popup Modal */}
+        {blockedPopup.isOpen && (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200"
+            onClick={() => setBlockedPopup({ isOpen: false, blockers: [] })}
+          >
+            <div
+              className="bg-white rounded-3xl shadow-2xl border border-rose-100 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="p-5 bg-gradient-to-br from-rose-50 via-rose-50/60 to-white border-b border-rose-100 flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 shadow-xs border border-rose-200">
+                  <Ban className="w-5 h-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-base font-bold text-rose-950">Không thể hoàn thành thẻ</h3>
+                    <button
+                      type="button"
+                      onClick={() => setBlockedPopup({ isOpen: false, blockers: [] })}
+                      className="w-7 h-7 rounded-xl hover:bg-rose-100 text-rose-700 flex items-center justify-center transition-colors cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-rose-700/80 mt-1 leading-relaxed">
+                    Thẻ này đang bị chặn bởi <strong className="text-rose-900 font-semibold">{blockedPopup.blockers.length} thẻ</strong> chưa hoàn thành. Bạn cần hoàn thành hoặc gỡ liên kết các thẻ chặn trước khi hoàn tất thẻ này:
+                  </p>
+                </div>
+              </div>
+
+              {/* List of blocker cards */}
+              <div className="p-4 max-h-64 overflow-y-auto space-y-2 bg-slate-50/50">
+                {blockedPopup.blockers.map((b) => {
+                  const relCard = b.related_card;
+                  if (!relCard) return null;
+                  return (
+                    <div
+                      key={b.id}
+                      onClick={() => {
+                        setBlockedPopup({ isOpen: false, blockers: [] });
+                        handleNavigateToRelatedCard(relCard.id);
+                      }}
+                      className="p-3 bg-white hover:bg-rose-50/50 border border-slate-200/80 hover:border-rose-300 rounded-2xl transition-all cursor-pointer shadow-2xs group flex items-center justify-between gap-3"
+                    >
+                      <div className="min-w-0 space-y-1">
+                        <div className="text-xs font-bold text-[#2b1572] group-hover:text-rose-700 transition-colors truncate">
+                          {relCard.title}
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                          {(relCard.list?.title || relCard.list?.name) && (
+                            <span className="px-1.5 py-0.5 rounded bg-slate-100 font-medium text-slate-600">
+                              {relCard.list?.title || relCard.list?.name}
+                            </span>
+                          )}
+                          {relCard.list?.board?.name && (
+                            <span>• {relCard.list.board.name}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 text-[11px] font-semibold text-rose-600 group-hover:translate-x-0.5 transition-transform shrink-0">
+                        <span>Xem thẻ</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 bg-white border-t border-slate-100 flex items-center justify-end">
+                <button
+                  type="button"
+                  onClick={() => setBlockedPopup({ isOpen: false, blockers: [] })}
+                  className="w-full sm:w-auto px-5 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-xs transition-colors cursor-pointer"
+                >
+                  Đã hiểu
                 </button>
               </div>
             </div>

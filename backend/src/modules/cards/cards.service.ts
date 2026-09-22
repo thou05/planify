@@ -10,12 +10,14 @@ import { UpdateCardDto } from './dto/update-card.dto';
 import { MoveCardDto } from './dto/move-card.dto';
 import { CopyCardDto } from './dto/copy-card.dto';
 import { ActivitiesService } from '../activities/activities.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class CardsService {
   constructor(
     private readonly supabase: SupabaseService,
     private readonly activitiesService: ActivitiesService,
+    private readonly notificationsService: NotificationsService,
   ) { }
 
   async create(listId: string, userId: string, dto: CreateCardDto) {
@@ -253,6 +255,29 @@ export class CardsService {
     if (dto.reminder_at !== undefined) updateData.reminder_at = dto.reminder_at;
     if (dto.is_due_date_completed !== undefined) {
       updateData.is_due_date_completed = dto.is_due_date_completed;
+    }
+
+    // Nếu đánh dấu hoàn thành (is_due_date_completed = true hoặc status = DONE), kiểm tra xem có bị chặn bởi thẻ chưa hoàn thành không
+    if (dto.is_due_date_completed === true || dto.status === 'DONE') {
+      const { data: blockers } = await this.supabase
+        .from('card_relations')
+        .select('id, type, related_card:cards!related_card_id(id, title, is_due_date_completed, status)')
+        .eq('card_id', cardId)
+        .eq('type', 'BLOCKED_BY');
+
+      const unresolvedBlockers = (blockers || []).filter((b: any) => {
+        const rc = b.related_card;
+        return rc && !rc.is_due_date_completed && rc.status !== 'DONE';
+      });
+
+      if (unresolvedBlockers.length > 0) {
+        const titles = unresolvedBlockers
+          .map((b: any) => `"${b.related_card?.title || 'Thẻ'}"`)
+          .join(', ');
+        throw new BadRequestException(
+          `Không thể hoàn thành thẻ này vì đang bị chặn bởi các thẻ chưa hoàn thành: ${titles}`,
+        );
+      }
     }
 
     let { data: updated, error } = await this.supabase
@@ -632,10 +657,10 @@ export class CardsService {
     return this.findById(newCard.id, userId);
   }
 
-  async toggleAssignMember(cardId: string, userId: string, boardMemberId: string) {
+  async toggleAssignMember(cardId: string, userId: string, memberIdOrUserId: string) {
     const { data: card } = await this.supabase
       .from('cards')
-      .select('id, list:lists (board_id)')
+      .select('id, title, list:lists (board_id)')
       .eq('id', cardId)
       .maybeSingle();
 
@@ -648,28 +673,95 @@ export class CardsService {
       await this.verifyBoardAccess(boardId, userId);
     }
 
-    // Verify boardMemberId belongs to this board
-    const { data: bMember } = await this.supabase
+    const { data: bForWs } = await this.supabase
+      .from('boards')
+      .select('workspace_id')
+      .eq('id', boardId)
+      .maybeSingle();
+    const wsIdForToggle = bForWs?.workspace_id;
+
+    // 1. Tìm bản ghi board_members tương ứng (theo id hoặc user_id)
+    let bMember: any = null;
+    const { data: foundById } = await this.supabase
       .from('board_members')
       .select('id, board_id, role, user:users (id, name, email, avatar)')
-      .eq('id', boardMemberId)
+      .eq('id', memberIdOrUserId)
       .eq('board_id', boardId)
       .maybeSingle();
+
+    if (foundById) {
+      bMember = foundById;
+    } else {
+      const { data: foundByUserId } = await this.supabase
+        .from('board_members')
+        .select('id, board_id, role, user:users (id, name, email, avatar)')
+        .eq('user_id', memberIdOrUserId)
+        .eq('board_id', boardId)
+        .maybeSingle();
+
+      if (foundByUserId) {
+        bMember = foundByUserId;
+      }
+    }
+
+    // 2. Nếu chưa có trong board_members nhưng thuộc workspace, tự động thêm vào board_members
+    if (!bMember && wsIdForToggle) {
+      let targetUserId = memberIdOrUserId;
+
+      const { data: wsMember } = await this.supabase
+        .from('workspace_members')
+        .select('user_id, role')
+        .eq('workspace_id', wsIdForToggle)
+        .or(`id.eq.${memberIdOrUserId},user_id.eq.${memberIdOrUserId}`)
+        .maybeSingle();
+
+      if (wsMember) {
+        targetUserId = wsMember.user_id;
+      } else {
+        const { data: ws } = await this.supabase
+          .from('workspaces')
+          .select('owner_id')
+          .eq('id', wsIdForToggle)
+          .maybeSingle();
+
+        if (ws?.owner_id === memberIdOrUserId) {
+          targetUserId = ws.owner_id;
+        } else {
+          throw new BadRequestException('Thành viên không thuộc về bảng hoặc không gian làm việc này');
+        }
+      }
+
+      // Thêm vào board_members
+      const { data: addedBM, error: addErr } = await this.supabase
+        .from('board_members')
+        .insert({
+          board_id: boardId,
+          user_id: targetUserId,
+          role: 'EDITOR',
+        })
+        .select('id, board_id, role, user:users (id, name, email, avatar)')
+        .single();
+
+      if (addErr || !addedBM) {
+        throw new BadRequestException('Không thể liên kết thành viên vào bảng');
+      }
+
+      bMember = addedBM;
+    }
 
     if (!bMember) {
       throw new BadRequestException('Thành viên không thuộc về bảng này');
     }
+
+    const effectiveBoardMemberId = bMember.id;
 
     // Check if already assigned
     const { data: existing } = await this.supabase
       .from('card_assignees')
       .select('id')
       .eq('card_id', cardId)
-      .eq('board_member_id', boardMemberId)
+      .eq('board_member_id', effectiveBoardMemberId)
       .maybeSingle();
-
-    const { data: bForWs } = await this.supabase.from('boards').select('workspace_id').eq('id', boardId).maybeSingle();
-    const wsIdForToggle = bForWs?.workspace_id;
 
     if (existing) {
       await this.supabase
@@ -686,13 +778,13 @@ export class CardsService {
         });
       }
 
-      return { assigned: false, board_member_id: boardMemberId };
+      return { assigned: false, board_member_id: effectiveBoardMemberId };
     } else {
       const { data: newAssignee, error } = await this.supabase
         .from('card_assignees')
         .insert({
           card_id: cardId,
-          board_member_id: boardMemberId,
+          board_member_id: effectiveBoardMemberId,
         })
         .select(`
           id,
@@ -717,6 +809,18 @@ export class CardsService {
           action: `đã gán thẻ cho "${(bMember as any)?.user?.name || 'thành viên'}"`,
           targetType: `card:${cardId}`,
         });
+      }
+
+      // Gửi thông báo phân công thẻ nếu người được gán khác người thực hiện
+      const targetUserId = (bMember as any)?.user?.id;
+      if (targetUserId && targetUserId !== userId) {
+        const cardTitle = card.title || 'Thẻ';
+        await this.notificationsService.createNotification({
+          userId: targetUserId,
+          title: `Phân công thẻ mới`,
+          message: `Bạn đã được phân công vào thẻ "${cardTitle}"||/boards/${boardId}?cardId=${cardId}`,
+          type: 'ASSIGN',
+        }).catch(() => {});
       }
 
       return { assigned: true, assignee: newAssignee };
