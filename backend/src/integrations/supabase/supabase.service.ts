@@ -67,11 +67,53 @@ export class SupabaseService implements OnModuleInit {
     }
   }
 
+  private boardChannels = new Map<string, any>();
+
   get client(): SupabaseClient {
     return this.clientInstance;
   }
 
   from(table: string) {
     return this.clientInstance.from(table);
+  }
+
+  async emitChannelEvent(channelName: string, event: string, payload: any = {}) {
+    if (!channelName) return;
+    try {
+      let ch = this.boardChannels.get(channelName);
+      if (!ch) {
+        ch = this.clientInstance.channel(channelName);
+        ch.subscribe();
+        this.boardChannels.set(channelName, ch);
+      }
+
+      ch.send({
+        type: 'broadcast',
+        event,
+        payload: {
+          ...payload,
+          emittedAt: new Date().toISOString(),
+        },
+      }).catch((err: any) => {
+        this.logger.debug(`Broadcast send error [${channelName}]: ${err?.message}`);
+      });
+    } catch (err: any) {
+      this.logger.warn(`⚠️ Lỗi khi broadcast [${event}] tới [${channelName}]: ${err?.message}`);
+    }
+  }
+
+  async emitBoardEvent(boardId: string, event: string, payload: any = {}) {
+    if (!boardId) return;
+    return this.emitChannelEvent(`board:${boardId}`, event, { ...payload, boardId });
+  }
+
+  async emitWorkspaceEvent(workspaceId: string, event: string, payload: any = {}) {
+    if (!workspaceId) return;
+    return this.emitChannelEvent(`workspace:${workspaceId}`, event, { ...payload, workspaceId });
+  }
+
+  async emitUserEvent(userId: string, event: string, payload: any = {}) {
+    if (!userId) return;
+    return this.emitChannelEvent(`user:${userId}`, event, { ...payload, userId });
   }
 }

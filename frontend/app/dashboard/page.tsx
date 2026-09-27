@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
+import { supabase } from '@/lib/supabase';
 import AppShell from '@/components/layout/AppShell';
 import {
   Layers,
@@ -36,7 +37,22 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+
+    if (!user?.id) return;
+    const channel = supabase.channel(`user-dashboard:${user.id}`, {
+      config: { broadcast: { self: false } },
+    });
+
+    channel
+      .on('broadcast', { event: 'USER_WORKSPACES_CHANGED' }, () => {
+        fetchDashboardData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   // Collect all favorite boards across all workspaces
   const favoriteBoards = workspaces.flatMap((ws) =>

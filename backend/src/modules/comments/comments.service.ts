@@ -176,6 +176,13 @@ export class CommentsService {
       }
     }
 
+    if (boardId) {
+      this.supabase.emitBoardEvent(boardId, 'CARD_UPDATED', {
+        cardId,
+        senderId: userId,
+      });
+    }
+
     return comment;
   }
 
@@ -194,6 +201,8 @@ export class CommentsService {
     if (existing.user_id !== userId) {
       throw new ForbiddenException('Bạn chỉ có thể chỉnh sửa bình luận của chính mình');
     }
+
+    const { boardId } = await this.verifyCardAccess(existing.card_id, userId);
 
     const content = dto.content.trim();
     if (!content) {
@@ -218,6 +227,13 @@ export class CommentsService {
       throw new BadRequestException(updateError?.message || 'Không thể cập nhật bình luận');
     }
 
+    if (boardId) {
+      this.supabase.emitBoardEvent(boardId, 'CARD_UPDATED', {
+        cardId: existing.card_id,
+        senderId: userId,
+      });
+    }
+
     return updatedComment;
   }
 
@@ -233,10 +249,10 @@ export class CommentsService {
       throw new NotFoundException('Không tìm thấy bình luận');
     }
 
+    const boardId = (existing.card as any)?.list?.board_id;
     const isAuthor = existing.user_id === userId;
     if (!isAuthor) {
       // Nếu không phải tác giả, kiểm tra xem user có phải Admin/Owner của Board không
-      const boardId = (existing.card as any)?.list?.board_id;
       if (boardId) {
         await this.verifyBoardAccess(boardId, userId);
       } else {
@@ -251,6 +267,13 @@ export class CommentsService {
 
     if (delError) {
       throw new BadRequestException(delError.message || 'Không thể xóa bình luận');
+    }
+
+    if (boardId) {
+      this.supabase.emitBoardEvent(boardId, 'CARD_UPDATED', {
+        cardId: existing.card_id,
+        senderId: userId,
+      });
     }
 
     return { message: 'Đã xóa bình luận thành công', id: commentId, card_id: existing.card_id };

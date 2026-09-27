@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
+import { supabase } from '@/lib/supabase';
 import TopBar from './TopBar';
 import Sidebar, { WorkspaceItem } from './Sidebar';
 import CreateWorkspaceModal from '../modals/CreateWorkspaceModal';
@@ -50,6 +51,21 @@ export default function AppShell({
     } else if (user) {
       fetchWorkspaces();
     }
+
+    if (!user?.id) return;
+    const channel = supabase.channel(`shell-user:${user.id}`, {
+      config: { broadcast: { self: false } },
+    });
+
+    channel
+      .on('broadcast', { event: 'USER_WORKSPACES_CHANGED' }, () => {
+        fetchWorkspaces();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, isLoading]);
 
   useEffect(() => {

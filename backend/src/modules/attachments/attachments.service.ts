@@ -112,17 +112,24 @@ export class AttachmentsService {
       throw new InternalServerErrorException('Không thể lưu thông tin đính kèm');
     }
 
-    if (userId) {
-      const { data: c } = await this.supabase.from('cards').select('list:lists(board:boards(workspace_id))').eq('id', cardId).maybeSingle();
-      const wsId = (c?.list as any)?.board?.workspace_id;
-      if (wsId) {
-        await this.activitiesService.logActivity({
-          workspaceId: wsId,
-          userId,
-          action: `đã đính kèm tệp "${file.originalname}"`,
-          targetType: `card:${cardId}`,
-        });
-      }
+    const { data: c } = await this.supabase.from('cards').select('list:lists(board_id, board:boards(workspace_id))').eq('id', cardId).maybeSingle();
+    const wsId = (c?.list as any)?.board?.workspace_id;
+    const boardId = (c?.list as any)?.board_id;
+
+    if (userId && wsId) {
+      await this.activitiesService.logActivity({
+        workspaceId: wsId,
+        userId,
+        action: `đã đính kèm tệp "${file.originalname}"`,
+        targetType: `card:${cardId}`,
+      });
+    }
+
+    if (boardId) {
+      this.supabase.emitBoardEvent(boardId, 'CARD_UPDATED', {
+        cardId,
+        senderId: userId,
+      });
     }
 
     return data;
@@ -150,17 +157,24 @@ export class AttachmentsService {
       throw new InternalServerErrorException('Không thể tạo đính kèm liên kết');
     }
 
-    if (userId) {
-      const { data: c } = await this.supabase.from('cards').select('list:lists(board:boards(workspace_id))').eq('id', cardId).maybeSingle();
-      const wsId = (c?.list as any)?.board?.workspace_id;
-      if (wsId) {
-        await this.activitiesService.logActivity({
-          workspaceId: wsId,
-          userId,
-          action: `đã đính kèm liên kết "${dto.file_name.trim()}"`,
-          targetType: `card:${cardId}`,
-        });
-      }
+    const { data: c } = await this.supabase.from('cards').select('list:lists(board_id, board:boards(workspace_id))').eq('id', cardId).maybeSingle();
+    const wsId = (c?.list as any)?.board?.workspace_id;
+    const boardId = (c?.list as any)?.board_id;
+
+    if (userId && wsId) {
+      await this.activitiesService.logActivity({
+        workspaceId: wsId,
+        userId,
+        action: `đã đính kèm liên kết "${dto.file_name.trim()}"`,
+        targetType: `card:${cardId}`,
+      });
+    }
+
+    if (boardId) {
+      this.supabase.emitBoardEvent(boardId, 'CARD_UPDATED', {
+        cardId,
+        senderId: userId,
+      });
     }
 
     return data;
@@ -181,6 +195,16 @@ export class AttachmentsService {
       throw new NotFoundException('Không tìm thấy tệp đính kèm');
     }
 
+    if (data?.card_id) {
+      const { data: c } = await this.supabase.from('cards').select('list:lists(board_id)').eq('id', data.card_id).maybeSingle();
+      const boardId = (c?.list as any)?.board_id;
+      if (boardId) {
+        this.supabase.emitBoardEvent(boardId, 'CARD_UPDATED', {
+          cardId: data.card_id,
+        });
+      }
+    }
+
     return data;
   }
 
@@ -195,15 +219,24 @@ export class AttachmentsService {
       return { success: true };
     }
 
-    if (userId && att.card_id) {
-      const { data: c } = await this.supabase.from('cards').select('list:lists(board:boards(workspace_id))').eq('id', att.card_id).maybeSingle();
+    if (att.card_id) {
+      const { data: c } = await this.supabase.from('cards').select('list:lists(board_id, board:boards(workspace_id))').eq('id', att.card_id).maybeSingle();
       const wsId = (c?.list as any)?.board?.workspace_id;
-      if (wsId) {
+      const boardId = (c?.list as any)?.board_id;
+
+      if (userId && wsId) {
         await this.activitiesService.logActivity({
           workspaceId: wsId,
           userId,
           action: `đã xóa tệp đính kèm "${att.file_name || 'tệp'}"`,
           targetType: `card:${att.card_id}`,
+        });
+      }
+
+      if (boardId) {
+        this.supabase.emitBoardEvent(boardId, 'CARD_UPDATED', {
+          cardId: att.card_id,
+          senderId: userId,
         });
       }
     }

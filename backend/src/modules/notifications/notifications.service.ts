@@ -35,6 +35,12 @@ export class NotificationsService implements OnModuleInit {
       throw new BadRequestException(error.message || 'Không thể tạo thông báo');
     }
 
+    if (data) {
+      this.supabase.emitUserEvent(dto.userId, 'NOTIFICATION_RECEIVED', {
+        notification: data,
+      });
+    }
+
     return data;
   }
 
@@ -118,6 +124,11 @@ export class NotificationsService implements OnModuleInit {
       throw new NotFoundException('Không tìm thấy thông báo hoặc bạn không có quyền cập nhật');
     }
 
+    this.supabase.emitUserEvent(userId, 'NOTIFICATION_UPDATED', {
+      notificationId: id,
+      isRead: true,
+    });
+
     return data;
   }
 
@@ -135,6 +146,8 @@ export class NotificationsService implements OnModuleInit {
     if (error) {
       throw new BadRequestException(error.message || 'Không thể đánh dấu tất cả thông báo');
     }
+
+    this.supabase.emitUserEvent(userId, 'ALL_NOTIFICATIONS_READ', {});
 
     return {
       success: true,
@@ -158,7 +171,11 @@ export class NotificationsService implements OnModuleInit {
       throw new NotFoundException('Không tìm thấy thông báo hoặc bạn không có quyền xóa');
     }
 
-    return { success: true, id };
+    this.supabase.emitUserEvent(userId, 'NOTIFICATION_DELETED', {
+      notificationId: id,
+    });
+
+    return { success: true };
   }
 
   /**

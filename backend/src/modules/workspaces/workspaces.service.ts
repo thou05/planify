@@ -187,6 +187,11 @@ export class WorkspacesService {
       targetType: `workspace:${workspaceId}`,
     });
 
+    this.supabase.emitWorkspaceEvent(workspaceId, 'WORKSPACE_UPDATED', {
+      workspace: updated,
+      senderId: userId,
+    });
+
     return updated;
   }
 
@@ -274,6 +279,10 @@ export class WorkspacesService {
       targetType: `workspace:${workspaceId}`,
     });
 
+    this.supabase.emitWorkspaceEvent(workspaceId, 'WORKSPACE_MEMBERS_CHANGED', {
+      senderId: currentUserId,
+    });
+
     return updated;
   }
 
@@ -333,6 +342,10 @@ export class WorkspacesService {
       targetType: `workspace:${workspaceId}`,
     });
 
+    this.supabase.emitWorkspaceEvent(workspaceId, 'WORKSPACE_MEMBERS_CHANGED', {
+      senderId: currentUserId,
+    });
+
     return this.findById(workspaceId, currentUserId);
   }
 
@@ -372,6 +385,11 @@ export class WorkspacesService {
       action: `đã rời khỏi Không gian làm việc`,
       targetType: `workspace:${workspaceId}`,
     });
+
+    this.supabase.emitWorkspaceEvent(workspaceId, 'WORKSPACE_MEMBERS_CHANGED', {
+      senderId: currentUserId,
+    });
+    this.supabase.emitUserEvent(currentUserId, 'USER_WORKSPACES_CHANGED', {});
 
     return { message: 'Bạn đã rời khỏi Workspace thành công' };
   }
@@ -441,6 +459,13 @@ export class WorkspacesService {
         message: `Bạn đã được thêm vào không gian làm việc "${wsName}"||/workspace/${workspaceId}`,
         type: 'WORKSPACE_INVITE',
       }).catch(() => {});
+    }
+
+    this.supabase.emitWorkspaceEvent(workspaceId, 'WORKSPACE_MEMBERS_CHANGED', {
+      senderId: currentUserId,
+    });
+    if (targetUser?.id) {
+      this.supabase.emitUserEvent(targetUser.id, 'USER_WORKSPACES_CHANGED', {});
     }
 
     return newMember;
@@ -541,6 +566,10 @@ export class WorkspacesService {
       targetType: `workspace:${workspaceId}`,
     });
 
+    this.supabase.emitWorkspaceEvent(workspaceId, 'WORKSPACE_MEMBERS_CHANGED', {
+      senderId: currentUserId,
+    });
+
     return {
       type: 'INVITE_CREATED',
       message: 'Tạo lời mời thành công',
@@ -577,6 +606,10 @@ export class WorkspacesService {
     if (error) {
       throw new BadRequestException(error.message);
     }
+
+    this.supabase.emitWorkspaceEvent(workspaceId, 'WORKSPACE_MEMBERS_CHANGED', {
+      senderId: currentUserId,
+    });
 
     return { message: 'Đã thu hồi lời mời thành công' };
   }
@@ -643,6 +676,11 @@ export class WorkspacesService {
       .delete()
       .eq('id', invite.id);
 
+    this.supabase.emitWorkspaceEvent(workspaceId, 'WORKSPACE_MEMBERS_CHANGED', {
+      senderId: userId,
+    });
+    this.supabase.emitUserEvent(userId, 'USER_WORKSPACES_CHANGED', {});
+
     return {
       message: 'Gia nhập Workspace thành công!',
       workspaceId,
@@ -699,6 +737,18 @@ export class WorkspacesService {
     if (error) {
       throw new BadRequestException(error.message);
     }
+
+    await this.activitiesService.logActivity({
+      workspaceId,
+      userId: currentUserId,
+      action: `đã xóa thành viên khỏi Không gian làm việc`,
+      targetType: `workspace:${workspaceId}`,
+    });
+
+    this.supabase.emitWorkspaceEvent(workspaceId, 'WORKSPACE_MEMBERS_CHANGED', {
+      senderId: currentUserId,
+    });
+    this.supabase.emitUserEvent(targetUserId, 'USER_WORKSPACES_CHANGED', {});
 
     return { message: 'Đã xóa thành viên khỏi Workspace' };
   }

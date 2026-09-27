@@ -17,12 +17,19 @@ import { ActivitiesModule } from './modules/activities/activities.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { CardRelationsModule } from './modules/card-relations/card-relations.module';
 import { TemplatesModule } from './modules/templates/templates.module';
+import { AiModule } from './modules/ai/ai.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env', '../frontend/.env.local', '../.env'],
+      envFilePath: [
+        'backend/.env',
+        '.env',
+        '../backend/.env',
+        '../frontend/.env.local',
+        '../.env',
+      ],
     }),
     SupabaseModule,
     AuthModule,
@@ -39,6 +46,7 @@ import { TemplatesModule } from './modules/templates/templates.module';
     NotificationsModule,
     CardRelationsModule,
     TemplatesModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [AppService],

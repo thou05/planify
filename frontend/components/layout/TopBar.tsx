@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
+import { supabase } from '@/lib/supabase';
 import {
   LayoutGrid,
   Search,
@@ -51,7 +52,7 @@ export default function TopBar({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Poll unread notifications & pending invitations periodically
+  // Realtime instant notification subscription + periodic counter sync
   useEffect(() => {
     let isMounted = true;
     const fetchCounters = async () => {
@@ -74,13 +75,36 @@ export default function TopBar({
     };
 
     fetchCounters();
-    const timer = setInterval(fetchCounters, 30000);
+
+    if (!user?.id) return;
+
+    const channel = supabase.channel(`user-notifications:${user.id}`, {
+      config: { broadcast: { self: false } },
+    });
+
+    channel
+      .on('broadcast', { event: 'NOTIFICATION_RECEIVED' }, () => {
+        setUnreadCount((prev) => prev + 1);
+      })
+      .on('broadcast', { event: 'NOTIFICATION_UPDATED' }, () => {
+        fetchCounters();
+      })
+      .on('broadcast', { event: 'NOTIFICATION_DELETED' }, () => {
+        fetchCounters();
+      })
+      .on('broadcast', { event: 'ALL_NOTIFICATIONS_READ' }, () => {
+        setUnreadCount(0);
+      })
+      .subscribe();
+
+    const fallbackTimer = setInterval(fetchCounters, 30000);
 
     return () => {
       isMounted = false;
-      clearInterval(timer);
+      clearInterval(fallbackTimer);
+      supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user?.id]);
 
   const openProfileTab = (tab: 'profile' | 'security' | 'invitations') => {
     setProfileModalTab(tab);

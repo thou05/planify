@@ -21,7 +21,7 @@ export class ChecklistsService {
   private async verifyCardAccess(cardId: string, userId: string) {
     const { data: card, error: cError } = await this.supabase
       .from('cards')
-      .select('id, list:lists (board:boards (id, workspace_id))')
+      .select('id, list:lists (board_id, board:boards (id, workspace_id))')
       .eq('id', cardId)
       .maybeSingle();
 
@@ -30,6 +30,7 @@ export class ChecklistsService {
     }
 
     const board = (card.list as any)?.board;
+    const boardId = (card.list as any)?.board_id || board?.id;
     const workspaceId = board?.workspace_id;
     if (workspaceId) {
       const { data: member } = await this.supabase
@@ -52,13 +53,13 @@ export class ChecklistsService {
       }
     }
 
-    return { card, workspaceId };
+    return { card, workspaceId, boardId };
   }
 
   // --- CHECKLIST OPERATIONS ---
 
   async createChecklist(cardId: string, userId: string, dto: CreateChecklistDto) {
-    await this.verifyCardAccess(cardId, userId);
+    const { workspaceId, boardId } = await this.verifyCardAccess(cardId, userId);
 
     let position = dto.position;
     if (position === undefined) {
@@ -86,13 +87,19 @@ export class ChecklistsService {
       throw new BadRequestException(error?.message || 'Không thể tạo danh sách việc cần làm');
     }
 
-    const { workspaceId } = await this.verifyCardAccess(cardId, userId);
     if (workspaceId) {
       await this.activitiesService.logActivity({
         workspaceId,
         userId,
         action: `đã thêm danh sách "${checklist.title}"`,
         targetType: `card:${cardId}`,
+      });
+    }
+
+    if (boardId) {
+      this.supabase.emitBoardEvent(boardId, 'CARD_UPDATED', {
+        cardId,
+        senderId: userId,
       });
     }
 
@@ -110,7 +117,7 @@ export class ChecklistsService {
       throw new NotFoundException('Không tìm thấy danh sách việc cần làm');
     }
 
-    await this.verifyCardAccess(checklist.card_id, userId);
+    const { boardId } = await this.verifyCardAccess(checklist.card_id, userId);
 
     const updatePayload: Record<string, any> = {};
     if (dto.title !== undefined) updatePayload.title = dto.title.trim();
@@ -127,6 +134,13 @@ export class ChecklistsService {
       throw new BadRequestException(error?.message || 'Không thể cập nhật danh sách việc cần làm');
     }
 
+    if (boardId) {
+      this.supabase.emitBoardEvent(boardId, 'CARD_UPDATED', {
+        cardId: checklist.card_id,
+        senderId: userId,
+      });
+    }
+
     return updated;
   }
 
@@ -141,12 +155,19 @@ export class ChecklistsService {
       throw new NotFoundException('Không tìm thấy danh sách việc cần làm');
     }
 
-    await this.verifyCardAccess(checklist.card_id, userId);
+    const { boardId } = await this.verifyCardAccess(checklist.card_id, userId);
 
     const { error } = await this.supabase.from('checklists').delete().eq('id', id);
 
     if (error) {
       throw new BadRequestException('Không thể xóa danh sách việc cần làm');
+    }
+
+    if (boardId) {
+      this.supabase.emitBoardEvent(boardId, 'CARD_UPDATED', {
+        cardId: checklist.card_id,
+        senderId: userId,
+      });
     }
 
     return { message: 'Đã xóa danh sách việc cần làm thành công' };
@@ -165,7 +186,7 @@ export class ChecklistsService {
       throw new NotFoundException('Không tìm thấy danh sách việc cần làm');
     }
 
-    await this.verifyCardAccess(checklist.card_id, userId);
+    const { boardId } = await this.verifyCardAccess(checklist.card_id, userId);
 
     let position = dto.position;
     if (position === undefined) {
@@ -223,6 +244,13 @@ export class ChecklistsService {
       throw new BadRequestException(error?.message || 'Không thể tạo mục công việc');
     }
 
+    if (boardId) {
+      this.supabase.emitBoardEvent(boardId, 'CARD_UPDATED', {
+        cardId: checklist.card_id,
+        senderId: userId,
+      });
+    }
+
     return item;
   }
 
@@ -238,8 +266,10 @@ export class ChecklistsService {
     }
 
     const cardId = (item.checklist as any)?.card_id;
+    let bId: string | undefined;
     if (cardId) {
-      await this.verifyCardAccess(cardId, userId);
+      const access = await this.verifyCardAccess(cardId, userId);
+      bId = access.boardId;
     }
 
     const updatePayload: Record<string, any> = {};
@@ -298,6 +328,13 @@ export class ChecklistsService {
       }
     }
 
+    if (bId && cardId) {
+      this.supabase.emitBoardEvent(bId, 'CARD_UPDATED', {
+        cardId,
+        senderId: userId,
+      });
+    }
+
     return updated;
   }
 
@@ -313,14 +350,23 @@ export class ChecklistsService {
     }
 
     const cardId = (item.checklist as any)?.card_id;
+    let bId: string | undefined;
     if (cardId) {
-      await this.verifyCardAccess(cardId, userId);
+      const access = await this.verifyCardAccess(cardId, userId);
+      bId = access.boardId;
     }
 
     const { error } = await this.supabase.from('checklist_items').delete().eq('id', id);
 
     if (error) {
       throw new BadRequestException('Không thể xóa mục công việc');
+    }
+
+    if (bId && cardId) {
+      this.supabase.emitBoardEvent(bId, 'CARD_UPDATED', {
+        cardId,
+        senderId: userId,
+      });
     }
 
     return { message: 'Đã xóa mục công việc thành công' };

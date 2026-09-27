@@ -97,7 +97,13 @@ export class BoardsService {
       targetType: `board:${board.id}`,
     });
 
-    return this.findById(board.id, userId);
+    const result = await this.findById(board.id, userId);
+    this.supabase.emitWorkspaceEvent(workspaceId, 'BOARD_CREATED', {
+      board: result,
+      senderId: userId,
+    });
+
+    return result;
   }
 
   async findAllInWorkspace(workspaceId: string, userId: string, includeArchived = false) {
@@ -315,6 +321,18 @@ export class BoardsService {
       targetType: `board:${boardId}`,
     });
 
+    this.supabase.emitBoardEvent(boardId, 'BOARD_UPDATED', {
+      boardId,
+      senderId: userId,
+    });
+
+    if (board.workspace_id) {
+      this.supabase.emitWorkspaceEvent(board.workspace_id, 'BOARD_UPDATED', {
+        board: updated,
+        senderId: userId,
+      });
+    }
+
     return this.findById(boardId, userId);
   }
 
@@ -364,6 +382,13 @@ export class BoardsService {
       targetType: `board:${boardId}`,
     });
 
+    if (board.workspace_id) {
+      this.supabase.emitWorkspaceEvent(board.workspace_id, 'BOARD_ARCHIVED', {
+        boardId,
+        senderId: userId,
+      });
+    }
+
     return { message: 'Đã lưu trữ Board thành công', is_archived: true };
   }
 
@@ -386,6 +411,13 @@ export class BoardsService {
       action: `đã khôi phục Bảng "${board.name}"`,
       targetType: `board:${boardId}`,
     });
+
+    if (board.workspace_id) {
+      this.supabase.emitWorkspaceEvent(board.workspace_id, 'BOARD_RESTORED', {
+        boardId,
+        senderId: userId,
+      });
+    }
 
     return { message: 'Đã khôi phục Board thành công', is_archived: false };
   }
@@ -525,7 +557,15 @@ export class BoardsService {
       }
     }
 
-    return this.findById(newBoard.id, userId);
+    const copiedResult = await this.findById(newBoard.id, userId);
+    if (targetWorkspaceId) {
+      this.supabase.emitWorkspaceEvent(targetWorkspaceId, 'BOARD_CREATED', {
+        board: copiedResult,
+        senderId: userId,
+      });
+    }
+
+    return copiedResult;
   }
 
   async delete(boardId: string, userId: string) {
@@ -540,6 +580,13 @@ export class BoardsService {
       .eq('id', boardId);
 
     if (error) throw new BadRequestException(error.message);
+
+    if (board.workspace_id) {
+      this.supabase.emitWorkspaceEvent(board.workspace_id, 'BOARD_DELETED', {
+        boardId,
+        senderId: userId,
+      });
+    }
 
     return { message: 'Xóa Board thành công' };
   }

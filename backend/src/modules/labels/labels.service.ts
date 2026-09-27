@@ -203,6 +203,13 @@ export class LabelsService {
         .delete()
         .eq('id', existing.id);
 
+      if (boardId) {
+        this.supabase.emitBoardEvent(boardId, 'CARD_UPDATED', {
+          cardId,
+          senderId: userId,
+        });
+      }
+
       return {
         assigned: false,
         label_id: labelId,
@@ -223,6 +230,13 @@ export class LabelsService {
 
       if (insertError || !newCardLabel) {
         throw new BadRequestException(insertError?.message || 'Không thể gán nhãn vào thẻ');
+      }
+
+      if (boardId) {
+        this.supabase.emitBoardEvent(boardId, 'CARD_UPDATED', {
+          cardId,
+          senderId: userId,
+        });
       }
 
       return {
