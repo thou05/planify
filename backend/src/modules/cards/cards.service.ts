@@ -89,13 +89,23 @@ export class CardsService {
       });
     }
 
-    return {
+    const createdCard = {
       ...card,
       checklists: [],
       card_labels: [],
       comments: [],
       card_assignees: [],
     };
+
+    if (list?.board_id) {
+      this.supabase.emitBoardEvent(list.board_id, 'CARD_CREATED', {
+        card: createdCard,
+        listId,
+        senderId: userId,
+      });
+    }
+
+    return createdCard;
   }
 
   private async verifyWorkspaceAccess(workspaceId: string, userId: string) {
@@ -375,6 +385,14 @@ export class CardsService {
       }
     }
 
+    if (boardId) {
+      this.supabase.emitBoardEvent(boardId, 'CARD_UPDATED', {
+        cardId,
+        updated,
+        senderId: userId,
+      });
+    }
+
     return updated;
   }
 
@@ -418,6 +436,14 @@ export class CardsService {
           .update({ position: item.position - 1 })
           .eq('id', item.id);
       }
+    }
+
+    if (boardId) {
+      this.supabase.emitBoardEvent(boardId, 'CARD_DELETED', {
+        cardId,
+        listId: card.list_id,
+        senderId: userId,
+      });
     }
 
     return { message: 'Xóa thẻ thành công' };
@@ -536,6 +562,25 @@ export class CardsService {
       }
     }
 
+    if (sourceBoardId) {
+      this.supabase.emitBoardEvent(sourceBoardId, 'CARD_MOVED', {
+        cardId,
+        sourceListId: sourceCard.list_id,
+        targetListId: dto.targetListId,
+        position: targetPosition,
+        senderId: userId,
+      });
+    }
+    if (targetList.board_id && targetList.board_id !== sourceBoardId) {
+      this.supabase.emitBoardEvent(targetList.board_id, 'CARD_MOVED', {
+        cardId,
+        sourceListId: sourceCard.list_id,
+        targetListId: dto.targetListId,
+        position: targetPosition,
+        senderId: userId,
+      });
+    }
+
     return this.findById(cardId, userId);
   }
 
@@ -652,6 +697,14 @@ export class CardsService {
           await this.supabase.from('checklist_items').insert(newItems);
         }
       }
+    }
+
+    if (sourceBoardId) {
+      this.supabase.emitBoardEvent(sourceBoardId, 'CARD_CREATED', {
+        cardId: newCard.id,
+        listId: targetListId,
+        senderId: userId,
+      });
     }
 
     return this.findById(newCard.id, userId);

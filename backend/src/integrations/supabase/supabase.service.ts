@@ -67,11 +67,40 @@ export class SupabaseService implements OnModuleInit {
     }
   }
 
+  private boardChannels = new Map<string, any>();
+
   get client(): SupabaseClient {
     return this.clientInstance;
   }
 
   from(table: string) {
     return this.clientInstance.from(table);
+  }
+
+  async emitBoardEvent(boardId: string, event: string, payload: any = {}) {
+    if (!boardId) return;
+    try {
+      const channelName = `board:${boardId}`;
+      let ch = this.boardChannels.get(channelName);
+      if (!ch) {
+        ch = this.clientInstance.channel(channelName);
+        ch.subscribe();
+        this.boardChannels.set(channelName, ch);
+      }
+
+      ch.send({
+        type: 'broadcast',
+        event,
+        payload: {
+          ...payload,
+          boardId,
+          emittedAt: new Date().toISOString(),
+        },
+      }).catch((err: any) => {
+        this.logger.debug(`Broadcast send error: ${err?.message}`);
+      });
+    } catch (err: any) {
+      this.logger.warn(`⚠️ Lỗi khi broadcast [${event}] tới board [${boardId}]: ${err?.message}`);
+    }
   }
 }

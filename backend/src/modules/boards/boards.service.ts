@@ -313,6 +313,11 @@ export class BoardsService {
       targetType: `board:${boardId}`,
     });
 
+    this.supabase.emitBoardEvent(boardId, 'BOARD_UPDATED', {
+      boardId,
+      senderId: userId,
+    });
+
     return this.findById(boardId, userId);
   }
 
