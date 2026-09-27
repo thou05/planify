@@ -77,10 +77,9 @@ export class SupabaseService implements OnModuleInit {
     return this.clientInstance.from(table);
   }
 
-  async emitBoardEvent(boardId: string, event: string, payload: any = {}) {
-    if (!boardId) return;
+  async emitChannelEvent(channelName: string, event: string, payload: any = {}) {
+    if (!channelName) return;
     try {
-      const channelName = `board:${boardId}`;
       let ch = this.boardChannels.get(channelName);
       if (!ch) {
         ch = this.clientInstance.channel(channelName);
@@ -93,14 +92,28 @@ export class SupabaseService implements OnModuleInit {
         event,
         payload: {
           ...payload,
-          boardId,
           emittedAt: new Date().toISOString(),
         },
       }).catch((err: any) => {
-        this.logger.debug(`Broadcast send error: ${err?.message}`);
+        this.logger.debug(`Broadcast send error [${channelName}]: ${err?.message}`);
       });
     } catch (err: any) {
-      this.logger.warn(`⚠️ Lỗi khi broadcast [${event}] tới board [${boardId}]: ${err?.message}`);
+      this.logger.warn(`⚠️ Lỗi khi broadcast [${event}] tới [${channelName}]: ${err?.message}`);
     }
+  }
+
+  async emitBoardEvent(boardId: string, event: string, payload: any = {}) {
+    if (!boardId) return;
+    return this.emitChannelEvent(`board:${boardId}`, event, { ...payload, boardId });
+  }
+
+  async emitWorkspaceEvent(workspaceId: string, event: string, payload: any = {}) {
+    if (!workspaceId) return;
+    return this.emitChannelEvent(`workspace:${workspaceId}`, event, { ...payload, workspaceId });
+  }
+
+  async emitUserEvent(userId: string, event: string, payload: any = {}) {
+    if (!userId) return;
+    return this.emitChannelEvent(`user:${userId}`, event, { ...payload, userId });
   }
 }

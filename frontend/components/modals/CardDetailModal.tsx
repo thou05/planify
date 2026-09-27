@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth-context';
+import { supabase } from '@/lib/supabase';
 import {
   X,
   Calendar,
@@ -53,6 +54,9 @@ import {
   Layers,
   CopyCheck,
   ChevronRight,
+  Sparkles,
+  Wand2,
+  Bot,
 } from 'lucide-react';
 import { ActivityItem } from '@/components/modals/MyActivityModal';
 
@@ -153,6 +157,8 @@ export interface CardAttachment {
 
 interface CardDetailModalProps {
   cardId: string | null;
+  boardId?: string;
+  realtimeUpdatedCardId?: { id: string; timestamp: number } | null;
   isOpen: boolean;
   onClose: () => void;
   onCardUpdated: () => void;
@@ -240,6 +246,8 @@ function removeVietnameseTones(str: string): string {
 
 export default function CardDetailModal({
   cardId,
+  boardId,
+  realtimeUpdatedCardId,
   isOpen,
   onClose,
   onCardUpdated,
@@ -368,6 +376,86 @@ export default function CardDetailModal({
   const [isUpdatingComment, setIsUpdatingComment] = useState(false);
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
 
+  // --- AI TASK BREAKDOWN STATE ---
+  const [isAiBreakdownOpen, setIsAiBreakdownOpen] = useState(false);
+  const [aiCustomPrompt, setAiCustomPrompt] = useState('');
+  const [isLoadingAiBreakdown, setIsLoadingAiBreakdown] = useState(false);
+  const [isApplyingAiBreakdown, setIsApplyingAiBreakdown] = useState(false);
+  const [aiBreakdownResult, setAiBreakdownResult] = useState<{
+    summary?: string;
+    estimatedHours?: number;
+    checklistTitle?: string;
+    items?: Array<{
+      content: string;
+      estimatedMinutes?: number;
+      priority?: string;
+      selected?: boolean;
+    }>;
+  } | null>(null);
+  const [aiBreakdownError, setAiBreakdownError] = useState<string | null>(null);
+
+  const handleRequestAiBreakdown = async () => {
+    if (!activeCardId) return;
+    try {
+      setIsLoadingAiBreakdown(true);
+      setAiBreakdownError(null);
+      const res = await apiClient<any>(`/ai/cards/${activeCardId}/breakdown`, {
+        method: 'POST',
+        data: { customPrompt: aiCustomPrompt.trim() || undefined },
+      });
+      if (res.success && res.data) {
+        setAiBreakdownResult({
+          ...res.data,
+          items: (res.data.items || []).map((it: any) => ({ ...it, selected: true })),
+        });
+      } else {
+        setAiBreakdownError(res.error || res.message || 'Không thể phân rã công việc');
+      }
+    } catch (err: any) {
+      setAiBreakdownError(err.message || 'Lỗi kết nối khi gọi AI phân rã');
+    } finally {
+      setIsLoadingAiBreakdown(false);
+    }
+  };
+
+  const handleApplyAiBreakdown = async () => {
+    if (!activeCardId || !aiBreakdownResult) return;
+    const selectedItems = (aiBreakdownResult.items || []).filter((i) => i.selected);
+    if (selectedItems.length === 0) {
+      alert('Vui lòng chọn ít nhất 1 đầu việc để áp dụng');
+      return;
+    }
+
+    try {
+      setIsApplyingAiBreakdown(true);
+      const res = await apiClient<any>(`/ai/cards/${activeCardId}/apply-breakdown`, {
+        method: 'POST',
+        data: {
+          title: aiBreakdownResult.checklistTitle || 'AI Checklist: Kế hoạch triển khai',
+          items: selectedItems.map((i) => ({
+            content: i.content,
+            estimatedMinutes: i.estimatedMinutes,
+            priority: i.priority,
+          })),
+        },
+      });
+
+      if (res.success && res.data) {
+        setChecklists((prev) => [...prev, res.data]);
+        setIsAiBreakdownOpen(false);
+        setAiBreakdownResult(null);
+        setAiCustomPrompt('');
+        onCardUpdated();
+      } else {
+        alert(res.error || res.message || 'Không thể áp dụng checklist');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Lỗi khi áp dụng checklist');
+    } finally {
+      setIsApplyingAiBreakdown(false);
+    }
+  };
+
   // Mention Autocomplete State (for new comment composer)
   const [mentionQuery, setMentionQuery] = useState('');
   const [isMentionOpen, setIsMentionOpen] = useState(false);
@@ -418,9 +506,9 @@ export default function CardDetailModal({
   const [isLoadingActivities, setIsLoadingActivities] = useState(false);
   const [activityTab, setActivityTab] = useState<'comments' | 'activities'>('comments');
 
-  const fetchCardActivities = async (cId: string) => {
+  const fetchCardActivities = async (cId: string, silent = false) => {
     try {
-      setIsLoadingActivities(true);
+      if (!silent) setIsLoadingActivities(true);
       const res = await apiClient<ActivityItem[]>(`/cards/${cId}/activities`);
       if (res.success && Array.isArray(res.data)) {
         setActivities(res.data);
@@ -428,13 +516,13 @@ export default function CardDetailModal({
     } catch {
       // ignore
     } finally {
-      setIsLoadingActivities(false);
+      if (!silent) setIsLoadingActivities(false);
     }
   };
 
-  const fetchCardRelations = async (cId: string) => {
+  const fetchCardRelations = async (cId: string, silent = false) => {
     try {
-      setIsLoadingRelations(true);
+      if (!silent) setIsLoadingRelations(true);
       const res = await apiClient<CardRelationItem[]>(`/cards/${cId}/relations`);
       if (res.success && Array.isArray(res.data)) {
         setRelations(res.data);
@@ -442,7 +530,7 @@ export default function CardDetailModal({
     } catch {
       // ignore
     } finally {
-      setIsLoadingRelations(false);
+      if (!silent) setIsLoadingRelations(false);
     }
   };
 
@@ -554,15 +642,28 @@ export default function CardDetailModal({
     }
   };
 
-  const fetchCardDetails = async (id: string) => {
+  const fetchCardDetails = async (id: string, silent = false) => {
     try {
-      setIsLoading(true);
+      if (!silent) setIsLoading(true);
       const res = await apiClient<any>(`/cards/${id}`);
       if (res.success && res.data) {
         const c = res.data;
         setCard(c);
-        setTitle(c.title || '');
-        setDescription(c.description || '');
+        if (!silent) {
+          setTitle(c.title || '');
+          setDescription(c.description || '');
+        } else {
+          // In silent background updates, don't clobber active input elements
+          const activeEl = typeof document !== 'undefined' ? document.activeElement : null;
+          const isEditingTitle = activeEl?.getAttribute('placeholder') === 'Tiêu đề thẻ...';
+          const isEditingDesc = activeEl?.getAttribute('placeholder') === 'Thêm mô tả chi tiết hơn...';
+          if (!isEditingTitle) {
+            setTitle(c.title || '');
+          }
+          if (!isEditingDesc) {
+            setDescription(c.description || '');
+          }
+        }
         const sDate = toLocalDatetimeString(c.start_date);
         const dDate = toLocalDatetimeString(c.due_date);
         setStartDate(sDate);
@@ -585,16 +686,16 @@ export default function CardDetailModal({
         setComments(c.comments || []);
         setAttachments(c.attachments || []);
 
-        const boardId = c.list?.board_id;
-        if (boardId) {
-          fetchBoardMembers(boardId);
-          fetchBoardLabels(boardId);
+        const effectiveBoardId = c.list?.board_id || boardId;
+        if (effectiveBoardId) {
+          fetchBoardMembers(effectiveBoardId);
+          fetchBoardLabels(effectiveBoardId);
         }
       }
     } catch {
       // Failed to load card
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -646,6 +747,45 @@ export default function CardDetailModal({
       setIsRelationsModalOpen(false);
     }
   }, [isOpen, cardId, activeCardId]);
+
+  // Realtime card sync when updated by another member (via page.tsx)
+  useEffect(() => {
+    const currentId = activeCardId || cardId;
+    if (!isOpen || !currentId) return;
+
+    if (realtimeUpdatedCardId && realtimeUpdatedCardId.id === currentId) {
+      fetchCardDetails(currentId, true);
+      fetchCardActivities(currentId, true);
+      fetchCardRelations(currentId, true);
+    }
+  }, [realtimeUpdatedCardId, isOpen, activeCardId, cardId]);
+
+  // Direct channel realtime subscription fallback
+  useEffect(() => {
+    const currentId = activeCardId || cardId;
+    const effectiveBoardId = boardId || card?.list?.board_id;
+    if (!isOpen || !currentId || !effectiveBoardId) return;
+
+    const channelName = `card-modal-sub:${effectiveBoardId}:${currentId}`;
+    const channel = supabase.channel(channelName, {
+      config: { broadcast: { self: false } },
+    });
+
+    channel
+      .on('broadcast', { event: 'CARD_UPDATED' }, ({ payload }) => {
+        if (payload?.senderId && currentUser?.id && payload.senderId === currentUser.id) return;
+        if (payload?.cardId === currentId) {
+          fetchCardDetails(currentId, true);
+          fetchCardActivities(currentId, true);
+          fetchCardRelations(currentId, true);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isOpen, activeCardId, cardId, boardId, card?.list?.board_id, currentUser?.id]);
 
   useEffect(() => {
     if (activeNewItemChecklistId) {
@@ -1964,6 +2104,20 @@ export default function CardDetailModal({
                 >
                   <CheckSquare className="w-3.5 h-3.5 text-[#2b1572]/70" />
                   <span>Checklist</span>
+                </button>
+
+                {/* AI Task Breakdown Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAiBreakdownOpen(true);
+                    setAiBreakdownError(null);
+                  }}
+                  className="px-2.5 py-1.5 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer group"
+                  title="Phân rã công việc tự động bằng Google Gemini AI"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-purple-600 animate-pulse group-hover:scale-110 transition-transform" />
+                  <span className="font-bold">AI Phân rã</span>
                 </button>
 
                 <button
@@ -3575,6 +3729,265 @@ export default function CardDetailModal({
             {isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
           </button>
         </div>
+
+        {/* AI TASK BREAKDOWN MODAL */}
+        {isAiBreakdownOpen && (
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-60 animate-in fade-in duration-150">
+            <div className="bg-white rounded-3xl shadow-2xl border border-purple-200/80 w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
+              {/* Header */}
+              <div className="p-4 sm:p-5 border-b border-purple-100 flex items-center justify-between bg-gradient-to-r from-purple-50 via-indigo-50/50 to-white">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 text-white flex items-center justify-center shadow-sm">
+                    <Sparkles className="w-5 h-5 animate-pulse" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-bold text-[#2b1572] flex items-center gap-1.5">
+                      <span>AI Phân Rã Công Việc</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-semibold">Gemini 2.5</span>
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      Tự động phân tích và chia nhỏ công việc thành checklist chi tiết
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsAiBreakdownOpen(false)}
+                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Content Body */}
+              <div className="p-5 overflow-y-auto space-y-4 flex-1">
+                {/* Target Card Info */}
+                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs">
+                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    Thẻ đang phân rã:
+                  </div>
+                  <div className="font-bold text-[#2b1572] text-sm">{title || card?.title}</div>
+                  {description && (
+                    <div className="text-slate-500 line-clamp-2 mt-1 text-[11px]">
+                      {description}
+                    </div>
+                  )}
+                </div>
+
+                {/* Prompt instructions input */}
+                {!aiBreakdownResult && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                      <span>Gợi ý thêm cho AI (Tùy chọn):</span>
+                      <span className="text-[10px] font-normal text-slate-400">Enter để gửi</span>
+                    </label>
+                    <textarea
+                      value={aiCustomPrompt}
+                      onChange={(e) => setAiCustomPrompt(e.target.value)}
+                      placeholder="Ví dụ: Chia thành 4 bước: Thiết kế DB, Viết API NestJS, Làm UI React, và Viết Unit Test..."
+                      rows={2}
+                      className="w-full text-xs text-[#2b1572] bg-white border border-slate-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 rounded-xl p-3 focus:outline-none transition-all shadow-2xs resize-none"
+                    />
+
+                    {aiBreakdownError && (
+                      <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                        <div>{aiBreakdownError}</div>
+                      </div>
+                    )}
+
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={handleRequestAiBreakdown}
+                        disabled={isLoadingAiBreakdown}
+                        className="w-full py-2.5 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        {isLoadingAiBreakdown ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                            <span>Gemini đang phân tích và bẻ nhỏ công việc...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-4 h-4" />
+                            <span>Bắt đầu phân rã với AI</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* AI Breakdown Result View */}
+                {aiBreakdownResult && (
+                  <div className="space-y-4 animate-in fade-in duration-200">
+                    {/* Summary Card */}
+                    <div className="p-3.5 rounded-2xl bg-purple-50/70 border border-purple-200/80 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-purple-900 flex items-center gap-1.5">
+                          <Wand2 className="w-3.5 h-3.5 text-purple-600" />
+                          <span>Mục tiêu & Hướng tiếp cận:</span>
+                        </span>
+                        {aiBreakdownResult.estimatedHours && (
+                          <span className="px-2 py-0.5 rounded-full bg-purple-200/80 text-purple-900 font-bold text-[11px]">
+                            ⏱️ ~{aiBreakdownResult.estimatedHours} giờ
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-purple-950 leading-relaxed">
+                        {aiBreakdownResult.summary}
+                      </p>
+                    </div>
+
+                    {/* Checklist title edit */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        Tên danh sách công việc:
+                      </label>
+                      <input
+                        type="text"
+                        value={aiBreakdownResult.checklistTitle || ''}
+                        onChange={(e) =>
+                          setAiBreakdownResult({
+                            ...aiBreakdownResult,
+                            checklistTitle: e.target.value,
+                          })
+                        }
+                        className="w-full text-xs font-bold text-[#2b1572] bg-white border border-slate-200 focus:border-purple-500 rounded-xl px-3 py-2 focus:outline-none"
+                      />
+                    </div>
+
+                    {/* Checklist items with selection */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                        <span>Danh sách đầu việc đề xuất ({aiBreakdownResult.items?.length || 0}):</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const allSelected = aiBreakdownResult.items?.every((i) => i.selected);
+                            setAiBreakdownResult({
+                              ...aiBreakdownResult,
+                              items: aiBreakdownResult.items?.map((i) => ({ ...i, selected: !allSelected })),
+                            });
+                          }}
+                          className="text-[11px] text-purple-600 hover:underline cursor-pointer"
+                        >
+                          {aiBreakdownResult.items?.every((i) => i.selected) ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                        </button>
+                      </div>
+
+                      <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+                        {aiBreakdownResult.items?.map((item, idx) => (
+                          <div
+                            key={idx}
+                            onClick={() => {
+                              const newItems = [...(aiBreakdownResult.items || [])];
+                              newItems[idx].selected = !newItems[idx].selected;
+                              setAiBreakdownResult({ ...aiBreakdownResult, items: newItems });
+                            }}
+                            className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 transition-all cursor-pointer ${
+                              item.selected
+                                ? 'bg-white border-purple-300 shadow-2xs'
+                                : 'bg-slate-50 border-slate-200/70 opacity-60'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                              <input
+                                type="checkbox"
+                                checked={!!item.selected}
+                                onChange={() => {}}
+                                className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer"
+                              />
+                              <span className="text-xs font-medium text-slate-800 break-words">
+                                {item.content}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {item.estimatedMinutes && (
+                                <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                                  {item.estimatedMinutes}m
+                                </span>
+                              )}
+                              {item.priority && (
+                                <span
+                                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase ${
+                                    item.priority === 'HIGH'
+                                      ? 'bg-rose-100 text-rose-700'
+                                      : item.priority === 'MEDIUM'
+                                      ? 'bg-amber-100 text-amber-700'
+                                      : 'bg-slate-100 text-slate-600'
+                                  }`}
+                                >
+                                  {item.priority}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                {aiBreakdownResult ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setAiBreakdownResult(null)}
+                      className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                    >
+                      ← Phân rã lại
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsAiBreakdownOpen(false)}
+                        className="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleApplyAiBreakdown}
+                        disabled={isApplyingAiBreakdown}
+                        className="px-4 py-2 bg-[#2b1572] hover:bg-[#1e0f52] text-white rounded-xl text-xs font-bold transition-all shadow-xs disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                      >
+                        {isApplyingAiBreakdown ? (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            <span>Đang lưu...</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckSquare className="w-3.5 h-3.5" />
+                            <span>
+                              Áp dụng vào thẻ ({aiBreakdownResult.items?.filter((i) => i.selected).length || 0})
+                            </span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="ml-auto">
+                    <button
+                      type="button"
+                      onClick={() => setIsAiBreakdownOpen(false)}
+                      className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                    >
+                      Đóng
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* MEMBERS ASSIGNMENT POPOVER / MODAL */}
         {isMembersModalOpen && (

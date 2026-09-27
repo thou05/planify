@@ -831,6 +831,13 @@ export class CardsService {
         });
       }
 
+      if (boardId) {
+        this.supabase.emitBoardEvent(boardId, 'CARD_UPDATED', {
+          cardId,
+          senderId: userId,
+        });
+      }
+
       return { assigned: false, board_member_id: effectiveBoardMemberId };
     } else {
       const { data: newAssignee, error } = await this.supabase
@@ -874,6 +881,13 @@ export class CardsService {
           message: `Bạn đã được phân công vào thẻ "${cardTitle}"||/boards/${boardId}?cardId=${cardId}`,
           type: 'ASSIGN',
         }).catch(() => {});
+      }
+
+      if (boardId) {
+        this.supabase.emitBoardEvent(boardId, 'CARD_UPDATED', {
+          cardId,
+          senderId: userId,
+        });
       }
 
       return { assigned: true, assignee: newAssignee };

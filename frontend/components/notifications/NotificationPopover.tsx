@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
+import { useAuth } from '@/lib/auth-context';
+import { supabase } from '@/lib/supabase';
 import {
   Bell,
   Check,
@@ -62,6 +64,7 @@ export default function NotificationPopover({
   onUnreadCountChange,
 }: NotificationPopoverProps) {
   const router = useRouter();
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -96,6 +99,51 @@ export default function NotificationPopover({
       fetchNotifications();
     }
   }, [isOpen]);
+
+  // Realtime notification sync inside popover
+  useEffect(() => {
+    if (!isOpen || !user?.id) return;
+
+    const channel = supabase.channel(`popover-notifications:${user.id}`, {
+      config: { broadcast: { self: false } },
+    });
+
+    channel
+      .on('broadcast', { event: 'NOTIFICATION_RECEIVED' }, ({ payload }) => {
+        if (payload?.notification) {
+          setNotifications((prev) => [payload.notification, ...prev]);
+          setUnreadCount((prev) => {
+            const newCount = prev + 1;
+            onUnreadCountChange?.(newCount);
+            return newCount;
+          });
+        }
+      })
+      .on('broadcast', { event: 'NOTIFICATION_UPDATED' }, ({ payload }) => {
+        if (payload?.notificationId) {
+          setNotifications((prev) =>
+            prev.map((n) =>
+              n.id === payload.notificationId ? { ...n, is_read: !!payload.isRead } : n
+            )
+          );
+        }
+      })
+      .on('broadcast', { event: 'NOTIFICATION_DELETED' }, ({ payload }) => {
+        if (payload?.notificationId) {
+          setNotifications((prev) => prev.filter((n) => n.id !== payload.notificationId));
+        }
+      })
+      .on('broadcast', { event: 'ALL_NOTIFICATIONS_READ' }, () => {
+        setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+        setUnreadCount(0);
+        onUnreadCountChange?.(0);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isOpen, user?.id]);
 
   // Đóng popover khi bấm ra ngoài hoặc nhấn phím ESC
   useEffect(() => {

@@ -213,7 +213,7 @@ export class CardRelationsService {
     }
 
     // Xác thực quyền truy cập cả 2 thẻ
-    const { card: sourceCard, workspaceId } = await this.verifyCardAccess(cardId, userId);
+    const { card: sourceCard, boardId, workspaceId } = await this.verifyCardAccess(cardId, userId);
     const { card: targetCard } = await this.verifyCardAccess(dto.relatedCardId, userId);
 
     // Kiểm tra xem quan hệ đã tồn tại chưa
@@ -356,6 +356,17 @@ export class CardRelationsService {
       });
     }
 
+    if (boardId) {
+      this.supabase.emitBoardEvent(boardId, 'CARD_UPDATED', {
+        cardId,
+        senderId: userId,
+      });
+      this.supabase.emitBoardEvent(boardId, 'CARD_UPDATED', {
+        cardId: dto.relatedCardId,
+        senderId: userId,
+      });
+    }
+
     return relation;
   }
 
@@ -363,7 +374,7 @@ export class CardRelationsService {
    * Xóa một mối quan hệ thẻ và quan hệ đối ứng
    */
   async deleteCardRelation(cardId: string, relationId: string, userId: string) {
-    const { card, workspaceId } = await this.verifyCardAccess(cardId, userId);
+    const { card, boardId, workspaceId } = await this.verifyCardAccess(cardId, userId);
 
     // Lấy thông tin quan hệ cần xóa
     const { data: relation, error } = await this.supabase
@@ -410,6 +421,19 @@ export class CardRelationsService {
         action: 'đã gỡ bỏ một mối quan hệ thẻ',
         targetType: `card:${cardId}`,
       });
+    }
+
+    if (boardId) {
+      this.supabase.emitBoardEvent(boardId, 'CARD_UPDATED', {
+        cardId,
+        senderId: userId,
+      });
+      if (relation.related_card_id) {
+        this.supabase.emitBoardEvent(boardId, 'CARD_UPDATED', {
+          cardId: relation.related_card_id,
+          senderId: userId,
+        });
+      }
     }
 
     return { success: true, message: 'Đã xóa mối quan hệ thành công' };

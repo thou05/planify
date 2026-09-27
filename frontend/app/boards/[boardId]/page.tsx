@@ -41,8 +41,18 @@ import {
   Paperclip,
   MessageSquare,
   ExternalLink,
+  Sparkles,
+  Wand2,
+  FileText,
+  Check,
+  Bot,
+  AlertCircle,
+  ShieldAlert,
 } from 'lucide-react';
 import { ActivityItem } from '@/components/modals/MyActivityModal';
+import { BoardRiskScannerModal } from '@/components/board/BoardRiskScannerModal';
+import { BoardCopilotDrawer } from '@/components/board/BoardCopilotDrawer';
+import { MarkdownRenderer, formatReportForZalo } from '@/components/board/MarkdownRenderer';
 
 function applyCardMove(
   prevBoard: any,
@@ -122,12 +132,62 @@ export default function BoardDetailPage({
   const [isBoardMenuOpen, setIsBoardMenuOpen] = useState(false);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [isCardDetailOpen, setIsCardDetailOpen] = useState(false);
+  const [realtimeUpdatedCardId, setRealtimeUpdatedCardId] = useState<{ id: string; timestamp: number } | null>(null);
 
   // Board Activity Drawer State
   const [isBoardActivityOpen, setIsBoardActivityOpen] = useState(false);
   const [boardActivities, setBoardActivities] = useState<ActivityItem[]>([]);
   const [isLoadingBoardActivities, setIsLoadingBoardActivities] = useState(false);
   const [boardActivityFilter, setBoardActivityFilter] = useState<'all' | 'board' | 'card'>('all');
+
+  // AI Features State
+  const [isAiStandupOpen, setIsAiStandupOpen] = useState(false);
+  const [isRiskScannerOpen, setIsRiskScannerOpen] = useState(false);
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
+  const [isLoadingAiStandup, setIsLoadingAiStandup] = useState(false);
+  const [aiStandupData, setAiStandupData] = useState<{
+    boardName?: string;
+    totalCards?: number;
+    completedCards?: number;
+    reportMarkdown?: string;
+    generatedAt?: string;
+  } | null>(null);
+  const [aiStandupError, setAiStandupError] = useState<string | null>(null);
+  const [copyMode, setCopyMode] = useState<'zalo' | 'markdown' | null>(null);
+
+  const handleGenerateDailyStandup = async () => {
+    try {
+      setIsLoadingAiStandup(true);
+      setAiStandupError(null);
+      const res = await apiClient<any>(`/ai/boards/${boardId}/daily-standup`, {
+        method: 'POST',
+      });
+      if (res.success && res.data) {
+        setAiStandupData(res.data);
+      } else {
+        setAiStandupError(res.error || res.message || 'Không thể tạo báo cáo Standup với AI');
+      }
+    } catch (err: any) {
+      setAiStandupError(err.message || 'Lỗi khi kết nối với AI');
+    } finally {
+      setIsLoadingAiStandup(false);
+    }
+  };
+
+  const handleCopyZalo = () => {
+    if (!aiStandupData?.reportMarkdown) return;
+    const cleanText = formatReportForZalo(aiStandupData.reportMarkdown);
+    navigator.clipboard.writeText(cleanText);
+    setCopyMode('zalo');
+    setTimeout(() => setCopyMode(null), 2500);
+  };
+
+  const handleCopyMarkdown = () => {
+    if (!aiStandupData?.reportMarkdown) return;
+    navigator.clipboard.writeText(aiStandupData.reportMarkdown);
+    setCopyMode('markdown');
+    setTimeout(() => setCopyMode(null), 2500);
+  };
 
   const fetchBoardActivities = async () => {
     try {
@@ -277,6 +337,7 @@ export default function BoardDetailPage({
       .on('broadcast', { event: 'CARD_UPDATED' }, ({ payload }) => {
         if (payload?.senderId && user?.id && payload.senderId === user.id) return;
         if (payload?.cardId) {
+          setRealtimeUpdatedCardId({ id: payload.cardId, timestamp: Date.now() });
           setBoard((prev: any) => {
             if (!prev?.lists) return prev;
             return {
@@ -922,6 +983,41 @@ export default function BoardDetailPage({
               <span className="hidden sm:inline">Chia sẻ</span>
             </button>
 
+            {/* AI Daily Standup & Summary Button */}
+            <button
+              onClick={() => {
+                setIsAiStandupOpen(true);
+                if (!aiStandupData) {
+                  handleGenerateDailyStandup();
+                }
+              }}
+              className="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs transition-all hover:shadow-md"
+              title="Tạo báo cáo Daily Standup và Đánh giá tiến độ bằng AI"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">AI Standup</span>
+            </button>
+
+            {/* AI Risk & Bottleneck Scanner Button */}
+            <button
+              onClick={() => setIsRiskScannerOpen(true)}
+              className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-600 hover:to-rose-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs transition-all hover:shadow-md"
+              title="Dùng AI quét điểm nghẽn và rủi ro quá hạn"
+            >
+              <ShieldAlert className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">AI Quét rủi ro</span>
+            </button>
+
+            {/* AI Board Copilot Button */}
+            <button
+              onClick={() => setIsCopilotOpen(true)}
+              className="px-3 py-1.5 bg-[#2b1572] hover:bg-[#1e1050] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs transition-all hover:shadow-md border border-white/20"
+              title="Trợ lý AI Copilot hỏi đáp về bảng"
+            >
+              <Bot className="w-3.5 h-3.5 text-[#a6d1fd]" />
+              <span className="hidden md:inline">AI Copilot</span>
+            </button>
+
             {/* Board Activity Button */}
             <button
               onClick={() => {
@@ -932,7 +1028,7 @@ export default function BoardDetailPage({
               title="Xem lịch sử hoạt động của bảng"
             >
               <History className="w-3.5 h-3.5 text-[#2b1572]" />
-              <span className="hidden sm:inline">Hoạt động</span>
+              <span className="hidden lg:inline">Hoạt động</span>
             </button>
 
             {/* Board Settings & Options Dropdown Menu */}
@@ -947,6 +1043,40 @@ export default function BoardDetailPage({
 
               {isBoardMenuOpen && (
                 <div className="absolute right-0 top-full mt-2 w-56 p-1.5 glass-strong z-50 shadow-xl border border-white/70 space-y-1 text-xs select-none">
+                  <button
+                    onClick={() => {
+                      setIsBoardMenuOpen(false);
+                      setIsCopilotOpen(true);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-white/60 flex items-center gap-2 cursor-pointer transition-colors"
+                  >
+                    <Bot className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>AI Copilot (Hỏi đáp)</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsBoardMenuOpen(false);
+                      setIsRiskScannerOpen(true);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-white/60 flex items-center gap-2 cursor-pointer transition-colors"
+                  >
+                    <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
+                    <span>AI Quét rủi ro & Điểm nghẽn</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsBoardMenuOpen(false);
+                      setIsAiStandupOpen(true);
+                      if (!aiStandupData) handleGenerateDailyStandup();
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-white/60 flex items-center gap-2 cursor-pointer transition-colors"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                    <span>AI Daily Standup</span>
+                  </button>
+
                   <button
                     onClick={() => {
                       setIsBoardMenuOpen(false);
@@ -1179,6 +1309,8 @@ export default function BoardDetailPage({
       {/* 2. Card Detail Modal */}
       <CardDetailModal
         cardId={selectedCardId}
+        boardId={boardId}
+        realtimeUpdatedCardId={realtimeUpdatedCardId}
         isOpen={isCardDetailOpen}
         onClose={handleCloseCardDetail}
         onCardUpdated={() => fetchBoard()}
@@ -1231,6 +1363,186 @@ export default function BoardDetailPage({
         onClose={() => setCopyingCard(null)}
         onCopied={() => fetchBoard()}
       />
+
+      {/* AI DAILY STANDUP & SUMMARY MODAL */}
+      {isAiStandupOpen && (
+        <div className="fixed inset-0 z-60 overflow-hidden flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+            onClick={() => setIsAiStandupOpen(false)}
+          />
+
+          <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-purple-200/80 overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[88vh]">
+            {/* Header */}
+            <div className="p-5 border-b border-purple-100 flex items-center justify-between bg-gradient-to-r from-purple-50 via-indigo-50/60 to-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shadow-md">
+                  <Sparkles className="w-5 h-5 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#2b1572] flex items-center gap-2">
+                    <span>AI Daily Standup & Báo Cáo Tiến Độ</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-bold">Gemini 3.6 Flash</span>
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Bảng: <strong className="text-purple-900">{board?.name}</strong> • Tổng hợp từ trạng thái thẻ & lịch sử hoạt động
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setIsAiStandupOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Metrics Ribbon */}
+            {aiStandupData && (
+              <div className="px-5 py-2.5 bg-slate-50/80 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-slate-400">Tổng số thẻ:</span>
+                    <span className="font-bold text-[#2b1572] bg-white px-2 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
+                      {aiStandupData.totalCards ?? 0}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-slate-400">Đã hoàn thành:</span>
+                    <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+                      {aiStandupData.completedCards ?? 0}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>Tạo lúc: {aiStandupData.generatedAt ? new Date(aiStandupData.generatedAt).toLocaleTimeString('vi-VN') : 'Vừa xong'}</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleGenerateDailyStandup}
+                  disabled={isLoadingAiStandup}
+                  className="text-xs font-semibold text-purple-700 hover:text-purple-900 hover:bg-purple-100/60 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
+                  title="Tạo lại báo cáo mới nhất"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingAiStandup ? 'animate-spin' : ''}`} />
+                  <span>Cập nhật</span>
+                </button>
+              </div>
+            )}
+
+            {/* Content Body */}
+            <div className="p-6 overflow-y-auto space-y-4 flex-1">
+              {isLoadingAiStandup ? (
+                <div className="py-16 flex flex-col items-center justify-center text-center space-y-4">
+                  <div className="relative">
+                    <div className="w-14 h-14 rounded-3xl bg-gradient-to-tr from-purple-500 to-indigo-600 text-white flex items-center justify-center shadow-xl animate-bounce">
+                      <Sparkles className="w-7 h-7" />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-bold text-[#2b1572]">Gemini đang phân tích dữ liệu Bảng...</h4>
+                    <p className="text-xs text-slate-400 max-w-sm">
+                      Đang đọc danh sách thẻ, tiến độ hoàn thành và lịch sử 25 hoạt động gần đây nhất để tạo báo cáo Daily Standup.
+                    </p>
+                  </div>
+                </div>
+              ) : aiStandupError ? (
+                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs space-y-2">
+                  <div className="flex items-center gap-2 font-bold">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>Không thể tạo báo cáo AI</span>
+                  </div>
+                  <p className="leading-relaxed">{aiStandupError}</p>
+                  <button
+                    onClick={handleGenerateDailyStandup}
+                    className="px-3 py-1.5 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700 transition-colors cursor-pointer"
+                  >
+                    Thử lại
+                  </button>
+                </div>
+              ) : aiStandupData?.reportMarkdown ? (
+                <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-2xs">
+                  <MarkdownRenderer content={aiStandupData.reportMarkdown} />
+                </div>
+              ) : (
+                <div className="py-12 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-3">
+                  <FileText className="w-10 h-10 text-slate-300" />
+                  <p>Bấm nút bên dưới để tạo báo cáo Daily Standup tự động bằng AI.</p>
+                  <button
+                    onClick={handleGenerateDailyStandup}
+                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl shadow-sm hover:shadow transition-all cursor-pointer"
+                  >
+                    Tạo báo cáo ngay
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2.5">
+              {aiStandupData?.reportMarkdown ? (
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Button 1: Copy for Zalo (Clean, formatted memo) */}
+                  <button
+                    onClick={handleCopyZalo}
+                    className={`px-3.5 py-2 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+                      copyMode === 'zalo'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white hover:shadow-md'
+                    }`}
+                    title="Sao chép báo cáo sạch đẹp (đã loại bỏ ký tự ## và **), phù hợp dán vào Zalo / Teams / Messenger"
+                  >
+                    {copyMode === 'zalo' ? (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Đã sao chép cho Zalo / Tin nhắn!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Sao chép gửi Zalo / Tin nhắn</span>
+                      </>
+                    )}
+                  </button>
+
+                  {/* Button 2: Copy Markdown (Slack / Notion) */}
+                  <button
+                    onClick={handleCopyMarkdown}
+                    className={`px-3 py-2 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer border ${
+                      copyMode === 'markdown'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                    title="Sao chép định dạng Markdown gốc cho Slack, Notion hoặc Discord"
+                  >
+                    {copyMode === 'markdown' ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Đã sao chép Markdown!</span>
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Sao chép Markdown (Slack)</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              ) : <div />}
+
+              <button
+                onClick={() => setIsAiStandupOpen(false)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 8. Board Activity Slide-Over Drawer */}
       {isBoardActivityOpen && (
@@ -1428,6 +1740,40 @@ export default function BoardDetailPage({
           </div>
         </div>
       )}
+
+      {/* Floating AI Copilot Trigger */}
+      <button
+        onClick={() => setIsCopilotOpen(true)}
+        className="fixed bottom-6 right-6 z-40 px-4 py-2.5 rounded-full bg-gradient-to-r from-[#2b1572] via-purple-700 to-indigo-600 text-white shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer border-2 border-white/40 group backdrop-blur-md"
+        title="Mở Trợ lý AI Copilot"
+      >
+        <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+        <span className="text-xs font-bold tracking-wide">AI Copilot</span>
+      </button>
+
+      {/* AI Risk Scanner Modal */}
+      <BoardRiskScannerModal
+        isOpen={isRiskScannerOpen}
+        onClose={() => setIsRiskScannerOpen(false)}
+        boardId={boardId}
+        boardTitle={board?.name}
+        onOpenCard={(cardId) => {
+          setSelectedCardId(cardId);
+          setIsCardDetailOpen(true);
+        }}
+      />
+
+      {/* AI Board Copilot Drawer */}
+      <BoardCopilotDrawer
+        isOpen={isCopilotOpen}
+        onClose={() => setIsCopilotOpen(false)}
+        boardId={boardId}
+        boardTitle={board?.name}
+        onOpenCard={(cardId) => {
+          setSelectedCardId(cardId);
+          setIsCardDetailOpen(true);
+        }}
+      />
 
     </AppShell>
   );
