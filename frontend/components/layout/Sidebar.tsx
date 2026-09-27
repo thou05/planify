@@ -14,6 +14,7 @@ import {
   Layers,
   Sparkles,
   History,
+  LayoutTemplate,
 } from 'lucide-react';
 import MyActivityModal from '@/components/modals/MyActivityModal';
 
@@ -135,6 +136,18 @@ export default function Sidebar({
               <span>Thành viên & Cài đặt</span>
             </Link>
           )}
+
+          <Link
+            href="/templates"
+            className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${
+              pathname.startsWith('/templates')
+                ? 'bg-[#a6d1fd]/40 text-[#2b1572] shadow-sm border border-white/40'
+                : 'text-[#2b1572]/70 hover:bg-white/40 hover:text-[#2b1572]'
+            }`}
+          >
+            <LayoutTemplate className="w-4 h-4" />
+            <span>Thư viện Mẫu</span>
+          </Link>
 
           <button
             onClick={() => setIsMyActivityOpen(true)}

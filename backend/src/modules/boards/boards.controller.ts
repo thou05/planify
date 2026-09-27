@@ -15,8 +15,10 @@ import { UpdateBoardDto } from './dto/update-board.dto';
 import { CopyBoardDto } from './dto/copy-board.dto';
 import { AddBoardMemberDto } from './dto/add-board-member.dto';
 import { UpdateBoardMemberRoleDto } from './dto/update-board-member-role.dto';
+import { InviteBoardMemberDto } from './dto/invite-board-member.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 
 @ApiTags('Boards')
 @Controller()
@@ -25,6 +27,36 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 export class BoardsController {
   constructor(private readonly boardsService: BoardsService) {}
 
+  // --- PUBLIC/TOKEN BOARD INVITE ROUTES (đặt trước :id để không bị override) ---
+  @Get('boards/invites/:token')
+  @Public()
+  @ApiOperation({ summary: 'Xem trước thông tin lời mời tham gia Board qua Token' })
+  @ApiResponse({ status: 200, description: 'Thông tin lời mời Board' })
+  async getBoardInviteByToken(@Param('token') token: string) {
+    return this.boardsService.getBoardInviteByToken(token);
+  }
+
+  @Post('boards/invites/:token/accept')
+  @ApiOperation({ summary: 'Chấp nhận lời mời tham gia Board' })
+  @ApiResponse({ status: 200, description: 'Gia nhập Board thành công' })
+  async acceptBoardInvite(
+    @Param('token') token: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.boardsService.acceptBoardInvite(token, userId);
+  }
+
+  @Post('boards/invites/:token/reject')
+  @ApiOperation({ summary: 'Từ chối lời mời tham gia Board' })
+  @ApiResponse({ status: 200, description: 'Từ chối thành công' })
+  async rejectBoardInvite(
+    @Param('token') token: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.boardsService.rejectBoardInvite(token, userId);
+  }
+
+  // --- WORKSPACE BOARDS ---
   @Post('workspaces/:workspaceId/boards')
   @ApiOperation({ summary: 'Tạo Board mới trong Workspace' })
   @ApiResponse({ status: 201, description: 'Tạo Board thành công' })
@@ -181,5 +213,38 @@ export class BoardsController {
     @CurrentUser('id') userId: string,
   ) {
     return this.boardsService.leaveBoard(id, userId);
+  }
+
+  // --- BOARD INVITATIONS ---
+  @Post('boards/:id/invites')
+  @ApiOperation({ summary: 'Mời thành viên vào Board qua email / tạo liên kết mời' })
+  @ApiResponse({ status: 201, description: 'Tạo lời mời thành công' })
+  async inviteMember(
+    @Param('id') boardId: string,
+    @CurrentUser('id') currentUserId: string,
+    @Body() dto: InviteBoardMemberDto,
+  ) {
+    return this.boardsService.inviteMember(boardId, currentUserId, dto);
+  }
+
+  @Get('boards/:id/invites')
+  @ApiOperation({ summary: 'Danh sách các lời mời đang chờ của Board' })
+  @ApiResponse({ status: 200, description: 'Danh sách lời mời Board' })
+  async getPendingBoardInvites(
+    @Param('id') boardId: string,
+    @CurrentUser('id') currentUserId: string,
+  ) {
+    return this.boardsService.getPendingBoardInvites(boardId, currentUserId);
+  }
+
+  @Delete('boards/:id/invites/:inviteId')
+  @ApiOperation({ summary: 'Thu hồi lời mời tham gia Board' })
+  @ApiResponse({ status: 200, description: 'Thu hồi thành công' })
+  async revokeBoardInvite(
+    @Param('id') boardId: string,
+    @Param('inviteId') inviteId: string,
+    @CurrentUser('id') currentUserId: string,
+  ) {
+    return this.boardsService.revokeBoardInvite(boardId, currentUserId, inviteId);
   }
 }

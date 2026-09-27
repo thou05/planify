@@ -8,6 +8,11 @@ export interface User {
   name: string;
   email: string;
   avatar?: string | null;
+  bio?: string | null;
+  timezone?: string;
+  language?: string;
+  phone?: string | null;
+  theme?: string;
   status: string;
   created_at?: string;
 }
@@ -20,6 +25,7 @@ interface AuthContextType {
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  updateUser: (data: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,12 +45,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const response = await apiClient<User>('/auth/me');
+      const response = await apiClient<User>('/users/profile');
       if (response.success && response.data) {
         setUser(response.data);
         setToken(savedToken);
       } else {
-        logout();
+        // Fallback to /auth/me if needed
+        const authMeRes = await apiClient<User>('/auth/me');
+        if (authMeRes.success && authMeRes.data) {
+          setUser(authMeRes.data);
+          setToken(savedToken);
+        } else {
+          logout();
+        }
       }
     } catch {
       logout();
@@ -81,10 +94,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateUser = (data: Partial<User>) => {
+    setUser((prev) => (prev ? { ...prev, ...data } : null));
+  };
+
   const logout = () => {
     localStorage.removeItem('planify_token');
     setToken(null);
     setUser(null);
+    if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register') && !window.location.pathname.startsWith('/invite')) {
+      window.location.href = '/login';
+    }
   };
 
   return (
@@ -97,6 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         register,
         logout,
         refreshUser,
+        updateUser,
       }}
     >
       {children}

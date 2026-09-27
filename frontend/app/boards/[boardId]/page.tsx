@@ -18,6 +18,11 @@ import MoveListModal from '@/components/modals/MoveListModal';
 import MoveCardsModal from '@/components/modals/MoveCardsModal';
 import MoveCardModal from '@/components/modals/MoveCardModal';
 import CopyCardModal from '@/components/modals/CopyCardModal';
+import SaveAsTemplateModal from '@/components/modals/SaveAsTemplateModal';
+import BoardViewSwitcher, { BoardViewType } from '@/components/board/views/BoardViewSwitcher';
+import BoardTableView from '@/components/board/views/BoardTableView';
+import BoardCalendarView from '@/components/board/views/BoardCalendarView';
+import BoardScheduleView from '@/components/board/views/BoardScheduleView';
 import {
   Star,
   Plus,
@@ -41,6 +46,7 @@ import {
   Paperclip,
   MessageSquare,
   ExternalLink,
+  LayoutTemplate,
   Sparkles,
   Wand2,
   FileText,
@@ -122,13 +128,15 @@ export default function BoardDetailPage({
   const [userWorkspaces, setUserWorkspaces] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-
+  // Active Board View (Kanban, Table, Calendar, Schedule)
+  const [activeView, setActiveView] = useState<BoardViewType>('kanban');
 
   // Modals state
   const [isCreateListOpen, setIsCreateListOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isCopyOpen, setIsCopyOpen] = useState(false);
+  const [isSaveAsTemplateOpen, setIsSaveAsTemplateOpen] = useState(false);
   const [isBoardMenuOpen, setIsBoardMenuOpen] = useState(false);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [isCardDetailOpen, setIsCardDetailOpen] = useState(false);
@@ -949,6 +957,13 @@ export default function BoardDetailPage({
                 </span>
               )}
             </div>
+
+            {/* View Switcher Controls */}
+            <div className="hidden sm:block h-5 w-[1px] bg-[#2b1572]/15" />
+            <BoardViewSwitcher
+              activeView={activeView}
+              onViewChange={setActiveView}
+            />
           </div>
 
           {/* Right Header Actions */}
@@ -1116,6 +1131,17 @@ export default function BoardDetailPage({
                   <button
                     onClick={() => {
                       setIsBoardMenuOpen(false);
+                      setIsSaveAsTemplateOpen(true);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-white/60 flex items-center gap-2 cursor-pointer transition-colors"
+                  >
+                    <LayoutTemplate className="w-3.5 h-3.5 text-[#2b1572]" />
+                    <span>Lưu thành Mẫu (Template)</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsBoardMenuOpen(false);
                       setIsShareOpen(true);
                     }}
                     className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-white/60 flex items-center gap-2 cursor-pointer transition-colors"
@@ -1182,96 +1208,126 @@ export default function BoardDetailPage({
           </div>
         </div>
 
-        {/* Kanban Board Canvas */}
-        <div className="flex-1 overflow-x-auto overflow-y-hidden p-6">
-          {isLoading ? (
-            <div className="flex gap-4">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="w-72 h-96 glass-weak animate-pulse rounded-2xl shrink-0" />
-              ))}
-            </div>
-          ) : (
-            <div className="flex items-start gap-5 h-full select-none">
-              {/* Render List Columns */}
-              {board?.lists?.map((list: any) => (
-                <ListColumn
-                  key={list.id}
-                  list={list}
-                  boardLists={board.lists}
-                  onOpenCardDetail={handleOpenCardDetail}
-                  onRefreshBoard={fetchBoard}
-                  onRenameList={handleRenameList}
-                  onDeleteList={handleDeleteList}
-                  onCopyListRequest={(l) => setCopyingList(l)}
-                  onMoveListRequest={(l) => setMovingList(l)}
-                  onMoveAllCardsRequest={(l) => setMovingCardsList(l)}
-                  onSortCards={handleSortCards}
-                  onQuickAddCard={handleQuickAddCard}
-                  onQuickEditCardTitle={handleQuickEditCardTitle}
-                  onMoveCardRequest={(c) => setMovingCard(c)}
-                  onCopyCardRequest={(c) => setCopyingCard(c)}
-                  onDeleteCard={handleDeleteCard}
-                  onCardDragStart={handleCardDragStart}
-                  onCardDragEnd={handleCardDragEnd}
-                  onCardDrop={handleCardDrop}
-                  onListDragStart={handleListDragStart}
-                  onListDragEnd={handleListDragEnd}
-                  onListDrop={handleListDrop}
-                  draggedSourceListId={draggedSourceListId}
-                />
-              ))}
+        {/* Multi-view Container */}
+        {activeView === 'kanban' && (
+          <div className="flex-1 overflow-x-auto overflow-y-hidden p-6">
+            {isLoading ? (
+              <div className="flex gap-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="w-72 h-96 glass-weak animate-pulse rounded-2xl shrink-0" />
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-start gap-5 h-full select-none">
+                {/* Render List Columns */}
+                {board?.lists?.map((list: any) => (
+                  <ListColumn
+                    key={list.id}
+                    list={list}
+                    boardLists={board.lists}
+                    onOpenCardDetail={handleOpenCardDetail}
+                    onRefreshBoard={fetchBoard}
+                    onRenameList={handleRenameList}
+                    onDeleteList={handleDeleteList}
+                    onCopyListRequest={(l) => setCopyingList(l)}
+                    onMoveListRequest={(l) => setMovingList(l)}
+                    onMoveAllCardsRequest={(l) => setMovingCardsList(l)}
+                    onSortCards={handleSortCards}
+                    onQuickAddCard={handleQuickAddCard}
+                    onQuickEditCardTitle={handleQuickEditCardTitle}
+                    onMoveCardRequest={(c) => setMovingCard(c)}
+                    onCopyCardRequest={(c) => setCopyingCard(c)}
+                    onDeleteCard={handleDeleteCard}
+                    onCardDragStart={handleCardDragStart}
+                    onCardDragEnd={handleCardDragEnd}
+                    onCardDrop={handleCardDrop}
+                    onListDragStart={handleListDragStart}
+                    onListDragEnd={handleListDragEnd}
+                    onListDrop={handleListDrop}
+                    draggedSourceListId={draggedSourceListId}
+                  />
+                ))}
 
-              {/* Add New List Column at End */}
-              {!board?.is_archived && board?.canEdit && (
-                <div className="w-72 shrink-0">
-                  {isAddingListInline ? (
-                    <form
-                      onSubmit={handleCreateInlineList}
-                      className="p-3.5 kanban-list bg-white/80 border border-white/60 shadow-md space-y-2.5 animate-in fade-in duration-100"
-                    >
-                      <input
-                        ref={addListInputRef}
-                        type="text"
-                        value={inlineListTitle}
-                        onChange={(e) => setInlineListTitle(e.target.value)}
-                        placeholder="Nhập tên danh sách mới..."
-                        className="w-full text-xs font-semibold text-[#2b1572] bg-white border border-[#2b1572]/30 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-[#2b1572]/20"
-                      />
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="submit"
-                          disabled={!inlineListTitle.trim() || isSubmittingList}
-                          className="px-3.5 py-1.5 bg-[#2b1572] hover:bg-[#1e0f52] disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer"
-                        >
-                          {isSubmittingList ? 'Đang thêm...' : 'Thêm danh sách'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsAddingListInline(false);
-                            setInlineListTitle('');
-                          }}
-                          className="p-1.5 text-[#2b1572]/60 hover:text-[#2b1572] hover:bg-white/60 rounded-lg transition-colors cursor-pointer"
-                          title="Hủy"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </form>
-                  ) : (
-                    <button
-                      onClick={() => setIsAddingListInline(true)}
-                      className="w-full p-4 kanban-list flex items-center justify-center gap-2 text-xs font-bold text-[#2b1572]/80 hover:text-[#2b1572] hover:bg-white/50 transition-all cursor-pointer border-dashed"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Thêm Danh sách khác</span>
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+                {/* Add New List Column at End */}
+                {!board?.is_archived && board?.canEdit && (
+                  <div className="w-72 shrink-0">
+                    {isAddingListInline ? (
+                      <form
+                        onSubmit={handleCreateInlineList}
+                        className="p-3.5 kanban-list bg-white/80 border border-white/60 shadow-md space-y-2.5 animate-in fade-in duration-100"
+                      >
+                        <input
+                          ref={addListInputRef}
+                          type="text"
+                          value={inlineListTitle}
+                          onChange={(e) => setInlineListTitle(e.target.value)}
+                          placeholder="Nhập tên danh sách mới..."
+                          className="w-full text-xs font-semibold text-[#2b1572] bg-white border border-[#2b1572]/30 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-[#2b1572]/20"
+                        />
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="submit"
+                            disabled={!inlineListTitle.trim() || isSubmittingList}
+                            className="px-3.5 py-1.5 bg-[#2b1572] hover:bg-[#1e0f52] disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                          >
+                            {isSubmittingList ? 'Đang thêm...' : 'Thêm danh sách'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsAddingListInline(false);
+                              setInlineListTitle('');
+                            }}
+                            className="p-1.5 text-[#2b1572]/60 hover:text-[#2b1572] hover:bg-white/60 rounded-lg transition-colors cursor-pointer"
+                            title="Hủy"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <button
+                        onClick={() => setIsAddingListInline(true)}
+                        className="w-full p-4 kanban-list flex items-center justify-center gap-2 text-xs font-bold text-[#2b1572]/80 hover:text-[#2b1572] hover:bg-white/50 transition-all cursor-pointer border-dashed"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Thêm Danh sách khác</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Table View */}
+        {activeView === 'table' && (
+          <BoardTableView
+            board={board}
+            onOpenCardDetail={handleOpenCardDetail}
+            onRefreshBoard={fetchBoard}
+            onDeleteCard={handleDeleteCard}
+          />
+        )}
+
+        {/* Calendar View */}
+        {activeView === 'calendar' && (
+          <BoardCalendarView
+            board={board}
+            onOpenCardDetail={handleOpenCardDetail}
+            onRefreshBoard={fetchBoard}
+          />
+        )}
+
+        {/* Schedule / Timeline View */}
+        {activeView === 'schedule' && (
+          <BoardScheduleView
+            board={board}
+            onOpenCardDetail={handleOpenCardDetail}
+            onRefreshBoard={fetchBoard}
+          />
+        )}
       </div>
 
       {/* MODALS */}
@@ -1304,6 +1360,12 @@ export default function BoardDetailPage({
         board={board}
         workspaces={userWorkspaces}
         onClose={() => setIsCopyOpen(false)}
+      />
+
+      <SaveAsTemplateModal
+        isOpen={isSaveAsTemplateOpen}
+        board={board}
+        onClose={() => setIsSaveAsTemplateOpen(false)}
       />
 
       {/* 2. Card Detail Modal */}

@@ -11,8 +11,10 @@ import { UpdateBoardDto } from './dto/update-board.dto';
 import { CopyBoardDto } from './dto/copy-board.dto';
 import { AddBoardMemberDto } from './dto/add-board-member.dto';
 import { UpdateBoardMemberRoleDto } from './dto/update-board-member-role.dto';
+import { InviteBoardMemberDto } from './dto/invite-board-member.dto';
 import { ActivitiesService } from '../activities/activities.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class BoardsService {
@@ -823,6 +825,334 @@ export class BoardsService {
     if (error) throw new BadRequestException(error.message);
 
     return { message: 'Bạn đã rời khỏi Board thành công' };
+  }
+
+  // --- BOARD INVITATIONS ---
+  async inviteMember(boardId: string, currentUserId: string, dto: InviteBoardMemberDto) {
+    const board = await this.findById(boardId, currentUserId);
+    if (!board.canManageMembers) {
+      throw new ForbiddenException('Bạn không có quyền mời thành viên vào Board');
+    }
+
+    const email = dto.email.trim().toLowerCase();
+    const role = dto.role || 'EDITOR';
+
+    // 1. Kiểm tra xem người dùng đã là thành viên của Board chưa
+    const { data: targetUser } = await this.supabase
+      .from('users')
+      .select('id, name, email')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (targetUser) {
+      const { data: existingMember } = await this.supabase
+        .from('board_members')
+        .select('id')
+        .eq('board_id', boardId)
+        .eq('user_id', targetUser.id)
+        .maybeSingle();
+
+      if (existingMember) {
+        throw new ConflictException('Người dùng này đã là thành viên của Bảng');
+      }
+    }
+
+    // 2. Kiểm tra xem đã có lời mời PENDING còn hạn cho email này chưa
+    const now = new Date().toISOString();
+    const { data: existingInvite } = await this.supabase
+      .from('board_invites')
+      .select('id, token, expired_at, role, status')
+      .eq('board_id', boardId)
+      .eq('email', email)
+      .eq('status', 'PENDING')
+      .gte('expired_at', now)
+      .maybeSingle();
+
+    if (existingInvite) {
+      return {
+        type: 'INVITE_EXISTS',
+        message: 'Lời mời cho email này đã được gửi trước đó và vẫn còn hiệu lực',
+        invite: existingInvite,
+      };
+    }
+
+    // 3. Tạo lời mời mới
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiredAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { data: invite, error } = await this.supabase
+      .from('board_invites')
+      .insert({
+        board_id: boardId,
+        inviter_id: currentUserId,
+        email,
+        role,
+        token,
+        status: 'PENDING',
+        expired_at: expiredAt,
+      })
+      .select()
+      .single();
+
+    if (error || !invite) {
+      throw new BadRequestException(error?.message || 'Không thể tạo lời mời tham gia Board');
+    }
+
+    // 4. Nếu người dùng đã có tài khoản, gửi thông báo trực tiếp
+    if (targetUser) {
+      await this.notificationsService
+        .createNotification({
+          userId: targetUser.id,
+          title: 'Lời mời tham gia Bảng',
+          message: `Bạn nhận được lời mời tham gia Bảng "${board.name}" với vai trò ${role}.||/invite/${token}`,
+          type: 'BOARD_INVITE',
+        })
+        .catch(() => {});
+    }
+
+    // 5. Ghi log hoạt động
+    await this.activitiesService
+      .logActivity({
+        workspaceId: board.workspace_id,
+        userId: currentUserId,
+        action: `đã gửi lời mời tham gia Bảng tới ${email}`,
+        targetType: `board:${boardId}`,
+      })
+      .catch(() => {});
+
+    return {
+      type: 'INVITE_CREATED',
+      message: 'Tạo lời mời tham gia Bảng thành công!',
+      invite,
+    };
+  }
+
+  async getPendingBoardInvites(boardId: string, currentUserId: string) {
+    const board = await this.findById(boardId, currentUserId);
+    if (!board.canManageMembers) {
+      throw new ForbiddenException('Bạn không có quyền xem danh sách lời mời của Bảng');
+    }
+
+    const { data: invites, error } = await this.supabase
+      .from('board_invites')
+      .select(`
+        id,
+        board_id,
+        inviter_id,
+        email,
+        role,
+        token,
+        status,
+        created_at,
+        expired_at,
+        inviter:users!fk_board_invite_inviter (
+          id,
+          name,
+          email,
+          avatar
+        )
+      `)
+      .eq('board_id', boardId)
+      .eq('status', 'PENDING')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      return [];
+    }
+
+    return invites || [];
+  }
+
+  async revokeBoardInvite(boardId: string, currentUserId: string, inviteId: string) {
+    const board = await this.findById(boardId, currentUserId);
+    if (!board.canManageMembers) {
+      throw new ForbiddenException('Bạn không có quyền thu hồi lời mời');
+    }
+
+    const { error } = await this.supabase
+      .from('board_invites')
+      .delete()
+      .eq('board_id', boardId)
+      .eq('id', inviteId);
+
+    if (error) {
+      throw new BadRequestException(error.message);
+    }
+
+    return { message: 'Đã thu hồi lời mời thành công' };
+  }
+
+  async getBoardInviteByToken(token: string) {
+    const { data: invite, error } = await this.supabase
+      .from('board_invites')
+      .select(`
+        id,
+        board_id,
+        inviter_id,
+        email,
+        role,
+        token,
+        status,
+        expired_at,
+        board:boards (
+          id,
+          name,
+          description,
+          background,
+          visibility,
+          workspace_id,
+          workspace:workspaces (
+            id,
+            name
+          )
+        ),
+        inviter:users!fk_board_invite_inviter (
+          id,
+          name,
+          email,
+          avatar
+        )
+      `)
+      .eq('token', token)
+      .maybeSingle();
+
+    if (error || !invite) {
+      throw new NotFoundException('Lời mời không tồn tại hoặc liên kết không hợp lệ');
+    }
+
+    if (invite.status !== 'PENDING') {
+      throw new BadRequestException(
+        invite.status === 'ACCEPTED'
+          ? 'Lời mời này đã được chấp nhận trước đó'
+          : 'Lời mời này không còn khả dụng',
+      );
+    }
+
+    if (new Date(invite.expired_at) < new Date()) {
+      throw new BadRequestException('Lời mời này đã hết hạn sử dụng');
+    }
+
+    return invite;
+  }
+
+  async acceptBoardInvite(token: string, userId: string) {
+    const invite = await this.getBoardInviteByToken(token);
+    const board = invite.board as any;
+
+    // Xác thực email người nhận nếu lời mời có chỉ định email
+    if (invite.email) {
+      const { data: currentUser } = await this.supabase
+        .from('users')
+        .select('email')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (currentUser?.email && currentUser.email.toLowerCase() !== invite.email.toLowerCase()) {
+        throw new ForbiddenException(
+          `Lời mời này được gửi riêng cho email "${invite.email}". Bạn đang đăng nhập bằng "${currentUser.email}". Vui lòng đăng nhập đúng tài khoản để chấp nhận.`
+        );
+      }
+    }
+
+    // 1. Kiểm tra xem đã là member của Board chưa
+    const { data: existingMember } = await this.supabase
+      .from('board_members')
+      .select('id')
+      .eq('board_id', invite.board_id)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!existingMember) {
+      const { error: insertErr } = await this.supabase
+        .from('board_members')
+        .insert({
+          board_id: invite.board_id,
+          user_id: userId,
+          role: invite.role,
+        });
+
+      if (insertErr) {
+        throw new BadRequestException(insertErr.message);
+      }
+    }
+
+    // 2. Đảm bảo user cũng có trong Workspace của Board
+    if (board?.workspace_id) {
+      const { data: wsMember } = await this.supabase
+        .from('workspace_members')
+        .select('id')
+        .eq('workspace_id', board.workspace_id)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (!wsMember) {
+        await this.supabase.from('workspace_members').insert({
+          workspace_id: board.workspace_id,
+          user_id: userId,
+          role: 'MEMBER',
+        });
+      }
+    }
+
+    // 3. Cập nhật trạng thái lời mời thành ACCEPTED
+    await this.supabase
+      .from('board_invites')
+      .update({ status: 'ACCEPTED' })
+      .eq('id', invite.id);
+
+    // 4. Ghi log hoạt động
+    await this.activitiesService
+      .logActivity({
+        workspaceId: board.workspace_id,
+        userId,
+        action: `đã gia nhập Bảng "${board.name}" qua lời mời`,
+        targetType: `board:${invite.board_id}`,
+      })
+      .catch(() => {});
+
+    // 5. Thông báo cho người mời
+    await this.notificationsService
+      .createNotification({
+        userId: invite.inviter_id,
+        title: 'Lời mời Bảng được chấp nhận',
+        message: `Thành viên đã chấp nhận lời mời gia nhập Bảng "${board.name}".||/boards/${invite.board_id}`,
+        type: 'BOARD_INVITE_ACCEPTED',
+      })
+      .catch(() => {});
+
+    return {
+      message: 'Gia nhập Bảng thành công!',
+      boardId: invite.board_id,
+      workspaceId: board?.workspace_id,
+    };
+  }
+
+  async rejectBoardInvite(token: string, userId: string) {
+    const invite = await this.getBoardInviteByToken(token);
+
+    // Xác thực người từ chối phải là người nhận lời mời
+    if (invite.email) {
+      const { data: currentUser } = await this.supabase
+        .from('users')
+        .select('email')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (currentUser?.email && currentUser.email.toLowerCase() !== invite.email.toLowerCase()) {
+        throw new ForbiddenException('Bạn không phải là người nhận của lời mời này');
+      }
+    }
+
+    const { error } = await this.supabase
+      .from('board_invites')
+      .update({ status: 'REJECTED' })
+      .eq('id', invite.id);
+
+    if (error) {
+      throw new BadRequestException(error.message);
+    }
+
+    return { message: 'Đã từ chối lời mời tham gia Bảng' };
   }
 
   private async verifyWorkspaceAccess(workspaceId: string, userId: string) {

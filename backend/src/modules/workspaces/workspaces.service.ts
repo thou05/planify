@@ -648,6 +648,21 @@ export class WorkspacesService {
     const invite = await this.getInviteByToken(token);
     const workspaceId = (invite.workspace as any).id;
 
+    // Xác thực email người nhận nếu lời mời có chỉ định email
+    if (invite.email) {
+      const { data: currentUser } = await this.supabase
+        .from('users')
+        .select('email')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (currentUser?.email && currentUser.email.toLowerCase() !== invite.email.toLowerCase()) {
+        throw new ForbiddenException(
+          `Lời mời này được gửi riêng cho email "${invite.email}". Bạn đang đăng nhập bằng "${currentUser.email}". Vui lòng đăng nhập đúng tài khoản để chấp nhận.`
+        );
+      }
+    }
+
     // Kiểm tra xem user đã là member chưa
     const { data: existingMember } = await this.supabase
       .from('workspace_members')
@@ -684,6 +699,36 @@ export class WorkspacesService {
     return {
       message: 'Gia nhập Workspace thành công!',
       workspaceId,
+    };
+  }
+
+  async rejectInvite(token: string, userId: string) {
+    const invite = await this.getInviteByToken(token);
+
+    // Xác thực người từ chối phải là người nhận lời mời
+    if (invite.email) {
+      const { data: currentUser } = await this.supabase
+        .from('users')
+        .select('email')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (currentUser?.email && currentUser.email.toLowerCase() !== invite.email.toLowerCase()) {
+        throw new ForbiddenException('Bạn không phải là người nhận của lời mời này');
+      }
+    }
+
+    const { error } = await this.supabase
+      .from('workspace_invites')
+      .delete()
+      .eq('id', invite.id);
+
+    if (error) {
+      throw new BadRequestException(error.message);
+    }
+
+    return {
+      message: 'Đã từ chối lời mời tham gia Workspace',
     };
   }
 
