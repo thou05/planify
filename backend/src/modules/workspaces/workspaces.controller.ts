@@ -18,6 +18,7 @@ import { InviteMemberDto } from './dto/invite-member.dto';
 import { TransferOwnershipDto } from './dto/transfer-ownership.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 
 @ApiTags('Workspaces')
 @Controller('workspaces')
@@ -45,6 +46,7 @@ export class WorkspacesController {
 
   // --- PUBLIC/TOKEN INVITE ROUTES (đặt trước :id để không bị override) ---
   @Get('invites/:token')
+  @Public()
   @ApiOperation({ summary: 'Xem trước thông tin lời mời qua Token' })
   @ApiResponse({ status: 200, description: 'Thông tin lời mời' })
   async getInviteByToken(@Param('token') token: string) {
@@ -59,6 +61,16 @@ export class WorkspacesController {
     @CurrentUser('id') userId: string,
   ) {
     return this.workspacesService.acceptInvite(token, userId);
+  }
+
+  @Post('invites/:token/reject')
+  @ApiOperation({ summary: 'Từ chối lời mời tham gia Workspace' })
+  @ApiResponse({ status: 200, description: 'Từ chối thành công' })
+  async rejectInvite(
+    @Param('token') token: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.workspacesService.rejectInvite(token, userId);
   }
 
   // --- WORKSPACE DETAIL & CRUD ---

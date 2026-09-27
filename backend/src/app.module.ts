@@ -16,6 +16,7 @@ import { AttachmentsModule } from './modules/attachments/attachments.module';
 import { ActivitiesModule } from './modules/activities/activities.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { CardRelationsModule } from './modules/card-relations/card-relations.module';
+import { TemplatesModule } from './modules/templates/templates.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { CardRelationsModule } from './modules/card-relations/card-relations.mod
     ActivitiesModule,
     NotificationsModule,
     CardRelationsModule,
+    TemplatesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

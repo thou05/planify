@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
@@ -12,9 +12,13 @@ import {
   LogOut,
   User as UserIcon,
   History,
+  Shield,
+  Mail,
+  ChevronDown,
 } from 'lucide-react';
 import MyActivityModal from '@/components/modals/MyActivityModal';
 import NotificationPopover from '@/components/notifications/NotificationPopover';
+import ProfileModal from '@/components/modals/ProfileModal';
 
 interface TopBarProps {
   onOpenCreateWorkspace?: () => void;
@@ -28,30 +32,61 @@ export default function TopBar({
   const { user, logout } = useAuth();
   const [isMyActivityOpen, setIsMyActivityOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [profileModalTab, setProfileModalTab] = useState<'profile' | 'security' | 'invitations'>('profile');
   const [unreadCount, setUnreadCount] = useState(0);
+  const [pendingInvitesCount, setPendingInvitesCount] = useState(0);
 
-  // Poll unread count periodically
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Poll unread notifications & pending invitations periodically
   useEffect(() => {
     let isMounted = true;
-    const fetchUnread = async () => {
+    const fetchCounters = async () => {
       try {
-        const res = await apiClient<{ count: number }>('/notifications/unread-count');
-        if (isMounted && res.success && typeof res.data?.count === 'number') {
-          setUnreadCount(res.data.count);
+        const notifRes = await apiClient<{ count: number }>('/notifications/unread-count');
+        if (isMounted && notifRes.success && typeof notifRes.data?.count === 'number') {
+          setUnreadCount(notifRes.data.count);
+        }
+
+        const inviteRes = await apiClient<any>('/users/invitations');
+        if (isMounted && inviteRes.success && inviteRes.data) {
+          const total =
+            (inviteRes.data.workspaceInvites?.length || 0) +
+            (inviteRes.data.boardInvites?.length || 0);
+          setPendingInvitesCount(total);
         }
       } catch {
         // ignore
       }
     };
 
-    fetchUnread();
-    const timer = setInterval(fetchUnread, 25000);
+    fetchCounters();
+    const timer = setInterval(fetchCounters, 30000);
 
     return () => {
       isMounted = false;
       clearInterval(timer);
     };
   }, []);
+
+  const openProfileTab = (tab: 'profile' | 'security' | 'invitations') => {
+    setProfileModalTab(tab);
+    setIsProfileModalOpen(true);
+    setIsUserMenuOpen(false);
+  };
 
   return (
     <>
@@ -130,11 +165,24 @@ export default function TopBar({
             />
           </div>
 
+          {/* User Profile Pill & Dropdown */}
           {user && (
-            <div className="flex items-center gap-3 pl-2 border-l border-[#2b1572]/15">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-[#2b1572]/10 border border-white/80 flex items-center justify-center text-[#2b1572] font-bold text-xs shadow-sm">
-                  {user.name.charAt(0).toUpperCase()}
+            <div className="relative pl-2 border-l border-[#2b1572]/15" ref={userMenuRef}>
+              <button
+                type="button"
+                onClick={() => setIsUserMenuOpen((prev) => !prev)}
+                className="flex items-center gap-2 p-1.5 rounded-2xl hover:bg-white/50 transition-colors cursor-pointer"
+              >
+                <div className="w-8 h-8 rounded-full bg-[#2b1572]/10 border border-white/80 overflow-hidden flex items-center justify-center text-[#2b1572] font-bold text-xs shadow-sm relative">
+                  {user.avatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span>{user.name.charAt(0).toUpperCase()}</span>
+                  )}
+                  {pendingInvitesCount > 0 && (
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#c40000] ring-2 ring-white absolute top-0 right-0" />
+                  )}
                 </div>
                 <div className="hidden lg:block text-left">
                   <div className="text-xs font-bold text-[#2b1572] leading-tight truncate max-w-[120px]">
@@ -144,15 +192,79 @@ export default function TopBar({
                     {user.email}
                   </div>
                 </div>
-              </div>
-
-              <button
-                onClick={logout}
-                className="p-2 text-[#2b1572]/60 hover:text-[#c40000] hover:bg-[#c40000]/10 rounded-xl transition-colors cursor-pointer"
-                title="Đăng xuất"
-              >
-                <LogOut className="w-4 h-4" />
+                <ChevronDown className="w-3.5 h-3.5 text-[#2b1572]/50 hidden sm:block" />
               </button>
+
+              {/* User Dropdown Menu */}
+              {isUserMenuOpen && (
+                <div className="absolute right-0 mt-2 w-64 glass-strong border border-white/80 rounded-2xl shadow-xl py-2 z-50 animate-fade-in">
+                  <div className="px-4 py-2 border-b border-[#2b1572]/10">
+                    <p className="text-xs font-black text-[#2b1572] truncate">{user.name}</p>
+                    <p className="text-[11px] text-[#2b1572]/60 truncate">{user.email}</p>
+                    <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-800 font-bold text-[9px]">
+                      {user.status || 'ACTIVE'}
+                    </span>
+                  </div>
+
+                  <div className="py-1">
+                    <button
+                      type="button"
+                      onClick={() => openProfileTab('profile')}
+                      className="w-full px-4 py-2 text-left text-xs font-semibold text-[#2b1572] hover:bg-white/50 flex items-center gap-2.5 cursor-pointer transition-colors"
+                    >
+                      <UserIcon className="w-4 h-4 text-[#2b1572]/70" />
+                      <span>Thông tin cá nhân</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => openProfileTab('security')}
+                      className="w-full px-4 py-2 text-left text-xs font-semibold text-[#2b1572] hover:bg-white/50 flex items-center gap-2.5 cursor-pointer transition-colors"
+                    >
+                      <Shield className="w-4 h-4 text-[#2b1572]/70" />
+                      <span>Bảo mật & Đổi mật khẩu</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => openProfileTab('invitations')}
+                      className="w-full px-4 py-2 text-left text-xs font-semibold text-[#2b1572] hover:bg-white/50 flex items-center justify-between cursor-pointer transition-colors"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Mail className="w-4 h-4 text-[#2b1572]/70" />
+                        <span>Lời mời tham gia</span>
+                      </div>
+                      {pendingInvitesCount > 0 && (
+                        <span className="px-1.5 py-0.5 rounded-full bg-[#c40000] text-white text-[10px] font-black">
+                          {pendingInvitesCount}
+                        </span>
+                      )}
+                    </button>
+
+                    <Link
+                      href="/profile"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="w-full px-4 py-2 text-left text-xs font-semibold text-[#2b1572]/80 hover:bg-white/50 flex items-center gap-2.5 cursor-pointer transition-colors border-t border-[#2b1572]/5"
+                    >
+                      <span>Trang hồ sơ chi tiết</span>
+                    </Link>
+                  </div>
+
+                  <div className="pt-1 border-t border-[#2b1572]/10">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        logout();
+                      }}
+                      className="w-full px-4 py-2 text-left text-xs font-bold text-[#c40000] hover:bg-[#c40000]/10 flex items-center gap-2.5 cursor-pointer transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Đăng xuất</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -162,6 +274,13 @@ export default function TopBar({
       <MyActivityModal
         isOpen={isMyActivityOpen}
         onClose={() => setIsMyActivityOpen(false)}
+      />
+
+      {/* Profile & Account Modal */}
+      <ProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        initialTab={profileModalTab}
       />
     </>
   );

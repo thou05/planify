@@ -2,12 +2,14 @@ import {
   Controller,
   Get,
   Patch,
+  Post,
   Body,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
@@ -33,5 +35,22 @@ export class UsersController {
     @Body() dto: UpdateProfileDto,
   ) {
     return this.usersService.updateProfile(userId, dto);
+  }
+
+  @Post('change-password')
+  @ApiOperation({ summary: 'Đổi mật khẩu người dùng' })
+  @ApiResponse({ status: 200, description: 'Đổi mật khẩu thành công' })
+  async changePassword(
+    @CurrentUser('id') userId: string,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    return this.usersService.changePassword(userId, dto);
+  }
+
+  @Get('invitations')
+  @ApiOperation({ summary: 'Lấy danh sách các lời mời (Workspace & Board) đang chờ của người dùng' })
+  @ApiResponse({ status: 200, description: 'Danh sách lời mời đang chờ' })
+  async getMyInvitations(@CurrentUser('id') userId: string) {
+    return this.usersService.getUserInvitations(userId);
   }
 }

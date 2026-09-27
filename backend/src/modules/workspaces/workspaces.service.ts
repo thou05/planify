@@ -649,6 +649,23 @@ export class WorkspacesService {
     };
   }
 
+  async rejectInvite(token: string, userId: string) {
+    const invite = await this.getInviteByToken(token);
+
+    const { error } = await this.supabase
+      .from('workspace_invites')
+      .delete()
+      .eq('id', invite.id);
+
+    if (error) {
+      throw new BadRequestException(error.message);
+    }
+
+    return {
+      message: 'Đã từ chối lời mời tham gia Workspace',
+    };
+  }
+
   async removeMember(workspaceId: string, currentUserId: string, targetUserId: string) {
     const { workspace } = await this.getWorkspaceAndMember(workspaceId, currentUserId);
 
