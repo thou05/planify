@@ -36,8 +36,21 @@ export default function BoardScheduleView({
   });
   const [selectedListFilter, setSelectedListFilter] = useState<string>('all');
   const [showUnscheduled, setShowUnscheduled] = useState(false);
-
+  const leftPaneRef = useRef<HTMLDivElement>(null);
   const timelineContainerRef = useRef<HTMLDivElement>(null);
+
+  // Synchronize vertical scrolling between left titles pane and right timeline chart pane
+  const handleTimelineScroll = () => {
+    if (timelineContainerRef.current && leftPaneRef.current) {
+      leftPaneRef.current.scrollTop = timelineContainerRef.current.scrollTop;
+    }
+  };
+
+  const handleLeftPaneScroll = () => {
+    if (timelineContainerRef.current && leftPaneRef.current) {
+      timelineContainerRef.current.scrollTop = leftPaneRef.current.scrollTop;
+    }
+  };
 
   // Flatten all cards from board lists
   const allCards = useMemo(() => {
@@ -292,8 +305,12 @@ export default function BoardScheduleView({
               Danh sách & Thẻ
             </div>
 
-            {/* List & Card Rows */}
-            <div className="flex-1 overflow-y-hidden divide-y divide-white/40 select-none">
+            {/* List & Card Rows with synchronized scroll */}
+            <div
+              ref={leftPaneRef}
+              onScroll={handleLeftPaneScroll}
+              className="flex-1 overflow-y-auto divide-y divide-white/40 select-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
               {listsWithCards.map((list: any) => (
                 <div key={list.id} className="py-2">
                   {/* List Header Row */}
@@ -337,9 +354,10 @@ export default function BoardScheduleView({
             </div>
           </div>
 
-          {/* Right Area: Scrollable Timeline Chart */}
+          {/* Right Area: Scrollable Timeline Chart with synchronized scroll */}
           <div
             ref={timelineContainerRef}
+            onScroll={handleTimelineScroll}
             className="flex-1 overflow-x-auto overflow-y-auto relative select-none"
           >
             <div

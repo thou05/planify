@@ -6,10 +6,19 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Mail, Lock, Eye, EyeOff, LayoutGrid, ArrowRight, Loader2 } from 'lucide-react';
 
+function getSafeRedirectUrl(url: string | null): string {
+  if (!url) return '/dashboard';
+  // Ensure the redirect is a relative path and not a protocol-relative (//) or external URL
+  if (url.startsWith('/') && !url.startsWith('//') && !url.includes('\\')) {
+    return url;
+  }
+  return '/dashboard';
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectUrl = searchParams.get('redirect') || '/dashboard';
+  const redirectUrl = getSafeRedirectUrl(searchParams.get('redirect'));
   const { login } = useAuth();
 
   const [email, setEmail] = useState('');

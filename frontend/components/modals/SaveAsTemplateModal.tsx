@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Sparkles,
@@ -46,6 +46,16 @@ export default function SaveAsTemplateModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+
+  // Synchronize modal fields when board loads or modal opens
+  useEffect(() => {
+    if (isOpen && board?.name) {
+      setTitle(`Mẫu: ${board.name}`);
+      setDescription(board.description || '');
+      setError('');
+      setSuccess(false);
+    }
+  }, [isOpen, board?.name, board?.description]);
 
   if (!isOpen || !board) return null;
 

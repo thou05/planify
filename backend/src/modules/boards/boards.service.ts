@@ -1039,6 +1039,21 @@ export class BoardsService {
     const invite = await this.getBoardInviteByToken(token);
     const board = invite.board as any;
 
+    // Xác thực email người nhận nếu lời mời có chỉ định email
+    if (invite.email) {
+      const { data: currentUser } = await this.supabase
+        .from('users')
+        .select('email')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (currentUser?.email && currentUser.email.toLowerCase() !== invite.email.toLowerCase()) {
+        throw new ForbiddenException(
+          `Lời mời này được gửi riêng cho email "${invite.email}". Bạn đang đăng nhập bằng "${currentUser.email}". Vui lòng đăng nhập đúng tài khoản để chấp nhận.`
+        );
+      }
+    }
+
     // 1. Kiểm tra xem đã là member của Board chưa
     const { data: existingMember } = await this.supabase
       .from('board_members')
@@ -1114,6 +1129,19 @@ export class BoardsService {
 
   async rejectBoardInvite(token: string, userId: string) {
     const invite = await this.getBoardInviteByToken(token);
+
+    // Xác thực người từ chối phải là người nhận lời mời
+    if (invite.email) {
+      const { data: currentUser } = await this.supabase
+        .from('users')
+        .select('email')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (currentUser?.email && currentUser.email.toLowerCase() !== invite.email.toLowerCase()) {
+        throw new ForbiddenException('Bạn không phải là người nhận của lời mời này');
+      }
+    }
 
     const { error } = await this.supabase
       .from('board_invites')

@@ -55,16 +55,56 @@ CREATE INDEX IF NOT EXISTS idx_templates_is_public ON public.templates(is_public
 CREATE INDEX IF NOT EXISTS idx_templates_author ON public.templates(author_id);
 CREATE INDEX IF NOT EXISTS idx_templates_usage ON public.templates(usage_count DESC);
 
--- Quyền truy cập Supabase
-GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+-- ==============================================================================
+-- BẢO MẬT & PHÂN QUYỀN (RLS) CHO PUBLIC.TEMPLATES
+-- ==============================================================================
+ALTER TABLE public.templates ENABLE ROW LEVEL SECURITY;
+
+-- 1. Xem mẫu: Mọi người (kể cả khách) đều xem được mẫu công khai; tác giả xem được cả mẫu riêng tư của mình
+DROP POLICY IF EXISTS "Templates are viewable if public or by author" ON public.templates;
+CREATE POLICY "Templates are viewable if public or by author"
+    ON public.templates
+    FOR SELECT
+    USING (is_public = TRUE OR auth.uid() = author_id);
+
+-- 2. Thêm mẫu: Chỉ thành viên đã xác thực
+DROP POLICY IF EXISTS "Users can create templates" ON public.templates;
+CREATE POLICY "Users can create templates"
+    ON public.templates
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (auth.uid() = author_id);
+
+-- 3. Sửa/Xóa mẫu: Chỉ tác giả sở hữu mẫu
+DROP POLICY IF EXISTS "Authors can update their templates" ON public.templates;
+CREATE POLICY "Authors can update their templates"
+    ON public.templates
+    FOR UPDATE
+    TO authenticated
+    USING (auth.uid() = author_id)
+    WITH CHECK (auth.uid() = author_id);
+
+DROP POLICY IF EXISTS "Authors can delete their templates" ON public.templates;
+CREATE POLICY "Authors can delete their templates"
+    ON public.templates
+    FOR DELETE
+    TO authenticated
+    USING (auth.uid() = author_id);
+
+-- Phân quyền Supabase an toàn (ngăn chặn unrestricted access của anon)
+REVOKE ALL ON public.templates FROM anon;
+GRANT SELECT ON public.templates TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.templates TO authenticated;
+GRANT ALL ON public.templates TO service_role;
 
 -- ==============================================================================
--- SEED DATA: CÁC MẪU CHUẨN CỦA HỆ THỐNG
+-- SEED DATA: CÁC MẪU CHUẨN CỦA HỆ THỐNG (IDEMPOTENT)
 -- ==============================================================================
 
-INSERT INTO public.templates (title, description, category, background, author_name, is_public, usage_count, view_count, structure)
+INSERT INTO public.templates (id, title, description, category, background, author_name, is_public, usage_count, view_count, structure)
 VALUES
 (
+    '00000000-0000-0000-0000-000000000001'::uuid,
     'My Tasks | Quản lý công việc cá nhân',
     'Theo dõi các công việc, hạn chót và những việc bạn cần hoàn thành — hôm nay, ngày mai hoặc bất kỳ lúc nào. Mẫu này cung cấp quy trình phân loại rõ ràng giúp tối ưu hóa hiệu suất làm việc mỗi ngày.',
     'productivity',
@@ -143,6 +183,7 @@ VALUES
     }'::jsonb
 ),
 (
+    '00000000-0000-0000-0000-000000000002'::uuid,
     'Kanban Agile Sprint | Kỹ thuật phần mềm',
     'Mẫu quy trình phát triển phần mềm chuẩn Agile/Scrum: từ Backlog, Sprint Planning, In Development, Code Review, Testing đến Production Deployment.',
     'engineering',
@@ -224,6 +265,7 @@ VALUES
     }'::jsonb
 ),
 (
+    '00000000-0000-0000-0000-000000000003'::uuid,
     'Thiết kế UI/UX & Design Sprint',
     'Quy trình quản lý các yêu cầu thiết kế từ nghiên cứu người dùng (User Research), Wireframe, Thiết kế Figma, Design Review đến Bàn giao cho lập trình viên (Dev Handoff).',
     'design',
@@ -286,6 +328,7 @@ VALUES
     }'::jsonb
 ),
 (
+    '00000000-0000-0000-0000-000000000004'::uuid,
     'Kế hoạch Marketing & Content Calendar',
     'Mẫu lập lịch và quản lý nội dung đa kênh: từ Lên ý tưởng, Soạn thảo, Thiết kế đồ họa, Đăng bài và Đánh giá hiệu quả chiến dịch.',
     'marketing',
@@ -346,6 +389,7 @@ VALUES
     }'::jsonb
 ),
 (
+    '00000000-0000-0000-0000-000000000005'::uuid,
     'Quy trình Tuyển dụng & Onboarding nhân viên mới',
     'Theo dõi ứng viên từ nộp hồ sơ, phỏng vấn vòng 1, bài test kỹ thuật, phỏng vấn chuyên sâu, gửi offer và quy trình đón tiếp nhân viên mới.',
     'hr-operations',
@@ -399,4 +443,5 @@ VALUES
             }
         ]
     }'::jsonb
-);
+)
+ON CONFLICT (id) DO NOTHING;

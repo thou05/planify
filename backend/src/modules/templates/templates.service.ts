@@ -397,7 +397,7 @@ export class TemplatesService {
   /**
    * Lấy danh sách Template (hỗ trợ lọc theo category, search, author)
    */
-  async findAll(query?: { category?: string; search?: string; authorId?: string }) {
+  async findAll(query?: { category?: string; search?: string; authorId?: string }, currentUserId?: string) {
     try {
       let dbQuery = this.supabase
         .from('templates')
@@ -409,7 +409,13 @@ export class TemplatesService {
       }
 
       if (query?.authorId) {
-        dbQuery = dbQuery.eq('author_id', query.authorId);
+        if (currentUserId && currentUserId === query.authorId) {
+          // Tác giả đang xem mẫu của chính mình -> được xem cả công khai và riêng tư
+          dbQuery = dbQuery.eq('author_id', query.authorId);
+        } else {
+          // Người khác xem mẫu của tác giả này -> chỉ xem mẫu công khai
+          dbQuery = dbQuery.eq('author_id', query.authorId).eq('is_public', true);
+        }
       } else {
         dbQuery = dbQuery.eq('is_public', true);
       }
@@ -444,7 +450,7 @@ export class TemplatesService {
   /**
    * Xem chi tiết Template kèm cấu trúc Lists/Cards/Checklists
    */
-  async findById(id: string) {
+  async findById(id: string, currentUserId?: string) {
     try {
       const { data, error } = await this.supabase
         .from('templates')
@@ -453,6 +459,11 @@ export class TemplatesService {
         .maybeSingle();
 
       if (!error && data) {
+        // Ngăn chặn truy cập trái phép vào mẫu riêng tư
+        if (!data.is_public && (!currentUserId || data.author_id !== currentUserId)) {
+          throw new ForbiddenException('Bạn không có quyền truy cập mẫu riêng tư này');
+        }
+
         // Tăng view count trong nền
         this.supabase
           .from('templates')
@@ -462,13 +473,17 @@ export class TemplatesService {
 
         return data;
       }
-    } catch {
+    } catch (err) {
+      if (err instanceof ForbiddenException) throw err;
       // ignore
     }
 
     // Tra cứu trong built-in templates
     const found = BUILT_IN_TEMPLATES.find((t) => t.id === id);
     if (found) {
+      if (!found.is_public && (!currentUserId || (found as any).author_id !== currentUserId)) {
+        throw new ForbiddenException('Bạn không có quyền truy cập mẫu riêng tư này');
+      }
       return found;
     }
 
@@ -515,6 +530,9 @@ export class TemplatesService {
    * UC-TPL-001: Lưu một Board hiện tại thành Template tái sử dụng
    */
   async createFromBoard(boardId: string, userId: string, dto: CreateTemplateFromBoardDto) {
+    // 0. Xác thực quyền truy cập vào Board nguồn
+    await this.verifyBoardAccess(boardId, userId);
+
     // 1. Lấy thông tin Board
     const { data: board, error: bError } = await this.supabase
       .from('boards')
@@ -637,9 +655,9 @@ export class TemplatesService {
    * UC-TPL-002: Sửa Template
    */
   async update(id: string, userId: string, dto: UpdateTemplateDto) {
-    const template = await this.findById(id);
+    const template = await this.findById(id, userId);
 
-    if (template.author_id && template.author_id !== userId) {
+    if (!template.author_id || template.author_id !== userId) {
       throw new ForbiddenException('Bạn chỉ có quyền chỉnh sửa mẫu do chính mình tạo ra');
     }
 
@@ -671,9 +689,9 @@ export class TemplatesService {
    * UC-TPL-003: Xóa Template
    */
   async delete(id: string, userId: string) {
-    const template = await this.findById(id);
+    const template = await this.findById(id, userId);
 
-    if (template.author_id && template.author_id !== userId) {
+    if (!template.author_id || template.author_id !== userId) {
       throw new ForbiddenException('Bạn chỉ có quyền xóa mẫu do chính mình tạo ra');
     }
 
@@ -694,8 +712,12 @@ export class TemplatesService {
     userId: string,
     dto: CreateBoardFromTemplateDto,
   ) {
-    // 1. Lấy thông tin Template nguồn
-    const template = await this.findById(templateId);
+    // 1. Lấy thông tin Template nguồn và kiểm tra quyền xem
+    const template = await this.findById(templateId, userId);
+
+    if (!template.is_public && (!template.author_id || template.author_id !== userId)) {
+      throw new ForbiddenException('Bạn không có quyền sao chép từ mẫu riêng tư này');
+    }
 
     // 2. Xác thực quyền truy cập vào Workspace đích
     await this.verifyWorkspaceAccess(dto.workspaceId, userId);
@@ -718,70 +740,82 @@ export class TemplatesService {
       throw new BadRequestException(bError?.message || 'Không thể tạo Board từ mẫu');
     }
 
-    // 4. Gán quyền ADMIN cho người tạo board
-    await this.supabase.from('board_members').insert({
-      board_id: newBoard.id,
-      user_id: userId,
-      role: 'ADMIN',
-    });
+    try {
+      // 4. Gán quyền ADMIN cho người tạo board
+      const { error: mError } = await this.supabase.from('board_members').insert({
+        board_id: newBoard.id,
+        user_id: userId,
+        role: 'ADMIN',
+      });
+      if (mError) throw mError;
 
-    // 5. Khởi tạo các Lists, Cards và Checklists từ structure
-    const templateLists: any[] = template.structure?.lists || [];
+      // 5. Khởi tạo các Lists, Cards và Checklists từ structure
+      const templateLists: any[] = template.structure?.lists || [];
 
-    if (templateLists.length > 0) {
-      for (const [lIdx, tList] of templateLists.entries()) {
-        const { data: createdList, error: lError } = await this.supabase
-          .from('lists')
-          .insert({
-            board_id: newBoard.id,
-            title: tList.title || `Cột ${lIdx + 1}`,
-            position: tList.position ?? lIdx,
-            limit: tList.limit || null,
-          })
-          .select()
-          .single();
+      if (templateLists.length > 0) {
+        for (const [lIdx, tList] of templateLists.entries()) {
+          const { data: createdList, error: lError } = await this.supabase
+            .from('lists')
+            .insert({
+              board_id: newBoard.id,
+              title: tList.title || `Cột ${lIdx + 1}`,
+              position: tList.position ?? lIdx,
+              limit: tList.limit || null,
+            })
+            .select()
+            .single();
 
-        if (lError || !createdList) continue;
+          if (lError || !createdList) {
+            if (lError) throw lError;
+            continue;
+          }
 
-        // Nếu người dùng chọn giữ nguyên thẻ mẫu (keepCards !== false)
-        if (dto.keepCards !== false && Array.isArray(tList.cards)) {
-          for (const [cIdx, tCard] of tList.cards.entries()) {
-            const { data: createdCard, error: cError } = await this.supabase
-              .from('cards')
-              .insert({
-                list_id: createdList.id,
-                title: tCard.title || `Công việc ${cIdx + 1}`,
-                description: tCard.description || null,
-                position: tCard.position ?? cIdx,
-                created_by: userId,
-                status: 'TODO',
-              })
-              .select()
-              .single();
+          // Nếu người dùng chọn giữ nguyên thẻ mẫu (keepCards !== false)
+          if (dto.keepCards !== false && Array.isArray(tList.cards)) {
+            for (const [cIdx, tCard] of tList.cards.entries()) {
+              const { data: createdCard, error: cError } = await this.supabase
+                .from('cards')
+                .insert({
+                  list_id: createdList.id,
+                  title: tCard.title || `Công việc ${cIdx + 1}`,
+                  description: tCard.description || null,
+                  position: tCard.position ?? cIdx,
+                  created_by: userId,
+                  status: 'TODO',
+                })
+                .select()
+                .single();
 
-            if (cError || !createdCard) continue;
+              if (cError || !createdCard) {
+                if (cError) throw cError;
+                continue;
+              }
 
-            // Sao chép Checklists nếu có
-            if (Array.isArray(tCard.checklists)) {
-              for (const [ckIdx, tCk] of tCard.checklists.entries()) {
-                const { data: createdCk } = await this.supabase
-                  .from('checklists')
-                  .insert({
-                    card_id: createdCard.id,
-                    title: tCk.title || 'Checklist',
-                    position: ckIdx,
-                  })
-                  .select()
-                  .single();
+              // Sao chép Checklists nếu có
+              if (Array.isArray(tCard.checklists)) {
+                for (const [ckIdx, tCk] of tCard.checklists.entries()) {
+                  const { data: createdCk, error: ckError } = await this.supabase
+                    .from('checklists')
+                    .insert({
+                      card_id: createdCard.id,
+                      title: tCk.title || 'Checklist',
+                      position: ckIdx,
+                    })
+                    .select()
+                    .single();
 
-                if (createdCk && Array.isArray(tCk.items)) {
-                  for (const [itIdx, tIt] of tCk.items.entries()) {
-                    await this.supabase.from('checklist_items').insert({
-                      checklist_id: createdCk.id,
-                      title: tIt.title || 'Mục công việc',
-                      is_completed: tIt.is_completed ?? false,
-                      position: itIdx,
-                    });
+                  if (ckError) throw ckError;
+
+                  if (createdCk && Array.isArray(tCk.items)) {
+                    for (const [itIdx, tIt] of tCk.items.entries()) {
+                      const { error: itError } = await this.supabase.from('checklist_items').insert({
+                        checklist_id: createdCk.id,
+                        title: tIt.title || 'Mục công việc',
+                        is_completed: tIt.is_completed ?? false,
+                        position: itIdx,
+                      });
+                      if (itError) throw itError;
+                    }
                   }
                 }
               }
@@ -789,6 +823,10 @@ export class TemplatesService {
           }
         }
       }
+    } catch (err: any) {
+      // Transactional rollback: xóa board nếu gặp lỗi giữa chừng
+      await this.supabase.from('boards').delete().eq('id', newBoard.id);
+      throw new BadRequestException(err?.message || 'Không thể tạo đầy đủ cấu trúc Bảng từ mẫu');
     }
 
     // 6. Cập nhật lượt sử dụng của Template
@@ -814,6 +852,37 @@ export class TemplatesService {
       boardId: newBoard.id,
       workspaceId: dto.workspaceId,
     };
+  }
+
+  private async verifyBoardAccess(boardId: string, userId: string) {
+    const { data: member } = await this.supabase
+      .from('board_members')
+      .select('id')
+      .eq('board_id', boardId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!member) {
+      const { data: board } = await this.supabase
+        .from('boards')
+        .select('workspace_id')
+        .eq('id', boardId)
+        .maybeSingle();
+
+      if (!board) {
+        throw new NotFoundException('Không tìm thấy Board nguồn');
+      }
+
+      const { data: workspace } = await this.supabase
+        .from('workspaces')
+        .select('owner_id')
+        .eq('id', board.workspace_id)
+        .maybeSingle();
+
+      if (workspace?.owner_id !== userId) {
+        throw new ForbiddenException('Bạn không có quyền truy cập Bảng này để lưu thành mẫu');
+      }
+    }
   }
 
   private async verifyWorkspaceAccess(workspaceId: string, userId: string) {

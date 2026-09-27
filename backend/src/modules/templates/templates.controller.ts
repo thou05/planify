@@ -34,16 +34,20 @@ export class TemplatesController {
     @Query('category') category?: string,
     @Query('search') search?: string,
     @Query('authorId') authorId?: string,
+    @CurrentUser('id') userId?: string,
   ) {
-    return this.templatesService.findAll({ category, search, authorId });
+    return this.templatesService.findAll({ category, search, authorId }, userId);
   }
 
   @Get(':id')
   @Public()
   @ApiOperation({ summary: 'Xem chi tiết một Template kèm cấu trúc Kanban preview' })
   @ApiResponse({ status: 200, description: 'Chi tiết template' })
-  async findById(@Param('id') id: string) {
-    return this.templatesService.findById(id);
+  async findById(
+    @Param('id') id: string,
+    @CurrentUser('id') userId?: string,
+  ) {
+    return this.templatesService.findById(id, userId);
   }
 
   @Post()

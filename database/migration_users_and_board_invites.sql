@@ -91,5 +91,50 @@ CREATE INDEX IF NOT EXISTS idx_board_invites_email ON public.board_invites(email
 CREATE INDEX IF NOT EXISTS idx_board_invites_token ON public.board_invites(token);
 CREATE INDEX IF NOT EXISTS idx_board_invites_status ON public.board_invites(status);
 
--- Phân quyền cho Supabase API
-GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+-- ==============================================================================
+-- BẢO MẬT & PHÂN QUYỀN (RLS) CHO PUBLIC.BOARD_INVITES
+-- ==============================================================================
+ALTER TABLE public.board_invites ENABLE ROW LEVEL SECURITY;
+
+-- 1. Xem lời mời: Người nhận theo email hoặc người tạo lời mời
+DROP POLICY IF EXISTS "Users can view board invites for their email or created by them" ON public.board_invites;
+CREATE POLICY "Users can view board invites for their email or created by them"
+    ON public.board_invites
+    FOR SELECT
+    TO authenticated
+    USING (
+        email = (SELECT email FROM public.users WHERE id = auth.uid())
+        OR inviter_id = auth.uid()
+    );
+
+-- 2. Thêm lời mời: Chỉ người mời đã xác thực
+DROP POLICY IF EXISTS "Inviters can create board invites" ON public.board_invites;
+CREATE POLICY "Inviters can create board invites"
+    ON public.board_invites
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (auth.uid() = inviter_id);
+
+-- 3. Cập nhật trạng thái (chấp nhận/từ chối): Người nhận hoặc người tạo
+DROP POLICY IF EXISTS "Recipients or inviters can update board invites" ON public.board_invites;
+CREATE POLICY "Recipients or inviters can update board invites"
+    ON public.board_invites
+    FOR UPDATE
+    TO authenticated
+    USING (
+        email = (SELECT email FROM public.users WHERE id = auth.uid())
+        OR inviter_id = auth.uid()
+    );
+
+-- 4. Thu hồi lời mời: Chỉ người tạo
+DROP POLICY IF EXISTS "Inviters can delete board invites" ON public.board_invites;
+CREATE POLICY "Inviters can delete board invites"
+    ON public.board_invites
+    FOR DELETE
+    TO authenticated
+    USING (auth.uid() = inviter_id);
+
+-- Phân quyền Supabase an toàn (ngăn chặn anon truy cập dữ liệu nhạy cảm)
+REVOKE ALL ON public.board_invites FROM anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.board_invites TO authenticated;
+GRANT ALL ON public.board_invites TO service_role;
