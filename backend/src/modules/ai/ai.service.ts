@@ -24,25 +24,53 @@ export class AiService {
     private readonly supabase: SupabaseService,
     private readonly activitiesService: ActivitiesService,
   ) {
-    this.apiKey =
-      this.configService.get<string>('GEMINI_API_KEY') ||
-      process.env.GEMINI_API_KEY ||
-      '';
-
+    this.apiKey = this.resolveApiKey();
     if (this.apiKey) {
       this.aiClient = new GoogleGenAI({ apiKey: this.apiKey });
     }
   }
 
-  private getClient(): GoogleGenAI {
-    if (this.aiClient) return this.aiClient;
-    const currentKey =
+  private resolveApiKey(): string {
+    let key =
       this.configService.get<string>('GEMINI_API_KEY') ||
       process.env.GEMINI_API_KEY ||
       '';
+
+    if (!key) {
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const pathsToTry = [
+          path.resolve(process.cwd(), 'backend', '.env'),
+          path.resolve(process.cwd(), '.env'),
+          path.resolve(__dirname, '..', '..', '..', '.env'),
+          path.resolve(__dirname, '..', '..', '..', '..', '.env'),
+          path.resolve(__dirname, '..', '..', '..', 'backend', '.env'),
+        ];
+        for (const p of pathsToTry) {
+          if (fs.existsSync(p)) {
+            const content = fs.readFileSync(p, 'utf8');
+            const match = content.match(/GEMINI_API_KEY=(.*)/);
+            if (match && match[1]?.trim()) {
+              key = match[1].trim();
+              process.env.GEMINI_API_KEY = key;
+              break;
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return key;
+  }
+
+  private getClient(): GoogleGenAI {
+    if (this.aiClient) return this.aiClient;
+    const currentKey = this.resolveApiKey();
     if (!currentKey) {
       throw new BadRequestException(
-        'Chưa cấu hình GEMINI_API_KEY! Vui lòng tạo API Key miễn phí tại https://aistudio.google.com/app/apikey và thêm vào file backend/.env',
+        'Chưa cấu hình GEMINI_API_KEY! Vui lòng tạo API Key miễn phí tại https://aistudio.google.com/app/apikey và thêm vào file backend/.env hoặc cấu hình biến môi trường trên server deploy.',
       );
     }
     this.aiClient = new GoogleGenAI({ apiKey: currentKey });

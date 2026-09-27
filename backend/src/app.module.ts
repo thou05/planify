@@ -22,7 +22,13 @@ import { AiModule } from './modules/ai/ai.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env', '../frontend/.env.local', '../.env'],
+      envFilePath: [
+        'backend/.env',
+        '.env',
+        '../backend/.env',
+        '../frontend/.env.local',
+        '../.env',
+      ],
     }),
     SupabaseModule,
     AuthModule,
