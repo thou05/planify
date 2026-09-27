@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
+import { supabase } from '@/lib/supabase';
 import {
   LayoutGrid,
   Search,
@@ -30,7 +31,7 @@ export default function TopBar({
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Poll unread count periodically
+  // Realtime instant notification subscription + fallback sync
   useEffect(() => {
     let isMounted = true;
     const fetchUnread = async () => {
@@ -45,13 +46,36 @@ export default function TopBar({
     };
 
     fetchUnread();
-    const timer = setInterval(fetchUnread, 25000);
+
+    if (!user?.id) return;
+
+    const channel = supabase.channel(`user-notifications:${user.id}`, {
+      config: { broadcast: { self: false } },
+    });
+
+    channel
+      .on('broadcast', { event: 'NOTIFICATION_RECEIVED' }, () => {
+        setUnreadCount((prev) => prev + 1);
+      })
+      .on('broadcast', { event: 'NOTIFICATION_UPDATED' }, () => {
+        fetchUnread();
+      })
+      .on('broadcast', { event: 'NOTIFICATION_DELETED' }, () => {
+        fetchUnread();
+      })
+      .on('broadcast', { event: 'ALL_NOTIFICATIONS_READ' }, () => {
+        setUnreadCount(0);
+      })
+      .subscribe();
+
+    const fallbackTimer = setInterval(fetchUnread, 60000);
 
     return () => {
       isMounted = false;
-      clearInterval(timer);
+      clearInterval(fallbackTimer);
+      supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user?.id]);
 
   return (
     <>

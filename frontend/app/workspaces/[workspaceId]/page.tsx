@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth-context';
+import { supabase } from '@/lib/supabase';
 import AppShell from '@/components/layout/AppShell';
 import CreateBoardModal from '@/components/modals/CreateBoardModal';
 import EditWorkspaceModal from '@/components/modals/EditWorkspaceModal';
@@ -142,6 +143,98 @@ export default function WorkspaceDetailPage({
       fetchWorkspaceActivities();
     }
   }, [activeTab, workspaceId]);
+
+  // Realtime workspace sync (boards, members, settings)
+  useEffect(() => {
+    if (!workspaceId) return;
+
+    const channel = supabase.channel(`workspace-sync:${workspaceId}`, {
+      config: { broadcast: { self: false } },
+    });
+
+    channel
+      .on('broadcast', { event: 'BOARD_CREATED' }, ({ payload }) => {
+        if (payload?.senderId && user?.id && payload.senderId === user.id) return;
+        if (payload?.board) {
+          setWorkspace((prev: any) => {
+            if (!prev) return prev;
+            const exists = (prev.boards || []).some((b: any) => b.id === payload.board.id);
+            if (exists) return prev;
+            return {
+              ...prev,
+              boards: [...(prev.boards || []), payload.board],
+            };
+          });
+        } else {
+          fetchWorkspace();
+        }
+      })
+      .on('broadcast', { event: 'BOARD_UPDATED' }, ({ payload }) => {
+        if (payload?.senderId && user?.id && payload.senderId === user.id) return;
+        if (payload?.board) {
+          setWorkspace((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              boards: (prev.boards || []).map((b: any) =>
+                b.id === payload.board.id ? { ...b, ...payload.board } : b
+              ),
+            };
+          });
+        } else {
+          fetchWorkspace();
+        }
+      })
+      .on('broadcast', { event: 'BOARD_DELETED' }, ({ payload }) => {
+        if (payload?.senderId && user?.id && payload.senderId === user.id) return;
+        if (payload?.boardId) {
+          setWorkspace((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              boards: (prev.boards || []).filter((b: any) => b.id !== payload.boardId),
+            };
+          });
+        } else {
+          fetchWorkspace();
+        }
+      })
+      .on('broadcast', { event: 'BOARD_ARCHIVED' }, ({ payload }) => {
+        if (payload?.senderId && user?.id && payload.senderId === user.id) return;
+        if (payload?.boardId) {
+          setWorkspace((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              boards: (prev.boards || []).filter((b: any) => b.id !== payload.boardId),
+            };
+          });
+        }
+      })
+      .on('broadcast', { event: 'BOARD_RESTORED' }, () => {
+        fetchWorkspace();
+      })
+      .on('broadcast', { event: 'WORKSPACE_UPDATED' }, ({ payload }) => {
+        if (payload?.senderId && user?.id && payload.senderId === user.id) return;
+        if (payload?.workspace) {
+          setWorkspace((prev: any) => ({ ...prev, ...payload.workspace }));
+          setSettingsName(payload.workspace.name || '');
+          setSettingsDescription(payload.workspace.description || '');
+        } else {
+          fetchWorkspace();
+        }
+      })
+      .on('broadcast', { event: 'WORKSPACE_MEMBERS_CHANGED' }, ({ payload }) => {
+        if (payload?.senderId && user?.id && payload.senderId === user.id) return;
+        fetchWorkspace();
+        fetchInvites();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [workspaceId, user?.id]);
 
   const handleUpdateRole = async (targetUserId: string, newRole: 'ADMIN' | 'MEMBER') => {
     try {

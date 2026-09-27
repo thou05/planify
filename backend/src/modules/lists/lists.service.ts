@@ -65,7 +65,14 @@ export class ListsService {
       });
     }
 
-    return { ...list, cards: [] };
+    const createdList = { ...list, cards: [] };
+
+    this.supabase.emitBoardEvent(boardId, 'LIST_CREATED', {
+      list: createdList,
+      senderId: userId,
+    });
+
+    return createdList;
   }
 
   async update(listId: string, userId: string, dto: UpdateListDto) {
@@ -112,6 +119,11 @@ export class ListsService {
       });
     }
 
+    this.supabase.emitBoardEvent(list.board_id, 'LIST_UPDATED', {
+      list: updated,
+      senderId: userId,
+    });
+
     return updated;
   }
 
@@ -137,6 +149,11 @@ export class ListsService {
       throw new BadRequestException(error.message);
     }
 
+    this.supabase.emitBoardEvent(list.board_id, 'LIST_DELETED', {
+      listId,
+      senderId: userId,
+    });
+
     return { message: 'Xóa danh sách thành công' };
   }
 
@@ -153,6 +170,11 @@ export class ListsService {
     );
 
     await Promise.all(updates);
+
+    this.supabase.emitBoardEvent(boardId, 'LISTS_REORDERED', {
+      listIds: dto.listIds,
+      senderId: userId,
+    });
 
     return { message: 'Cập nhật thứ tự danh sách thành công' };
   }
@@ -283,10 +305,16 @@ export class ListsService {
       }
     }
 
-    return {
+    const copiedList = {
       ...newList,
       cards: createdCards,
     };
+
+    this.supabase.emitBoardEvent(sourceList.board_id, 'BOARD_REFRESH', {
+      senderId: userId,
+    });
+
+    return copiedList;
   }
 
   async moveAllCards(listId: string, userId: string, dto: MoveAllCardsDto) {
@@ -346,6 +374,10 @@ export class ListsService {
       }
     }
 
+    this.supabase.emitBoardEvent(sourceList.board_id, 'BOARD_REFRESH', {
+      senderId: userId,
+    });
+
     return { message: 'Đã di chuyển toàn bộ thẻ thành công' };
   }
 
@@ -393,6 +425,10 @@ export class ListsService {
         .update({ position: i })
         .eq('id', cards[i].id);
     }
+
+    this.supabase.emitBoardEvent(list.board_id, 'BOARD_REFRESH', {
+      senderId: userId,
+    });
 
     return { message: 'Sắp xếp danh sách thẻ thành công' };
   }
