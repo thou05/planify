@@ -19,6 +19,8 @@ import MoveCardsModal from '@/components/modals/MoveCardsModal';
 import MoveCardModal from '@/components/modals/MoveCardModal';
 import CopyCardModal from '@/components/modals/CopyCardModal';
 import SaveAsTemplateModal from '@/components/modals/SaveAsTemplateModal';
+import ExportBoardModal from '@/components/modals/ExportBoardModal';
+import ImportBoardModal from '@/components/modals/ImportBoardModal';
 import BoardViewSwitcher, { BoardViewType } from '@/components/board/views/BoardViewSwitcher';
 import BoardTableView from '@/components/board/views/BoardTableView';
 import BoardCalendarView from '@/components/board/views/BoardCalendarView';
@@ -54,6 +56,8 @@ import {
   Bot,
   AlertCircle,
   ShieldAlert,
+  Download,
+  Upload,
 } from 'lucide-react';
 import { ActivityItem } from '@/components/modals/MyActivityModal';
 import { BoardRiskScannerModal } from '@/components/board/BoardRiskScannerModal';
@@ -137,6 +141,8 @@ export default function BoardDetailPage({
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isCopyOpen, setIsCopyOpen] = useState(false);
   const [isSaveAsTemplateOpen, setIsSaveAsTemplateOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isBoardMenuOpen, setIsBoardMenuOpen] = useState(false);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [isCardDetailOpen, setIsCardDetailOpen] = useState(false);
@@ -146,7 +152,49 @@ export default function BoardDetailPage({
   const [isBoardActivityOpen, setIsBoardActivityOpen] = useState(false);
   const [boardActivities, setBoardActivities] = useState<ActivityItem[]>([]);
   const [isLoadingBoardActivities, setIsLoadingBoardActivities] = useState(false);
+  const [isLoadingMoreBoardActivities, setIsLoadingMoreBoardActivities] = useState(false);
+  const [boardActivitiesPage, setBoardActivitiesPage] = useState(1);
+  const [hasMoreBoardActivities, setHasMoreBoardActivities] = useState(false);
   const [boardActivityFilter, setBoardActivityFilter] = useState<'all' | 'board' | 'card'>('all');
+
+  const fetchBoardActivities = async () => {
+    try {
+      setIsLoadingBoardActivities(true);
+      setBoardActivitiesPage(1);
+      const res = await apiClient<ActivityItem[]>(`/boards/${boardId}/activities?limit=15&page=1`);
+      if (res.success && Array.isArray(res.data)) {
+        setBoardActivities(res.data);
+        setHasMoreBoardActivities(res.data.length >= 15);
+      } else {
+        setBoardActivities([]);
+        setHasMoreBoardActivities(false);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setIsLoadingBoardActivities(false);
+    }
+  };
+
+  const handleLoadMoreBoardActivities = async () => {
+    if (isLoadingMoreBoardActivities || !hasMoreBoardActivities) return;
+    try {
+      setIsLoadingMoreBoardActivities(true);
+      const nextPage = boardActivitiesPage + 1;
+      const res = await apiClient<ActivityItem[]>(`/boards/${boardId}/activities?limit=15&page=${nextPage}`);
+      if (res.success && Array.isArray(res.data)) {
+        setBoardActivities((prev) => [...prev, ...res.data]);
+        setBoardActivitiesPage(nextPage);
+        setHasMoreBoardActivities(res.data.length >= 15);
+      } else {
+        setHasMoreBoardActivities(false);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setIsLoadingMoreBoardActivities(false);
+    }
+  };
 
   // AI Features State
   const [isAiStandupOpen, setIsAiStandupOpen] = useState(false);
@@ -167,16 +215,22 @@ export default function BoardDetailPage({
     try {
       setIsLoadingAiStandup(true);
       setAiStandupError(null);
-      const res = await apiClient<any>(`/ai/boards/${boardId}/daily-standup`, {
+      const res = await apiClient<{
+        boardName?: string;
+        totalCards?: number;
+        completedCards?: number;
+        reportMarkdown?: string;
+        generatedAt?: string;
+      }>(`/ai/boards/${boardId}/daily-standup`, {
         method: 'POST',
       });
       if (res.success && res.data) {
         setAiStandupData(res.data);
       } else {
-        setAiStandupError(res.error || res.message || 'Không thể tạo báo cáo Standup với AI');
+        setAiStandupError(res.error || 'Không thể tạo báo cáo AI');
       }
     } catch (err: any) {
-      setAiStandupError(err.message || 'Lỗi khi kết nối với AI');
+      setAiStandupError(err?.message || 'Có lỗi xảy ra khi tạo báo cáo AI');
     } finally {
       setIsLoadingAiStandup(false);
     }
@@ -184,7 +238,11 @@ export default function BoardDetailPage({
 
   const handleCopyZalo = () => {
     if (!aiStandupData?.reportMarkdown) return;
-    const cleanText = formatReportForZalo(aiStandupData.reportMarkdown);
+    const cleanText = aiStandupData.reportMarkdown
+      .replace(/^#{1,6}\s+/gm, '')
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/`([^`]+)`/g, '$1');
     navigator.clipboard.writeText(cleanText);
     setCopyMode('zalo');
     setTimeout(() => setCopyMode(null), 2500);
@@ -195,20 +253,6 @@ export default function BoardDetailPage({
     navigator.clipboard.writeText(aiStandupData.reportMarkdown);
     setCopyMode('markdown');
     setTimeout(() => setCopyMode(null), 2500);
-  };
-
-  const fetchBoardActivities = async () => {
-    try {
-      setIsLoadingBoardActivities(true);
-      const res = await apiClient<ActivityItem[]>(`/boards/${boardId}/activities`);
-      if (res.success && Array.isArray(res.data)) {
-        setBoardActivities(res.data);
-      }
-    } catch {
-      // ignore
-    } finally {
-      setIsLoadingBoardActivities(false);
-    }
   };
 
   // Sub-modals state
@@ -1033,19 +1077,6 @@ export default function BoardDetailPage({
               <span className="hidden md:inline">AI Copilot</span>
             </button>
 
-            {/* Board Activity Button */}
-            <button
-              onClick={() => {
-                setIsBoardActivityOpen(true);
-                fetchBoardActivities();
-              }}
-              className="px-3 py-1.5 btn-secondary text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
-              title="Xem lịch sử hoạt động của bảng"
-            >
-              <History className="w-3.5 h-3.5 text-[#2b1572]" />
-              <span className="hidden lg:inline">Hoạt động</span>
-            </button>
-
             {/* Board Settings & Options Dropdown Menu */}
             <div className="relative">
               <button
@@ -1137,6 +1168,28 @@ export default function BoardDetailPage({
                   >
                     <LayoutTemplate className="w-3.5 h-3.5 text-[#2b1572]" />
                     <span>Lưu thành Mẫu (Template)</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsBoardMenuOpen(false);
+                      setIsImportModalOpen(true);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-white/60 flex items-center gap-2 cursor-pointer transition-colors"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Nhập dữ liệu (Import)</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsBoardMenuOpen(false);
+                      setIsExportModalOpen(true);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-white/60 flex items-center gap-2 cursor-pointer transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Xuất dữ liệu (Export)</span>
                   </button>
 
                   <button
@@ -1366,6 +1419,28 @@ export default function BoardDetailPage({
         isOpen={isSaveAsTemplateOpen}
         board={board}
         onClose={() => setIsSaveAsTemplateOpen(false)}
+      />
+
+      <ExportBoardModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        boardId={boardId}
+        boardTitle={board?.name}
+      />
+
+      <ImportBoardModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        workspaceId={board?.workspace_id}
+        currentBoardId={boardId}
+        currentBoardTitle={board?.name}
+        onSuccess={(targetId) => {
+          if (targetId && targetId !== boardId) {
+            router.push(`/boards/${targetId}`);
+          } else {
+            fetchBoard();
+          }
+        }}
       />
 
       {/* 2. Card Detail Modal */}
@@ -1736,7 +1811,7 @@ export default function BoardDetailPage({
                     }
                   };
 
-                  return filtered.map((act) => {
+                  const activityBlocks = filtered.map((act) => {
                     const isCard = act.target_type.startsWith('card:');
                     const cardId = isCard ? act.target_type.replace('card:', '') : null;
                     const actorName = act.user?.name || 'Người dùng';
@@ -1796,6 +1871,30 @@ export default function BoardDetailPage({
                       </div>
                     );
                   });
+
+                  return (
+                    <>
+                      {activityBlocks}
+                      {hasMoreBoardActivities && (
+                        <div className="pt-2 flex justify-center">
+                          <button
+                            onClick={handleLoadMoreBoardActivities}
+                            disabled={isLoadingMoreBoardActivities}
+                            className="px-4 py-2 rounded-xl text-xs font-semibold text-[#2b1572] bg-white border border-slate-200 hover:bg-slate-50 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs"
+                          >
+                            {isLoadingMoreBoardActivities && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                            <span>{isLoadingMoreBoardActivities ? 'Đang tải thêm...' : 'Tải thêm hoạt động cũ hơn'}</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {!hasMoreBoardActivities && boardActivities.length > 0 && (
+                        <div className="py-2 text-center text-[11px] text-slate-400 font-medium">
+                          Đã hiển thị tất cả hoạt động
+                        </div>
+                      )}
+                    </>
+                  );
                 })()}
               </div>
             </div>

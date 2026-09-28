@@ -18,6 +18,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { CardRelationsModule } from './modules/card-relations/card-relations.module';
 import { TemplatesModule } from './modules/templates/templates.module';
 import { AiModule } from './modules/ai/ai.module';
+import { ImportExportModule } from './modules/import-export/import-export.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { AiModule } from './modules/ai/ai.module';
     CardRelationsModule,
     TemplatesModule,
     AiModule,
+    ImportExportModule,
   ],
   controllers: [AppController],
   providers: [AppService],

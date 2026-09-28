@@ -17,6 +17,14 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+export interface ActivityTargetMeta {
+  card_id?: string;
+  card_title?: string;
+  board_id?: string;
+  board_name?: string;
+  list_title?: string;
+}
+
 export interface ActivityItem {
   id: string;
   workspace_id: string;
@@ -34,6 +42,7 @@ export interface ActivityItem {
     id: string;
     name: string;
   } | null;
+  target_meta?: ActivityTargetMeta;
 }
 
 interface MyActivityModalProps {
@@ -50,19 +59,47 @@ export default function MyActivityModal({
   const router = useRouter();
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [filter, setFilter] = useState<'all' | 'card' | 'board' | 'workspace'>('all');
 
   const fetchActivities = async () => {
     try {
       setIsLoading(true);
-      const res = await apiClient<ActivityItem[]>('/activities/me');
+      setPage(1);
+      const res = await apiClient<ActivityItem[]>('/activities/me?limit=15&page=1');
       if (res.success && Array.isArray(res.data)) {
         setActivities(res.data);
+        setHasMore(res.data.length >= 15);
+      } else {
+        setActivities([]);
+        setHasMore(false);
       }
     } catch {
       // Ignore error
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleLoadMore = async () => {
+    if (isLoadingMore || !hasMore) return;
+    try {
+      setIsLoadingMore(true);
+      const nextPage = page + 1;
+      const res = await apiClient<ActivityItem[]>(`/activities/me?limit=15&page=${nextPage}`);
+      if (res.success && Array.isArray(res.data)) {
+        setActivities((prev) => [...prev, ...res.data]);
+        setPage(nextPage);
+        setHasMore(res.data.length >= 15);
+      } else {
+        setHasMore(false);
+      }
+    } catch {
+      // Ignore error
+    } finally {
+      setIsLoadingMore(false);
     }
   };
 
@@ -126,17 +163,27 @@ export default function MyActivityModal({
 
   const handleItemClick = (act: ActivityItem) => {
     if (act.target_type.startsWith('card:')) {
-      const cardId = act.target_type.replace('card:', '');
-      if (onSelectCard) {
+      const cardId = act.target_meta?.card_id || act.target_type.replace('card:', '');
+      const boardId = act.target_meta?.board_id;
+      if (boardId) {
+        router.push(`/boards/${boardId}?cardId=${cardId}`);
+        onClose();
+      } else if (onSelectCard) {
         onSelectCard(cardId);
         onClose();
       }
     } else if (act.target_type.startsWith('board:')) {
-      const boardId = act.target_type.replace('board:', '');
+      const boardId = act.target_meta?.board_id || act.target_type.replace('board:', '');
       router.push(`/boards/${boardId}`);
       onClose();
     } else if (act.workspace_id) {
-      router.push(`/workspaces/${act.workspace_id}`);
+      if (act.action.includes('thành viên') || act.action.includes('vai trò')) {
+        router.push(`/workspaces/${act.workspace_id}?tab=members`);
+      } else if (act.action.includes('cài đặt') || act.action.includes('tên') || act.action.includes('mô tả')) {
+        router.push(`/workspaces/${act.workspace_id}?tab=settings`);
+      } else {
+        router.push(`/workspaces/${act.workspace_id}`);
+      }
       onClose();
     }
   };
@@ -240,47 +287,68 @@ export default function MyActivityModal({
               <p className="text-[11px] mt-0.5">Các thao tác của bạn sẽ được tự động lưu lại ở đây.</p>
             </div>
           ) : (
-            filteredActivities.map((act) => (
-              <div
-                key={act.id}
-                onClick={() => handleItemClick(act)}
-                className="group p-3 rounded-2xl border border-slate-100 bg-slate-50/60 hover:bg-white hover:border-[#2b1572]/20 hover:shadow-xs transition-all flex items-start gap-3 cursor-pointer"
-              >
-                <div className="w-7 h-7 rounded-xl bg-white border border-slate-200/80 shadow-2xs flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
-                  {getActionIcon(act.action, act.target_type)}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs text-slate-800 font-medium leading-relaxed break-words">
-                      <span className="font-bold text-[#2b1572]">Bạn </span>
-                      {act.action}
-                    </p>
-                    <span className="text-[10px] text-slate-400 shrink-0 font-medium whitespace-nowrap">
-                      {formatRelativeTime(act.created_at)}
-                    </span>
+            <>
+              {filteredActivities.map((act) => (
+                <div
+                  key={act.id}
+                  onClick={() => handleItemClick(act)}
+                  className="group p-3 rounded-2xl border border-slate-100 bg-slate-50/60 hover:bg-white hover:border-[#2b1572]/20 hover:shadow-xs transition-all flex items-start gap-3 cursor-pointer"
+                >
+                  <div className="w-7 h-7 rounded-xl bg-white border border-slate-200/80 shadow-2xs flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                    {getActionIcon(act.action, act.target_type)}
                   </div>
 
-                  <div className="flex items-center gap-2 mt-1.5 text-[10px] text-slate-400">
-                    {act.workspace?.name && (
-                      <span className="px-1.5 py-0.5 rounded-md bg-slate-100 font-medium text-slate-500">
-                        {act.workspace.name}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs text-slate-800 font-medium leading-relaxed break-words">
+                        <span className="font-bold text-[#2b1572]">Bạn </span>
+                        {act.action}
+                      </p>
+                      <span className="text-[10px] text-slate-400 shrink-0 font-medium whitespace-nowrap">
+                        {formatRelativeTime(act.created_at)}
                       </span>
-                    )}
-                    {act.target_type.startsWith('card:') && (
-                      <span className="px-1.5 py-0.5 rounded-md bg-purple-50 text-[#2b1572] font-semibold flex items-center gap-1">
-                        Thẻ <ExternalLink className="w-2.5 h-2.5 opacity-60" />
-                      </span>
-                    )}
-                    {act.target_type.startsWith('board:') && (
-                      <span className="px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-700 font-semibold flex items-center gap-1">
-                        Bảng <ExternalLink className="w-2.5 h-2.5 opacity-60" />
-                      </span>
-                    )}
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-1.5 text-[10px] text-slate-400">
+                      {act.workspace?.name && (
+                        <span className="px-1.5 py-0.5 rounded-md bg-slate-100 font-medium text-slate-500">
+                          {act.workspace.name}
+                        </span>
+                      )}
+                      {act.target_type.startsWith('card:') && (
+                        <span className="px-1.5 py-0.5 rounded-md bg-purple-50 text-[#2b1572] font-semibold flex items-center gap-1 group-hover:bg-purple-100 transition-colors">
+                          Thẻ{act.target_meta?.board_name ? ` • ${act.target_meta.board_name}` : ''} <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                        </span>
+                      )}
+                      {act.target_type.startsWith('board:') && (
+                        <span className="px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-700 font-semibold flex items-center gap-1 group-hover:bg-blue-100 transition-colors">
+                          Bảng{act.target_meta?.board_name ? `: ${act.target_meta.board_name}` : ''} <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              ))}
+
+              {hasMore && (
+                <div className="pt-2 flex justify-center">
+                  <button
+                    onClick={handleLoadMore}
+                    disabled={isLoadingMore}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-[#2b1572] bg-slate-100 hover:bg-slate-200/80 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    {isLoadingMore && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                    <span>{isLoadingMore ? 'Đang tải thêm...' : 'Tải thêm hoạt động cũ hơn'}</span>
+                  </button>
+                </div>
+              )}
+
+              {!hasMore && activities.length > 0 && (
+                <div className="py-2 text-center text-[11px] text-slate-400 font-medium">
+                  Đã hiển thị tất cả hoạt động
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

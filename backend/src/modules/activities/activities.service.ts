@@ -2,6 +2,14 @@ import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '../../integrations/supabase/supabase.service';
 import { CreateActivityDto } from './dto/create-activity.dto';
 
+export interface ActivityTargetMeta {
+  card_id?: string;
+  card_title?: string;
+  board_id?: string;
+  board_name?: string;
+  list_title?: string;
+}
+
 export interface ActivityLogItem {
   id: string;
   workspace_id: string;
@@ -19,6 +27,7 @@ export interface ActivityLogItem {
     id: string;
     name: string;
   } | null;
+  target_meta?: ActivityTargetMeta;
 }
 
 @Injectable()
@@ -26,6 +35,91 @@ export class ActivitiesService {
   private readonly logger = new Logger(ActivitiesService.name);
 
   constructor(private readonly supabase: SupabaseService) {}
+
+  /**
+   * Enrich activity items with board and card metadata for direct navigation
+   */
+  private async enrichActivitiesWithMetadata(
+    activities: ActivityLogItem[],
+  ): Promise<ActivityLogItem[]> {
+    if (!activities || activities.length === 0) return [];
+
+    try {
+      const cardIds: string[] = [];
+      const boardIds: string[] = [];
+
+      for (const act of activities) {
+        if (act.target_type?.startsWith('card:')) {
+          const cId = act.target_type.replace('card:', '').trim();
+          if (cId && !cardIds.includes(cId)) cardIds.push(cId);
+        } else if (act.target_type?.startsWith('board:')) {
+          const bId = act.target_type.replace('board:', '').trim();
+          if (bId && !boardIds.includes(bId)) boardIds.push(bId);
+        }
+      }
+
+      const cardMap = new Map<string, any>();
+      if (cardIds.length > 0) {
+        const { data: cards } = await this.supabase
+          .from('cards')
+          .select('id, title, list:lists(id, title, board_id, board:boards(id, name))')
+          .in('id', cardIds);
+
+        if (cards) {
+          for (const c of cards as any[]) {
+            cardMap.set(c.id, c);
+          }
+        }
+      }
+
+      const boardMap = new Map<string, any>();
+      if (boardIds.length > 0) {
+        const { data: boards } = await this.supabase
+          .from('boards')
+          .select('id, name')
+          .in('id', boardIds);
+
+        if (boards) {
+          for (const b of boards as any[]) {
+            boardMap.set(b.id, b);
+          }
+        }
+      }
+
+      for (const act of activities) {
+        if (act.target_type?.startsWith('card:')) {
+          const cId = act.target_type.replace('card:', '').trim();
+          const cardData = cardMap.get(cId);
+          if (cardData) {
+            act.target_meta = {
+              card_id: cardData.id,
+              card_title: cardData.title,
+              list_title: cardData.list?.title,
+              board_id: cardData.list?.board_id || cardData.list?.board?.id,
+              board_name: cardData.list?.board?.name,
+            };
+          } else {
+            act.target_meta = { card_id: cId };
+          }
+        } else if (act.target_type?.startsWith('board:')) {
+          const bId = act.target_type.replace('board:', '').trim();
+          const boardData = boardMap.get(bId);
+          if (boardData) {
+            act.target_meta = {
+              board_id: boardData.id,
+              board_name: boardData.name,
+            };
+          } else {
+            act.target_meta = { board_id: bId };
+          }
+        }
+      }
+    } catch (err: any) {
+      this.logger.warn(`Error enriching activities metadata: ${err.message}`);
+    }
+
+    return activities;
+  }
 
   /**
    * Log an activity safely without throwing errors that could interrupt main flows
@@ -55,7 +149,12 @@ export class ActivitiesService {
   /**
    * Get all activities related to a single Card
    */
-  async getCardActivities(cardId: string): Promise<ActivityLogItem[]> {
+  async getCardActivities(cardId: string, limit = 15, page = 1): Promise<ActivityLogItem[]> {
+    const safeLimit = Math.min(Math.max(1, Number(limit) || 15), 50);
+    const safePage = Math.max(1, Number(page) || 1);
+    const from = (safePage - 1) * safeLimit;
+    const to = from + safeLimit - 1;
+
     const { data, error } = await this.supabase
       .from('activity_logs')
       .select(`
@@ -69,21 +168,27 @@ export class ActivitiesService {
       `)
       .eq('target_type', `card:${cardId}`)
       .order('created_at', { ascending: false })
-      .limit(60);
+      .range(from, to);
 
     if (error) {
       this.logger.error(`Error fetching card activities: ${error.message}`);
       return [];
     }
 
-    return (data as unknown as ActivityLogItem[]) || [];
+    const items = (data as unknown as ActivityLogItem[]) || [];
+    return this.enrichActivitiesWithMetadata(items);
   }
 
   /**
    * Get all activities for a Board, including the board itself AND all cards in that board
    */
-  async getBoardActivities(boardId: string): Promise<ActivityLogItem[]> {
+  async getBoardActivities(boardId: string, limit = 15, page = 1): Promise<ActivityLogItem[]> {
     try {
+      const safeLimit = Math.min(Math.max(1, Number(limit) || 15), 50);
+      const safePage = Math.max(1, Number(page) || 1);
+      const from = (safePage - 1) * safeLimit;
+      const to = from + safeLimit - 1;
+
       // 1. Fetch all card IDs for this board
       const { data: lists } = await this.supabase
         .from('lists')
@@ -117,14 +222,15 @@ export class ActivitiesService {
         `)
         .in('target_type', targetTypes)
         .order('created_at', { ascending: false })
-        .limit(100);
+        .range(from, to);
 
       if (error) {
         this.logger.error(`Error fetching board activities: ${error.message}`);
         return [];
       }
 
-      return (data as unknown as ActivityLogItem[]) || [];
+      const items = (data as unknown as ActivityLogItem[]) || [];
+      return this.enrichActivitiesWithMetadata(items);
     } catch (err: any) {
       this.logger.error(`Exception fetching board activities: ${err.message}`);
       return [];
@@ -134,7 +240,12 @@ export class ActivitiesService {
   /**
    * Get all activities in a Workspace (includes workspace actions, board actions, and card actions)
    */
-  async getWorkspaceActivities(workspaceId: string): Promise<ActivityLogItem[]> {
+  async getWorkspaceActivities(workspaceId: string, limit = 15, page = 1): Promise<ActivityLogItem[]> {
+    const safeLimit = Math.min(Math.max(1, Number(limit) || 15), 50);
+    const safePage = Math.max(1, Number(page) || 1);
+    const from = (safePage - 1) * safeLimit;
+    const to = from + safeLimit - 1;
+
     const { data, error } = await this.supabase
       .from('activity_logs')
       .select(`
@@ -148,20 +259,26 @@ export class ActivitiesService {
       `)
       .eq('workspace_id', workspaceId)
       .order('created_at', { ascending: false })
-      .limit(150);
+      .range(from, to);
 
     if (error) {
       this.logger.error(`Error fetching workspace activities: ${error.message}`);
       return [];
     }
 
-    return (data as unknown as ActivityLogItem[]) || [];
+    const items = (data as unknown as ActivityLogItem[]) || [];
+    return this.enrichActivitiesWithMetadata(items);
   }
 
   /**
    * Get all personal activities performed by the current user across all workspaces/boards/cards
    */
-  async getMyActivities(userId: string): Promise<ActivityLogItem[]> {
+  async getMyActivities(userId: string, limit = 15, page = 1): Promise<ActivityLogItem[]> {
+    const safeLimit = Math.min(Math.max(1, Number(limit) || 15), 50);
+    const safePage = Math.max(1, Number(page) || 1);
+    const from = (safePage - 1) * safeLimit;
+    const to = from + safeLimit - 1;
+
     const { data, error } = await this.supabase
       .from('activity_logs')
       .select(`
@@ -176,13 +293,14 @@ export class ActivitiesService {
       `)
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
-      .limit(100);
+      .range(from, to);
 
     if (error) {
       this.logger.error(`Error fetching personal activities: ${error.message}`);
       return [];
     }
 
-    return (data as unknown as ActivityLogItem[]) || [];
+    const items = (data as unknown as ActivityLogItem[]) || [];
+    return this.enrichActivitiesWithMetadata(items);
   }
 }
