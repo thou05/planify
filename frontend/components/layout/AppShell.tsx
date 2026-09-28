@@ -9,6 +9,7 @@ import TopBar from './TopBar';
 import Sidebar, { WorkspaceItem } from './Sidebar';
 import CreateWorkspaceModal from '../modals/CreateWorkspaceModal';
 import CreateBoardModal from '../modals/CreateBoardModal';
+import ImportBoardModal from '../modals/ImportBoardModal';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -28,8 +29,10 @@ export default function AppShell({
 
   const [workspaces, setWorkspaces] = useState<WorkspaceItem[]>([]);
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | undefined>(activeWorkspaceId);
+  const [importTargetWsId, setImportTargetWsId] = useState<string | undefined>(undefined);
   const [isCreateWsOpen, setIsCreateWsOpen] = useState(false);
   const [isCreateBoardOpen, setIsCreateBoardOpen] = useState(false);
+  const [isImportBoardOpen, setIsImportBoardOpen] = useState(false);
 
   const fetchWorkspaces = async () => {
     try {
@@ -136,7 +139,26 @@ export default function AppShell({
         workspaces={workspaces}
         onClose={() => setIsCreateBoardOpen(false)}
         onCreated={handleBoardCreated}
+        onOpenImport={(wsId) => {
+          setImportTargetWsId(wsId || selectedWorkspaceId);
+          setIsImportBoardOpen(true);
+        }}
       />
+
+      {isImportBoardOpen && (importTargetWsId || selectedWorkspaceId) && (
+        <ImportBoardModal
+          isOpen={isImportBoardOpen}
+          workspaceId={importTargetWsId || selectedWorkspaceId || ''}
+          onClose={() => setIsImportBoardOpen(false)}
+          onSuccess={(newBoardId) => {
+            fetchWorkspaces();
+            onRefresh?.();
+            if (newBoardId) {
+              router.push(`/boards/${newBoardId}`);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

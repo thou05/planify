@@ -2,9 +2,10 @@ import {
   Controller,
   Get,
   Param,
+  Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ActivitiesService } from './activities.service';
@@ -18,25 +19,49 @@ export class ActivitiesController {
 
   @Get('activities/me')
   @ApiOperation({ summary: 'Lấy dòng hoạt động của bản thân người dùng hiện tại' })
-  async getMyActivities(@CurrentUser('id') userId: string) {
-    return this.activitiesService.getMyActivities(userId);
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  async getMyActivities(
+    @CurrentUser('id') userId: string,
+    @Query('limit') limit?: number,
+    @Query('page') page?: number,
+  ) {
+    return this.activitiesService.getMyActivities(userId, limit, page);
   }
 
   @Get('cards/:cardId/activities')
   @ApiOperation({ summary: 'Lấy lịch sử hoạt động của một Thẻ' })
-  async getCardActivities(@Param('cardId') cardId: string) {
-    return this.activitiesService.getCardActivities(cardId);
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  async getCardActivities(
+    @Param('cardId') cardId: string,
+    @Query('limit') limit?: number,
+    @Query('page') page?: number,
+  ) {
+    return this.activitiesService.getCardActivities(cardId, limit, page);
   }
 
   @Get('boards/:boardId/activities')
   @ApiOperation({ summary: 'Lấy lịch sử hoạt động của một Bảng (bao gồm Bảng và toàn bộ Thẻ)' })
-  async getBoardActivities(@Param('boardId') boardId: string) {
-    return this.activitiesService.getBoardActivities(boardId);
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  async getBoardActivities(
+    @Param('boardId') boardId: string,
+    @Query('limit') limit?: number,
+    @Query('page') page?: number,
+  ) {
+    return this.activitiesService.getBoardActivities(boardId, limit, page);
   }
 
   @Get('workspaces/:workspaceId/activities')
   @ApiOperation({ summary: 'Lấy toàn bộ lịch sử hoạt động trong một Không gian làm việc' })
-  async getWorkspaceActivities(@Param('workspaceId') workspaceId: string) {
-    return this.activitiesService.getWorkspaceActivities(workspaceId);
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  async getWorkspaceActivities(
+    @Param('workspaceId') workspaceId: string,
+    @Query('limit') limit?: number,
+    @Query('page') page?: number,
+  ) {
+    return this.activitiesService.getWorkspaceActivities(workspaceId, limit, page);
   }
 }

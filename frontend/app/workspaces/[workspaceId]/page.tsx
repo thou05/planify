@@ -12,6 +12,7 @@ import EditWorkspaceModal from '@/components/modals/EditWorkspaceModal';
 import InviteMemberModal from '@/components/modals/InviteMemberModal';
 import TransferOwnershipModal from '@/components/modals/TransferOwnershipModal';
 import ArchivedBoardsModal from '@/components/modals/ArchivedBoardsModal';
+import ImportBoardModal from '@/components/modals/ImportBoardModal';
 import {
   Layers,
   Kanban,
@@ -42,6 +43,7 @@ import {
   Paperclip,
   MessageSquare,
   Sparkles,
+  Upload,
 } from 'lucide-react';
 import { ActivityItem } from '@/components/modals/MyActivityModal';
 
@@ -63,14 +65,22 @@ export default function WorkspaceDetailPage({
   // Workspace Activities State
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [isLoadingActivities, setIsLoadingActivities] = useState(false);
+  const [isLoadingMoreActivities, setIsLoadingMoreActivities] = useState(false);
+  const [activitiesPage, setActivitiesPage] = useState(1);
+  const [hasMoreActivities, setHasMoreActivities] = useState(false);
   const [activityFilter, setActivityFilter] = useState<'all' | 'board' | 'card' | 'workspace'>('all');
 
   const fetchWorkspaceActivities = async () => {
     try {
       setIsLoadingActivities(true);
-      const res = await apiClient<ActivityItem[]>(`/workspaces/${workspaceId}/activities`);
+      setActivitiesPage(1);
+      const res = await apiClient<ActivityItem[]>(`/workspaces/${workspaceId}/activities?limit=15&page=1`);
       if (res.success && Array.isArray(res.data)) {
         setActivities(res.data);
+        setHasMoreActivities(res.data.length >= 15);
+      } else {
+        setActivities([]);
+        setHasMoreActivities(false);
       }
     } catch {
       // Error
@@ -79,8 +89,29 @@ export default function WorkspaceDetailPage({
     }
   };
 
+  const handleLoadMoreActivities = async () => {
+    if (isLoadingMoreActivities || !hasMoreActivities) return;
+    try {
+      setIsLoadingMoreActivities(true);
+      const nextPage = activitiesPage + 1;
+      const res = await apiClient<ActivityItem[]>(`/workspaces/${workspaceId}/activities?limit=15&page=${nextPage}`);
+      if (res.success && Array.isArray(res.data)) {
+        setActivities((prev) => [...prev, ...res.data]);
+        setActivitiesPage(nextPage);
+        setHasMoreActivities(res.data.length >= 15);
+      } else {
+        setHasMoreActivities(false);
+      }
+    } catch {
+      // Error
+    } finally {
+      setIsLoadingMoreActivities(false);
+    }
+  };
+
   // Modals state
   const [isCreateBoardOpen, setIsCreateBoardOpen] = useState(false);
+  const [isImportBoardOpen, setIsImportBoardOpen] = useState(false);
   const [isEditWsOpen, setIsEditWsOpen] = useState(false);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
@@ -1060,6 +1091,27 @@ export default function WorkspaceDetailPage({
                 }
               };
 
+              const handleActivityClick = (act: ActivityItem) => {
+                if (act.target_type.startsWith('card:')) {
+                  const cardId = act.target_meta?.card_id || act.target_type.replace('card:', '');
+                  const boardId = act.target_meta?.board_id;
+                  if (boardId) {
+                    router.push(`/boards/${boardId}?cardId=${cardId}`);
+                  }
+                } else if (act.target_type.startsWith('board:')) {
+                  const boardId = act.target_meta?.board_id || act.target_type.replace('board:', '');
+                  router.push(`/boards/${boardId}`);
+                } else if (act.target_type.startsWith('workspace:') || act.workspace_id) {
+                  if (act.action.includes('thành viên') || act.action.includes('vai trò') || act.action.includes('lời mời')) {
+                    setActiveTab('members');
+                  } else if (act.action.includes('cài đặt') || act.action.includes('tên') || act.action.includes('mô tả')) {
+                    setActiveTab('settings');
+                  } else {
+                    setActiveTab('boards');
+                  }
+                }
+              };
+
               return (
                 <div className="space-y-2.5">
                   {filtered.map((act) => {
@@ -1067,12 +1119,14 @@ export default function WorkspaceDetailPage({
                     const actorAvatar = act.user?.avatar;
                     const isBoard = act.target_type.startsWith('board:');
                     const isCard = act.target_type.startsWith('card:');
-                    const boardId = isBoard ? act.target_type.replace('board:', '') : null;
+                    const boardId = act.target_meta?.board_id || (isBoard ? act.target_type.replace('board:', '') : null);
+                    const cardId = act.target_meta?.card_id || (isCard ? act.target_type.replace('card:', '') : null);
 
                     return (
                       <div
                         key={act.id}
-                        className="glass-surface p-3.5 sm:p-4 rounded-2xl flex items-start gap-3.5 hover:bg-white/60 transition-all border border-white/60 shadow-2xs group"
+                        onClick={() => handleActivityClick(act)}
+                        className="glass-surface p-3.5 sm:p-4 rounded-2xl flex items-start gap-3.5 hover:bg-white/80 hover:border-[#2b1572]/20 hover:shadow-xs transition-all border border-white/60 shadow-2xs group cursor-pointer"
                       >
                         {actorAvatar ? (
                           <img
@@ -1094,12 +1148,12 @@ export default function WorkspaceDetailPage({
                               </span>
                               {isBoard && (
                                 <span className="text-[10px] font-semibold px-2 py-0.2 rounded-md bg-[#2b1572]/10 text-[#2b1572]">
-                                  Bảng
+                                  Bảng{act.target_meta?.board_name ? `: ${act.target_meta.board_name}` : ''}
                                 </span>
                               )}
                               {isCard && (
                                 <span className="text-[10px] font-semibold px-2 py-0.2 rounded-md bg-blue-50 text-blue-700">
-                                  Thẻ
+                                  Thẻ{act.target_meta?.board_name ? ` • ${act.target_meta.board_name}` : ''}
                                 </span>
                               )}
                               {act.target_type.startsWith('workspace:') && (
@@ -1119,21 +1173,49 @@ export default function WorkspaceDetailPage({
                             <span>{act.action}</span>
                           </div>
 
-                          {boardId && (
-                            <div className="mt-2">
-                              <Link
-                                href={`/boards/${boardId}`}
-                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#2b1572] bg-[#a6d1fd]/30 hover:bg-[#a6d1fd]/50 px-2 py-0.5 rounded-lg transition-colors"
-                              >
+                          <div className="mt-2 flex items-center gap-2">
+                            {isCard && boardId && (
+                              <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#2b1572] bg-[#a6d1fd]/30 group-hover:bg-[#a6d1fd]/60 px-2 py-0.5 rounded-lg transition-colors">
+                                <span>Xem chi tiết thẻ</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </div>
+                            )}
+                            {isBoard && boardId && (
+                              <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#2b1572] bg-[#a6d1fd]/30 group-hover:bg-[#a6d1fd]/60 px-2 py-0.5 rounded-lg transition-colors">
                                 <span>Đi đến Bảng</span>
                                 <ExternalLink className="w-3 h-3" />
-                              </Link>
-                            </div>
-                          )}
+                              </div>
+                            )}
+                            {act.target_type.startsWith('workspace:') && (
+                              <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-700 bg-purple-50 group-hover:bg-purple-100 px-2 py-0.5 rounded-lg transition-colors">
+                                <span>Xem chi tiết</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
                   })}
+
+                  {hasMoreActivities && (
+                    <div className="pt-2 flex justify-center">
+                      <button
+                        onClick={handleLoadMoreActivities}
+                        disabled={isLoadingMoreActivities}
+                        className="px-4 py-2 rounded-xl text-xs font-semibold text-[#2b1572] bg-white/70 hover:bg-white border border-[#2b1572]/15 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs"
+                      >
+                        {isLoadingMoreActivities && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                        <span>{isLoadingMoreActivities ? 'Đang tải thêm...' : 'Tải thêm hoạt động cũ hơn'}</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {!hasMoreActivities && activities.length > 0 && (
+                    <div className="py-2 text-center text-[11px] text-[#2b1572]/50 font-medium">
+                      Đã hiển thị tất cả hoạt động
+                    </div>
+                  )}
                 </div>
               );
             })()}
@@ -1148,6 +1230,20 @@ export default function WorkspaceDetailPage({
         workspaces={workspace ? [workspace] : []}
         onClose={() => setIsCreateBoardOpen(false)}
         onCreated={() => fetchWorkspace()}
+        onOpenImport={() => setIsImportBoardOpen(true)}
+      />
+
+      <ImportBoardModal
+        isOpen={isImportBoardOpen}
+        workspaceId={workspaceId}
+        onClose={() => setIsImportBoardOpen(false)}
+        onSuccess={(newBoardId) => {
+          if (newBoardId) {
+            router.push(`/boards/${newBoardId}`);
+          } else {
+            fetchWorkspace();
+          }
+        }}
       />
 
       <EditWorkspaceModal

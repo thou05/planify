@@ -504,19 +504,98 @@ export default function CardDetailModal({
   // --- ACTIVITIES STATE ---
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [isLoadingActivities, setIsLoadingActivities] = useState(false);
+  const [isLoadingMoreActivities, setIsLoadingMoreActivities] = useState(false);
+  const [cardActivitiesPage, setCardActivitiesPage] = useState(1);
+  const [hasMoreCardActivities, setHasMoreCardActivities] = useState(false);
   const [activityTab, setActivityTab] = useState<'comments' | 'activities'>('comments');
+  const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
+
+  const datesSectionRef = useRef<HTMLDivElement>(null);
+  const relationsSectionRef = useRef<HTMLDivElement>(null);
+  const checklistsSectionRef = useRef<HTMLDivElement>(null);
+  const attachmentsSectionRef = useRef<HTMLDivElement>(null);
+
+  const handleActivityClick = (act: ActivityItem) => {
+    const action = act.action?.toLowerCase() || '';
+
+    if (action.includes('bình luận') || action.includes('comment')) {
+      setActivityTab('comments');
+      setTimeout(() => commentInputRef.current?.focus(), 100);
+      return;
+    }
+
+    if (action.includes('danh sách') || action.includes('việc cần làm') || action.includes('checklist') || action.includes('mục')) {
+      checklistsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightedSection('checklists');
+      setTimeout(() => setHighlightedSection((curr) => curr === 'checklists' ? null : curr), 2500);
+      return;
+    }
+
+    if (action.includes('đính kèm') || action.includes('tệp') || action.includes('file')) {
+      attachmentsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightedSection('attachments');
+      setTimeout(() => setHighlightedSection((curr) => curr === 'attachments' ? null : curr), 2500);
+      return;
+    }
+
+    if (action.includes('quan hệ') || action.includes('liên kết') || action.includes('chặn') || action.includes('phụ thuộc') || action.includes('thẻ cha') || action.includes('thẻ con')) {
+      relationsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightedSection('relations');
+      setTimeout(() => setHighlightedSection((curr) => curr === 'relations' ? null : curr), 2500);
+      return;
+    }
+
+    if (action.includes('hạn chót') || action.includes('ngày') || action.includes('thời hạn') || action.includes('hoàn thành')) {
+      datesSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightedSection('dates');
+      setTimeout(() => setHighlightedSection((curr) => curr === 'dates' ? null : curr), 2500);
+      return;
+    }
+
+    if (action.includes('thành viên') || action.includes('phụ trách') || action.includes('gán') || action.includes('nhãn')) {
+      datesSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightedSection('dates');
+      setTimeout(() => setHighlightedSection((curr) => curr === 'dates' ? null : curr), 2500);
+      return;
+    }
+  };
 
   const fetchCardActivities = async (cId: string, silent = false) => {
     try {
       if (!silent) setIsLoadingActivities(true);
-      const res = await apiClient<ActivityItem[]>(`/cards/${cId}/activities`);
+      setCardActivitiesPage(1);
+      const res = await apiClient<ActivityItem[]>(`/cards/${cId}/activities?limit=15&page=1`);
       if (res.success && Array.isArray(res.data)) {
         setActivities(res.data);
+        setHasMoreCardActivities(res.data.length >= 15);
+      } else {
+        setActivities([]);
+        setHasMoreCardActivities(false);
       }
     } catch {
       // ignore
     } finally {
       if (!silent) setIsLoadingActivities(false);
+    }
+  };
+
+  const handleLoadMoreCardActivities = async () => {
+    if (!cardId || isLoadingMoreActivities || !hasMoreCardActivities) return;
+    try {
+      setIsLoadingMoreActivities(true);
+      const nextPage = cardActivitiesPage + 1;
+      const res = await apiClient<ActivityItem[]>(`/cards/${cardId}/activities?limit=15&page=${nextPage}`);
+      if (res.success && Array.isArray(res.data)) {
+        setActivities((prev) => [...prev, ...res.data]);
+        setCardActivitiesPage(nextPage);
+        setHasMoreCardActivities(res.data.length >= 15);
+      } else {
+        setHasMoreCardActivities(false);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setIsLoadingMoreActivities(false);
     }
   };
 
@@ -2341,14 +2420,18 @@ export default function CardDetailModal({
               {/* Due Date quick status banner */}
               {dueDate && deadlineStatus && (
                 <div
-                  className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs transition-all ${isCompleted
-                      ? 'bg-emerald-50/80 border-emerald-200'
-                      : deadlineStatus.status === 'overdue'
-                        ? 'bg-rose-50/80 border-rose-200'
-                        : deadlineStatus.status === 'due_soon'
-                          ? 'bg-amber-50/80 border-amber-200'
-                          : 'bg-slate-50 border-slate-200'
-                    }`}
+                  ref={datesSectionRef}
+                  className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs transition-all ${
+                    highlightedSection === 'dates'
+                      ? 'ring-2 ring-[#2b1572] bg-[#a6d1fd]/25 scale-[1.01]'
+                      : isCompleted
+                        ? 'bg-emerald-50/80 border-emerald-200'
+                        : deadlineStatus.status === 'overdue'
+                          ? 'bg-rose-50/80 border-rose-200'
+                          : deadlineStatus.status === 'due_soon'
+                            ? 'bg-amber-50/80 border-amber-200'
+                            : 'bg-slate-50 border-slate-200'
+                  }`}
                 >
                   <div className="flex items-start gap-3">
                     <button
@@ -2440,7 +2523,14 @@ export default function CardDetailModal({
 
               {/* Attachments Section */}
               {attachments.length > 0 && (
-                <div className="space-y-3 pt-4 border-t border-slate-100">
+                <div
+                  ref={attachmentsSectionRef}
+                  className={`space-y-3 pt-4 border-t border-slate-100 transition-all rounded-2xl ${
+                    highlightedSection === 'attachments'
+                      ? 'ring-2 ring-[#2b1572] bg-[#a6d1fd]/20 p-2'
+                      : ''
+                  }`}
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-xs font-bold text-[#2b1572] uppercase tracking-wider">
                       <Paperclip className="w-4 h-4 text-[#2b1572]/70" />
@@ -2638,7 +2728,14 @@ export default function CardDetailModal({
                 );
 
                 return (
-                  <div className="space-y-4 pt-4 border-t border-slate-100">
+                  <div
+                    ref={relationsSectionRef}
+                    className={`space-y-4 pt-4 border-t border-slate-100 transition-all rounded-2xl ${
+                      highlightedSection === 'relations'
+                        ? 'ring-2 ring-[#2b1572] bg-[#a6d1fd]/20 p-2'
+                        : ''
+                    }`}
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 text-xs font-bold text-[#2b1572] uppercase tracking-wider">
                         <GitBranch className="w-4 h-4 text-[#2b1572]/70" />
@@ -2998,7 +3095,15 @@ export default function CardDetailModal({
               })()}
 
               {/* Checklists Section */}
-              {checklists.map((cl) => {
+              <div
+                ref={checklistsSectionRef}
+                className={`space-y-4 transition-all rounded-2xl ${
+                  highlightedSection === 'checklists'
+                    ? 'ring-2 ring-[#2b1572] bg-[#a6d1fd]/20 p-2'
+                    : ''
+                }`}
+              >
+                {checklists.map((cl) => {
                 const totalItems = cl.items?.length || 0;
                 const completedItems = cl.items?.filter((i) => i.is_completed).length || 0;
                 const progressPercent = totalItems === 0 ? 0 : Math.round((completedItems / totalItems) * 100);
@@ -3292,6 +3397,7 @@ export default function CardDetailModal({
                   </div>
                 );
               })}
+              </div>
             </div>
 
             {/* Right Dedicated Pane: Activity & Comments */}
@@ -3497,7 +3603,12 @@ export default function CardDetailModal({
                     const actorAvatar = act.user?.avatar;
 
                     return (
-                      <div key={`act-${act.id}`} className="flex items-start gap-2.5 group animate-in fade-in duration-150">
+                      <div
+                        key={`act-${act.id}`}
+                        onClick={() => handleActivityClick(act)}
+                        className="flex items-start gap-2.5 group animate-in fade-in duration-150 cursor-pointer"
+                        title="Bấm để chuyển đến mục đã thay đổi"
+                      >
                         {actorAvatar ? (
                           <img
                             src={actorAvatar}
@@ -3509,7 +3620,7 @@ export default function CardDetailModal({
                             {actorName.charAt(0).toUpperCase()}
                           </div>
                         )}
-                        <div className="flex-1 min-w-0 bg-slate-100/80 hover:bg-slate-100 rounded-xl p-2.5 border border-slate-200/80 transition-colors shadow-2xs">
+                        <div className="flex-1 min-w-0 bg-slate-100/80 group-hover:bg-white group-hover:border-[#a6d1fd] group-hover:shadow-xs rounded-xl p-2.5 border border-slate-200/80 transition-all shadow-2xs">
                           <div className="flex items-center justify-between gap-1.5 mb-1">
                             <span className="text-xs font-bold text-[#2b1572] truncate">
                               {actorName}
@@ -3520,7 +3631,8 @@ export default function CardDetailModal({
                           </div>
                           <div className="text-xs text-slate-600 flex items-start gap-1.5 break-words leading-relaxed">
                             <span className="mt-0.5 shrink-0">{getActivityActionIcon(act.action)}</span>
-                            <span>{act.action}</span>
+                            <span className="flex-1">{act.action}</span>
+                            <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-[#2b1572] transition-opacity shrink-0 mt-0.5" />
                           </div>
                         </div>
                       </div>
@@ -3689,7 +3801,23 @@ export default function CardDetailModal({
                         </div>
                       );
                     }
-                    return activities.map((act) => renderActivityBlock(act));
+                    return (
+                      <>
+                        {activities.map((act) => renderActivityBlock(act))}
+                        {hasMoreCardActivities && (
+                          <div className="pt-2 flex justify-center">
+                            <button
+                              type="button"
+                              onClick={handleLoadMoreCardActivities}
+                              disabled={isLoadingMoreActivities}
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-[#2b1572] bg-slate-100 hover:bg-slate-200/80 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                            >
+                              {isLoadingMoreActivities ? 'Đang tải thêm...' : 'Tải thêm hoạt động cũ hơn'}
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    );
                   }
 
                   // Default: 'comments'

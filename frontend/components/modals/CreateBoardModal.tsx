@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Kanban, Loader2, Star } from 'lucide-react';
+import { X, Kanban, Loader2, Star, Upload } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { WorkspaceItem } from '../layout/Sidebar';
 
@@ -11,6 +11,7 @@ interface CreateBoardModalProps {
   workspaces: WorkspaceItem[];
   onClose: () => void;
   onCreated: (board: any) => void;
+  onOpenImport?: (workspaceId?: string) => void;
 }
 
 export default function CreateBoardModal({
@@ -19,6 +20,7 @@ export default function CreateBoardModal({
   workspaces,
   onClose,
   onCreated,
+  onOpenImport,
 }: CreateBoardModalProps) {
   const [targetWsId, setTargetWsId] = useState<string>(workspaceId || (workspaces[0]?.id ?? ''));
   const [name, setName] = useState('');
@@ -146,22 +148,41 @@ export default function CreateBoardModal({
             </label>
           </div>
 
-          <div className="pt-3 flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-[#2b1572]/70 hover:text-[#2b1572] cursor-pointer"
-            >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading || !currentSelectedWsId}
-              className="px-5 py-2.5 btn-primary text-xs font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50"
-            >
-              {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              <span>{isLoading ? 'Đang tạo...' : 'Tạo Board (Kèm 3 List mặc định)'}</span>
-            </button>
+          <div className="pt-3 flex items-center justify-between gap-3">
+            {onOpenImport ? (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenImport(currentSelectedWsId);
+                }}
+                className="px-3 py-2 btn-secondary text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                title="Nhập Bảng từ tệp JSON hoặc Excel"
+              >
+                <Upload className="w-3.5 h-3.5 text-[#2b1572]" />
+                <span>Nhập từ tệp (Import)</span>
+              </button>
+            ) : (
+              <div />
+            )}
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-xs font-semibold text-[#2b1572]/70 hover:text-[#2b1572] cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                disabled={isLoading || !currentSelectedWsId}
+                className="px-5 py-2.5 btn-primary text-xs font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <span>{isLoading ? 'Đang tạo...' : 'Tạo Board'}</span>
+              </button>
+            </div>
           </div>
         </form>
       </div>
