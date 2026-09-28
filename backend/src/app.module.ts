@@ -20,6 +20,8 @@ import { TemplatesModule } from './modules/templates/templates.module';
 import { AiModule } from './modules/ai/ai.module';
 import { ImportExportModule } from './modules/import-export/import-export.module';
 
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -49,6 +51,7 @@ import { ImportExportModule } from './modules/import-export/import-export.module
     TemplatesModule,
     AiModule,
     ImportExportModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
