@@ -3,7 +3,6 @@
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import AppShell from '@/components/layout/AppShell';
 import UseTemplateModal from '@/components/modals/UseTemplateModal';
 import { apiClient } from '@/lib/api-client';
 import {
@@ -97,7 +96,7 @@ export default function TemplateDetailPage({
   const lists: any[] = template?.structure?.lists || [];
 
   return (
-    <AppShell>
+    <>
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Breadcrumb Navigation */}
         <div className="flex items-center gap-2 text-xs font-semibold text-[#2b1572]/70">
@@ -298,6 +297,6 @@ export default function TemplateDetailPage({
           template={template}
         />
       )}
-    </AppShell>
+    </>
   );
 }

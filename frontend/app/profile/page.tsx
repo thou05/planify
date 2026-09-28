@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, User } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
-import AppShell from '@/components/layout/AppShell';
 import {
   User as UserIcon,
   Shield,
@@ -247,7 +246,7 @@ export default function ProfilePage() {
   if (!user) return null;
 
   return (
-    <AppShell>
+    <>
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Profile Hero Card */}
         <div className="glass-surface p-6 sm:p-8 relative overflow-hidden flex flex-col sm:flex-row items-center sm:items-start gap-6">
@@ -762,6 +761,6 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
-    </AppShell>
+    </>
   );
 }

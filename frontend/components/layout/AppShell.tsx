@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
@@ -10,6 +10,7 @@ import Sidebar, { WorkspaceItem } from './Sidebar';
 import CreateWorkspaceModal from '../modals/CreateWorkspaceModal';
 import CreateBoardModal from '../modals/CreateBoardModal';
 import ImportBoardModal from '../modals/ImportBoardModal';
+import { ShellContext, ShellContextType } from './ShellContext';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -51,6 +52,27 @@ export default function AppShell({
   const [isCreateWsOpen, setIsCreateWsOpen] = useState(false);
   const [isCreateBoardOpen, setIsCreateBoardOpen] = useState(false);
   const [isImportBoardOpen, setIsImportBoardOpen] = useState(false);
+
+  // Subscribed refresh handlers from child pages
+  const refreshHandlersRef = useRef<Set<() => void>>(new Set());
+
+  const registerRefreshHandler = useCallback((handler: () => void) => {
+    refreshHandlersRef.current.add(handler);
+    return () => {
+      refreshHandlersRef.current.delete(handler);
+    };
+  }, []);
+
+  const triggerRefresh = useCallback(() => {
+    refreshHandlersRef.current.forEach((fn) => {
+      try {
+        fn();
+      } catch (err) {
+        console.error('Error invoking shell refresh handler:', err);
+      }
+    });
+    onRefresh?.();
+  }, [onRefresh]);
 
   // Helper to resolve the best workspace ID based on context
   const resolveWorkspaceId = useCallback(
@@ -172,12 +194,32 @@ export default function AppShell({
     if (typeof window !== 'undefined') {
       localStorage.setItem('planify_active_workspace_id', newWs.id);
     }
-    onRefresh?.();
+    triggerRefresh();
   };
 
   const handleBoardCreated = () => {
     fetchWorkspaces();
-    onRefresh?.();
+    triggerRefresh();
+  };
+
+  const currentWorkspace = workspaces.find((w) => w.id === selectedWorkspaceId) || workspaces[0];
+
+  const shellContextValue: ShellContextType = {
+    workspaces,
+    currentWorkspaceId: selectedWorkspaceId,
+    currentWorkspace,
+    setCurrentWorkspaceId: handleSelectWorkspace,
+    refreshWorkspaces: fetchWorkspaces,
+    registerRefreshHandler,
+    openCreateWorkspace: () => setIsCreateWsOpen(true),
+    openCreateBoard: (wsId) => {
+      if (wsId) setSelectedWorkspaceId(wsId);
+      setIsCreateBoardOpen(true);
+    },
+    openImportBoard: (wsId) => {
+      setImportTargetWsId(wsId || selectedWorkspaceId);
+      setIsImportBoardOpen(true);
+    },
   };
 
   if (isLoading) {
@@ -188,64 +230,74 @@ export default function AppShell({
     );
   }
 
-  return (
-    <div className="min-h-screen flex flex-col h-screen overflow-hidden">
-      {/* TopBar */}
-      <TopBar
-        onOpenCreateWorkspace={() => setIsCreateWsOpen(true)}
-        onOpenCreateBoard={() => setIsCreateBoardOpen(true)}
-      />
+  const isBoardRoute = pathname?.startsWith('/boards/');
 
-      {/* Main Area */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Sidebar */}
-        <Sidebar
-          workspaces={workspaces}
-          currentWorkspaceId={selectedWorkspaceId}
-          onSelectWorkspace={handleSelectWorkspace}
+  return (
+    <ShellContext.Provider value={shellContextValue}>
+      <div className="min-h-screen flex flex-col h-screen overflow-hidden">
+        {/* TopBar */}
+        <TopBar
           onOpenCreateWorkspace={() => setIsCreateWsOpen(true)}
           onOpenCreateBoard={() => setIsCreateBoardOpen(true)}
         />
 
-        {/* Dynamic Page Content */}
-        <main className="flex-1 min-h-0 overflow-y-auto p-6">
-          {children}
-        </main>
-      </div>
+        {/* Main Area */}
+        <div className="flex flex-1 min-h-0 overflow-hidden">
+          {/* Sidebar */}
+          <Sidebar
+            workspaces={workspaces}
+            currentWorkspaceId={selectedWorkspaceId}
+            onSelectWorkspace={handleSelectWorkspace}
+            onOpenCreateWorkspace={() => setIsCreateWsOpen(true)}
+            onOpenCreateBoard={() => setIsCreateBoardOpen(true)}
+          />
 
-      {/* Modals */}
-      <CreateWorkspaceModal
-        isOpen={isCreateWsOpen}
-        onClose={() => setIsCreateWsOpen(false)}
-        onCreated={handleWorkspaceCreated}
-      />
+          {/* Dynamic Page Content */}
+          <main
+            className={`flex-1 min-h-0 relative ${
+              isBoardRoute
+                ? 'overflow-hidden flex flex-col p-0'
+                : 'overflow-y-auto p-6'
+            }`}
+          >
+            {children}
+          </main>
+        </div>
 
-      <CreateBoardModal
-        isOpen={isCreateBoardOpen}
-        workspaceId={selectedWorkspaceId}
-        workspaces={workspaces}
-        onClose={() => setIsCreateBoardOpen(false)}
-        onCreated={handleBoardCreated}
-        onOpenImport={(wsId) => {
-          setImportTargetWsId(wsId || selectedWorkspaceId);
-          setIsImportBoardOpen(true);
-        }}
-      />
+        {/* Modals */}
+        <CreateWorkspaceModal
+          isOpen={isCreateWsOpen}
+          onClose={() => setIsCreateWsOpen(false)}
+          onCreated={handleWorkspaceCreated}
+        />
 
-      {isImportBoardOpen && (importTargetWsId || selectedWorkspaceId) && (
-        <ImportBoardModal
-          isOpen={isImportBoardOpen}
-          workspaceId={importTargetWsId || selectedWorkspaceId || ''}
-          onClose={() => setIsImportBoardOpen(false)}
-          onSuccess={(newBoardId) => {
-            fetchWorkspaces();
-            onRefresh?.();
-            if (newBoardId) {
-              router.push(`/boards/${newBoardId}`);
-            }
+        <CreateBoardModal
+          isOpen={isCreateBoardOpen}
+          workspaceId={selectedWorkspaceId}
+          workspaces={workspaces}
+          onClose={() => setIsCreateBoardOpen(false)}
+          onCreated={handleBoardCreated}
+          onOpenImport={(wsId) => {
+            setImportTargetWsId(wsId || selectedWorkspaceId);
+            setIsImportBoardOpen(true);
           }}
         />
-      )}
-    </div>
+
+        {isImportBoardOpen && (importTargetWsId || selectedWorkspaceId) && (
+          <ImportBoardModal
+            isOpen={isImportBoardOpen}
+            workspaceId={importTargetWsId || selectedWorkspaceId || ''}
+            onClose={() => setIsImportBoardOpen(false)}
+            onSuccess={(newBoardId) => {
+              fetchWorkspaces();
+              triggerRefresh();
+              if (newBoardId) {
+                router.push(`/boards/${newBoardId}`);
+              }
+            }}
+          />
+        )}
+      </div>
+    </ShellContext.Provider>
   );
 }

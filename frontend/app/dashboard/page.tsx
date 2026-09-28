@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
 import { supabase } from '@/lib/supabase';
-import AppShell from '@/components/layout/AppShell';
+import { useShell } from '@/components/layout/ShellContext';
 import {
   Layers,
   Kanban,
@@ -19,6 +19,7 @@ import {
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const shell = useShell();
   const [workspaces, setWorkspaces] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -34,6 +35,12 @@ export default function DashboardPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (shell?.registerRefreshHandler) {
+      return shell.registerRefreshHandler(fetchDashboardData);
+    }
+  }, [shell]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -62,7 +69,7 @@ export default function DashboardPage() {
   );
 
   return (
-    <AppShell onRefresh={fetchDashboardData}>
+    <>
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Welcome Banner */}
         <div className="glass-surface p-6 sm:p-8 relative overflow-hidden">
@@ -241,6 +248,6 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
-    </AppShell>
+    </>
   );
 }

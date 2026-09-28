@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth-context';
+import AppLayoutClient from '@/components/layout/AppLayoutClient';
 
 export const metadata: Metadata = {
   title: 'Planify — Collaborative Work Management',
@@ -15,7 +16,9 @@ export default function RootLayout({
   return (
     <html lang="vi">
       <body className="min-h-screen flex flex-col antialiased">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <AppLayoutClient>{children}</AppLayoutClient>
+        </AuthProvider>
       </body>
     </html>
   );

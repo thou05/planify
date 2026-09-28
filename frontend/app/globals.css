@@ -19,11 +19,11 @@
   --glass-xs: rgba(255, 255, 255, 0.32);
   --glass-sm: rgba(255, 255, 255, 0.42);
   --glass-md: rgba(255, 255, 255, 0.55);
-  --glass-lg: rgba(255, 255, 255, 0.70);
+  --glass-lg: #ffffff;
 
   /* Borders */
   --border-glass: rgba(255, 255, 255, 0.35);
-  --border-glass-strong: rgba(255, 255, 255, 0.45);
+  --border-glass-strong: rgba(43, 21, 114, 0.12);
   --border-dark: rgba(43, 21, 114, 0.10);
 
   /* Shadows */
@@ -75,11 +75,9 @@ body {
 }
 
 .glass-strong {
-  background: var(--glass-lg);
-  backdrop-filter: blur(var(--blur-lg));
-  -webkit-backdrop-filter: blur(var(--blur-lg));
-  border: 1px solid var(--border-glass-strong);
-  box-shadow: var(--shadow-lg);
+  background: #ffffff;
+  border: 1px solid rgba(43, 21, 114, 0.12);
+  box-shadow: 0 16px 48px rgba(43, 21, 114, 0.16), 0 4px 12px rgba(43, 21, 114, 0.08);
   border-radius: var(--radius-xl);
 }
 

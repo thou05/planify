@@ -275,7 +275,7 @@ export default function ListColumn({
 
           {/* List Dropdown Menu */}
           {isMenuOpen && (
-            <div className="absolute right-0 top-full mt-1 w-52 bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-[#2b1572]/15 py-1.5 z-30 animate-in fade-in zoom-in-95 duration-100">
+            <div className="absolute right-0 top-full mt-1 w-52 bg-white rounded-xl shadow-2xl border border-slate-200 py-1.5 z-30 animate-in fade-in zoom-in-95 duration-100">
               <div className="px-3 py-1 text-[11px] font-bold text-[#2b1572]/60 uppercase tracking-wider">
                 Thao tác danh sách
               </div>
@@ -285,7 +285,7 @@ export default function ListColumn({
                   setIsMenuOpen(false);
                   setIsAddingCard(true);
                 }}
-                className="w-full px-3 py-1.5 text-left text-xs text-[#2b1572] hover:bg-[#2b1572]/10 flex items-center gap-2 transition-colors cursor-pointer"
+                className="w-full px-3 py-1.5 text-left text-xs text-[#2b1572] hover:bg-slate-100 flex items-center gap-2 transition-colors cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5 text-[#2b1572]/70" />
                 <span>Thêm thẻ mới</span>
@@ -296,7 +296,7 @@ export default function ListColumn({
                   setIsMenuOpen(false);
                   setIsEditingTitle(true);
                 }}
-                className="w-full px-3 py-1.5 text-left text-xs text-[#2b1572] hover:bg-[#2b1572]/10 flex items-center gap-2 transition-colors cursor-pointer"
+                className="w-full px-3 py-1.5 text-left text-xs text-[#2b1572] hover:bg-slate-100 flex items-center gap-2 transition-colors cursor-pointer"
               >
                 <Edit2 className="w-3.5 h-3.5 text-[#2b1572]/70" />
                 <span>Sửa tên danh sách</span>
@@ -307,7 +307,7 @@ export default function ListColumn({
                   setIsMenuOpen(false);
                   onMoveListRequest(list);
                 }}
-                className="w-full px-3 py-1.5 text-left text-xs text-[#2b1572] hover:bg-[#2b1572]/10 flex items-center gap-2 transition-colors cursor-pointer"
+                className="w-full px-3 py-1.5 text-left text-xs text-[#2b1572] hover:bg-slate-100 flex items-center gap-2 transition-colors cursor-pointer"
               >
                 <ArrowRightLeft className="w-3.5 h-3.5 text-[#2b1572]/70" />
                 <span>Di chuyển danh sách...</span>
@@ -318,7 +318,7 @@ export default function ListColumn({
                   setIsMenuOpen(false);
                   onCopyListRequest(list);
                 }}
-                className="w-full px-3 py-1.5 text-left text-xs text-[#2b1572] hover:bg-[#2b1572]/10 flex items-center gap-2 transition-colors cursor-pointer"
+                className="w-full px-3 py-1.5 text-left text-xs text-[#2b1572] hover:bg-slate-100 flex items-center gap-2 transition-colors cursor-pointer"
               >
                 <Copy className="w-3.5 h-3.5 text-[#2b1572]/70" />
                 <span>Sao chép danh sách...</span>
@@ -329,7 +329,7 @@ export default function ListColumn({
                   setIsMenuOpen(false);
                   onMoveAllCardsRequest(list);
                 }}
-                className="w-full px-3 py-1.5 text-left text-xs text-[#2b1572] hover:bg-[#2b1572]/10 flex items-center gap-2 transition-colors cursor-pointer"
+                className="w-full px-3 py-1.5 text-left text-xs text-[#2b1572] hover:bg-slate-100 flex items-center gap-2 transition-colors cursor-pointer"
               >
                 <Layers className="w-3.5 h-3.5 text-[#2b1572]/70" />
                 <span>Chuyển tất cả thẻ...</span>
@@ -339,7 +339,7 @@ export default function ListColumn({
               <div className="relative">
                 <button
                   onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
-                  className="w-full px-3 py-1.5 text-left text-xs text-[#2b1572] hover:bg-[#2b1572]/10 flex items-center justify-between transition-colors cursor-pointer"
+                  className="w-full px-3 py-1.5 text-left text-xs text-[#2b1572] hover:bg-slate-100 flex items-center justify-between transition-colors cursor-pointer"
                 >
                   <span className="flex items-center gap-2">
                     <ArrowUpDown className="w-3.5 h-3.5 text-[#2b1572]/70" />
@@ -349,13 +349,13 @@ export default function ListColumn({
                 </button>
 
                 {isSortMenuOpen && (
-                  <div className="pl-6 pr-2 py-1 space-y-0.5 bg-[#2b1572]/5 border-y border-[#2b1572]/10">
+                  <div className="pl-6 pr-2 py-1 space-y-0.5 bg-slate-50 border-y border-slate-100">
                     <button
                       onClick={() => {
                         setIsMenuOpen(false);
                         onSortCards(list.id, 'due_date', 'asc');
                       }}
-                      className="w-full px-2 py-1 text-left text-[11px] text-[#2b1572] hover:bg-[#2b1572]/10 rounded flex items-center gap-1.5 transition-colors cursor-pointer"
+                      className="w-full px-2 py-1 text-left text-[11px] text-[#2b1572] hover:bg-slate-200/60 rounded flex items-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <Calendar className="w-3 h-3 text-emerald-600" />
                       <span>Ngày hết hạn (Sớm nhất)</span>
@@ -365,7 +365,7 @@ export default function ListColumn({
                         setIsMenuOpen(false);
                         onSortCards(list.id, 'title', 'asc');
                       }}
-                      className="w-full px-2 py-1 text-left text-[11px] text-[#2b1572] hover:bg-[#2b1572]/10 rounded flex items-center gap-1.5 transition-colors cursor-pointer"
+                      className="w-full px-2 py-1 text-left text-[11px] text-[#2b1572] hover:bg-slate-200/60 rounded flex items-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <ArrowDownAZ className="w-3 h-3 text-blue-600" />
                       <span>Tên thẻ (A → Z)</span>
@@ -375,7 +375,7 @@ export default function ListColumn({
                         setIsMenuOpen(false);
                         onSortCards(list.id, 'title', 'desc');
                       }}
-                      className="w-full px-2 py-1 text-left text-[11px] text-[#2b1572] hover:bg-[#2b1572]/10 rounded flex items-center gap-1.5 transition-colors cursor-pointer"
+                      className="w-full px-2 py-1 text-left text-[11px] text-[#2b1572] hover:bg-slate-200/60 rounded flex items-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <ArrowUpAZ className="w-3 h-3 text-blue-600" />
                       <span>Tên thẻ (Z → A)</span>
@@ -385,7 +385,7 @@ export default function ListColumn({
                         setIsMenuOpen(false);
                         onSortCards(list.id, 'created_at', 'desc');
                       }}
-                      className="w-full px-2 py-1 text-left text-[11px] text-[#2b1572] hover:bg-[#2b1572]/10 rounded flex items-center gap-1.5 transition-colors cursor-pointer"
+                      className="w-full px-2 py-1 text-left text-[11px] text-[#2b1572] hover:bg-slate-200/60 rounded flex items-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <Clock className="w-3 h-3 text-purple-600" />
                       <span>Mới nhất trước</span>
@@ -394,7 +394,7 @@ export default function ListColumn({
                 )}
               </div>
 
-              <div className="h-[1px] bg-[#2b1572]/10 my-1" />
+              <div className="h-[1px] bg-slate-100 my-1" />
 
               <button
                 onClick={() => {
