@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
 import { supabase } from '@/lib/supabase';
@@ -25,22 +25,92 @@ export default function AppShell({
   onRefresh,
 }: AppShellProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, isLoading } = useAuth();
 
+  // Extract route params from pathname if available
+  const urlWsId = pathname?.startsWith('/workspaces/')
+    ? pathname.split('/')[2]?.split('?')[0]
+    : undefined;
+  const urlBoardId = pathname?.startsWith('/boards/')
+    ? pathname.split('/')[2]?.split('?')[0]
+    : undefined;
+
   const [workspaces, setWorkspaces] = useState<WorkspaceItem[]>([]);
-  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | undefined>(activeWorkspaceId);
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | undefined>(() => {
+    if (activeWorkspaceId) return activeWorkspaceId;
+    if (urlWsId) return urlWsId;
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('planify_active_workspace_id');
+      if (saved) return saved;
+    }
+    return undefined;
+  });
+
   const [importTargetWsId, setImportTargetWsId] = useState<string | undefined>(undefined);
   const [isCreateWsOpen, setIsCreateWsOpen] = useState(false);
   const [isCreateBoardOpen, setIsCreateBoardOpen] = useState(false);
   const [isImportBoardOpen, setIsImportBoardOpen] = useState(false);
+
+  // Helper to resolve the best workspace ID based on context
+  const resolveWorkspaceId = useCallback(
+    (
+      wsList: WorkspaceItem[],
+      explicitId?: string,
+      currentId?: string
+    ): string | undefined => {
+      if (!wsList || wsList.length === 0) return undefined;
+
+      // 1. Explicit prop from active page (e.g. board.workspace_id or workspace page)
+      if (explicitId && wsList.some((w) => w.id === explicitId)) {
+        return explicitId;
+      }
+
+      // 2. Direct match from URL /workspaces/[workspaceId]
+      if (urlWsId && wsList.some((w) => w.id === urlWsId)) {
+        return urlWsId;
+      }
+
+      // 3. Match from URL /boards/[boardId] (find workspace that contains this board)
+      if (urlBoardId) {
+        const wsWithBoard = wsList.find((w) =>
+          (w.boards || []).some((b) => b.id === urlBoardId)
+        );
+        if (wsWithBoard) {
+          return wsWithBoard.id;
+        }
+      }
+
+      // 4. Current state if still valid in workspace list
+      if (currentId && wsList.some((w) => w.id === currentId)) {
+        return currentId;
+      }
+
+      // 5. Persisted active workspace from localStorage
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('planify_active_workspace_id');
+        if (saved && wsList.some((w) => w.id === saved)) {
+          return saved;
+        }
+      }
+
+      // 6. Fallback to first workspace in list
+      return wsList[0]?.id;
+    },
+    [urlWsId, urlBoardId]
+  );
 
   const fetchWorkspaces = async () => {
     try {
       const res = await apiClient<WorkspaceItem[]>('/workspaces');
       if (res.success && res.data) {
         setWorkspaces(res.data);
-        if (!selectedWorkspaceId && res.data.length > 0) {
-          setSelectedWorkspaceId(res.data[0].id);
+        const bestId = resolveWorkspaceId(res.data, activeWorkspaceId, selectedWorkspaceId);
+        if (bestId) {
+          setSelectedWorkspaceId(bestId);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('planify_active_workspace_id', bestId);
+          }
         }
       }
     } catch {
@@ -72,19 +142,36 @@ export default function AppShell({
   }, [user, isLoading]);
 
   useEffect(() => {
-    if (activeWorkspaceId) {
-      setSelectedWorkspaceId(activeWorkspaceId);
+    if (workspaces.length > 0) {
+      const bestId = resolveWorkspaceId(workspaces, activeWorkspaceId, selectedWorkspaceId);
+      if (bestId && bestId !== selectedWorkspaceId) {
+        setSelectedWorkspaceId(bestId);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('planify_active_workspace_id', bestId);
+        }
+      }
     }
-  }, [activeWorkspaceId]);
+  }, [activeWorkspaceId, urlBoardId, urlWsId, workspaces, resolveWorkspaceId]);
 
   const handleSelectWorkspace = (id: string) => {
     setSelectedWorkspaceId(id);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('planify_active_workspace_id', id);
+    }
     onWorkspaceChange?.(id);
+
+    // If currently on a workspace detail page, navigate to the selected workspace
+    if (pathname?.startsWith('/workspaces/')) {
+      router.push(`/workspaces/${id}`);
+    }
   };
 
   const handleWorkspaceCreated = (newWs: WorkspaceItem) => {
     setWorkspaces((prev) => [newWs, ...prev]);
     setSelectedWorkspaceId(newWs.id);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('planify_active_workspace_id', newWs.id);
+    }
     onRefresh?.();
   };
 

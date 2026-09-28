@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Kanban, Loader2, Star, Upload } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { WorkspaceItem } from '../layout/Sidebar';
@@ -28,6 +28,22 @@ export default function CreateBoardModal({
   const [isFavorite, setIsFavorite] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (workspaceId) {
+      setTargetWsId(workspaceId);
+    } else if (workspaces.length > 0) {
+      const savedWs =
+        typeof window !== 'undefined'
+          ? localStorage.getItem('planify_active_workspace_id')
+          : null;
+      if (savedWs && workspaces.some((w) => w.id === savedWs)) {
+        setTargetWsId(savedWs);
+      } else {
+        setTargetWsId(workspaces[0].id);
+      }
+    }
+  }, [workspaceId, isOpen, workspaces]);
 
   if (!isOpen) return null;
 
