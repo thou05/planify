@@ -25,6 +25,7 @@ import BoardViewSwitcher, { BoardViewType } from '@/components/board/views/Board
 import BoardTableView from '@/components/board/views/BoardTableView';
 import BoardCalendarView from '@/components/board/views/BoardCalendarView';
 import BoardScheduleView from '@/components/board/views/BoardScheduleView';
+import BoardAnalyticsView from '@/components/board/views/BoardAnalyticsView';
 import {
   Star,
   Plus,
@@ -1379,6 +1380,14 @@ export default function BoardDetailPage({
             board={board}
             onOpenCardDetail={handleOpenCardDetail}
             onRefreshBoard={fetchBoard}
+          />
+        )}
+
+        {/* Analytics / Statistics View */}
+        {activeView === 'analytics' && (
+          <BoardAnalyticsView
+            boardId={boardId}
+            onCardClick={handleOpenCardDetail}
           />
         )}
       </div>

@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Columns3, Table, Calendar, GanttChart, ChevronDown, X, Check } from 'lucide-react';
+import { Columns3, Table, Calendar, GanttChart, BarChart3, ChevronDown, X, Check } from 'lucide-react';
 
-export type BoardViewType = 'kanban' | 'table' | 'calendar' | 'schedule';
+export type BoardViewType = 'kanban' | 'table' | 'calendar' | 'schedule' | 'analytics';
 
 interface BoardViewSwitcherProps {
   activeView: BoardViewType;
@@ -44,6 +44,13 @@ export const VIEW_CONFIGS: {
     subLabel: 'Timeline',
     icon: GanttChart,
     description: 'Biểu đồ tiến độ Gantt theo ngày và tuần',
+  },
+  {
+    id: 'analytics',
+    label: 'Thống kê',
+    subLabel: 'Analytics',
+    icon: BarChart3,
+    description: 'Biểu đồ tiến độ, phân bổ nhân sự và phân tích thông minh',
   },
 ];
 
