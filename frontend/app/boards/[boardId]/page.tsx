@@ -320,6 +320,7 @@ export default function BoardDetailPage({
   };
 
   useEffect(() => {
+    setBoard(null);
     fetchBoard();
   }, [boardId]);
 
@@ -919,8 +920,12 @@ export default function BoardDetailPage({
     }
   };
 
+  const targetWorkspaceId =
+    board?.workspace_id ||
+    userWorkspaces.find((w) => (w.boards || []).some((b: any) => b.id === boardId))?.id;
+
   return (
-    <AppShell activeWorkspaceId={board?.workspace_id} onRefresh={fetchBoard}>
+    <AppShell activeWorkspaceId={targetWorkspaceId} onRefresh={fetchBoard}>
       <div className="h-full flex flex-col -m-6 relative">
         {/* Archived Banner Warning */}
         {board?.is_archived && (
@@ -958,7 +963,7 @@ export default function BoardDetailPage({
           {/* Left: Back button & Board Name & Badges */}
           <div className="flex items-center gap-3 min-w-0">
             <Link
-              href={board?.workspace_id ? `/workspaces/${board.workspace_id}` : '/dashboard'}
+              href={targetWorkspaceId ? `/workspaces/${targetWorkspaceId}` : '/dashboard'}
               className="p-1.5 rounded-lg hover:bg-white/50 text-[#2b1572]/70 hover:text-[#2b1572] transition-colors cursor-pointer"
               title="Quay lại Workspace"
             >

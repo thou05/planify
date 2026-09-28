@@ -160,6 +160,8 @@ export default function WorkspaceDetailPage({
   };
 
   useEffect(() => {
+    setWorkspace(null);
+    setIsLoading(true);
     fetchWorkspace();
   }, [workspaceId]);
 
