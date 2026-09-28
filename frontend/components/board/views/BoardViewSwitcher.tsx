@@ -171,28 +171,6 @@ export default function BoardViewSwitcher({
           </div>
         )}
       </div>
-
-      {/* Quick segmented pill switcher for larger screens */}
-      <div className="hidden lg:flex items-center gap-1 p-0.5 rounded-xl glass-weak border border-white/60">
-        {VIEW_CONFIGS.map((item) => {
-          const Icon = item.icon;
-          const isSelected = activeView === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onViewChange(item.id)}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                isSelected
-                  ? 'bg-[#2b1572] text-[#a6d1fd] shadow-xs'
-                  : 'text-[#2b1572]/70 hover:text-[#2b1572] hover:bg-white/60'
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
-      </div>
     </div>
   );
 }
