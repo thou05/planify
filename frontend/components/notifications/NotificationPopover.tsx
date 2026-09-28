@@ -321,10 +321,10 @@ export default function NotificationPopover({
   return (
     <div
       ref={popoverRef}
-      className="absolute right-0 top-full mt-2.5 z-50 w-[360px] sm:w-[420px] bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-[#2b1572]/15 flex flex-col max-h-[560px] overflow-hidden animate-in fade-in-50 zoom-in-95 duration-150 origin-top-right"
+      className="absolute right-0 top-full mt-2.5 z-50 w-[360px] sm:w-[420px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[560px] overflow-hidden animate-in fade-in-50 zoom-in-95 duration-150 origin-top-right"
     >
       {/* Header */}
-      <div className="px-4 py-3 border-b border-slate-100 bg-white/80 flex items-center justify-between shrink-0">
+      <div className="px-4 py-3 border-b border-slate-100 bg-white flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-[#2b1572]/10 text-[#2b1572] flex items-center justify-center">
             <Bell className="w-4 h-4" />
@@ -501,7 +501,7 @@ export default function NotificationPopover({
                 )}
 
                 {/* Hover Quick Actions */}
-                <div className="absolute top-2.5 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-white/95 backdrop-blur-xs p-1 rounded-lg shadow-xs border border-slate-200/80">
+                <div className="absolute top-2.5 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-white p-1 rounded-lg shadow-md border border-slate-200">
                   {!n.is_read ? (
                     <button
                       type="button"

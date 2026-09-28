@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import AppShell from '@/components/layout/AppShell';
 import UseTemplateModal from '@/components/modals/UseTemplateModal';
 import { apiClient } from '@/lib/api-client';
 import {
@@ -84,7 +83,7 @@ export default function TemplatesPage() {
   };
 
   return (
-    <AppShell>
+    <>
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Hero Header */}
         <div className="glass-surface p-6 sm:p-8 relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -271,6 +270,6 @@ export default function TemplatesPage() {
           template={selectedTemplateForUse}
         />
       )}
-    </AppShell>
+    </>
   );
 }

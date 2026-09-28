@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
-import AppShell from '@/components/layout/AppShell';
+import { useShell } from '@/components/layout/ShellContext';
 import CreateBoardModal from '@/components/modals/CreateBoardModal';
 import EditWorkspaceModal from '@/components/modals/EditWorkspaceModal';
 import InviteMemberModal from '@/components/modals/InviteMemberModal';
@@ -56,6 +56,13 @@ export default function WorkspaceDetailPage({
   const workspaceId = resolvedParams.workspaceId;
   const router = useRouter();
   const { user } = useAuth();
+  const shell = useShell();
+
+  useEffect(() => {
+    if (shell?.registerRefreshHandler) {
+      return shell.registerRefreshHandler(fetchWorkspace);
+    }
+  }, [shell, workspaceId]);
 
   const [workspace, setWorkspace] = useState<any>(null);
   const [pendingInvites, setPendingInvites] = useState<any[]>([]);
@@ -139,6 +146,7 @@ export default function WorkspaceDetailPage({
         setWorkspace(res.data);
         setSettingsName(res.data.name || '');
         setSettingsDescription(res.data.description || '');
+        shell?.setCurrentWorkspaceId(workspaceId);
       }
     } catch {
       // Error
@@ -398,7 +406,7 @@ export default function WorkspaceDetailPage({
   };
 
   return (
-    <AppShell activeWorkspaceId={workspaceId} onRefresh={fetchWorkspace}>
+    <>
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Navigation Breadcrumb */}
         <div className="flex items-center gap-2 text-xs font-semibold text-[#2b1572]/60">
@@ -1282,6 +1290,6 @@ export default function WorkspaceDetailPage({
         onClose={() => setIsArchivedBoardsOpen(false)}
         onRestored={() => fetchWorkspace()}
       />
-    </AppShell>
+    </>
   );
 }

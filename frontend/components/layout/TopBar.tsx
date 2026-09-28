@@ -221,8 +221,8 @@ export default function TopBar({
 
               {/* User Dropdown Menu */}
               {isUserMenuOpen && (
-                <div className="absolute right-0 mt-2 w-64 glass-strong border border-white/80 rounded-2xl shadow-xl py-2 z-50 animate-fade-in">
-                  <div className="px-4 py-2 border-b border-[#2b1572]/10">
+                <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-2xl py-2 z-50 animate-fade-in">
+                  <div className="px-4 py-2 border-b border-slate-100">
                     <p className="text-xs font-black text-[#2b1572] truncate">{user.name}</p>
                     <p className="text-[11px] text-[#2b1572]/60 truncate">{user.email}</p>
                     <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-800 font-bold text-[9px]">
@@ -234,7 +234,7 @@ export default function TopBar({
                     <button
                       type="button"
                       onClick={() => openProfileTab('profile')}
-                      className="w-full px-4 py-2 text-left text-xs font-semibold text-[#2b1572] hover:bg-white/50 flex items-center gap-2.5 cursor-pointer transition-colors"
+                      className="w-full px-4 py-2 text-left text-xs font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2.5 cursor-pointer transition-colors"
                     >
                       <UserIcon className="w-4 h-4 text-[#2b1572]/70" />
                       <span>Thông tin cá nhân</span>
@@ -243,7 +243,7 @@ export default function TopBar({
                     <button
                       type="button"
                       onClick={() => openProfileTab('security')}
-                      className="w-full px-4 py-2 text-left text-xs font-semibold text-[#2b1572] hover:bg-white/50 flex items-center gap-2.5 cursor-pointer transition-colors"
+                      className="w-full px-4 py-2 text-left text-xs font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2.5 cursor-pointer transition-colors"
                     >
                       <Shield className="w-4 h-4 text-[#2b1572]/70" />
                       <span>Bảo mật & Đổi mật khẩu</span>
@@ -252,7 +252,7 @@ export default function TopBar({
                     <button
                       type="button"
                       onClick={() => openProfileTab('invitations')}
-                      className="w-full px-4 py-2 text-left text-xs font-semibold text-[#2b1572] hover:bg-white/50 flex items-center justify-between cursor-pointer transition-colors"
+                      className="w-full px-4 py-2 text-left text-xs font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center justify-between cursor-pointer transition-colors"
                     >
                       <div className="flex items-center gap-2.5">
                         <Mail className="w-4 h-4 text-[#2b1572]/70" />
@@ -268,20 +268,20 @@ export default function TopBar({
                     <Link
                       href="/profile"
                       onClick={() => setIsUserMenuOpen(false)}
-                      className="w-full px-4 py-2 text-left text-xs font-semibold text-[#2b1572]/80 hover:bg-white/50 flex items-center gap-2.5 cursor-pointer transition-colors border-t border-[#2b1572]/5"
+                      className="w-full px-4 py-2 text-left text-xs font-semibold text-[#2b1572]/80 hover:bg-slate-100 flex items-center gap-2.5 cursor-pointer transition-colors border-t border-slate-100"
                     >
                       <span>Trang hồ sơ chi tiết</span>
                     </Link>
                   </div>
 
-                  <div className="pt-1 border-t border-[#2b1572]/10">
+                  <div className="pt-1 border-t border-slate-100">
                     <button
                       type="button"
                       onClick={() => {
                         setIsUserMenuOpen(false);
                         logout();
                       }}
-                      className="w-full px-4 py-2 text-left text-xs font-bold text-[#c40000] hover:bg-[#c40000]/10 flex items-center gap-2.5 cursor-pointer transition-colors"
+                      className="w-full px-4 py-2 text-left text-xs font-bold text-[#c40000] hover:bg-rose-50 flex items-center gap-2.5 cursor-pointer transition-colors"
                     >
                       <LogOut className="w-4 h-4" />
                       <span>Đăng xuất</span>

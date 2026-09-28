@@ -111,16 +111,16 @@ export default function BoardViewSwitcher({
         {isOpen && (
           <div
             ref={dropdownRef}
-            className="absolute left-0 top-full mt-2 w-72 glass-strong rounded-2xl shadow-xl border border-white/80 z-50 p-2 text-xs animate-in fade-in zoom-in-95 duration-150 backdrop-blur-xl"
+            className="absolute left-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 p-2 text-xs animate-in fade-in zoom-in-95 duration-150"
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-2.5 py-2 border-b border-[#2b1572]/10 mb-1">
+            <div className="flex items-center justify-between px-2.5 py-2 border-b border-slate-100 mb-1">
               <span className="font-bold text-[#2b1572] text-xs">
                 Chế độ xem
               </span>
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1 rounded-lg text-[#2b1572]/60 hover:text-[#2b1572] hover:bg-white/60 transition-colors cursor-pointer"
+                className="p-1 rounded-lg text-slate-400 hover:text-[#2b1572] hover:bg-slate-100 transition-colors cursor-pointer"
                 title="Đóng"
               >
                 <X className="w-3.5 h-3.5" />
@@ -142,7 +142,7 @@ export default function BoardViewSwitcher({
                     className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all cursor-pointer ${
                       isSelected
                         ? 'bg-[#2b1572] text-white shadow-xs font-semibold'
-                        : 'hover:bg-white/70 text-[#2b1572]'
+                        : 'hover:bg-slate-100 text-[#2b1572]'
                     }`}
                   >
                     <div className="flex items-center gap-3">

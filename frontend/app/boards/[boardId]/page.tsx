@@ -6,7 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
-import AppShell from '@/components/layout/AppShell';
+import { useShell } from '@/components/layout/ShellContext';
 import ListColumn from '@/components/board/ListColumn';
 import CreateListModal from '@/components/modals/CreateListModal';
 import EditBoardModal from '@/components/modals/EditBoardModal';
@@ -127,6 +127,13 @@ export default function BoardDetailPage({
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useAuth();
+  const shell = useShell();
+
+  useEffect(() => {
+    if (shell?.registerRefreshHandler) {
+      return shell.registerRefreshHandler(fetchBoard);
+    }
+  }, [shell, boardId]);
 
   const [board, setBoard] = useState<any>(null);
   const [workspaceMembers, setWorkspaceMembers] = useState<any[]>([]);
@@ -283,6 +290,7 @@ export default function BoardDetailPage({
         setBoard(res.data);
         if (res.data.workspace_id) {
           fetchWorkspaceData(res.data.workspace_id);
+          shell?.setCurrentWorkspaceId(res.data.workspace_id);
         }
       }
     } catch {
@@ -925,8 +933,8 @@ export default function BoardDetailPage({
     userWorkspaces.find((w) => (w.boards || []).some((b: any) => b.id === boardId))?.id;
 
   return (
-    <AppShell activeWorkspaceId={targetWorkspaceId} onRefresh={fetchBoard}>
-      <div className="h-full flex flex-col -m-6 relative">
+    <>
+      <div className="h-full flex flex-col relative">
         {/* Archived Banner Warning */}
         {board?.is_archived && (
           <div className="bg-amber-500/15 border-b border-amber-500/30 px-6 py-2.5 flex items-center justify-between gap-4 z-20 text-amber-900 text-xs font-semibold">
@@ -1094,13 +1102,13 @@ export default function BoardDetailPage({
               </button>
 
               {isBoardMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-56 p-1.5 glass-strong z-50 shadow-xl border border-white/70 space-y-1 text-xs select-none">
+                <div className="absolute right-0 top-full mt-2 w-56 p-1.5 bg-white rounded-2xl z-50 shadow-2xl border border-slate-200 space-y-1 text-xs select-none">
                   <button
                     onClick={() => {
                       setIsBoardMenuOpen(false);
                       setIsCopilotOpen(true);
                     }}
-                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-white/60 flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
                   >
                     <Bot className="w-3.5 h-3.5 text-indigo-600" />
                     <span>AI Copilot (Hỏi đáp)</span>
@@ -1111,7 +1119,7 @@ export default function BoardDetailPage({
                       setIsBoardMenuOpen(false);
                       setIsRiskScannerOpen(true);
                     }}
-                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-white/60 flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
                   >
                     <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
                     <span>AI Quét rủi ro & Điểm nghẽn</span>
@@ -1123,7 +1131,7 @@ export default function BoardDetailPage({
                       setIsAiStandupOpen(true);
                       if (!aiStandupData) handleGenerateDailyStandup();
                     }}
-                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-white/60 flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-purple-600" />
                     <span>AI Daily Standup</span>
@@ -1135,7 +1143,7 @@ export default function BoardDetailPage({
                       setIsBoardActivityOpen(true);
                       fetchBoardActivities();
                     }}
-                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-white/60 flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
                   >
                     <History className="w-3.5 h-3.5" />
                     <span>Lịch sử hoạt động Bảng</span>
@@ -1147,7 +1155,7 @@ export default function BoardDetailPage({
                         setIsBoardMenuOpen(false);
                         setIsEditOpen(true);
                       }}
-                      className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-white/60 flex items-center gap-2 cursor-pointer transition-colors"
+                      className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                       <span>Chỉnh sửa thông tin Bảng</span>
@@ -1159,7 +1167,7 @@ export default function BoardDetailPage({
                       setIsBoardMenuOpen(false);
                       setIsCopyOpen(true);
                     }}
-                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-white/60 flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
                   >
                     <Copy className="w-3.5 h-3.5" />
                     <span>Nhân bản Bảng (Copy)</span>
@@ -1170,7 +1178,7 @@ export default function BoardDetailPage({
                       setIsBoardMenuOpen(false);
                       setIsSaveAsTemplateOpen(true);
                     }}
-                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-white/60 flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
                   >
                     <LayoutTemplate className="w-3.5 h-3.5 text-[#2b1572]" />
                     <span>Lưu thành Mẫu (Template)</span>
@@ -1181,7 +1189,7 @@ export default function BoardDetailPage({
                       setIsBoardMenuOpen(false);
                       setIsImportModalOpen(true);
                     }}
-                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-white/60 flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
                   >
                     <Upload className="w-3.5 h-3.5 text-indigo-600" />
                     <span>Nhập dữ liệu (Import)</span>
@@ -1192,7 +1200,7 @@ export default function BoardDetailPage({
                       setIsBoardMenuOpen(false);
                       setIsExportModalOpen(true);
                     }}
-                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-white/60 flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
                   >
                     <Download className="w-3.5 h-3.5 text-emerald-600" />
                     <span>Xuất dữ liệu (Export)</span>
@@ -1203,7 +1211,7 @@ export default function BoardDetailPage({
                       setIsBoardMenuOpen(false);
                       setIsShareOpen(true);
                     }}
-                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-white/60 flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
                   >
                     <Users className="w-3.5 h-3.5" />
                     <span>Quản lý thành viên & Quyền</span>
@@ -1211,14 +1219,14 @@ export default function BoardDetailPage({
 
                   {board?.canDelete && (
                     <>
-                      <div className="h-[1px] bg-[#2b1572]/10 my-1" />
+                      <div className="h-[1px] bg-slate-100 my-1" />
                       {board.is_archived ? (
                         <button
                           onClick={() => {
                             setIsBoardMenuOpen(false);
                             handleRestoreBoard();
                           }}
-                          className="w-full text-left px-3 py-2 rounded-lg font-semibold text-amber-700 hover:bg-amber-500/10 flex items-center gap-2 cursor-pointer transition-colors"
+                          className="w-full text-left px-3 py-2 rounded-lg font-semibold text-amber-700 hover:bg-amber-50 flex items-center gap-2 cursor-pointer transition-colors"
                         >
                           <RotateCcw className="w-3.5 h-3.5 text-amber-600" />
                           <span>Khôi phục Bảng</span>
@@ -1226,7 +1234,7 @@ export default function BoardDetailPage({
                       ) : (
                         <button
                           onClick={handleArchiveBoard}
-                          className="w-full text-left px-3 py-2 rounded-lg font-semibold text-amber-700 hover:bg-amber-500/10 flex items-center gap-2 cursor-pointer transition-colors"
+                          className="w-full text-left px-3 py-2 rounded-lg font-semibold text-amber-700 hover:bg-amber-50 flex items-center gap-2 cursor-pointer transition-colors"
                         >
                           <Archive className="w-3.5 h-3.5 text-amber-600" />
                           <span>Lưu trữ Bảng (Archive)</span>
@@ -1238,7 +1246,7 @@ export default function BoardDetailPage({
                           setIsBoardMenuOpen(false);
                           handleDeleteBoard();
                         }}
-                        className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#c40000] hover:bg-[#c40000]/10 flex items-center gap-2 cursor-pointer transition-colors"
+                        className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#c40000] hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors"
                       >
                         <Trash2 className="w-3.5 h-3.5 text-[#c40000]" />
                         <span>Xóa Bảng vĩnh viễn</span>
@@ -1248,13 +1256,13 @@ export default function BoardDetailPage({
 
                   {!board?.canDelete && (
                     <>
-                      <div className="h-[1px] bg-[#2b1572]/10 my-1" />
+                      <div className="h-[1px] bg-slate-100 my-1" />
                       <button
                         onClick={() => {
                           setIsBoardMenuOpen(false);
                           handleLeaveBoard();
                         }}
-                        className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#c40000] hover:bg-[#c40000]/10 flex items-center gap-2 cursor-pointer transition-colors"
+                        className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#c40000] hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors"
                       >
                         <LogOut className="w-3.5 h-3.5 text-[#c40000]" />
                         <span>Rời khỏi Bảng</span>
@@ -1950,6 +1958,6 @@ export default function BoardDetailPage({
         }}
       />
 
-    </AppShell>
+    </>
   );
 }
