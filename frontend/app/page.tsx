@@ -22,7 +22,8 @@ export default function HomePage() {
   const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
 
   useEffect(() => {
-    fetch('http://localhost:4000/api/v1/auth/me')
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+    fetch(`${apiUrl}/auth/me`)
       .then((res) => {
         if (res.status === 401 || res.ok) {
           setBackendStatus('online');
