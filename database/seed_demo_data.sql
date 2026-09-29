@@ -61,13 +61,13 @@ BEGIN
         v_user_id,
         'Nguyễn Công Thắng',
         'demo@planify.io',
-        '$2b$10$L3JmenCA4S8bxuFXSUVXROKsaimCF6fcG10TYHC1QlbuEd/2UWLme',
+        '$2b$10$0f0A7eumI.1xGstler8ZouhBjwuh/cGWHWIcCBM2yf.mJh135083q',
         'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
         'ACTIVE',
         NOW()
     )
     ON CONFLICT (email) DO UPDATE 
-    SET password_hash = '$2b$10$L3JmenCA4S8bxuFXSUVXROKsaimCF6fcG10TYHC1QlbuEd/2UWLme',
+    SET password_hash = '$2b$10$0f0A7eumI.1xGstler8ZouhBjwuh/cGWHWIcCBM2yf.mJh135083q',
         name = 'Nguyễn Công Thắng';
 
     -- 2. TẠO WORKSPACE
