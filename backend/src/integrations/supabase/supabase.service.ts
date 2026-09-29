@@ -35,6 +35,8 @@ export class SupabaseService implements OnModuleInit {
       this.logger.warn(
         '⚠️ Chưa tìm thấy NEXT_PUBLIC_SUPABASE_URL hoặc SUPABASE_SERVICE_ROLE_KEY / NEXT_PUBLIC_SUPABASE_ANON_KEY trong file .env!',
       );
+    } else {
+      this.logger.log(`🔌 Supabase URL: ${this.supabaseUrl} | Key: ${this.supabaseKey.slice(0, 14)}...`);
     }
 
     this.clientInstance = createClient(
@@ -65,6 +67,18 @@ export class SupabaseService implements OnModuleInit {
         this.logger.warn(`⚠️ Lỗi khi ping Supabase: ${err.message}`);
       }
     }
+  }
+
+  isConfigured(): boolean {
+    return (
+      Boolean(this.supabaseUrl) &&
+      !this.supabaseUrl.includes('placeholder') &&
+      !this.supabaseUrl.includes('your-project-ref') &&
+      Boolean(this.supabaseKey) &&
+      !this.supabaseKey.includes('placeholder') &&
+      !this.supabaseKey.includes('your-anon') &&
+      !this.supabaseKey.includes('your-service-role')
+    );
   }
 
   private boardChannels = new Map<string, any>();

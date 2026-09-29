@@ -8,6 +8,10 @@ export class NotificationsService implements OnModuleInit {
   constructor(private readonly supabase: SupabaseService) {}
 
   onModuleInit() {
+    if (!this.supabase.isConfigured()) {
+      return;
+    }
+
     // Quét ngay 1 lần khi server khởi động
     this.checkDueCardReminders().catch((err) => {
       console.error('Lỗi khi quét hạn chót thẻ lúc khởi động:', err);
@@ -210,6 +214,9 @@ export class NotificationsService implements OnModuleInit {
    * Quét các thẻ & mục công việc con có hạn chót (sắp đến hạn hoặc quá hạn) để tự động tạo thông báo
    */
   async checkDueCardReminders(targetUserId?: string) {
+    if (!this.supabase.isConfigured()) {
+      return;
+    }
     try {
       const now = new Date();
 

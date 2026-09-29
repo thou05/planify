@@ -723,21 +723,47 @@ export class TemplatesService {
     await this.verifyWorkspaceAccess(dto.workspaceId, userId);
 
     // 3. Tạo Board mới trong Workspace
-    const { data: newBoard, error: bError } = await this.supabase
+    const insertPayload: any = {
+      workspace_id: dto.workspaceId,
+      name: dto.boardName.trim(),
+      description: template.description || null,
+      background: template.background || 'linear-gradient(135deg, #2b1572 0%, #1e0854 100%)',
+      visibility: dto.visibility || 'WORKSPACE',
+      is_favorite: false,
+    };
+
+    let newBoard: any;
+    const { data: bData, error: bError } = await this.supabase
       .from('boards')
-      .insert({
-        workspace_id: dto.workspaceId,
-        name: dto.boardName.trim(),
-        description: template.description || null,
-        background: template.background || 'linear-gradient(135deg, #2b1572 0%, #1e0854 100%)',
-        visibility: dto.visibility || 'WORKSPACE',
-        is_favorite: false,
-      })
+      .insert(insertPayload)
       .select()
       .single();
 
-    if (bError || !newBoard) {
-      throw new BadRequestException(bError?.message || 'Không thể tạo Board từ mẫu');
+    if (bError) {
+      // Fallback nếu cột background hoặc visibility chưa được thêm vào bảng boards
+      if (
+        bError.message?.includes('background') ||
+        bError.message?.includes('visibility') ||
+        bError.message?.includes('schema cache') ||
+        bError.code === '42703'
+      ) {
+        delete insertPayload.background;
+        delete insertPayload.visibility;
+        const { data: retryBoard, error: retryErr } = await this.supabase
+          .from('boards')
+          .insert(insertPayload)
+          .select()
+          .single();
+
+        if (retryErr || !retryBoard) {
+          throw new BadRequestException(retryErr?.message || 'Không thể tạo Board từ mẫu');
+        }
+        newBoard = retryBoard;
+      } else {
+        throw new BadRequestException(bError?.message || 'Không thể tạo Board từ mẫu');
+      }
+    } else {
+      newBoard = bData;
     }
 
     try {
@@ -808,9 +834,10 @@ export class TemplatesService {
 
                   if (createdCk && Array.isArray(tCk.items)) {
                     for (const [itIdx, tIt] of tCk.items.entries()) {
+                      const itemText = tIt.content || tIt.title || 'Mục công việc';
                       const { error: itError } = await this.supabase.from('checklist_items').insert({
                         checklist_id: createdCk.id,
-                        title: tIt.title || 'Mục công việc',
+                        content: itemText,
                         is_completed: tIt.is_completed ?? false,
                         position: itIdx,
                       });
