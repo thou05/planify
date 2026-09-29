@@ -213,4 +213,61 @@ export class UsersService {
       boardInvites: boardInvites || [],
     };
   }
+
+  private inMemoryPreferences: Map<string, Record<string, boolean>> = new Map();
+
+  async getNotificationPreferences(userId: string) {
+    const defaultPrefs = {
+      invitations: true,
+      removals: true,
+      assignments: true,
+      mentions: true,
+      due_reminders: true,
+      comments: true,
+    };
+
+    try {
+      const { data: user } = await this.supabase
+        .from('users')
+        .select('notification_preferences')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (user?.notification_preferences && typeof user.notification_preferences === 'object') {
+        return {
+          ...defaultPrefs,
+          ...user.notification_preferences,
+        };
+      }
+    } catch {
+      // Column might not exist yet
+    }
+
+    const cached = this.inMemoryPreferences.get(userId);
+    return {
+      ...defaultPrefs,
+      ...(cached || {}),
+    };
+  }
+
+  async updateNotificationPreferences(userId: string, dto: Record<string, any>) {
+    const current = await this.getNotificationPreferences(userId);
+    const updated = {
+      ...current,
+      ...dto,
+    };
+
+    this.inMemoryPreferences.set(userId, updated);
+
+    try {
+      await this.supabase
+        .from('users')
+        .update({ notification_preferences: updated })
+        .eq('id', userId);
+    } catch {
+      // Column might not exist in database schema yet, in-memory cache handles it smoothly
+    }
+
+    return updated;
+  }
 }

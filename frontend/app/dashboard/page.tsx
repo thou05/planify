@@ -179,6 +179,10 @@ export default function DashboardPage() {
                           <span className="badge-info text-[10px] px-2 py-0.5 rounded-full font-bold">
                             Admin
                           </span>
+                        ) : ws.currentUserRole === 'GUEST' || ws.isGuest ? (
+                          <span className="badge-warning text-[10px] px-2 py-0.5 rounded-full font-bold">
+                            Khách (Thành viên Bảng)
+                          </span>
                         ) : (
                           <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/70 text-[#2b1572]/70 font-semibold border border-white/80">
                             Thành viên

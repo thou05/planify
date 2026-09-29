@@ -24,12 +24,18 @@ import {
   Calendar,
   Sparkles,
   ExternalLink,
+  Bell,
+  UserPlus,
+  UserX,
+  AtSign,
+  MessageSquare,
+  AlarmClock,
 } from 'lucide-react';
 
 interface ProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialTab?: 'profile' | 'security' | 'invitations';
+  initialTab?: 'profile' | 'security' | 'invitations' | 'notifications';
 }
 
 const PRESET_AVATARS = [
@@ -47,7 +53,7 @@ export default function ProfileModal({
 }: ProfileModalProps) {
   const router = useRouter();
   const { user, updateUser, refreshUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'invitations'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'invitations' | 'notifications'>(initialTab);
 
   // Profile Form State
   const [name, setName] = useState('');
@@ -69,6 +75,18 @@ export default function ProfileModal({
   }>({ workspaceInvites: [], boardInvites: [] });
   const [loadingInvites, setLoadingInvites] = useState(false);
   const [processingToken, setProcessingToken] = useState<string | null>(null);
+
+  // Notification Preferences State
+  const [notifPreferences, setNotifPreferences] = useState({
+    invitations: true,
+    removals: true,
+    assignments: true,
+    mentions: true,
+    due_reminders: true,
+    comments: true,
+  });
+  const [loadingNotifPrefs, setLoadingNotifPrefs] = useState(false);
+  const [isSavingNotifPrefs, setIsSavingNotifPrefs] = useState(false);
 
   // UI Feedback
   const [isSaving, setIsSaving] = useState(false);
@@ -108,9 +126,48 @@ export default function ProfileModal({
     }
   };
 
+  // Fetch notification preferences when tab is active or modal opens
+  const fetchNotificationPreferences = async () => {
+    setLoadingNotifPrefs(true);
+    try {
+      const res = await apiClient<any>('/users/notification-preferences');
+      if (res.success && res.data) {
+        setNotifPreferences((prev) => ({
+          ...prev,
+          ...res.data,
+        }));
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoadingNotifPrefs(false);
+    }
+  };
+
+  const handleSaveNotifPreferences = async () => {
+    setIsSavingNotifPrefs(true);
+    setStatusMessage(null);
+    try {
+      const res = await apiClient<any>('/users/notification-preferences', {
+        method: 'PATCH',
+        data: notifPreferences,
+      });
+      if (res.success) {
+        setStatusMessage({ type: 'success', text: 'Đã lưu cài đặt tùy chọn thông báo thành công!' });
+      } else {
+        setStatusMessage({ type: 'error', text: res.message || 'Không thể lưu cài đặt thông báo' });
+      }
+    } catch (err: any) {
+      setStatusMessage({ type: 'error', text: err.message || 'Lỗi khi lưu cài đặt thông báo' });
+    } finally {
+      setIsSavingNotifPrefs(false);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       fetchInvitations();
+      fetchNotificationPreferences();
     }
   }, [isOpen]);
 
@@ -346,6 +403,22 @@ export default function ProfileModal({
                 {totalInvites}
               </span>
             )}
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('notifications');
+              setStatusMessage(null);
+              fetchNotificationPreferences();
+            }}
+            className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition-all cursor-pointer flex items-center gap-2 border-b-2 relative ${
+              activeTab === 'notifications'
+                ? 'border-[#2b1572] text-[#2b1572] bg-white/60 shadow-xs'
+                : 'border-transparent text-[#2b1572]/60 hover:text-[#2b1572] hover:bg-white/30'
+            }`}
+          >
+            <Bell className="w-4 h-4" />
+            <span>Cài đặt Thông báo</span>
           </button>
         </div>
 
@@ -774,6 +847,248 @@ export default function ProfileModal({
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 4: CÀI ĐẶT THÔNG BÁO (NOTIFICATION SETTINGS) */}
+          {activeTab === 'notifications' && (
+            <div className="space-y-6 animate-fade-in">
+              {/* Introduction header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-[#2b1572]">Tùy chọn nhận Thông báo</h3>
+                  <p className="text-xs text-[#2b1572]/70 mt-0.5">
+                    Tùy chỉnh các sự kiện bạn muốn nhận thông báo qua chuông và thời gian thực.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={fetchNotificationPreferences}
+                  disabled={loadingNotifPrefs}
+                  className="px-3 py-1.5 btn-secondary text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  title="Tải lại cài đặt"
+                >
+                  <Clock className={`w-3.5 h-3.5 ${loadingNotifPrefs ? 'animate-spin' : ''}`} />
+                  <span>Làm mới</span>
+                </button>
+              </div>
+
+              {loadingNotifPrefs ? (
+                <div className="py-12 flex flex-col items-center justify-center gap-2 text-[#2b1572]/60">
+                  <Loader2 className="w-6 h-6 animate-spin text-[#2b1572]" />
+                  <span className="text-xs font-semibold">Đang tải cài đặt thông báo...</span>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Group 1: Lời mời & Thành viên */}
+                  <div className="p-4 rounded-2xl glass-surface border border-white/80 shadow-xs space-y-3">
+                    <div className="flex items-center gap-2 pb-2 border-b border-[#2b1572]/10">
+                      <UserPlus className="w-4 h-4 text-[#2b1572]" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-[#2b1572]">
+                        Lời mời & Thành viên nhóm
+                      </span>
+                    </div>
+
+                    {/* Toggle: Lời mời tham gia */}
+                    <div className="flex items-center justify-between gap-4 py-1">
+                      <div className="space-y-0.5">
+                        <div className="text-xs font-bold text-[#2b1572]">
+                          Lời mời tham gia Workspace & Bảng
+                        </div>
+                        <div className="text-[11px] text-[#2b1572]/70">
+                          Nhận thông báo khi quản trị viên hoặc thành viên mời bạn vào Workspace/Board mới.
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={notifPreferences.invitations}
+                          onChange={(e) =>
+                            setNotifPreferences((prev) => ({
+                              ...prev,
+                              invitations: e.target.checked,
+                            }))
+                          }
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2b1572]"></div>
+                      </label>
+                    </div>
+
+                    {/* Toggle: Bị xóa khỏi Workspace / Board */}
+                    <div className="flex items-center justify-between gap-4 py-1 border-t border-[#2b1572]/5 pt-2.5">
+                      <div className="space-y-0.5">
+                        <div className="text-xs font-bold text-[#2b1572]">
+                          Thông báo xóa thành viên
+                        </div>
+                        <div className="text-[11px] text-[#2b1572]/70">
+                          Nhận thông báo khi bạn bị quản trị viên xóa khỏi Không gian làm việc hoặc Bảng.
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={notifPreferences.removals}
+                          onChange={(e) =>
+                            setNotifPreferences((prev) => ({
+                              ...prev,
+                              removals: e.target.checked,
+                            }))
+                          }
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2b1572]"></div>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Group 2: Thẻ & Nhiệm vụ */}
+                  <div className="p-4 rounded-2xl glass-surface border border-white/80 shadow-xs space-y-3">
+                    <div className="flex items-center gap-2 pb-2 border-b border-[#2b1572]/10">
+                      <CheckCircle2 className="w-4 h-4 text-[#2b1572]" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-[#2b1572]">
+                        Thẻ & Phân công công việc
+                      </span>
+                    </div>
+
+                    {/* Toggle: Phân công thẻ */}
+                    <div className="flex items-center justify-between gap-4 py-1">
+                      <div className="space-y-0.5">
+                        <div className="text-xs font-bold text-[#2b1572]">
+                          Phân công thẻ & Checklist
+                        </div>
+                        <div className="text-[11px] text-[#2b1572]/70">
+                          Nhận thông báo khi bạn được gán phụ trách thẻ hoặc mục việc cụ thể.
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={notifPreferences.assignments}
+                          onChange={(e) =>
+                            setNotifPreferences((prev) => ({
+                              ...prev,
+                              assignments: e.target.checked,
+                            }))
+                          }
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2b1572]"></div>
+                      </label>
+                    </div>
+
+                    {/* Toggle: Nhắc tên @Mention */}
+                    <div className="flex items-center justify-between gap-4 py-1 border-t border-[#2b1572]/5 pt-2.5">
+                      <div className="space-y-0.5">
+                        <div className="text-xs font-bold text-[#2b1572]">
+                          Nhắc tên (@Mention)
+                        </div>
+                        <div className="text-[11px] text-[#2b1572]/70">
+                          Nhận thông báo khi có ai đó nhắc tên bạn (@tên) trong bình luận hoặc thẻ.
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={notifPreferences.mentions}
+                          onChange={(e) =>
+                            setNotifPreferences((prev) => ({
+                              ...prev,
+                              mentions: e.target.checked,
+                            }))
+                          }
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2b1572]"></div>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Group 3: Thời hạn & Thảo luận */}
+                  <div className="p-4 rounded-2xl glass-surface border border-white/80 shadow-xs space-y-3">
+                    <div className="flex items-center gap-2 pb-2 border-b border-[#2b1572]/10">
+                      <AlarmClock className="w-4 h-4 text-[#2b1572]" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-[#2b1572]">
+                        Thời hạn & Thảo luận
+                      </span>
+                    </div>
+
+                    {/* Toggle: Hạn chót & Quá hạn */}
+                    <div className="flex items-center justify-between gap-4 py-1">
+                      <div className="space-y-0.5">
+                        <div className="text-xs font-bold text-[#2b1572]">
+                          Nhắc nhở Hạn chót & Quá hạn
+                        </div>
+                        <div className="text-[11px] text-[#2b1572]/70">
+                          Tự động nhắc khi công việc sắp đến hạn hoặc bị quá hạn.
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={notifPreferences.due_reminders}
+                          onChange={(e) =>
+                            setNotifPreferences((prev) => ({
+                              ...prev,
+                              due_reminders: e.target.checked,
+                            }))
+                          }
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2b1572]"></div>
+                      </label>
+                    </div>
+
+                    {/* Toggle: Bình luận */}
+                    <div className="flex items-center justify-between gap-4 py-1 border-t border-[#2b1572]/5 pt-2.5">
+                      <div className="space-y-0.5">
+                        <div className="text-xs font-bold text-[#2b1572]">
+                          Bình luận mới trong thẻ
+                        </div>
+                        <div className="text-[11px] text-[#2b1572]/70">
+                          Nhận thông báo khi có bình luận mới trong các thẻ bạn đang tham gia.
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={notifPreferences.comments}
+                          onChange={(e) =>
+                            setNotifPreferences((prev) => ({
+                              ...prev,
+                              comments: e.target.checked,
+                            }))
+                          }
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2b1572]"></div>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Save Button */}
+                  <div className="flex justify-end pt-2">
+                    <button
+                      type="button"
+                      disabled={isSavingNotifPrefs}
+                      onClick={handleSaveNotifPreferences}
+                      className="px-5 py-2.5 btn-primary text-xs font-bold flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
+                    >
+                      {isSavingNotifPrefs ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Đang lưu cài đặt...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-4 h-4" />
+                          <span>Lưu cài đặt thông báo</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

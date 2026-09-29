@@ -44,7 +44,7 @@ export default function TopBar({
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [profileModalTab, setProfileModalTab] = useState<'profile' | 'security' | 'invitations'>('profile');
+  const [profileModalTab, setProfileModalTab] = useState<'profile' | 'security' | 'invitations' | 'notifications'>('profile');
   const [unreadCount, setUnreadCount] = useState(0);
   const [pendingInvitesCount, setPendingInvitesCount] = useState(0);
 
@@ -184,7 +184,7 @@ export default function TopBar({
     };
   }, [user?.id]);
 
-  const openProfileTab = (tab: 'profile' | 'security' | 'invitations') => {
+  const openProfileTab = (tab: 'profile' | 'security' | 'invitations' | 'notifications') => {
     setProfileModalTab(tab);
     setIsProfileModalOpen(true);
     setIsUserMenuOpen(false);
@@ -547,6 +547,15 @@ export default function TopBar({
                           {pendingInvitesCount}
                         </span>
                       )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => openProfileTab('notifications')}
+                      className="w-full px-4 py-2 text-left text-xs font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2.5 cursor-pointer transition-colors"
+                    >
+                      <Bell className="w-4 h-4 text-[#2b1572]/70" />
+                      <span>Cài đặt thông báo</span>
                     </button>
 
                     <Link

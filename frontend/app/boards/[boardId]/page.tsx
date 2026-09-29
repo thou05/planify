@@ -147,6 +147,7 @@ export default function BoardDetailPage({
   const [workspaceMembers, setWorkspaceMembers] = useState<any[]>([]);
   const [userWorkspaces, setUserWorkspaces] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [accessDenied, setAccessDenied] = useState<string | null>(null);
 
   // Active Board View (Kanban, Table, Calendar, Schedule)
   const [activeView, setActiveView] = useState<BoardViewType>('kanban');
@@ -527,13 +528,16 @@ export default function BoardDetailPage({
       const res = await apiClient<any>(`/boards/${boardId}`);
       if (res.success && res.data) {
         setBoard(res.data);
+        setAccessDenied(null);
         if (res.data.workspace_id) {
           fetchWorkspaceData(res.data.workspace_id);
           shell?.setCurrentWorkspaceId(res.data.workspace_id);
         }
+      } else {
+        setAccessDenied(res.message || 'Không tìm thấy hoặc bạn không có quyền truy cập vào Bảng này.');
       }
-    } catch {
-      // Handle error
+    } catch (err: any) {
+      setAccessDenied(err?.message || 'Bạn không có quyền truy cập vào Bảng này hoặc đã bị xóa khỏi nhóm.');
     } finally {
       if (!silent) setIsLoading(false);
     }
@@ -1170,6 +1174,35 @@ export default function BoardDetailPage({
   const targetWorkspaceId =
     board?.workspace_id ||
     userWorkspaces.find((w) => (w.boards || []).some((b: any) => b.id === boardId))?.id;
+
+  if ((accessDenied || (!board && !isLoading))) {
+    return (
+      <div className="max-w-2xl mx-auto py-16 px-4 text-center">
+        <div className="glass-surface p-8 sm:p-10 rounded-3xl border border-white/80 shadow-xl space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center mx-auto text-[#c40000]">
+            <ShieldAlert className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl sm:text-2xl font-black text-[#2b1572]">
+              Không thể truy cập Bảng làm việc
+            </h2>
+            <p className="text-xs sm:text-sm text-[#2b1572]/70 max-w-md mx-auto leading-relaxed">
+              {accessDenied || 'Bạn hiện không phải là thành viên hoặc đã bị xóa khỏi Bảng / Không gian làm việc này.'}
+            </p>
+          </div>
+          <div className="pt-2 flex justify-center">
+            <Link
+              href="/dashboard"
+              className="px-6 py-3 btn-primary text-xs font-bold rounded-2xl flex items-center gap-2 shadow-md cursor-pointer hover:scale-105 transition-all"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Quay về Bảng điều khiển (Dashboard)</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

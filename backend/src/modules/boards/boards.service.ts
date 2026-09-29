@@ -230,11 +230,22 @@ export class BoardsService {
       throw new NotFoundException('Không tìm thấy Board');
     }
 
-    await this.verifyWorkspaceAccess(board.workspace_id, userId);
-
     const b: any = board;
     const isWorkspaceOwner = (b.workspace as any)?.owner_id === userId;
     const currentMember = (b.members || []).find((m: any) => m.user_id === userId);
+
+    // Kiểm tra xem user có phải là workspace member không
+    const { data: wsMember } = await this.supabase
+      .from('workspace_members')
+      .select('id, role')
+      .eq('workspace_id', board.workspace_id)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    // Cho phép nếu là Workspace Owner, Workspace Member HOẶC là Board Member
+    if (!isWorkspaceOwner && !wsMember && !currentMember) {
+      throw new ForbiddenException('Bạn không có quyền truy cập Bảng này hoặc đã bị xóa');
+    }
 
     // Kiểm tra private access
     if (b.visibility === 'PRIVATE' && !currentMember && !isWorkspaceOwner) {
@@ -243,7 +254,7 @@ export class BoardsService {
 
     const currentUserBoardRole = isWorkspaceOwner
       ? 'ADMIN'
-      : currentMember?.role || 'VIEWER';
+      : currentMember?.role || (wsMember?.role === 'ADMIN' ? 'ADMIN' : 'VIEWER');
 
     const canEdit = currentUserBoardRole === 'ADMIN' || currentUserBoardRole === 'EDITOR' || isWorkspaceOwner;
     const canManageMembers = currentUserBoardRole === 'ADMIN' || isWorkspaceOwner;
@@ -339,12 +350,34 @@ export class BoardsService {
   async toggleFavorite(boardId: string, userId: string) {
     const { data: board } = await this.supabase
       .from('boards')
-      .select('id, workspace_id, is_favorite')
+      .select('id, workspace_id, is_favorite, workspaces:workspaces(owner_id)')
       .eq('id', boardId)
       .maybeSingle();
 
     if (!board) throw new NotFoundException('Không tìm thấy Board');
-    await this.verifyWorkspaceAccess(board.workspace_id, userId);
+
+    const isWsOwner = (board.workspaces as any)?.owner_id === userId;
+    if (!isWsOwner) {
+      const { data: bm } = await this.supabase
+        .from('board_members')
+        .select('id')
+        .eq('board_id', boardId)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (!bm) {
+        const { data: wm } = await this.supabase
+          .from('workspace_members')
+          .select('id')
+          .eq('workspace_id', board.workspace_id)
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (!wm) {
+          throw new ForbiddenException('Bạn không có quyền truy cập Bảng này');
+        }
+      }
+    }
 
     const newFav = !board.is_favorite;
     const { error } = await this.supabase
@@ -731,11 +764,43 @@ export class BoardsService {
 
     if (error) throw new BadRequestException(error.message);
 
+    const targetUserObj = Array.isArray((updated as any)?.user) ? (updated as any)?.user[0] : (updated as any)?.user;
+    const targetName = targetUserObj?.name || targetUserObj?.email || 'thành viên';
+    const roleLabel = dto.role === 'ADMIN' ? 'Quản trị viên' : dto.role === 'VIEWER' ? 'Người xem' : 'Thành viên';
+
     await this.activitiesService.logActivity({
       workspaceId: board.workspace_id,
       userId: currentUserId,
-      action: `đã đổi vai trò thành viên thành ${dto.role}`,
+      action: `đã đổi vai trò của "${targetName}" thành ${roleLabel} trong Bảng "${board.name}"`,
       targetType: `board:${boardId}`,
+    });
+
+    if (currentUserId !== targetUserId) {
+      const { data: changerUser } = await this.supabase
+        .from('users')
+        .select('name')
+        .eq('id', currentUserId)
+        .maybeSingle();
+
+      const changerName = changerUser?.name || 'Quản trị viên';
+      this.notificationsService
+        .createNotification({
+          userId: targetUserId,
+          title: 'Thay đổi vai trò trong Bảng',
+          message: `${changerName} đã thay đổi vai trò của bạn thành "${roleLabel}" trong bảng "${board.name}".`,
+          type: 'BOARD_ROLE_UPDATED',
+        })
+        .catch(() => {});
+
+      this.supabase.emitUserEvent(targetUserId, 'BOARD_MEMBERS_CHANGED', {
+        boardId,
+        action: 'ROLE_UPDATED',
+        role: dto.role,
+      });
+    }
+
+    this.supabase.emitBoardEvent(boardId, 'BOARD_MEMBERS_CHANGED', {
+      senderId: currentUserId,
     });
 
     return updated;
@@ -767,6 +832,15 @@ export class BoardsService {
       }
     }
 
+    // Lấy thông tin thành viên bị xóa để ghi rõ tên trong dòng hoạt động
+    const { data: targetUser } = await this.supabase
+      .from('users')
+      .select('id, name, email')
+      .eq('id', targetUserId)
+      .maybeSingle();
+
+    const targetName = targetUser?.name || targetUser?.email || 'thành viên';
+
     const { error } = await this.supabase
       .from('board_members')
       .delete()
@@ -778,8 +852,35 @@ export class BoardsService {
     await this.activitiesService.logActivity({
       workspaceId: board.workspace_id,
       userId: currentUserId,
-      action: `đã xóa thành viên khỏi Bảng`,
+      action: `đã xóa thành viên "${targetName}" khỏi Bảng "${board.name}"`,
       targetType: `board:${boardId}`,
+    });
+
+    if (currentUserId !== targetUserId) {
+      const { data: removerUser } = await this.supabase
+        .from('users')
+        .select('name')
+        .eq('id', currentUserId)
+        .maybeSingle();
+
+      const removerName = removerUser?.name || 'Quản trị viên';
+      this.notificationsService
+        .createNotification({
+          userId: targetUserId,
+          title: 'Thông báo rời khỏi Bảng Kanban',
+          message: `Bạn đã bị ${removerName} xóa khỏi bảng "${board.name}".`,
+          type: 'BOARD_REMOVED',
+        })
+        .catch(() => {});
+
+      this.supabase.emitUserEvent(targetUserId, 'BOARD_MEMBERS_CHANGED', {
+        boardId,
+        action: 'REMOVED',
+      });
+    }
+
+    this.supabase.emitBoardEvent(boardId, 'BOARD_MEMBERS_CHANGED', {
+      senderId: currentUserId,
     });
 
     return { message: 'Đã xóa thành viên khỏi Board' };
