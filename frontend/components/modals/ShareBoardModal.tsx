@@ -225,6 +225,11 @@ export default function ShareBoardModal({
   };
 
   const handleUpdateRole = async (targetUserId: string, newRole: 'ADMIN' | 'EDITOR' | 'VIEWER') => {
+    if (!targetUserId || targetUserId === 'undefined') {
+      setError('Không xác định được mã thành viên để đổi vai trò');
+      return;
+    }
+    setError('');
     try {
       const res = await apiClient(`/boards/${board.id}/members/${targetUserId}`, {
         method: 'PATCH',
@@ -240,8 +245,22 @@ export default function ShareBoardModal({
     }
   };
 
-  const handleRemoveMember = (member: any) => {
-    const memberName = member.user?.name || member.user?.email || 'thành viên này';
+  const handleRemoveMember = (memberOrId: any) => {
+    const targetUserId =
+      typeof memberOrId === 'string'
+        ? memberOrId
+        : (memberOrId?.user_id || memberOrId?.user?.id || memberOrId?.id);
+
+    const memberName =
+      typeof memberOrId === 'object'
+        ? (memberOrId?.user?.name || memberOrId?.user?.email || 'thành viên này')
+        : 'thành viên này';
+
+    if (!targetUserId || targetUserId === 'undefined') {
+      setError('Không xác định được mã thành viên để xóa');
+      return;
+    }
+
     setConfirmState({
       isOpen: true,
       title: 'Xóa thành viên khỏi Bảng',
@@ -250,7 +269,7 @@ export default function ShareBoardModal({
       variant: 'danger',
       onConfirm: async () => {
         try {
-          const res = await apiClient(`/boards/${board.id}/members/${member.user_id}`, {
+          const res = await apiClient(`/boards/${board.id}/members/${targetUserId}`, {
             method: 'DELETE',
           });
           if (res.success) {
@@ -509,7 +528,7 @@ export default function ShareBoardModal({
                           {canEditRole ? (
                             <select
                               value={m.role}
-                              onChange={(e) => handleUpdateRole(m.user_id, e.target.value as any)}
+                              onChange={(e) => handleUpdateRole(m.user_id || m.user?.id, e.target.value as any)}
                               className="px-2 py-1 text-[11px] glass-input font-semibold text-[#2b1572]"
                             >
                               <option value="ADMIN">Quản trị viên</option>
@@ -524,7 +543,7 @@ export default function ShareBoardModal({
 
                           {canEditRole && (
                             <button
-                              onClick={() => handleRemoveMember(m.user_id)}
+                              onClick={() => handleRemoveMember(m)}
                               className="p-1 text-[#2b1572]/40 hover:text-[#c40000] hover:bg-[#c40000]/10 rounded-lg transition-colors cursor-pointer"
                               title="Xóa khỏi Board"
                             >
