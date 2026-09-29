@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
 import { supabase } from '@/lib/supabase';
@@ -16,10 +17,16 @@ import {
   Shield,
   Mail,
   ChevronDown,
+  FolderKanban,
+  CreditCard,
+  ArrowRight,
+  Loader2,
+  X,
 } from 'lucide-react';
 import MyActivityModal from '@/components/modals/MyActivityModal';
 import NotificationPopover from '@/components/notifications/NotificationPopover';
 import ProfileModal from '@/components/modals/ProfileModal';
+import GlobalSearchModal from '@/components/modals/GlobalSearchModal';
 
 interface TopBarProps {
   onOpenCreateWorkspace?: () => void;
@@ -30,7 +37,9 @@ export default function TopBar({
   onOpenCreateWorkspace,
   onOpenCreateBoard,
 }: TopBarProps) {
+  const router = useRouter();
   const { user, logout } = useAuth();
+  const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
   const [isMyActivityOpen, setIsMyActivityOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -39,18 +48,87 @@ export default function TopBar({
   const [unreadCount, setUnreadCount] = useState(0);
   const [pendingInvitesCount, setPendingInvitesCount] = useState(0);
 
-  const userMenuRef = useRef<HTMLDivElement>(null);
+  // In-Bar Search states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<{
+    workspaces: any[];
+    boards: any[];
+    cards: any[];
+  }>({ workspaces: [], boards: [], cards: [] });
+  const [isSearching, setIsSearching] = useState(false);
+  const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
 
-  // Close user menu when clicking outside
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Live search effect with 200ms debounce
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!q) {
+      setSearchResults({ workspaces: [], boards: [], cards: [] });
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await apiClient<any>(`/search?q=${encodeURIComponent(q)}`);
+        if (res.success && res.data) {
+          setSearchResults(res.data);
+          setIsSearchDropdownOpen(true);
+        }
+      } catch (err) {
+        console.error('Lỗi tìm kiếm:', err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Focus search input when pressing Ctrl+K without showing prominent badge
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+        if (searchQuery.trim()) {
+          setIsSearchDropdownOpen(true);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [searchQuery]);
+
+  // Close menus and dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setIsUserMenuOpen(false);
       }
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setIsSearchDropdownOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const handleSearchSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!searchQuery.trim()) return;
+    setIsSearchDropdownOpen(true);
+  };
+
+  const handleSelectResult = (url: string) => {
+    setIsSearchDropdownOpen(false);
+    router.push(url);
+  };
 
   // Realtime instant notification subscription + periodic counter sync
   useEffect(() => {
@@ -130,20 +208,226 @@ export default function TopBar({
           </Link>
         </div>
 
-        {/* Middle Search Bar */}
-        <div className="hidden md:flex items-center max-w-md w-full mx-6">
-          <div className="relative w-full">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#2b1572]/40" />
+        {/* Middle Search Bar with Direct Keyword Typing & Search Button */}
+        <div
+          ref={searchContainerRef}
+          className="hidden md:flex items-center flex-1 max-w-md mx-6 relative"
+        >
+          <form
+            onSubmit={handleSearchSubmit}
+            className="relative w-full flex items-center"
+          >
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#2b1572]/40 pointer-events-none" />
             <input
+              ref={searchInputRef}
               type="text"
-              placeholder="Tìm kiếm công việc, board, thẻ..."
-              className="w-full pl-10 pr-4 py-2 text-xs glass-input placeholder:text-[#2b1572]/40"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setIsSearchDropdownOpen(true);
+              }}
+              onFocus={() => {
+                if (searchQuery.trim()) {
+                  setIsSearchDropdownOpen(true);
+                }
+              }}
+              placeholder="Tìm kiếm không gian, bảng, thẻ..."
+              className="w-full pl-10 pr-28 py-2 text-xs glass-input placeholder:text-[#2b1572]/40 text-[#2b1572] font-medium"
             />
-          </div>
+
+            {/* Clear Button */}
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setSearchResults({ workspaces: [], boards: [], cards: [] });
+                  setIsSearchDropdownOpen(false);
+                  searchInputRef.current?.focus();
+                }}
+                className="absolute right-24 p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                title="Xóa tìm kiếm"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            {/* Dedicated Search Button */}
+            <button
+              type="submit"
+              className="absolute right-1 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-[#2b1572] hover:bg-[#1e0f52] active:scale-95 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+              title="Tìm kiếm"
+            >
+              {isSearching ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Search className="w-3.5 h-3.5" />
+              )}
+              <span>Tìm kiếm</span>
+            </button>
+          </form>
+
+          {/* Live Search Results Dropdown directly below Search Bar */}
+          {isSearchDropdownOpen && searchQuery.trim().length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-xl border border-white/80 rounded-2xl shadow-2xl shadow-[#2b1572]/20 overflow-hidden z-50 max-h-[70vh] overflow-y-auto animate-scale-up p-2.5 space-y-3">
+              {isSearching && (
+                <div className="flex items-center justify-center gap-2 py-4 text-xs font-medium text-[#2b1572]">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Đang tìm kiếm...</span>
+                </div>
+              )}
+
+              {!isSearching &&
+                searchResults.workspaces.length === 0 &&
+                searchResults.boards.length === 0 &&
+                searchResults.cards.length === 0 && (
+                  <div className="py-6 px-3 text-center">
+                    <p className="text-xs font-bold text-slate-700">
+                      Không tìm thấy kết quả nào cho &ldquo;{searchQuery}&rdquo;
+                    </p>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Thử tìm với tên bảng, thẻ hoặc không gian làm việc khác
+                    </p>
+                  </div>
+                )}
+
+              {/* Workspaces list */}
+              {searchResults.workspaces.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold text-[#2b1572]/60 uppercase tracking-wider">
+                    <FolderKanban className="w-3 h-3 text-[#2b1572]" />
+                    <span>Không gian làm việc ({searchResults.workspaces.length})</span>
+                  </div>
+                  <div className="mt-1 space-y-1">
+                    {searchResults.workspaces.map((w: any) => (
+                      <div
+                        key={w.id}
+                        onClick={() => handleSelectResult(`/workspaces/${w.id}`)}
+                        className="group flex items-center justify-between p-2 rounded-xl hover:bg-[#2b1572] cursor-pointer transition-colors"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-7 h-7 rounded-lg bg-[#a6d1fd]/30 group-hover:bg-white/20 text-[#2b1572] group-hover:text-white flex items-center justify-center shrink-0">
+                            <FolderKanban className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-[#2b1572] group-hover:text-white truncate">
+                              {w.name}
+                            </p>
+                            {w.description && (
+                              <p className="text-[10px] text-slate-400 group-hover:text-white/70 truncate">
+                                {w.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-white shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Boards list */}
+              {searchResults.boards.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold text-[#2b1572]/60 uppercase tracking-wider">
+                    <LayoutGrid className="w-3 h-3 text-[#2b1572]" />
+                    <span>Bảng công việc ({searchResults.boards.length})</span>
+                  </div>
+                  <div className="mt-1 space-y-1">
+                    {searchResults.boards.map((b: any) => (
+                      <div
+                        key={b.id}
+                        onClick={() => handleSelectResult(`/boards/${b.id}`)}
+                        className="group flex items-center justify-between p-2 rounded-xl hover:bg-[#2b1572] cursor-pointer transition-colors"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-7 h-7 rounded-lg bg-emerald-100 group-hover:bg-white/20 text-emerald-700 group-hover:text-white flex items-center justify-center shrink-0">
+                            <LayoutGrid className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-xs font-bold text-[#2b1572] group-hover:text-white truncate">
+                                {b.name}
+                              </p>
+                              {b.workspace_name && (
+                                <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-slate-100 group-hover:bg-white/20 text-slate-600 group-hover:text-white font-medium truncate">
+                                  {b.workspace_name}
+                                </span>
+                              )}
+                            </div>
+                            {b.description && (
+                              <p className="text-[10px] text-slate-400 group-hover:text-white/70 truncate">
+                                {b.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-white shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Cards list */}
+              {searchResults.cards.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold text-[#2b1572]/60 uppercase tracking-wider">
+                    <CreditCard className="w-3 h-3 text-[#2b1572]" />
+                    <span>Thẻ công việc ({searchResults.cards.length})</span>
+                  </div>
+                  <div className="mt-1 space-y-1">
+                    {searchResults.cards.map((c: any) => (
+                      <div
+                        key={c.id}
+                        onClick={() =>
+                          handleSelectResult(`/boards/${c.board_id}?cardId=${c.id}`)
+                        }
+                        className="group flex items-center justify-between p-2 rounded-xl hover:bg-[#2b1572] cursor-pointer transition-colors"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-7 h-7 rounded-lg bg-indigo-100 group-hover:bg-white/20 text-[#2b1572] group-hover:text-white flex items-center justify-center shrink-0">
+                            <CreditCard className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-[#2b1572] group-hover:text-white truncate">
+                              {c.title}
+                            </p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              {c.board_name && (
+                                <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-[#a6d1fd]/30 group-hover:bg-white/20 text-[#2b1572] group-hover:text-white font-medium truncate">
+                                  Bảng: {c.board_name}
+                                </span>
+                              )}
+                              {c.list_name && (
+                                <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-slate-100 group-hover:bg-white/20 text-slate-600 group-hover:text-white font-medium truncate">
+                                  Cột: {c.list_name}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-white shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right Controls */}
         <div className="flex items-center gap-3">
+          {/* Mobile Search Button */}
+          <button
+            onClick={() => setIsGlobalSearchOpen(true)}
+            className="md:hidden p-2 text-[#2b1572]/70 hover:text-[#2b1572] hover:bg-white/40 rounded-xl transition-colors cursor-pointer"
+            title="Tìm kiếm (Ctrl + K)"
+          >
+            <Search className="w-4 h-4" />
+          </button>
           {onOpenCreateBoard && (
             <button
               onClick={onOpenCreateBoard}
@@ -305,6 +589,12 @@ export default function TopBar({
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
         initialTab={profileModalTab}
+      />
+
+      {/* Global Command Palette Search Modal */}
+      <GlobalSearchModal
+        isOpen={isGlobalSearchOpen}
+        onClose={() => setIsGlobalSearchOpen(false)}
       />
     </>
   );

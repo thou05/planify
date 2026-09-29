@@ -21,6 +21,7 @@ import { AiModule } from './modules/ai/ai.module';
 import { ImportExportModule } from './modules/import-export/import-export.module';
 
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { SearchModule } from './modules/search/search.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     AiModule,
     ImportExportModule,
     AnalyticsModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [AppService],

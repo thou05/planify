@@ -21,12 +21,12 @@ import {
   Layers,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
-import * as XLSX from 'xlsx';
 
 interface BoardAnalyticsViewProps {
   boardId: string;
   onCardClick?: (cardId: string) => void;
 }
+
 
 interface AnalyticsData {
   board: {
@@ -147,7 +147,7 @@ export default function BoardAnalyticsView({
     }
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (!data) return;
 
     // Sheet 1: Tổng quan
@@ -194,6 +194,7 @@ export default function BoardAnalyticsView({
       ]),
     ];
 
+    const XLSX = await import('xlsx');
     const wb = XLSX.utils.book_new();
     const wsOverview = XLSX.utils.aoa_to_sheet(overviewSheetData);
     const wsMembers = XLSX.utils.aoa_to_sheet(memberSheetData);
@@ -295,13 +296,12 @@ export default function BoardAnalyticsView({
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
             <div className="flex items-center gap-3">
               <div
-                className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg text-white shadow-xs ${
-                  aiInsights.healthStatus === 'HEALTHY'
-                    ? 'bg-emerald-500'
-                    : aiInsights.healthStatus === 'MODERATE'
+                className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg text-white shadow-xs ${aiInsights.healthStatus === 'HEALTHY'
+                  ? 'bg-emerald-500'
+                  : aiInsights.healthStatus === 'MODERATE'
                     ? 'bg-amber-500'
                     : 'bg-rose-500'
-                }`}
+                  }`}
               >
                 {aiInsights.score}
               </div>
@@ -311,13 +311,12 @@ export default function BoardAnalyticsView({
                     AI Project Health Score
                   </span>
                   <span
-                    className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
-                      aiInsights.healthStatus === 'HEALTHY'
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : aiInsights.healthStatus === 'MODERATE'
+                    className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${aiInsights.healthStatus === 'HEALTHY'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : aiInsights.healthStatus === 'MODERATE'
                         ? 'bg-amber-100 text-amber-800'
                         : 'bg-rose-100 text-rose-800'
-                    }`}
+                      }`}
                   >
                     {aiInsights.healthStatus === 'HEALTHY' && <ShieldCheck className="w-3 h-3" />}
                     {aiInsights.healthStatus === 'MODERATE' && <Clock className="w-3 h-3" />}
@@ -325,8 +324,8 @@ export default function BoardAnalyticsView({
                     {aiInsights.healthStatus === 'HEALTHY'
                       ? 'Tiến độ An toàn'
                       : aiInsights.healthStatus === 'MODERATE'
-                      ? 'Cần Chú Ý'
-                      : 'Báo Động Tiến Độ'}
+                        ? 'Cần Chú Ý'
+                        : 'Báo Động Tiến Độ'}
                   </span>
                   <span className="text-[10px] text-gray-400">
                     ({aiInsights.source === 'GEMINI' ? 'Gemini 2.5' : 'Heuristic Engine'})
@@ -504,11 +503,10 @@ export default function BoardAnalyticsView({
                     </div>
                     <div className="w-full bg-gray-100/80 h-2.5 rounded-full overflow-hidden flex">
                       <div
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          isDoneCol
-                            ? 'bg-gradient-to-r from-emerald-400 to-emerald-600'
-                            : 'bg-gradient-to-r from-[#2b1572] to-[#512da8]'
-                        }`}
+                        className={`h-full rounded-full transition-all duration-500 ${isDoneCol
+                          ? 'bg-gradient-to-r from-emerald-400 to-emerald-600'
+                          : 'bg-gradient-to-r from-[#2b1572] to-[#512da8]'
+                          }`}
                         style={{ width: `${Math.max(list.percentage, 2)}%` }}
                       />
                     </div>
@@ -743,11 +741,10 @@ export default function BoardAnalyticsView({
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 uppercase tracking-wide ${
-                        card.isOverdue
-                          ? 'bg-rose-100 text-rose-700 border border-rose-200'
-                          : 'bg-amber-100 text-amber-700 border border-amber-200'
-                      }`}
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 uppercase tracking-wide ${card.isOverdue
+                        ? 'bg-rose-100 text-rose-700 border border-rose-200'
+                        : 'bg-amber-100 text-amber-700 border border-amber-200'
+                        }`}
                     >
                       {card.isOverdue ? 'Quá hạn' : 'Sắp đến hạn'}
                     </span>
