@@ -20,6 +20,7 @@ import {
   Calendar,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import ConfirmModal from './ConfirmModal';
 
 interface ShareBoardModalProps {
   isOpen: boolean;
@@ -58,6 +59,21 @@ export default function ShareBoardModal({
 
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  // Custom Confirmation Dialog State
+  const [confirmState, setConfirmState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    variant?: 'danger' | 'warning' | 'primary';
+    onConfirm: () => Promise<void>;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: async () => {},
+  });
 
   const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
   const boardUrl = `${origin}/boards/${board?.id}`;
@@ -182,18 +198,30 @@ export default function ShareBoardModal({
     }
   };
 
-  const handleRevokeInvite = async (inviteId: string) => {
-    if (!confirm('Bạn có chắc muốn thu hồi lời mời này?')) return;
-    try {
-      const res = await apiClient(`/boards/${board.id}/invites/${inviteId}`, {
-        method: 'DELETE',
-      });
-      if (res.success) {
-        fetchPendingInvites();
-      }
-    } catch (err: any) {
-      alert(err.message || 'Không thể thu hồi lời mời');
-    }
+  const handleRevokeInvite = (invite: any) => {
+    setConfirmState({
+      isOpen: true,
+      title: 'Thu hồi lời mời',
+      message: `Bạn có chắc chắn muốn thu hồi lời mời gửi tới "${invite.email}"? Sau khi thu hồi, liên kết mời này sẽ mất hiệu lực ngay lập tức.`,
+      confirmText: 'Thu hồi lời mời',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await apiClient(`/boards/${board.id}/invites/${invite.id}`, {
+            method: 'DELETE',
+          });
+          if (res.success) {
+            setSuccessMsg(`Đã thu hồi lời mời gửi tới ${invite.email}`);
+            fetchPendingInvites();
+            setTimeout(() => setSuccessMsg(''), 3000);
+          }
+        } catch (err: any) {
+          setError(err.message || 'Không thể thu hồi lời mời');
+        } finally {
+          setConfirmState((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
   };
 
   const handleUpdateRole = async (targetUserId: string, newRole: 'ADMIN' | 'EDITOR' | 'VIEWER') => {
@@ -204,24 +232,39 @@ export default function ShareBoardModal({
       });
       if (res.success) {
         onUpdated();
+        setSuccessMsg('Đã cập nhật vai trò thành công');
+        setTimeout(() => setSuccessMsg(''), 3000);
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể đổi vai trò');
+      setError(err.message || 'Không thể đổi vai trò');
     }
   };
 
-  const handleRemoveMember = async (targetUserId: string) => {
-    if (!confirm('Bạn có chắc muốn xóa thành viên này khỏi Board?')) return;
-    try {
-      const res = await apiClient(`/boards/${board.id}/members/${targetUserId}`, {
-        method: 'DELETE',
-      });
-      if (res.success) {
-        onUpdated();
-      }
-    } catch (err: any) {
-      alert(err.message || 'Không thể xóa thành viên');
-    }
+  const handleRemoveMember = (member: any) => {
+    const memberName = member.user?.name || member.user?.email || 'thành viên này';
+    setConfirmState({
+      isOpen: true,
+      title: 'Xóa thành viên khỏi Bảng',
+      message: `Bạn có chắc chắn muốn xóa "${memberName}" khỏi Bảng làm việc này? Thành viên sẽ không còn quyền truy cập bảng.`,
+      confirmText: 'Xóa thành viên',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await apiClient(`/boards/${board.id}/members/${member.user_id}`, {
+            method: 'DELETE',
+          });
+          if (res.success) {
+            onUpdated();
+            setSuccessMsg(`Đã xóa ${memberName} khỏi Bảng`);
+            setTimeout(() => setSuccessMsg(''), 3000);
+          }
+        } catch (err: any) {
+          setError(err.message || 'Không thể xóa thành viên');
+        } finally {
+          setConfirmState((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
   };
 
   const existingBoardUserIds = new Set((board.members || []).map((m: any) => m.user_id));
@@ -612,7 +655,8 @@ export default function ShareBoardModal({
                             onClick={() => {
                               const link = `${origin}/invite/${inv.token}`;
                               navigator.clipboard.writeText(link);
-                              alert('Đã sao chép liên kết mời!');
+                              setSuccessMsg('Đã sao chép liên kết mời vào bộ nhớ tạm!');
+                              setTimeout(() => setSuccessMsg(''), 3000);
                             }}
                             className="p-1.5 text-[#2b1572]/60 hover:text-[#2b1572] hover:bg-white/60 rounded-lg transition-colors cursor-pointer"
                             title="Sao chép liên kết"
@@ -623,7 +667,7 @@ export default function ShareBoardModal({
                           {board.canManageMembers && (
                             <button
                               type="button"
-                              onClick={() => handleRevokeInvite(inv.id)}
+                              onClick={() => handleRevokeInvite(inv)}
                               className="px-2.5 py-1 rounded-lg border border-[#c40000]/30 text-[#c40000] hover:bg-[#c40000]/10 text-xs font-semibold cursor-pointer transition-colors"
                             >
                               Thu hồi
@@ -638,6 +682,17 @@ export default function ShareBoardModal({
             </div>
           )}
         </div>
+
+        {/* Global Confirm Modal */}
+        <ConfirmModal
+          isOpen={confirmState.isOpen}
+          onClose={() => setConfirmState((prev) => ({ ...prev, isOpen: false }))}
+          onConfirm={confirmState.onConfirm}
+          title={confirmState.title}
+          message={confirmState.message}
+          confirmText={confirmState.confirmText}
+          variant={confirmState.variant}
+        />
       </div>
     </div>
   );

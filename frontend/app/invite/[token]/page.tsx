@@ -18,6 +18,7 @@ import {
   XCircle,
   Sparkles,
 } from 'lucide-react';
+import ConfirmModal from '@/components/modals/ConfirmModal';
 
 export default function AcceptInvitePage({
   params,
@@ -36,6 +37,7 @@ export default function AcceptInvitePage({
   const [isAccepting, setIsAccepting] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
   const [rejectedSuccess, setRejectedSuccess] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
 
   useEffect(() => {
     const fetchInvite = async () => {
@@ -107,14 +109,7 @@ export default function AcceptInvitePage({
     }
   };
 
-  const handleReject = async () => {
-    if (!user) {
-      router.push(`/login?redirect=/invite/${token}`);
-      return;
-    }
-
-    if (!confirm('Bạn có chắc chắn muốn từ chối lời mời này?')) return;
-
+  const executeReject = async () => {
     setIsRejecting(true);
     setError('');
 
@@ -129,11 +124,20 @@ export default function AcceptInvitePage({
         });
       }
       setRejectedSuccess(true);
+      setShowRejectModal(false);
     } catch (err: any) {
       setError(err.message || 'Không thể từ chối lời mời');
     } finally {
       setIsRejecting(false);
     }
+  };
+
+  const handleReject = () => {
+    if (!user) {
+      router.push(`/login?redirect=/invite/${token}`);
+      return;
+    }
+    setShowRejectModal(true);
   };
 
   const getRoleDisplayName = (role: string) => {
@@ -327,6 +331,17 @@ export default function AcceptInvitePage({
           </div>
         ) : null}
       </div>
+
+      <ConfirmModal
+        isOpen={showRejectModal}
+        onClose={() => setShowRejectModal(false)}
+        onConfirm={executeReject}
+        title="Từ chối lời mời"
+        message="Bạn có chắc chắn muốn từ chối lời mời này? Bạn sẽ không thể truy cập bảng này trừ khi được mời lại."
+        confirmText="Từ chối lời mời"
+        variant="warning"
+        isLoading={isRejecting}
+      />
     </div>
   );
 }
