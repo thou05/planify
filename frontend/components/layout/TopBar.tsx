@@ -159,11 +159,30 @@ export default function TopBar({
     const channel = supabase.channel(`user-notifications:${user.id}`, {
       config: { broadcast: { self: false } },
     });
+    const userChannel = supabase.channel(`user:${user.id}`, {
+      config: { broadcast: { self: false } },
+    });
+
+    const handleNotifReceived = () => {
+      setUnreadCount((prev) => prev + 1);
+      fetchCounters();
+    };
 
     channel
-      .on('broadcast', { event: 'NOTIFICATION_RECEIVED' }, () => {
-        setUnreadCount((prev) => prev + 1);
+      .on('broadcast', { event: 'NOTIFICATION_RECEIVED' }, handleNotifReceived)
+      .on('broadcast', { event: 'NOTIFICATION_UPDATED' }, () => {
+        fetchCounters();
       })
+      .on('broadcast', { event: 'NOTIFICATION_DELETED' }, () => {
+        fetchCounters();
+      })
+      .on('broadcast', { event: 'ALL_NOTIFICATIONS_READ' }, () => {
+        setUnreadCount(0);
+      })
+      .subscribe();
+
+    userChannel
+      .on('broadcast', { event: 'NOTIFICATION_RECEIVED' }, handleNotifReceived)
       .on('broadcast', { event: 'NOTIFICATION_UPDATED' }, () => {
         fetchCounters();
       })
@@ -181,6 +200,7 @@ export default function TopBar({
       isMounted = false;
       clearInterval(fallbackTimer);
       supabase.removeChannel(channel);
+      supabase.removeChannel(userChannel);
     };
   }, [user?.id]);
 

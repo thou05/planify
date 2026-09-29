@@ -295,12 +295,22 @@ export default function WorkspaceDetailPage({
     if (!confirm(`Bạn có chắc muốn xóa thành viên "${memberName}" khỏi Workspace này?`)) return;
 
     try {
+      setWorkspace((prev: any) => {
+        if (!prev?.members) return prev;
+        return {
+          ...prev,
+          members: prev.members.filter(
+            (m: any) => (m.user_id || m.user?.id || m.id) !== targetUserId
+          ),
+        };
+      });
       await apiClient(`/workspaces/${workspaceId}/members/${targetUserId}`, {
         method: 'DELETE',
       });
       fetchWorkspace();
     } catch (err: any) {
       alert(err.message || 'Không thể xóa thành viên');
+      fetchWorkspace();
     }
   };
 
@@ -308,12 +318,14 @@ export default function WorkspaceDetailPage({
     if (!confirm('Bạn có chắc muốn thu hồi lời mời này?')) return;
 
     try {
+      setPendingInvites((prev) => prev.filter((i) => i.id !== inviteId));
       await apiClient(`/workspaces/${workspaceId}/invites/${inviteId}`, {
         method: 'DELETE',
       });
       fetchInvites();
     } catch (err: any) {
       alert(err.message || 'Không thể thu hồi lời mời');
+      fetchInvites();
     }
   };
 

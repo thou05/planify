@@ -92,7 +92,7 @@ export default function AcceptInvitePage({
         });
         if (res.success && res.data) {
           const boardId = res.data.boardId || inviteData?.board_id || inviteData?.board?.id;
-          router.push(`/boards/${boardId}`);
+          window.location.href = `/boards/${boardId}`;
         }
       } else {
         const res = await apiClient<any>(`/workspaces/invites/${token}/accept`, {
@@ -100,7 +100,7 @@ export default function AcceptInvitePage({
         });
         if (res.success && res.data) {
           const workspaceId = res.data.workspaceId || inviteData?.workspace?.id;
-          router.push(`/workspaces/${workspaceId}`);
+          window.location.href = `/workspaces/${workspaceId}`;
         }
       }
     } catch (err: any) {
@@ -123,6 +123,7 @@ export default function AcceptInvitePage({
           method: 'POST',
         });
       }
+      setInviteData(null);
       setRejectedSuccess(true);
       setShowRejectModal(false);
     } catch (err: any) {

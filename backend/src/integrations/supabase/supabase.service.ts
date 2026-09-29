@@ -128,6 +128,7 @@ export class SupabaseService implements OnModuleInit {
 
   async emitUserEvent(userId: string, event: string, payload: any = {}) {
     if (!userId) return;
-    return this.emitChannelEvent(`user:${userId}`, event, { ...payload, userId });
+    this.emitChannelEvent(`user:${userId}`, event, { ...payload, userId });
+    return this.emitChannelEvent(`user-notifications:${userId}`, event, { ...payload, userId });
   }
 }

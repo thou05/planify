@@ -627,7 +627,8 @@ export class WorkspacesService {
           id,
           name,
           description,
-          owner:users!fk_workspace_owner (name, avatar)
+          owner_id,
+          owner:users!fk_workspace_owner (id, name, avatar)
         )
       `)
       .eq('token', token)
@@ -646,16 +647,17 @@ export class WorkspacesService {
 
   async acceptInvite(token: string, userId: string) {
     const invite = await this.getInviteByToken(token);
-    const workspaceId = (invite.workspace as any).id;
+    const workspace = invite.workspace as any;
+    const workspaceId = workspace.id;
+
+    const { data: currentUser } = await this.supabase
+      .from('users')
+      .select('name, email')
+      .eq('id', userId)
+      .maybeSingle();
 
     // Xác thực email người nhận nếu lời mời có chỉ định email
     if (invite.email) {
-      const { data: currentUser } = await this.supabase
-        .from('users')
-        .select('email')
-        .eq('id', userId)
-        .maybeSingle();
-
       if (currentUser?.email && currentUser.email.toLowerCase() !== invite.email.toLowerCase()) {
         throw new ForbiddenException(
           `Lời mời này được gửi riêng cho email "${invite.email}". Bạn đang đăng nhập bằng "${currentUser.email}". Vui lòng đăng nhập đúng tài khoản để chấp nhận.`
@@ -691,6 +693,20 @@ export class WorkspacesService {
       .delete()
       .eq('id', invite.id);
 
+    const respondentName = currentUser?.name || currentUser?.email || 'Thành viên';
+    const inviterId = workspace?.owner_id;
+
+    if (inviterId && inviterId !== userId) {
+      await this.notificationsService
+        .createNotification({
+          userId: inviterId,
+          title: 'Lời mời Không gian làm việc được chấp nhận',
+          message: `${respondentName} đã chấp nhận lời mời gia nhập Không gian làm việc "${workspace?.name || 'Không gian'}".||/workspaces/${workspaceId}`,
+          type: 'WORKSPACE_INVITE_ACCEPTED',
+        })
+        .catch(() => {});
+    }
+
     this.supabase.emitWorkspaceEvent(workspaceId, 'WORKSPACE_MEMBERS_CHANGED', {
       senderId: userId,
     });
@@ -704,15 +720,16 @@ export class WorkspacesService {
 
   async rejectInvite(token: string, userId: string) {
     const invite = await this.getInviteByToken(token);
+    const workspace = invite.workspace as any;
+
+    const { data: currentUser } = await this.supabase
+      .from('users')
+      .select('name, email')
+      .eq('id', userId)
+      .maybeSingle();
 
     // Xác thực người từ chối phải là người nhận lời mời
     if (invite.email) {
-      const { data: currentUser } = await this.supabase
-        .from('users')
-        .select('email')
-        .eq('id', userId)
-        .maybeSingle();
-
       if (currentUser?.email && currentUser.email.toLowerCase() !== invite.email.toLowerCase()) {
         throw new ForbiddenException('Bạn không phải là người nhận của lời mời này');
       }
@@ -725,6 +742,26 @@ export class WorkspacesService {
 
     if (error) {
       throw new BadRequestException(error.message);
+    }
+
+    const respondentName = currentUser?.name || currentUser?.email || 'Thành viên';
+    const inviterId = workspace?.owner_id;
+
+    if (inviterId && inviterId !== userId) {
+      await this.notificationsService
+        .createNotification({
+          userId: inviterId,
+          title: 'Lời mời Không gian làm việc bị từ chối',
+          message: `${respondentName} đã từ chối lời mời gia nhập Không gian làm việc "${workspace?.name || 'Không gian'}".||/workspaces/${workspace?.id || ''}`,
+          type: 'WORKSPACE_INVITE_REJECTED',
+        })
+        .catch(() => {});
+    }
+
+    if (workspace?.id) {
+      this.supabase.emitWorkspaceEvent(workspace.id, 'WORKSPACE_INVITE_CHANGED', {
+        inviteId: invite.id,
+      });
     }
 
     return {

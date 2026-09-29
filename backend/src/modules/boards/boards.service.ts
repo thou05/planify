@@ -678,6 +678,12 @@ export class BoardsService {
       }).catch(() => {});
     }
 
+    // Phát tín hiệu Realtime cập nhật Board
+    this.supabase.emitBoardEvent(boardId, 'BOARD_UPDATED', {
+      type: 'MEMBER_ADDED',
+      member: newMember,
+    });
+
     return newMember;
   }
 
@@ -738,6 +744,13 @@ export class BoardsService {
       targetType: `board:${boardId}`,
     });
 
+    // Phát tín hiệu Realtime cập nhật Board
+    this.supabase.emitBoardEvent(boardId, 'BOARD_UPDATED', {
+      type: 'MEMBER_ROLE_UPDATED',
+      targetUserId,
+      role: dto.role,
+    });
+
     return updated;
   }
 
@@ -781,6 +794,21 @@ export class BoardsService {
       action: `đã xóa thành viên khỏi Bảng`,
       targetType: `board:${boardId}`,
     });
+
+    // Phát tín hiệu Realtime cập nhật Board
+    this.supabase.emitBoardEvent(boardId, 'BOARD_UPDATED', {
+      type: 'MEMBER_REMOVED',
+      userId: targetUserId,
+    });
+
+    if (targetUserId && targetUserId !== currentUserId) {
+      this.notificationsService.createNotification({
+        userId: targetUserId,
+        title: 'Đã rời khỏi Bảng',
+        message: `Bạn đã bị xóa khỏi Bảng "${board.name}".`,
+        type: 'SYSTEM',
+      }).catch(() => {});
+    }
 
     return { message: 'Đã xóa thành viên khỏi Board' };
   }
@@ -979,6 +1007,12 @@ export class BoardsService {
       throw new BadRequestException(error.message);
     }
 
+    // Phát tín hiệu Realtime cập nhật Board
+    this.supabase.emitBoardEvent(boardId, 'BOARD_UPDATED', {
+      type: 'INVITE_REVOKED',
+      inviteId,
+    });
+
     return { message: 'Đã thu hồi lời mời thành công' };
   }
 
@@ -1039,14 +1073,14 @@ export class BoardsService {
     const invite = await this.getBoardInviteByToken(token);
     const board = invite.board as any;
 
+    const { data: currentUser } = await this.supabase
+      .from('users')
+      .select('name, email')
+      .eq('id', userId)
+      .maybeSingle();
+
     // Xác thực email người nhận nếu lời mời có chỉ định email
     if (invite.email) {
-      const { data: currentUser } = await this.supabase
-        .from('users')
-        .select('email')
-        .eq('id', userId)
-        .maybeSingle();
-
       if (currentUser?.email && currentUser.email.toLowerCase() !== invite.email.toLowerCase()) {
         throw new ForbiddenException(
           `Lời mời này được gửi riêng cho email "${invite.email}". Bạn đang đăng nhập bằng "${currentUser.email}". Vui lòng đăng nhập đúng tài khoản để chấp nhận.`
@@ -1100,25 +1134,35 @@ export class BoardsService {
       .update({ status: 'ACCEPTED' })
       .eq('id', invite.id);
 
+    const respondentName = currentUser?.name || currentUser?.email || 'Thành viên';
+
     // 4. Ghi log hoạt động
     await this.activitiesService
       .logActivity({
-        workspaceId: board.workspace_id,
+        workspaceId: board?.workspace_id,
         userId,
-        action: `đã gia nhập Bảng "${board.name}" qua lời mời`,
+        action: `đã gia nhập Bảng "${board?.name}" qua lời mời`,
         targetType: `board:${invite.board_id}`,
       })
       .catch(() => {});
 
-    // 5. Thông báo cho người mời
-    await this.notificationsService
-      .createNotification({
-        userId: invite.inviter_id,
-        title: 'Lời mời Bảng được chấp nhận',
-        message: `Thành viên đã chấp nhận lời mời gia nhập Bảng "${board.name}".||/boards/${invite.board_id}`,
-        type: 'BOARD_INVITE_ACCEPTED',
-      })
-      .catch(() => {});
+    // 5. Thông báo cho người mời (inviter)
+    if (invite.inviter_id) {
+      await this.notificationsService
+        .createNotification({
+          userId: invite.inviter_id,
+          title: 'Lời mời Bảng được chấp nhận',
+          message: `${respondentName} đã chấp nhận lời mời gia nhập Bảng "${board?.name}".||/boards/${invite.board_id}`,
+          type: 'BOARD_INVITE_ACCEPTED',
+        })
+        .catch(() => {});
+    }
+
+    // 6. Phát tín hiệu Realtime cập nhật Board
+    this.supabase.emitBoardEvent(invite.board_id, 'BOARD_UPDATED', {
+      type: 'MEMBER_JOINED',
+      userId,
+    });
 
     return {
       message: 'Gia nhập Bảng thành công!',
@@ -1129,15 +1173,16 @@ export class BoardsService {
 
   async rejectBoardInvite(token: string, userId: string) {
     const invite = await this.getBoardInviteByToken(token);
+    const board = invite.board as any;
+
+    const { data: currentUser } = await this.supabase
+      .from('users')
+      .select('name, email')
+      .eq('id', userId)
+      .maybeSingle();
 
     // Xác thực người từ chối phải là người nhận lời mời
     if (invite.email) {
-      const { data: currentUser } = await this.supabase
-        .from('users')
-        .select('email')
-        .eq('id', userId)
-        .maybeSingle();
-
       if (currentUser?.email && currentUser.email.toLowerCase() !== invite.email.toLowerCase()) {
         throw new ForbiddenException('Bạn không phải là người nhận của lời mời này');
       }
@@ -1151,6 +1196,39 @@ export class BoardsService {
     if (error) {
       throw new BadRequestException(error.message);
     }
+
+    const respondentName = currentUser?.name || currentUser?.email || 'Thành viên';
+
+    // 1. Thông báo cho người mời (inviter)
+    if (invite.inviter_id) {
+      await this.notificationsService
+        .createNotification({
+          userId: invite.inviter_id,
+          title: 'Lời mời Bảng bị từ chối',
+          message: `${respondentName} đã từ chối lời mời gia nhập Bảng "${board?.name || 'Bảng'}".||/boards/${invite.board_id}`,
+          type: 'BOARD_INVITE_REJECTED',
+        })
+        .catch(() => {});
+    }
+
+    // 2. Ghi log hoạt động nếu có workspace
+    if (board?.workspace_id) {
+      await this.activitiesService
+        .logActivity({
+          workspaceId: board.workspace_id,
+          userId,
+          action: `đã từ chối lời mời gia nhập Bảng "${board?.name}"`,
+          targetType: `board:${invite.board_id}`,
+        })
+        .catch(() => {});
+    }
+
+    // 3. Phát tín hiệu Realtime cập nhật Board
+    this.supabase.emitBoardEvent(invite.board_id, 'BOARD_UPDATED', {
+      type: 'INVITE_REJECTED',
+      inviteId: invite.id,
+      email: invite.email,
+    });
 
     return { message: 'Đã từ chối lời mời tham gia Bảng' };
   }

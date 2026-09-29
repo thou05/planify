@@ -110,36 +110,60 @@ export default function NotificationPopover({
     const channel = supabase.channel(`popover-notifications:${user.id}`, {
       config: { broadcast: { self: false } },
     });
+    const userChannel = supabase.channel(`user:${user.id}`, {
+      config: { broadcast: { self: false } },
+    });
+
+    const handleReceived = ({ payload }: any) => {
+      if (payload?.notification) {
+        setNotifications((prev) => {
+          if (prev.some((n) => n.id === payload.notification.id)) return prev;
+          return [payload.notification, ...prev];
+        });
+        setUnreadCount((prev) => prev + 1);
+      } else {
+        fetchNotifications();
+      }
+    };
+
+    const handleUpdated = ({ payload }: any) => {
+      if (payload?.notificationId) {
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n.id === payload.notificationId ? { ...n, is_read: !!payload.isRead } : n
+          )
+        );
+      }
+    };
+
+    const handleDeleted = ({ payload }: any) => {
+      if (payload?.notificationId) {
+        setNotifications((prev) => prev.filter((n) => n.id !== payload.notificationId));
+      }
+    };
+
+    const handleAllRead = () => {
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      setUnreadCount(0);
+    };
 
     channel
-      .on('broadcast', { event: 'NOTIFICATION_RECEIVED' }, ({ payload }) => {
-        if (payload?.notification) {
-          setNotifications((prev) => [payload.notification, ...prev]);
-          setUnreadCount((prev) => prev + 1);
-        }
-      })
-      .on('broadcast', { event: 'NOTIFICATION_UPDATED' }, ({ payload }) => {
-        if (payload?.notificationId) {
-          setNotifications((prev) =>
-            prev.map((n) =>
-              n.id === payload.notificationId ? { ...n, is_read: !!payload.isRead } : n
-            )
-          );
-        }
-      })
-      .on('broadcast', { event: 'NOTIFICATION_DELETED' }, ({ payload }) => {
-        if (payload?.notificationId) {
-          setNotifications((prev) => prev.filter((n) => n.id !== payload.notificationId));
-        }
-      })
-      .on('broadcast', { event: 'ALL_NOTIFICATIONS_READ' }, () => {
-        setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-        setUnreadCount(0);
-      })
+      .on('broadcast', { event: 'NOTIFICATION_RECEIVED' }, handleReceived)
+      .on('broadcast', { event: 'NOTIFICATION_UPDATED' }, handleUpdated)
+      .on('broadcast', { event: 'NOTIFICATION_DELETED' }, handleDeleted)
+      .on('broadcast', { event: 'ALL_NOTIFICATIONS_READ' }, handleAllRead)
+      .subscribe();
+
+    userChannel
+      .on('broadcast', { event: 'NOTIFICATION_RECEIVED' }, handleReceived)
+      .on('broadcast', { event: 'NOTIFICATION_UPDATED' }, handleUpdated)
+      .on('broadcast', { event: 'NOTIFICATION_DELETED' }, handleDeleted)
+      .on('broadcast', { event: 'ALL_NOTIFICATIONS_READ' }, handleAllRead)
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(userChannel);
     };
   }, [isOpen, user?.id]);
 
@@ -288,6 +312,20 @@ export default function NotificationPopover({
         return (
           <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0 shadow-xs border border-purple-200/60">
             <Layout className="w-4 h-4" />
+          </div>
+        );
+      case 'BOARD_INVITE_ACCEPTED':
+      case 'WORKSPACE_INVITE_ACCEPTED':
+        return (
+          <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 shadow-xs border border-emerald-200/60">
+            <UserCheck className="w-4 h-4" />
+          </div>
+        );
+      case 'BOARD_INVITE_REJECTED':
+      case 'WORKSPACE_INVITE_REJECTED':
+        return (
+          <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 shadow-xs border border-rose-200/60">
+            <AlertCircle className="w-4 h-4" />
           </div>
         );
       case 'WORKSPACE_INVITE':

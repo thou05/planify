@@ -22,6 +22,7 @@ import {
   Calendar,
   Sparkles,
 } from 'lucide-react';
+import ConfirmModal from '@/components/modals/ConfirmModal';
 
 const PRESET_AVATARS = [
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
@@ -61,6 +62,19 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPass, setIsChangingPass] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [confirmState, setConfirmState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    variant?: 'danger' | 'warning' | 'primary';
+    onConfirm: () => Promise<void>;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: async () => {},
+  });
 
   useEffect(() => {
     if (user) {
@@ -182,31 +196,47 @@ export default function ProfilePage() {
         method: 'POST',
       });
       if (res.success) {
-        fetchInvitations();
-        router.push(`/workspaces/${workspaceId}`);
+        setInvitations((prev) => ({
+          ...prev,
+          workspaceInvites: prev.workspaceInvites.filter((i) => i.token !== token),
+        }));
+        window.location.href = `/workspaces/${workspaceId}`;
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể chấp nhận lời mời');
+      setStatusMessage({ type: 'error', text: err.message || 'Không thể chấp nhận lời mời' });
     } finally {
       setProcessingToken(null);
     }
   };
 
-  const handleRejectWorkspace = async (token: string) => {
-    if (!confirm('Bạn có chắc muốn từ chối lời mời này?')) return;
-    setProcessingToken(token);
-    try {
-      const res = await apiClient<any>(`/workspaces/invites/${token}/reject`, {
-        method: 'POST',
-      });
-      if (res.success) {
-        fetchInvitations();
-      }
-    } catch (err: any) {
-      alert(err.message || 'Không thể từ chối lời mời');
-    } finally {
-      setProcessingToken(null);
-    }
+  const handleRejectWorkspace = (token: string) => {
+    setConfirmState({
+      isOpen: true,
+      title: 'Từ chối lời mời',
+      message: 'Bạn có chắc muốn từ chối lời mời tham gia Không gian làm việc này?',
+      confirmText: 'Từ chối',
+      variant: 'danger',
+      onConfirm: async () => {
+        setProcessingToken(token);
+        try {
+          const res = await apiClient<any>(`/workspaces/invites/${token}/reject`, {
+            method: 'POST',
+          });
+          if (res.success) {
+            setInvitations((prev) => ({
+              ...prev,
+              workspaceInvites: prev.workspaceInvites.filter((i) => i.token !== token),
+            }));
+            fetchInvitations();
+          }
+        } catch (err: any) {
+          setStatusMessage({ type: 'error', text: err.message || 'Không thể từ chối lời mời' });
+        } finally {
+          setProcessingToken(null);
+          setConfirmState((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
   };
 
   const handleAcceptBoard = async (token: string, boardId: string) => {
@@ -216,31 +246,47 @@ export default function ProfilePage() {
         method: 'POST',
       });
       if (res.success) {
-        fetchInvitations();
-        router.push(`/boards/${boardId}`);
+        setInvitations((prev) => ({
+          ...prev,
+          boardInvites: prev.boardInvites.filter((i) => i.token !== token),
+        }));
+        window.location.href = `/boards/${boardId}`;
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể chấp nhận lời mời');
+      setStatusMessage({ type: 'error', text: err.message || 'Không thể chấp nhận lời mời' });
     } finally {
       setProcessingToken(null);
     }
   };
 
-  const handleRejectBoard = async (token: string) => {
-    if (!confirm('Bạn có chắc muốn từ chối lời mời vào Board này?')) return;
-    setProcessingToken(token);
-    try {
-      const res = await apiClient<any>(`/boards/invites/${token}/reject`, {
-        method: 'POST',
-      });
-      if (res.success) {
-        fetchInvitations();
-      }
-    } catch (err: any) {
-      alert(err.message || 'Không thể từ chối lời mời');
-    } finally {
-      setProcessingToken(null);
-    }
+  const handleRejectBoard = (token: string) => {
+    setConfirmState({
+      isOpen: true,
+      title: 'Từ chối lời mời',
+      message: 'Bạn có chắc muốn từ chối lời mời vào Board này?',
+      confirmText: 'Từ chối',
+      variant: 'danger',
+      onConfirm: async () => {
+        setProcessingToken(token);
+        try {
+          const res = await apiClient<any>(`/boards/invites/${token}/reject`, {
+            method: 'POST',
+          });
+          if (res.success) {
+            setInvitations((prev) => ({
+              ...prev,
+              boardInvites: prev.boardInvites.filter((i) => i.token !== token),
+            }));
+            fetchInvitations();
+          }
+        } catch (err: any) {
+          setStatusMessage({ type: 'error', text: err.message || 'Không thể từ chối lời mời' });
+        } finally {
+          setProcessingToken(null);
+          setConfirmState((prev) => ({ ...prev, isOpen: false }));
+        }
+      },
+    });
   };
 
   if (!user) return null;
@@ -761,6 +807,16 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={confirmState.isOpen}
+        onClose={() => setConfirmState((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmState.onConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        variant={confirmState.variant}
+      />
     </>
   );
 }

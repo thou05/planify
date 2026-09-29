@@ -44,10 +44,17 @@ export default function ShareBoardModal({
   const [copiedInviteLink, setCopiedInviteLink] = useState(false);
 
   // Members Tab State
+  const [localMembers, setLocalMembers] = useState<any[]>(board?.members || []);
   const [selectedWsUserId, setSelectedWsUserId] = useState('');
   const [selectedRole, setSelectedRole] = useState<'ADMIN' | 'EDITOR' | 'VIEWER'>('EDITOR');
   const [isAdding, setIsAdding] = useState(false);
   const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
+
+  useEffect(() => {
+    if (board?.members) {
+      setLocalMembers(board.members);
+    }
+  }, [board?.members]);
 
   // Invites Tab State
   const [inviteEmail, setInviteEmail] = useState('');
@@ -145,7 +152,7 @@ export default function ShareBoardModal({
     setIsAdding(true);
     setError('');
     try {
-      const res = await apiClient(`/boards/${board.id}/members`, {
+      const res = await apiClient<any>(`/boards/${board.id}/members`, {
         method: 'POST',
         data: {
           userId: selectedWsUserId,
@@ -153,6 +160,9 @@ export default function ShareBoardModal({
         },
       });
       if (res.success) {
+        if (res.data) {
+          setLocalMembers((prev) => [...prev, res.data]);
+        }
         setSelectedWsUserId('');
         onUpdated();
       }
@@ -211,7 +221,9 @@ export default function ShareBoardModal({
             method: 'DELETE',
           });
           if (res.success) {
+            setPendingInvites((prev) => prev.filter((i) => i.id !== invite.id));
             setSuccessMsg(`Đã thu hồi lời mời gửi tới ${invite.email}`);
+            onUpdated();
             fetchPendingInvites();
             setTimeout(() => setSuccessMsg(''), 3000);
           }
@@ -236,6 +248,13 @@ export default function ShareBoardModal({
         data: { role: newRole },
       });
       if (res.success) {
+        setLocalMembers((prev) =>
+          prev.map((m: any) =>
+            (m.user_id || m.user?.id || m.id) === targetUserId
+              ? { ...m, role: newRole }
+              : m
+          )
+        );
         onUpdated();
         setSuccessMsg('Đã cập nhật vai trò thành công');
         setTimeout(() => setSuccessMsg(''), 3000);
@@ -273,6 +292,9 @@ export default function ShareBoardModal({
             method: 'DELETE',
           });
           if (res.success) {
+            setLocalMembers((prev) =>
+              prev.filter((m: any) => (m.user_id || m.user?.id || m.id) !== targetUserId)
+            );
             onUpdated();
             setSuccessMsg(`Đã xóa ${memberName} khỏi Bảng`);
             setTimeout(() => setSuccessMsg(''), 3000);
@@ -286,8 +308,8 @@ export default function ShareBoardModal({
     });
   };
 
-  const existingBoardUserIds = new Set((board.members || []).map((m: any) => m.user_id));
-  const availableWsMembers = workspaceMembers.filter((m: any) => !existingBoardUserIds.has(m.user_id));
+  const existingBoardUserIds = new Set((localMembers || []).map((m: any) => m.user_id || m.user?.id || m.id));
+  const availableWsMembers = workspaceMembers.filter((m: any) => !existingBoardUserIds.has(m.user_id || m.id));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#2b1572]/25 backdrop-blur-sm animate-fade-in">
@@ -496,11 +518,11 @@ export default function ShareBoardModal({
               {/* Members List in Board */}
               <div>
                 <div className="text-xs font-bold uppercase tracking-wider text-[#2b1572]/70 mb-2">
-                  Thành viên trong Board ({board.members?.length || 0})
+                  Thành viên trong Board ({localMembers.length})
                 </div>
 
                 <div className="max-h-56 overflow-y-auto divide-y divide-[#2b1572]/10 pr-1">
-                  {board.members?.map((m: any) => {
+                  {localMembers.map((m: any) => {
                     const isSelf = m.user_id === currentUserId;
                     const canEditRole = board.canManageMembers && !isSelf;
 
