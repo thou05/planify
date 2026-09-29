@@ -173,7 +173,76 @@ export class ChecklistsService {
     return { message: 'Đã xóa danh sách việc cần làm thành công' };
   }
 
-  // --- CHECKLIST ITEM OPERATIONS ---
+  private async resolveBoardMemberId(boardId: string, memberIdOrUserId: string): Promise<string | null> {
+    if (!memberIdOrUserId) return null;
+
+    // 1. Kiểm tra xem đã là ID của board_members chưa
+    const { data: foundById } = await this.supabase
+      .from('board_members')
+      .select('id')
+      .eq('id', memberIdOrUserId)
+      .eq('board_id', boardId)
+      .maybeSingle();
+
+    if (foundById) return foundById.id;
+
+    // 2. Kiểm tra xem có phải user_id trong board_members chưa
+    const { data: foundByUserId } = await this.supabase
+      .from('board_members')
+      .select('id')
+      .eq('user_id', memberIdOrUserId)
+      .eq('board_id', boardId)
+      .maybeSingle();
+
+    if (foundByUserId) return foundByUserId.id;
+
+    // 3. Tìm workspace_id của bảng
+    const { data: board } = await this.supabase
+      .from('boards')
+      .select('workspace_id')
+      .eq('id', boardId)
+      .maybeSingle();
+
+    if (!board?.workspace_id) return null;
+
+    // Kiểm tra xem người dùng có thuộc workspace không
+    let targetUserId = memberIdOrUserId;
+    const { data: wsMember } = await this.supabase
+      .from('workspace_members')
+      .select('user_id, role')
+      .eq('workspace_id', board.workspace_id)
+      .or(`id.eq.${memberIdOrUserId},user_id.eq.${memberIdOrUserId}`)
+      .maybeSingle();
+
+    if (wsMember) {
+      targetUserId = wsMember.user_id;
+    } else {
+      const { data: ws } = await this.supabase
+        .from('workspaces')
+        .select('owner_id')
+        .eq('id', board.workspace_id)
+        .maybeSingle();
+
+      if (ws?.owner_id === memberIdOrUserId) {
+        targetUserId = ws.owner_id;
+      } else {
+        return null;
+      }
+    }
+
+    // Tự động thêm vào board_members
+    const { data: newBoardMember } = await this.supabase
+      .from('board_members')
+      .insert({
+        board_id: boardId,
+        user_id: targetUserId,
+        role: 'EDITOR',
+      })
+      .select('id')
+      .single();
+
+    return newBoardMember?.id || null;
+  }
 
   async createItem(checklistId: string, userId: string, dto: CreateChecklistItemDto) {
     const { data: checklist } = await this.supabase
@@ -207,7 +276,14 @@ export class ChecklistsService {
       is_completed: false,
     };
     if (dto.due_date !== undefined) insertPayload.due_date = dto.due_date;
-    if (dto.member_id !== undefined) insertPayload.member_id = dto.member_id;
+    if (dto.member_id !== undefined) {
+      if (dto.member_id && boardId) {
+        const resolvedId = await this.resolveBoardMemberId(boardId, dto.member_id);
+        insertPayload.member_id = resolvedId;
+      } else {
+        insertPayload.member_id = dto.member_id;
+      }
+    }
 
     let { data: item, error } = await this.supabase
       .from('checklist_items')
@@ -277,7 +353,14 @@ export class ChecklistsService {
     if (dto.is_completed !== undefined) updatePayload.is_completed = dto.is_completed;
     if (dto.position !== undefined) updatePayload.position = dto.position;
     if (dto.due_date !== undefined) updatePayload.due_date = dto.due_date;
-    if (dto.member_id !== undefined) updatePayload.member_id = dto.member_id;
+    if (dto.member_id !== undefined) {
+      if (dto.member_id && bId) {
+        const resolvedId = await this.resolveBoardMemberId(bId, dto.member_id);
+        updatePayload.member_id = resolvedId;
+      } else {
+        updatePayload.member_id = dto.member_id;
+      }
+    }
 
     let { data: updated, error } = await this.supabase
       .from('checklist_items')

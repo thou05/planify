@@ -66,6 +66,7 @@ import {
   Upload,
   Search,
   Filter,
+  BarChart3,
 } from 'lucide-react';
 import { ActivityItem } from '@/components/modals/MyActivityModal';
 import { BoardRiskScannerModal } from '@/components/board/BoardRiskScannerModal';
@@ -409,6 +410,28 @@ export default function BoardDetailPage({
           }
         }
 
+        // 3. Labels check
+        if (boardFilters.labels && boardFilters.labels.length > 0) {
+          const hasNoLabels = !card.card_labels || card.card_labels.length === 0;
+
+          if (boardFilters.matchMode === 'all') {
+            const allLabelsMatch = boardFilters.labels.every((lId) => {
+              if (lId === 'no_labels') return hasNoLabels;
+              return (card.card_labels || []).some(
+                (cl: any) => (cl.label_id || cl.label?.id) === lId
+              );
+            });
+            if (!allLabelsMatch) return false;
+          } else {
+            const anyLabelMatch = boardFilters.labels.some((lId) => {
+              if (lId === 'no_labels') return hasNoLabels;
+              return (card.card_labels || []).some(
+                (cl: any) => (cl.label_id || cl.label?.id) === lId
+              );
+            });
+            if (!anyLabelMatch) return false;
+          }
+        }
 
         // 4. Card Status check
         const isDone = !!card.is_due_date_completed || card.status === 'DONE' || card.status === 'COMPLETED';
@@ -1197,9 +1220,20 @@ export default function BoardDetailPage({
             <div className="h-5 w-[1px] bg-[#2b1572]/15" />
 
             <div className="flex items-center gap-2.5 min-w-0">
-              <h1 className="text-base sm:text-lg font-bold text-[#2b1572] tracking-tight truncate">
-                {board?.name || 'Đang tải Bảng...'}
-              </h1>
+              <div className="relative group/boardTitle flex items-center min-w-0">
+                <h1
+                  className="text-base sm:text-lg font-bold text-[#2b1572] tracking-tight truncate max-w-[130px] sm:max-w-[180px] md:max-w-[220px] lg:max-w-[280px] cursor-default"
+                >
+                  {board?.name || 'Đang tải Bảng...'}
+                </h1>
+
+                {/* Styled Tooltip on hover */}
+                {board?.name && (
+                  <div className="absolute left-0 top-full mt-2 z-60 px-3 py-1.5 bg-[#2b1572] text-white text-xs font-semibold rounded-xl shadow-xl border border-white/20 pointer-events-none opacity-0 group-hover/boardTitle:opacity-100 transition-all duration-200 translate-y-1 group-hover/boardTitle:translate-y-0 whitespace-normal min-w-max max-w-xs break-words backdrop-blur-md">
+                    {board.name}
+                  </div>
+                )}
+              </div>
 
               {/* Favorite Star Button */}
               <button
@@ -1215,30 +1249,90 @@ export default function BoardDetailPage({
 
               {/* Visibility Badge */}
               {board?.visibility === 'PRIVATE' ? (
-                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/60 text-[#2b1572] border border-white/80">
+                <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/60 text-[#2b1572] border border-white/80 shrink-0">
                   <Lock className="w-3 h-3" />
                   <span>Riêng tư</span>
                 </span>
               ) : board?.visibility === 'PUBLIC' ? (
-                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/60 text-[#2b1572] border border-white/80">
+                <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/60 text-[#2b1572] border border-white/80 shrink-0">
                   <Globe className="w-3 h-3" />
                   <span>Công khai</span>
                 </span>
               ) : (
-                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/60 text-[#2b1572] border border-white/80">
+                <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/60 text-[#2b1572] border border-white/80 shrink-0">
                   <Users className="w-3 h-3" />
                   <span>Workspace</span>
                 </span>
               )}
             </div>
+
+            {/* View Switcher Dropdown */}
+            <div className="hidden sm:block h-5 w-[1px] bg-[#2b1572]/15 shrink-0" />
+            <BoardViewSwitcher
+              activeView={activeView}
+              onViewChange={setActiveView}
+            />
+
+            {/* Standalone Analytics Button */}
+            <button
+              type="button"
+              onClick={() => setActiveView(activeView === 'analytics' ? 'kanban' : 'analytics')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer shadow-xs shrink-0 ${activeView === 'analytics'
+                ? 'bg-[#2b1572] text-white hover:bg-[#1e1050] border border-[#2b1572]'
+                : 'bg-white/80 text-[#2b1572] hover:bg-white hover:text-[#1e1050] border border-[#2b1572]/20'
+                }`}
+              title="Xem thống kê và phân tích bảng"
+            >
+              <BarChart3 className="w-3.5 h-3.5 shrink-0" />
+              <span>Thống kê</span>
+            </button>
           </div>
 
           {/* Right Header Actions */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+            {/* Search Input */}
+
+
+            {/* Filter Button */}
+            <button
+              type="button"
+              onClick={() => setIsFilterModalOpen(true)}
+              className={`h-7 px-2.5 sm:px-3 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${activeFilterCount > 0
+                ? 'bg-[#2b1572] text-white hover:bg-[#1e0f52]'
+                : 'glass-input text-[#2b1572] hover:bg-white/60'
+                }`}
+              title="Mở bảng Lọc"
+            >
+              <Filter className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Lọc</span>
+              {activeFilterCount > 0 && (
+                <span className="min-w-[16px] h-4 px-1 rounded-full bg-white text-[#2b1572] text-[10px] font-black flex items-center justify-center shadow-2xs">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+
+            {/* Filter / Result count badge */}
+            {activeFilterCount > 0 && (
+              <div className="hidden lg:flex items-center gap-1.5 px-2 py-0.5 rounded-xl bg-[#2b1572] text-white text-[11px] font-bold shadow-xs animate-in zoom-in-95">
+                <span>{totalFilteredCards}/{totalAllCards} thẻ</span>
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="p-0.5 rounded-full hover:bg-white/20 text-white/80 hover:text-white transition-colors"
+                  title="Xóa tất cả bộ lọc"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+
+            <div className="hidden sm:block h-5 w-[1px] bg-[#2b1572]/15 shrink-0" />
+
             {/* Member Avatar Stack */}
             <div
               onClick={() => setIsShareOpen(true)}
-              className="flex items-center -space-x-2 hover:opacity-80 transition-opacity cursor-pointer mr-1"
+              className="hidden md:flex items-center -space-x-2 hover:opacity-80 transition-opacity cursor-pointer mr-0.5"
               title="Xem và quản lý thành viên"
             >
               {(board?.members || []).slice(0, 4).map((m: any, idx: number) => (
@@ -1259,45 +1353,10 @@ export default function BoardDetailPage({
             {/* Share Button */}
             <button
               onClick={() => setIsShareOpen(true)}
-              className="px-3 py-1.5 btn-secondary text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
+              className="px-2.5 sm:px-3 py-1.5 btn-secondary text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
             >
               <Share2 className="w-3.5 h-3.5 text-[#2b1572]" />
               <span className="hidden sm:inline">Chia sẻ</span>
-            </button>
-
-            {/* AI Daily Standup & Summary Button */}
-            <button
-              onClick={() => {
-                setIsAiStandupOpen(true);
-                if (!aiStandupData) {
-                  handleGenerateDailyStandup();
-                }
-              }}
-              className="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs transition-all hover:shadow-md"
-              title="Tạo báo cáo Daily Standup và Đánh giá tiến độ bằng AI"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">AI Standup</span>
-            </button>
-
-            {/* AI Risk & Bottleneck Scanner Button */}
-            <button
-              onClick={() => setIsRiskScannerOpen(true)}
-              className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-600 hover:to-rose-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs transition-all hover:shadow-md"
-              title="Dùng AI quét điểm nghẽn và rủi ro quá hạn"
-            >
-              <ShieldAlert className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">AI Quét rủi ro</span>
-            </button>
-
-            {/* AI Board Copilot Button */}
-            <button
-              onClick={() => setIsCopilotOpen(true)}
-              className="px-3 py-1.5 bg-[#2b1572] hover:bg-[#1e1050] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs transition-all hover:shadow-md border border-white/20"
-              title="Trợ lý AI Copilot hỏi đáp về bảng"
-            >
-              <Bot className="w-3.5 h-3.5 text-[#a6d1fd]" />
-              <span className="hidden md:inline">AI Copilot</span>
             </button>
 
             {/* Board Settings & Options Dropdown Menu */}
@@ -1481,82 +1540,6 @@ export default function BoardDetailPage({
                 </div>
               )}
             </div>
-          </div>
-        </div>
-
-        {/* View Switcher Sub-Header Bar */}
-        <div className="h-12 px-6 glass-surface !rounded-none !border-x-0 !border-t-0 border-b border-white/30 flex items-center justify-between gap-4 shrink-0 select-none bg-white/20 backdrop-blur-md">
-          <BoardViewSwitcher
-            activeView={activeView}
-            onViewChange={setActiveView}
-          />
-
-          {/* Board In-Page Search & Filter Controls */}
-          <div className="flex items-center gap-2">
-            {/* Search Input (bound to boardFilters.keyword) */}
-            <div className="relative flex items-center">
-              <Search className="w-3.5 h-3.5 absolute left-2.5 text-[#2b1572]/50 pointer-events-none" />
-              <input
-                ref={boardSearchInputRef}
-                type="text"
-                value={boardFilters.keyword}
-                onChange={(e) =>
-                  setBoardFilters((prev) => ({
-                    ...prev,
-                    keyword: e.target.value,
-                  }))
-                }
-                placeholder="Tìm thẻ trong bảng..."
-                className="w-36 sm:w-56 focus:w-64 pl-8 pr-7 py-1 text-xs glass-input placeholder:text-[#2b1572]/40 text-[#2b1572] font-medium transition-all"
-              />
-              {boardFilters.keyword && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setBoardFilters((prev) => ({ ...prev, keyword: '' }));
-                    boardSearchInputRef.current?.focus();
-                  }}
-                  className="absolute right-2 p-0.5 rounded-full hover:bg-slate-200/50 text-[#2b1572]/50 hover:text-[#2b1572] transition-colors"
-                  title="Xóa từ khóa"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              )}
-            </div>
-
-            {/* Dedicated "Lọc" Button opening Filter Modal matching Trello screenshots */}
-            <button
-              type="button"
-              onClick={() => setIsFilterModalOpen(true)}
-              className={`h-7 px-3 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${activeFilterCount > 0
-                  ? 'bg-[#2b1572] text-white hover:bg-[#1e0f52]'
-                  : 'glass-input text-[#2b1572] hover:bg-white/60'
-                }`}
-              title="Mở bảng Lọc"
-            >
-              <Filter className="w-3.5 h-3.5" />
-              <span>Lọc</span>
-              {activeFilterCount > 0 && (
-                <span className="min-w-[16px] h-4 px-1 rounded-full bg-white text-[#2b1572] text-[10px] font-black flex items-center justify-center shadow-2xs">
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
-
-            {/* Filter / Result count badge */}
-            {activeFilterCount > 0 && (
-              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-xl bg-[#2b1572] text-white text-[11px] font-bold shadow-xs animate-in zoom-in-95">
-                <span>{totalFilteredCards}/{totalAllCards} thẻ</span>
-                <button
-                  type="button"
-                  onClick={handleResetFilters}
-                  className="p-0.5 rounded-full hover:bg-white/20 text-white/80 hover:text-white transition-colors"
-                  title="Xóa tất cả bộ lọc"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            )}
           </div>
         </div>
 
@@ -1754,6 +1737,8 @@ export default function BoardDetailPage({
       <CardDetailModal
         cardId={selectedCardId}
         boardId={boardId}
+        workspaceMembers={workspaceMembers}
+        workspaceId={board?.workspace_id}
         realtimeUpdatedCardId={realtimeUpdatedCardId}
         isOpen={isCardDetailOpen}
         onClose={handleCloseCardDetail}
@@ -1933,8 +1918,8 @@ export default function BoardDetailPage({
                   <button
                     onClick={handleCopyZalo}
                     className={`px-3.5 py-2 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${copyMode === 'zalo'
-                        ? 'bg-emerald-600 text-white shadow-sm'
-                        : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white hover:shadow-md'
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white hover:shadow-md'
                       }`}
                     title="Sao chép báo cáo sạch đẹp (đã loại bỏ ký tự ## và **), phù hợp dán vào Zalo / Teams / Messenger"
                   >
@@ -1955,8 +1940,8 @@ export default function BoardDetailPage({
                   <button
                     onClick={handleCopyMarkdown}
                     className={`px-3 py-2 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer border ${copyMode === 'markdown'
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                       }`}
                     title="Sao chép định dạng Markdown gốc cho Slack, Notion hoặc Discord"
                   >
@@ -2249,6 +2234,7 @@ export default function BoardDetailPage({
         onChangeFilters={setBoardFilters}
         onResetFilters={handleResetFilters}
         boardMembers={board?.members || []}
+        boardLabels={boardLabels}
         currentUser={user}
         totalFilteredCards={totalFilteredCards}
         totalAllCards={totalAllCards}

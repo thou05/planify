@@ -233,41 +233,37 @@ export default function MyActivityModal({
         <div className="px-5 py-2.5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-1.5 shrink-0 overflow-x-auto">
           <button
             onClick={() => setFilter('all')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
-              filter === 'all'
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${filter === 'all'
                 ? 'bg-[#2b1572] text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-200/70'
-            }`}
+              }`}
           >
             Tất cả ({activities.length})
           </button>
           <button
             onClick={() => setFilter('card')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
-              filter === 'card'
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${filter === 'card'
                 ? 'bg-[#2b1572] text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-200/70'
-            }`}
+              }`}
           >
             Thẻ công việc ({activities.filter((a) => a.target_type.startsWith('card:')).length})
           </button>
           <button
             onClick={() => setFilter('board')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
-              filter === 'board'
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${filter === 'board'
                 ? 'bg-[#2b1572] text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-200/70'
-            }`}
+              }`}
           >
             Bảng ({activities.filter((a) => a.target_type.startsWith('board:')).length})
           </button>
           <button
             onClick={() => setFilter('workspace')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
-              filter === 'workspace'
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${filter === 'workspace'
                 ? 'bg-[#2b1572] text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-200/70'
-            }`}
+              }`}
           >
             Workspace ({activities.filter((a) => a.target_type.startsWith('workspace:')).length})
           </button>

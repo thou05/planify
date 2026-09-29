@@ -94,9 +94,106 @@ export class CommentsService {
     return comments || [];
   }
 
+  private async handleMentionNotifications(params: {
+    cardId: string;
+    boardId: string;
+    workspaceId?: string;
+    authorId: string;
+    authorName: string;
+    cardTitle: string;
+    content: string;
+  }) {
+    const { cardId, boardId, workspaceId, authorId, authorName, cardTitle, content } = params;
+    if (!content.includes('@')) return;
+
+    try {
+      const usersMap = new Map<string, { id: string; name: string }>();
+
+      // 1. Lấy danh sách thành viên trong bảng
+      if (boardId) {
+        const { data: boardMembers } = await this.supabase
+          .from('board_members')
+          .select('user_id, user:users (id, name)')
+          .eq('board_id', boardId);
+
+        if (boardMembers) {
+          for (const bm of boardMembers) {
+            const u = bm.user as any;
+            if (bm.user_id && u?.name) {
+              usersMap.set(bm.user_id, { id: bm.user_id, name: u.name });
+            }
+          }
+        }
+      }
+
+      // 2. Lấy danh sách thành viên trong Workspace & Owner
+      if (workspaceId) {
+        const { data: wsMembers } = await this.supabase
+          .from('workspace_members')
+          .select('user_id, user:users (id, name)')
+          .eq('workspace_id', workspaceId);
+
+        if (wsMembers) {
+          for (const wm of wsMembers) {
+            const u = wm.user as any;
+            if (wm.user_id && u?.name && !usersMap.has(wm.user_id)) {
+              usersMap.set(wm.user_id, { id: wm.user_id, name: u.name });
+            }
+          }
+        }
+
+        const { data: ws } = await this.supabase
+          .from('workspaces')
+          .select('owner_id, owner:users!workspaces_owner_id_fkey (id, name)')
+          .eq('id', workspaceId)
+          .maybeSingle();
+
+        if (ws?.owner_id && !usersMap.has(ws.owner_id)) {
+          const ownerUser = ws.owner as any;
+          if (ownerUser?.name) {
+            usersMap.set(ws.owner_id, { id: ws.owner_id, name: ownerUser.name });
+          }
+        }
+      }
+
+      const contentLower = content.toLowerCase();
+
+      for (const [targetUserId, userInfo] of usersMap.entries()) {
+        // Không gửi thông báo cho chính người viết comment
+        if (targetUserId === authorId || !userInfo.name) continue;
+
+        const mentionTag = `@${userInfo.name.toLowerCase()}`;
+        if (contentLower.includes(mentionTag)) {
+          const newNotif = {
+            user_id: targetUserId,
+            title: `${authorName} đã nhắc đến bạn trong một bình luận`,
+            message: `${authorName} đã nhắc đến bạn trong thẻ "${cardTitle}": "${content.slice(0, 100)}${content.length > 100 ? '...' : ''}"||/boards/${boardId}?cardId=${cardId}`,
+            type: 'MENTION',
+            is_read: false,
+          };
+
+          const { data: insertedNotif } = await this.supabase
+            .from('notifications')
+            .insert(newNotif)
+            .select()
+            .single();
+
+          if (insertedNotif) {
+            this.supabase.emitUserEvent(targetUserId, 'NOTIFICATION_RECEIVED', {
+              notification: insertedNotif,
+              unreadCountDelta: 1,
+            });
+          }
+        }
+      }
+    } catch (notifyErr) {
+      console.warn('Lỗi khi gửi thông báo mention:', notifyErr);
+    }
+  }
+
   // Thêm bình luận mới và xử lý @mention notifications
   async createComment(cardId: string, userId: string, dto: CreateCommentDto) {
-    const { card, boardId } = await this.verifyCardAccess(cardId, userId);
+    const { card, boardId, workspaceId } = await this.verifyCardAccess(cardId, userId);
     const content = dto.content.trim();
 
     if (!content) {
@@ -125,7 +222,6 @@ export class CommentsService {
       throw new BadRequestException(error?.message || 'Không thể tạo bình luận');
     }
 
-    const { workspaceId } = await this.verifyCardAccess(cardId, userId);
     if (workspaceId) {
       await this.activitiesService.logActivity({
         workspaceId,
@@ -135,45 +231,19 @@ export class CommentsService {
       });
     }
 
-    // 2. Xử lý @mention và tạo notifications nếu có
+    // 2. Xử lý @mention và tạo notifications cho thành viên Board + Workspace
     if (boardId && content.includes('@')) {
-      try {
-        // Lấy danh sách thành viên trong bảng
-        const { data: boardMembers } = await this.supabase
-          .from('board_members')
-          .select('user_id, user:users (id, name)')
-          .eq('board_id', boardId);
-
-        if (boardMembers && boardMembers.length > 0) {
-          const authorName = (comment.user as any)?.name || 'Một thành viên';
-          const cardTitle = card.title || 'thẻ công việc';
-
-          for (const member of boardMembers) {
-            const memberUserId = member.user_id;
-            const memberName = (member.user as any)?.name;
-
-            // Không gửi thông báo cho chính người viết comment
-            if (memberUserId === userId || !memberName) continue;
-
-            // Kiểm tra xem nội dung comment có chứa @Tên thành viên không (case-insensitive)
-            const mentionTag = `@${memberName.toLowerCase()}`;
-            const contentLower = content.toLowerCase();
-
-            if (contentLower.includes(mentionTag)) {
-              await this.supabase.from('notifications').insert({
-                user_id: memberUserId,
-                title: `${authorName} đã nhắc đến bạn trong một bình luận`,
-                message: `${authorName} đã nhắc đến bạn trong thẻ "${cardTitle}": "${content.slice(0, 100)}${content.length > 100 ? '...' : ''}"||/boards/${boardId}?cardId=${cardId}`,
-                type: 'MENTION',
-                is_read: false,
-              });
-            }
-          }
-        }
-      } catch (notifyErr) {
-        // Log warning nhưng không làm gián đoạn việc tạo comment
-        console.warn('Lỗi khi gửi thông báo mention:', notifyErr);
-      }
+      const authorName = (comment.user as any)?.name || 'Một thành viên';
+      const cardTitle = card.title || 'thẻ công việc';
+      await this.handleMentionNotifications({
+        cardId,
+        boardId,
+        workspaceId,
+        authorId: userId,
+        authorName,
+        cardTitle,
+        content,
+      });
     }
 
     if (boardId) {
