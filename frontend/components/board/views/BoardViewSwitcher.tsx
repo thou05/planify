@@ -17,42 +17,35 @@ export const VIEW_CONFIGS: {
   icon: React.ComponentType<{ className?: string }>;
   description: string;
 }[] = [
-  {
-    id: 'kanban',
-    label: 'Bảng',
-    subLabel: 'Kanban',
-    icon: Columns3,
-    description: 'Dạng cột thẻ trực quan, kéo thả linh hoạt',
-  },
-  {
-    id: 'table',
-    label: 'Bảng dữ liệu',
-    subLabel: 'Table',
-    icon: Table,
-    description: 'Dạng bảng tính tổng hợp, lọc và phân loại tiện lợi',
-  },
-  {
-    id: 'calendar',
-    label: 'Lịch',
-    subLabel: 'Calendar',
-    icon: Calendar,
-    description: 'Lịch tháng trực quan, theo dõi hạn chót và kế hoạch',
-  },
-  {
-    id: 'schedule',
-    label: 'Lịch trình',
-    subLabel: 'Timeline',
-    icon: GanttChart,
-    description: 'Biểu đồ tiến độ Gantt theo ngày và tuần',
-  },
-  {
-    id: 'analytics',
-    label: 'Thống kê',
-    subLabel: 'Analytics',
-    icon: BarChart3,
-    description: 'Biểu đồ tiến độ, phân bổ nhân sự và phân tích thông minh',
-  },
-];
+    {
+      id: 'kanban',
+      label: 'Bảng',
+      subLabel: 'Kanban',
+      icon: Columns3,
+      description: 'Dạng cột thẻ trực quan, kéo thả linh hoạt',
+    },
+    {
+      id: 'table',
+      label: 'Bảng dữ liệu',
+      subLabel: 'Table',
+      icon: Table,
+      description: 'Dạng bảng tính tổng hợp, lọc và phân loại tiện lợi',
+    },
+    {
+      id: 'calendar',
+      label: 'Lịch',
+      subLabel: 'Calendar',
+      icon: Calendar,
+      description: 'Lịch tháng trực quan, theo dõi hạn chót và kế hoạch',
+    },
+    {
+      id: 'schedule',
+      label: 'Lịch trình',
+      subLabel: 'Timeline',
+      icon: GanttChart,
+      description: 'Biểu đồ tiến độ Gantt theo ngày và tuần',
+    },
+  ];
 
 export default function BoardViewSwitcher({
   activeView,
@@ -64,6 +57,7 @@ export default function BoardViewSwitcher({
 
   const currentConfig = VIEW_CONFIGS.find((v) => v.id === activeView) || VIEW_CONFIGS[0];
   const CurrentIcon = currentConfig.icon;
+  const isDropdownActive = activeView !== 'analytics';
 
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
@@ -92,19 +86,17 @@ export default function BoardViewSwitcher({
         <button
           ref={buttonRef}
           onClick={() => setIsOpen(!isOpen)}
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer shadow-xs ${
-            isOpen
-              ? 'bg-[#2b1572] text-white border border-[#2b1572]'
-              : 'bg-[#2b1572] text-white hover:bg-[#1e1050] border border-[#2b1572]'
-          }`}
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer shadow-xs ${isOpen || isDropdownActive
+              ? 'bg-[#2b1572] text-white hover:bg-[#1e1050] border border-[#2b1572]'
+              : 'bg-white/80 text-[#2b1572] hover:bg-white hover:text-[#1e1050] border border-[#2b1572]/20'
+            }`}
           title="Thay đổi chế độ xem bảng"
         >
           <CurrentIcon className="w-3.5 h-3.5 shrink-0" />
           <span>{currentConfig.label}</span>
           <ChevronDown
-            className={`w-3.5 h-3.5 opacity-80 transition-transform duration-200 ${
-              isOpen ? 'rotate-180' : ''
-            }`}
+            className={`w-3.5 h-3.5 opacity-80 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''
+              }`}
           />
         </button>
 
@@ -139,19 +131,17 @@ export default function BoardViewSwitcher({
                       onViewChange(item.id);
                       setIsOpen(false);
                     }}
-                    className={`w-full flex items-center justify-between p-3 rounded-2xl text-left transition-all cursor-pointer ${
-                      isSelected
+                    className={`w-full flex items-center justify-between p-3 rounded-2xl text-left transition-all cursor-pointer ${isSelected
                         ? 'bg-[#2b1572] text-white shadow-md font-semibold'
                         : 'hover:bg-slate-100 text-[#2b1572]'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-3">
                       <div
-                        className={`p-2 rounded-xl shrink-0 ${
-                          isSelected
+                        className={`p-2 rounded-xl shrink-0 ${isSelected
                             ? 'bg-white/20 text-white'
                             : 'bg-slate-100 text-[#2b1572]'
-                        }`}
+                          }`}
                       >
                         <Icon className="w-4 h-4" />
                       </div>
@@ -160,9 +150,8 @@ export default function BoardViewSwitcher({
                           {item.label}
                         </div>
                         <div
-                          className={`text-[11px] leading-snug mt-0.5 line-clamp-1 ${
-                            isSelected ? 'text-white/80' : 'text-slate-500'
-                          }`}
+                          className={`text-[11px] leading-snug mt-0.5 line-clamp-1 ${isSelected ? 'text-white/80' : 'text-slate-500'
+                            }`}
                         >
                           {item.description}
                         </div>
@@ -177,28 +166,6 @@ export default function BoardViewSwitcher({
             </div>
           </div>
         )}
-      </div>
-
-      {/* Horizontal View Tabs pill row matching reference screenshot */}
-      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-        {VIEW_CONFIGS.map((item) => {
-          const Icon = item.icon;
-          const isSelected = activeView === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onViewChange(item.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer shrink-0 ${
-                isSelected
-                  ? 'bg-[#2b1572] text-white shadow-xs'
-                  : 'bg-white/70 hover:bg-white text-[#2b1572] border border-white/80'
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
       </div>
     </div>
   );

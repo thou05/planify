@@ -9,11 +9,13 @@ import {
   ChevronDown,
   Filter,
   CheckCircle2,
+  Tag,
 } from 'lucide-react';
 
 export interface BoardFilterState {
   keyword: string;
   members: string[]; // 'no_members' | 'assigned_to_me' | member_id
+  labels: string[]; // 'no_labels' | label_id
   cardStatus: ('completed' | 'not_completed')[];
   dueDates: ('no_date' | 'overdue' | 'due_tomorrow' | 'due_next_week' | 'due_next_month')[];
   activities: ('past_week' | 'past_2_weeks' | 'past_4_weeks' | 'no_activity_4_weeks')[];
@@ -23,6 +25,7 @@ export interface BoardFilterState {
 export const defaultFilterState: BoardFilterState = {
   keyword: '',
   members: [],
+  labels: [],
   cardStatus: [],
   dueDates: [],
   activities: [],
@@ -32,10 +35,11 @@ export const defaultFilterState: BoardFilterState = {
 export function getActiveFilterCount(filters: BoardFilterState): number {
   let count = 0;
   if (filters.keyword.trim()) count++;
-  count += filters.members.length;
-  count += filters.cardStatus.length;
-  count += filters.dueDates.length;
-  count += filters.activities.length;
+  count += filters.members?.length || 0;
+  count += filters.labels?.length || 0;
+  count += filters.cardStatus?.length || 0;
+  count += filters.dueDates?.length || 0;
+  count += filters.activities?.length || 0;
   return count;
 }
 
@@ -50,6 +54,11 @@ interface BoardFilterModalProps {
     role?: string;
     user?: { id: string; name: string; email: string; avatar?: string | null };
   }>;
+  boardLabels?: Array<{
+    id: string;
+    name: string;
+    color: string;
+  }>;
   currentUser?: { id: string; name?: string; email?: string; avatar?: string | null } | null;
   totalFilteredCards?: number;
   totalAllCards?: number;
@@ -63,6 +72,7 @@ export default function BoardFilterModal({
   onChangeFilters,
   onResetFilters,
   boardMembers = [],
+  boardLabels = [],
   currentUser,
   totalFilteredCards = 0,
   totalAllCards = 0,
@@ -114,6 +124,8 @@ export default function BoardFilterModal({
       no_members: 0,
       assigned_to_me: 0,
       members: {} as Record<string, number>,
+      no_labels: 0,
+      labels: {} as Record<string, number>,
       completed: 0,
       not_completed: 0,
       no_date: 0,
@@ -151,7 +163,19 @@ export default function BoardFilterModal({
         }
       });
 
-      // 2. Status
+      // 2. Labels
+      const cardLabels = card.card_labels || [];
+      if (cardLabels.length === 0) {
+        c.no_labels++;
+      }
+      cardLabels.forEach((cl: any) => {
+        const lId = cl.label_id || cl.label?.id;
+        if (lId) {
+          c.labels[lId] = (c.labels[lId] || 0) + 1;
+        }
+      });
+
+      // 3. Status
       const isDone = !!card.is_due_date_completed || card.status === 'DONE' || card.status === 'COMPLETED';
       if (isDone) {
         c.completed++;
@@ -159,7 +183,7 @@ export default function BoardFilterModal({
         c.not_completed++;
       }
 
-      // 3. Dates
+      // 4. Dates
       if (!card.due_date) {
         c.no_date++;
       } else {
@@ -180,7 +204,7 @@ export default function BoardFilterModal({
         }
       }
 
-      // 4. Activity
+      // 5. Activity
       const cardTime = card.updated_at
         ? new Date(card.updated_at).getTime()
         : card.created_at
@@ -204,7 +228,7 @@ export default function BoardFilterModal({
   const toggleArrayItem = <T extends string>(
     key: keyof Pick<
       BoardFilterState,
-      'members' | 'cardStatus' | 'dueDates' | 'activities'
+      'members' | 'labels' | 'cardStatus' | 'dueDates' | 'activities'
     >,
     value: T
   ) => {
@@ -428,7 +452,69 @@ export default function BoardFilterModal({
             </div>
           </div>
 
-          {/* Section 3: Trạng thái thẻ (Card status) */}
+          {/* Section 3: Nhãn dán (Labels) */}
+          <div>
+            <h4 className="text-xs font-bold text-slate-800 mb-2 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Tag className="w-3.5 h-3.5 text-[#2b1572]" />
+                <span>Nhãn dán</span>
+              </span>
+              {(filters.labels?.length || 0) > 0 && (
+                <span className="text-[10px] text-indigo-600 font-semibold">
+                  Đã chọn {filters.labels.length}
+                </span>
+              )}
+            </h4>
+            <div className="space-y-1.5">
+              {/* Không có nhãn */}
+              <label className="flex items-center gap-2.5 cursor-pointer group hover:bg-slate-50 p-1.5 rounded-lg -mx-1 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={(filters.labels || []).includes('no_labels')}
+                  onChange={() => toggleArrayItem('labels', 'no_labels')}
+                  className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                />
+                <div className="w-6 h-6 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
+                  <Tag className="w-3.5 h-3.5" />
+                </div>
+                <span className="font-medium text-slate-700 group-hover:text-slate-900">
+                  Không có nhãn dán
+                </span>
+                <span className="ml-auto text-[11px] font-semibold text-slate-400 px-1.5 py-0.5 rounded-full bg-slate-100">
+                  {counts.no_labels}
+                </span>
+              </label>
+
+              {/* Danh sách các nhãn trên bảng */}
+              {boardLabels.map((label) => {
+                const isSelected = (filters.labels || []).includes(label.id);
+                return (
+                  <label
+                    key={label.id}
+                    className="flex items-center gap-2.5 cursor-pointer group hover:bg-slate-50 p-1.5 rounded-lg -mx-1 transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleArrayItem('labels', label.id)}
+                      className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                    />
+                    <div
+                      className="flex-1 min-w-0 px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-2xs truncate flex items-center justify-between"
+                      style={{ backgroundColor: label.color || '#3b82f6' }}
+                    >
+                      <span className="truncate">{label.name || 'Nhãn không tên'}</span>
+                    </div>
+                    <span className="ml-auto text-[11px] font-semibold text-slate-400 px-1.5 py-0.5 rounded-full bg-slate-100 shrink-0">
+                      {counts.labels[label.id] || 0}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Section 4: Trạng thái thẻ (Card status) */}
           <div>
             <h4 className="text-xs font-bold text-slate-800 mb-2 flex items-center justify-between">
               <span>Trạng thái hoàn thành</span>

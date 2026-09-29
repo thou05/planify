@@ -312,6 +312,42 @@ export default function CardDetailModal({
     }
   }, [externalWsMembers]);
 
+  // Danh sách thành viên hợp nhất từ cả Workspace và Board (loại bỏ trùng lặp user_id)
+  const assignableMembers = React.useMemo(() => {
+    const map = new Map<string, any>();
+
+    // 1. Thêm thành viên Workspace trước
+    (workspaceMembersList || []).forEach((m) => {
+      const uId = m.user?.id || m.user_id;
+      if (uId && !map.has(uId)) {
+        map.set(uId, {
+          id: m.id || uId,
+          user_id: uId,
+          user: m.user || { id: uId, name: 'Thành viên' },
+          role: m.role || 'MEMBER',
+          isBoardMember: false,
+        });
+      }
+    });
+
+    // 2. Thêm hoặc cập nhật thành viên Board
+    (boardMembers || []).forEach((m) => {
+      const uId = m.user?.id || m.user_id;
+      if (uId) {
+        const existing = map.get(uId);
+        map.set(uId, {
+          id: m.id || uId,
+          user_id: uId,
+          user: m.user || existing?.user || { id: uId, name: 'Thành viên' },
+          role: m.role || existing?.role || 'MEMBER',
+          isBoardMember: true,
+        });
+      }
+    });
+
+    return Array.from(map.values());
+  }, [workspaceMembersList, boardMembers]);
+
   // Labels state
   const [cardLabels, setCardLabels] = useState<any[]>([]);
   const [boardLabels, setBoardLabels] = useState<any[]>([]);
@@ -699,6 +735,29 @@ export default function CardDetailModal({
     fetchCardRelations(targetCardId);
   };
 
+  const fetchWorkspaceMembers = async (wsId: string) => {
+    try {
+      const wsRes = await apiClient<any>(`/workspaces/${wsId}`);
+      if (wsRes.success && wsRes.data) {
+        const members = [...(wsRes.data.members || [])];
+        if (
+          wsRes.data.owner &&
+          !members.some((m: any) => (m.user?.id || m.user_id) === wsRes.data.owner_id)
+        ) {
+          members.unshift({
+            id: wsRes.data.owner.id,
+            user_id: wsRes.data.owner.id,
+            role: 'OWNER',
+            user: wsRes.data.owner,
+          });
+        }
+        setWorkspaceMembersList(members);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
   const fetchBoardMembers = async (boardId: string) => {
     try {
       const res = await apiClient<any[]>(`/boards/${boardId}/members`);
@@ -769,6 +828,11 @@ export default function CardDetailModal({
         if (effectiveBoardId) {
           fetchBoardMembers(effectiveBoardId);
           fetchBoardLabels(effectiveBoardId);
+        }
+
+        const effectiveWsId = externalWorkspaceId || c.list?.board?.workspace_id;
+        if (effectiveWsId) {
+          fetchWorkspaceMembers(effectiveWsId);
         }
       }
     } catch {
@@ -1659,7 +1723,10 @@ export default function CardDetailModal({
     itemId: string,
     boardMemberId: string | null,
   ) => {
-    const memberObj = boardMembers.find((m) => m.id === boardMemberId) || null;
+    const memberObj =
+      assignableMembers.find(
+        (m) => m.id === boardMemberId || m.user_id === boardMemberId || m.user?.id === boardMemberId,
+      ) || null;
 
     setChecklists((prev) =>
       prev.map((cl) =>
@@ -1692,42 +1759,6 @@ export default function CardDetailModal({
       fetchCardDetails(cardId!);
     }
   };
-
-  // Danh sách thành viên hợp nhất từ cả Workspace và Board (loại bỏ trùng lặp user_id)
-  const assignableMembers = (() => {
-    const map = new Map<string, any>();
-
-    // 1. Thêm thành viên Workspace trước
-    (workspaceMembersList || []).forEach((m) => {
-      const uId = m.user?.id || m.user_id;
-      if (uId && !map.has(uId)) {
-        map.set(uId, {
-          id: m.id || uId,
-          user_id: uId,
-          user: m.user || { id: uId, name: 'Thành viên' },
-          role: m.role || 'MEMBER',
-          isBoardMember: false,
-        });
-      }
-    });
-
-    // 2. Thêm hoặc cập nhật thành viên Board
-    (boardMembers || []).forEach((m) => {
-      const uId = m.user?.id || m.user_id;
-      if (uId) {
-        const existing = map.get(uId);
-        map.set(uId, {
-          id: m.id || uId,
-          user_id: uId,
-          user: m.user || existing?.user || { id: uId, name: 'Thành viên' },
-          role: m.role || existing?.role || 'MEMBER',
-          isBoardMember: true,
-        });
-      }
-    });
-
-    return Array.from(map.values());
-  })();
 
   const filteredBoardMembers = assignableMembers.filter((m) => {
     const q = memberSearchQuery.toLowerCase().trim();

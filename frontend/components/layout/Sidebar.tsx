@@ -16,7 +16,6 @@ import {
   History,
   LayoutTemplate,
 } from 'lucide-react';
-import MyActivityModal from '@/components/modals/MyActivityModal';
 
 export interface WorkspaceItem {
   id: string;
@@ -42,7 +41,6 @@ export default function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
   const [isWsDropdownOpen, setIsWsDropdownOpen] = useState(false);
-  const [isMyActivityOpen, setIsMyActivityOpen] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
 
   // References to DOM elements for smooth sliding indicator tracking
@@ -89,6 +87,7 @@ export default function Sidebar({
     if (pathname === '/dashboard') return 'dashboard';
     if (currentWorkspace && pathname === `/workspaces/${currentWorkspace.id}`) return 'workspace';
     if (pathname.startsWith('/templates')) return 'templates';
+    if (pathname === '/my-activities' || pathname.startsWith('/my-activities')) return 'my-activities';
     return null;
   }, [pathname, currentWorkspace]);
 
@@ -188,9 +187,8 @@ export default function Sidebar({
               </div>
             </div>
             <ChevronDown
-              className={`w-4 h-4 text-[#2b1572]/60 group-hover:text-[#2b1572] shrink-0 transition-transform duration-200 ${
-                isWsDropdownOpen ? 'rotate-180' : ''
-              }`}
+              className={`w-4 h-4 text-[#2b1572]/60 group-hover:text-[#2b1572] shrink-0 transition-transform duration-200 ${isWsDropdownOpen ? 'rotate-180' : ''
+                }`}
             />
           </button>
 
@@ -208,11 +206,10 @@ export default function Sidebar({
                       onSelectWorkspace?.(ws.id);
                       setIsWsDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer ${
-                      ws.id === currentWorkspace?.id
+                    className={`w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer ${ws.id === currentWorkspace?.id
                         ? 'bg-[#a6d1fd]/40 text-[#2b1572] font-bold'
                         : 'hover:bg-slate-100 text-[#2b1572]/80'
-                    }`}
+                      }`}
                   >
                     <Layers className="w-3.5 h-3.5 shrink-0" />
                     <span className="truncate">{ws.name}</span>
@@ -241,9 +238,8 @@ export default function Sidebar({
         >
           {/* 1. Thanh màu Active di chuyển mượt mà (Gliding Active Bar & Pill) */}
           <div
-            className={`absolute left-0 right-0 rounded-xl pointer-events-none z-0 bg-white/90 border border-white/90 shadow-xs ${
-              hasMounted ? 'transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)]' : ''
-            }`}
+            className={`absolute left-0 right-0 rounded-xl pointer-events-none z-0 bg-white/90 border border-white/90 shadow-xs ${hasMounted ? 'transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)]' : ''
+              }`}
             style={{
               top: `${activeNavStyle.top}px`,
               height: `${activeNavStyle.height}px`,
@@ -285,11 +281,10 @@ export default function Sidebar({
                 setNavHover((prev) => ({ ...prev, opacity: 0 }));
               }
             }}
-            className={`relative z-10 flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors duration-150 group cursor-pointer ${
-              activeNavKey === 'dashboard'
+            className={`relative z-10 flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors duration-150 group cursor-pointer ${activeNavKey === 'dashboard'
                 ? 'text-[#2b1572] font-bold'
                 : 'text-[#2b1572]/70 hover:text-[#2b1572] font-semibold'
-            }`}
+              }`}
           >
             <LayoutDashboard className="w-4 h-4 shrink-0 group-hover:scale-110 group-hover:text-[#2b1572] transition-transform duration-200" />
             <span>Tổng quan</span>
@@ -315,11 +310,10 @@ export default function Sidebar({
                   setNavHover((prev) => ({ ...prev, opacity: 0 }));
                 }
               }}
-              className={`relative z-10 flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors duration-150 group cursor-pointer ${
-                activeNavKey === 'workspace'
+              className={`relative z-10 flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors duration-150 group cursor-pointer ${activeNavKey === 'workspace'
                   ? 'text-[#2b1572] font-bold'
                   : 'text-[#2b1572]/70 hover:text-[#2b1572] font-semibold'
-              }`}
+                }`}
             >
               <Users className="w-4 h-4 shrink-0 group-hover:scale-110 group-hover:text-[#2b1572] transition-transform duration-200" />
               <span>Thành viên & Cài đặt</span>
@@ -345,33 +339,42 @@ export default function Sidebar({
                 setNavHover((prev) => ({ ...prev, opacity: 0 }));
               }
             }}
-            className={`relative z-10 flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors duration-150 group cursor-pointer ${
-              activeNavKey === 'templates'
+            className={`relative z-10 flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors duration-150 group cursor-pointer ${activeNavKey === 'templates'
                 ? 'text-[#2b1572] font-bold'
                 : 'text-[#2b1572]/70 hover:text-[#2b1572] font-semibold'
-            }`}
+              }`}
           >
             <LayoutTemplate className="w-4 h-4 shrink-0 group-hover:scale-110 group-hover:text-[#2b1572] transition-transform duration-200" />
             <span>Thư viện Mẫu</span>
           </Link>
 
           {/* Item 4: Hoạt động của tôi */}
-          <button
-            type="button"
-            onClick={() => setIsMyActivityOpen(true)}
+          <Link
+            ref={(el) => {
+              navItemRefs.current['my-activities'] = el;
+            }}
+            href="/my-activities"
+            onClick={() => handleNavClick('my-activities')}
             onMouseEnter={(e) => {
               const el = e.currentTarget;
-              setNavHover({
-                top: el.offsetTop,
-                height: el.offsetHeight,
-                opacity: 1,
-              });
+              if (activeNavKey !== 'my-activities') {
+                setNavHover({
+                  top: el.offsetTop,
+                  height: el.offsetHeight,
+                  opacity: 1,
+                });
+              } else {
+                setNavHover((prev) => ({ ...prev, opacity: 0 }));
+              }
             }}
-            className="w-full relative z-10 flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-semibold text-[#2b1572]/70 hover:text-[#2b1572] transition-colors duration-150 cursor-pointer text-left group"
+            className={`relative z-10 flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors duration-150 group cursor-pointer ${activeNavKey === 'my-activities'
+                ? 'text-[#2b1572] font-bold'
+                : 'text-[#2b1572]/70 hover:text-[#2b1572] font-semibold'
+              }`}
           >
             <History className="w-4 h-4 shrink-0 group-hover:scale-110 group-hover:text-[#2b1572] transition-transform duration-200" />
             <span>Hoạt động của tôi</span>
-          </button>
+          </Link>
         </div>
 
         {/* Boards Section */}
@@ -397,9 +400,8 @@ export default function Sidebar({
           >
             {/* 1. Thanh màu Active di chuyển mượt mà giữa các Bảng (Gliding Active Bar & Pill) */}
             <div
-              className={`absolute left-0 right-0 rounded-xl pointer-events-none z-0 bg-white/90 border border-white/85 shadow-xs ${
-                hasMounted ? 'transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)]' : ''
-              }`}
+              className={`absolute left-0 right-0 rounded-xl pointer-events-none z-0 bg-white/90 border border-white/85 shadow-xs ${hasMounted ? 'transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)]' : ''
+                }`}
               style={{
                 top: `${activeBoardStyle.top}px`,
                 height: `${activeBoardStyle.height}px`,
@@ -445,11 +447,10 @@ export default function Sidebar({
                         setBoardHover((prev) => ({ ...prev, opacity: 0 }));
                       }
                     }}
-                    className={`relative z-10 flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors duration-150 group cursor-pointer ${
-                      isActive
+                    className={`relative z-10 flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors duration-150 group cursor-pointer ${isActive
                         ? 'text-[#2b1572] font-bold'
                         : 'text-[#2b1572]/75 hover:text-[#2b1572] font-medium'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-2 truncate pl-1">
                       <Kanban className="w-3.5 h-3.5 shrink-0 opacity-70 group-hover:opacity-100 group-hover:scale-110 transition-all duration-200" />
@@ -480,11 +481,6 @@ export default function Sidebar({
           </p>
         </div>
       </aside>
-
-      <MyActivityModal
-        isOpen={isMyActivityOpen}
-        onClose={() => setIsMyActivityOpen(false)}
-      />
     </>
   );
 }

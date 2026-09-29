@@ -85,7 +85,6 @@ export default function NotificationPopover({
         setNotifications(res.data.notifications || []);
         const count = res.data.unreadCount ?? 0;
         setUnreadCount(count);
-        onUnreadCountChange?.(count);
       }
     } catch {
       // ignore
@@ -93,6 +92,10 @@ export default function NotificationPopover({
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    onUnreadCountChange?.(unreadCount);
+  }, [unreadCount, onUnreadCountChange]);
 
   useEffect(() => {
     if (isOpen) {
@@ -112,11 +115,7 @@ export default function NotificationPopover({
       .on('broadcast', { event: 'NOTIFICATION_RECEIVED' }, ({ payload }) => {
         if (payload?.notification) {
           setNotifications((prev) => [payload.notification, ...prev]);
-          setUnreadCount((prev) => {
-            const newCount = prev + 1;
-            onUnreadCountChange?.(newCount);
-            return newCount;
-          });
+          setUnreadCount((prev) => prev + 1);
         }
       })
       .on('broadcast', { event: 'NOTIFICATION_UPDATED' }, ({ payload }) => {
@@ -136,7 +135,6 @@ export default function NotificationPopover({
       .on('broadcast', { event: 'ALL_NOTIFICATIONS_READ' }, () => {
         setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
         setUnreadCount(0);
-        onUnreadCountChange?.(0);
       })
       .subscribe();
 
@@ -176,11 +174,7 @@ export default function NotificationPopover({
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
       );
-      setUnreadCount((prev) => {
-        const next = Math.max(0, prev - 1);
-        onUnreadCountChange?.(next);
-        return next;
-      });
+      setUnreadCount((prev) => Math.max(0, prev - 1));
 
       await apiClient(`/notifications/${id}/read`, {
         method: 'PATCH',
@@ -196,7 +190,6 @@ export default function NotificationPopover({
       setIsPerformingAction(true);
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
       setUnreadCount(0);
-      onUnreadCountChange?.(0);
 
       await apiClient('/notifications/read-all', {
         method: 'PATCH',
@@ -214,11 +207,7 @@ export default function NotificationPopover({
       const target = notifications.find((n) => n.id === id);
       setNotifications((prev) => prev.filter((n) => n.id !== id));
       if (target && !target.is_read) {
-        setUnreadCount((prev) => {
-          const next = Math.max(0, prev - 1);
-          onUnreadCountChange?.(next);
-          return next;
-        });
+        setUnreadCount((prev) => Math.max(0, prev - 1));
       }
 
       await apiClient(`/notifications/${id}`, {
