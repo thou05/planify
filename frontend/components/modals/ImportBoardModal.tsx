@@ -17,8 +17,8 @@ import {
   Check,
   FileText,
 } from 'lucide-react';
-import * as XLSX from 'xlsx';
 import { apiClient } from '@/lib/api-client';
+import * as XLSX from 'xlsx';
 
 interface ImportBoardModalProps {
   isOpen: boolean;
@@ -133,7 +133,7 @@ export default function ImportBoardModal({
       } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
         const arrayBuffer = await uploadedFile.arrayBuffer();
         const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-        rawData = parseExcelWorkbook(workbook);
+        rawData = parseExcelWorkbook(workbook, XLSX);
       } else {
         throw new Error('Vui lòng chọn tệp định dạng JSON (.json) hoặc Excel (.xlsx)');
       }
@@ -162,8 +162,8 @@ export default function ImportBoardModal({
     }
   };
 
-  const parseExcelWorkbook = (workbook: XLSX.WorkBook): any => {
-    const sheetNames = workbook.SheetNames;
+  const parseExcelWorkbook = (workbook: any, xlsxLib: any): any => {
+    const sheetNames: string[] = workbook.SheetNames || [];
     const result: any = {
       board: {},
       lists: [],
@@ -197,7 +197,7 @@ export default function ImportBoardModal({
     );
     if (infoSheetName) {
       const sheet = workbook.Sheets[infoSheetName];
-      const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+      const rows: any[] = xlsxLib.utils.sheet_to_json(sheet, { defval: '' });
       rows.forEach((row) => {
         const prop = String(findRowVal(row, ['thuộc tính (property)', 'thuộc tính', 'property', 'key']) || '').toLowerCase();
         const val = findRowVal(row, ['giá trị (value)', 'giá trị', 'value', 'val']);
@@ -212,7 +212,7 @@ export default function ImportBoardModal({
     );
     if (labelSheetName) {
       const sheet = workbook.Sheets[labelSheetName];
-      const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+      const rows: any[] = xlsxLib.utils.sheet_to_json(sheet, { defval: '' });
       result.labels = rows
         .map((r) => {
           const name = findRowVal(r, ['tên nhãn (label name)', 'tên nhãn', 'label name', 'name', 'nhãn']);
@@ -229,7 +229,7 @@ export default function ImportBoardModal({
     );
     if (checklistSheetName) {
       const sheet = workbook.Sheets[checklistSheetName];
-      const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+      const rows: any[] = xlsxLib.utils.sheet_to_json(sheet, { defval: '' });
       rows.forEach((r) => {
         const cardTitle = String(
           findRowVal(r, ['tên thẻ (card title)', 'tên thẻ', 'card title', 'tiêu đề thẻ', 'thẻ', 'card', 'title']) || ''
@@ -299,7 +299,7 @@ export default function ImportBoardModal({
 
     if (listCardsSheetName) {
       const sheet = workbook.Sheets[listCardsSheetName];
-      const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+      const rows: any[] = xlsxLib.utils.sheet_to_json(sheet, { defval: '' });
       const listsMap: Record<string, any[]> = {};
       let currentListName = 'Cần làm';
 

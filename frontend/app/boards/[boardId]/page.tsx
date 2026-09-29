@@ -26,6 +26,11 @@ import BoardTableView from '@/components/board/views/BoardTableView';
 import BoardCalendarView from '@/components/board/views/BoardCalendarView';
 import BoardScheduleView from '@/components/board/views/BoardScheduleView';
 import BoardAnalyticsView from '@/components/board/views/BoardAnalyticsView';
+import BoardFilterModal, {
+  BoardFilterState,
+  defaultFilterState,
+  getActiveFilterCount,
+} from '@/components/board/BoardFilterModal';
 import {
   Star,
   Plus,
@@ -59,6 +64,8 @@ import {
   ShieldAlert,
   Download,
   Upload,
+  Search,
+  Filter,
 } from 'lucide-react';
 import { ActivityItem } from '@/components/modals/MyActivityModal';
 import { BoardRiskScannerModal } from '@/components/board/BoardRiskScannerModal';
@@ -281,6 +288,215 @@ export default function BoardDetailPage({
   const draggedListIdRef = useRef<string | null>(null);
   const [draggedSourceListId, setDraggedSourceListId] = useState<string | null>(null);
   const realtimeChannelRef = useRef<any>(null);
+
+  // Board in-page comprehensive filter state
+  const [boardFilters, setBoardFilters] = useState<BoardFilterState>(defaultFilterState);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const boardSearchInputRef = useRef<HTMLInputElement>(null);
+
+  const activeFilterCount = React.useMemo(() => {
+    return getActiveFilterCount(boardFilters);
+  }, [boardFilters]);
+
+  const handleResetFilters = () => {
+    setBoardFilters(defaultFilterState);
+  };
+
+  // Shortcut key '/' to quickly focus board search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInput =
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable;
+      if (!isInput && e.key === '/') {
+        e.preventDefault();
+        boardSearchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Board unique labels
+  const boardLabels = React.useMemo(() => {
+    const labelMap = new Map<string, { id: string; name: string; color: string }>();
+    if (Array.isArray(board?.labels)) {
+      board.labels.forEach((l: any) => {
+        if (l.id) labelMap.set(l.id, l);
+      });
+    }
+    (board?.lists || []).forEach((l: any) => {
+      (l.cards || []).forEach((c: any) => {
+        (c.card_labels || []).forEach((cl: any) => {
+          if (cl.label?.id) {
+            labelMap.set(cl.label.id, cl.label);
+          }
+        });
+      });
+    });
+    return Array.from(labelMap.values());
+  }, [board?.labels, board?.lists]);
+
+  const totalAllCards = React.useMemo(() => {
+    return (board?.lists || []).reduce(
+      (acc: number, l: any) => acc + (l.cards?.length || 0),
+      0
+    );
+  }, [board?.lists]);
+
+  const allBoardCards = React.useMemo(() => {
+    return (board?.lists || []).flatMap((l: any) => l.cards || []);
+  }, [board?.lists]);
+
+  // Reactive filtered lists matching multi-criteria filter state
+  const filteredLists = React.useMemo(() => {
+    if (!board?.lists) return [];
+    const activeCount = getActiveFilterCount(boardFilters);
+    if (activeCount === 0) {
+      return board.lists;
+    }
+
+    const now = new Date();
+    const nowTime = now.getTime();
+    const q = (boardFilters.keyword || '').trim().toLowerCase();
+
+    return board.lists.map((list: any) => {
+      const matchingCards = (list.cards || []).filter((card: any) => {
+        // 1. Keyword check
+        if (q) {
+          const titleMatch = (card.title || '').toLowerCase().includes(q);
+          const descMatch = (card.description || '').toLowerCase().includes(q);
+          const labelMatch = (card.card_labels || []).some((cl: any) =>
+            (cl.label?.name || '').toLowerCase().includes(q)
+          );
+          const memberMatch = (card.card_assignees || []).some((ca: any) => {
+            const name = (ca.board_member?.user?.name || '').toLowerCase();
+            const email = (ca.board_member?.user?.email || '').toLowerCase();
+            return name.includes(q) || email.includes(q);
+          });
+          if (!titleMatch && !descMatch && !labelMatch && !memberMatch) {
+            return false;
+          }
+        }
+
+        // 2. Members check
+        if (boardFilters.members.length > 0) {
+          const hasNoMembers = !card.card_assignees || card.card_assignees.length === 0;
+          const isAssignedToMe = (card.card_assignees || []).some((ca: any) =>
+            ca.board_member?.user?.id === user?.id || ca.board_member?.user_id === user?.id
+          );
+
+          if (boardFilters.matchMode === 'all') {
+            const allMembersMatch = boardFilters.members.every((m) => {
+              if (m === 'no_members') return hasNoMembers;
+              if (m === 'assigned_to_me') return isAssignedToMe;
+              return (card.card_assignees || []).some(
+                (ca: any) => ca.board_member?.user?.id === m || ca.board_member?.user_id === m
+              );
+            });
+            if (!allMembersMatch) return false;
+          } else {
+            const anyMemberMatch = boardFilters.members.some((m) => {
+              if (m === 'no_members') return hasNoMembers;
+              if (m === 'assigned_to_me') return isAssignedToMe;
+              return (card.card_assignees || []).some(
+                (ca: any) => ca.board_member?.user?.id === m || ca.board_member?.user_id === m
+              );
+            });
+            if (!anyMemberMatch) return false;
+          }
+        }
+
+
+        // 4. Card Status check
+        const isDone = !!card.is_due_date_completed || card.status === 'DONE' || card.status === 'COMPLETED';
+        if (boardFilters.cardStatus.length > 0) {
+          const statusMatch = boardFilters.cardStatus.some((st) => {
+            if (st === 'completed') return isDone;
+            if (st === 'not_completed') return !isDone;
+            return false;
+          });
+          if (!statusMatch) return false;
+        }
+
+        // 5. Due Date check
+        if (boardFilters.dueDates.length > 0) {
+          const hasNoDate = !card.due_date;
+          const d = card.due_date ? new Date(card.due_date) : null;
+          const isDValid = d && !isNaN(d.getTime());
+
+          const dueMatch = boardFilters.dueDates.some((dd) => {
+            if (dd === 'no_date') return hasNoDate;
+            if (!isDValid || !d) return false;
+
+            if (dd === 'overdue') {
+              return d.getTime() < nowTime && !isDone;
+            }
+            if (dd === 'due_tomorrow') {
+              const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+              const tomorrowEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 23, 59, 59);
+              return d >= tomorrowStart && d <= tomorrowEnd;
+            }
+            if (dd === 'due_next_week') {
+              const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+              const weekEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7, 23, 59, 59);
+              return d >= weekStart && d <= weekEnd;
+            }
+            if (dd === 'due_next_month') {
+              const monthStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+              const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate(), 23, 59, 59);
+              return d >= monthStart && d <= monthEnd;
+            }
+            return false;
+          });
+          if (!dueMatch) return false;
+        }
+
+        // 6. Activity check
+        if (boardFilters.activities.length > 0) {
+          const cardTime = card.updated_at
+            ? new Date(card.updated_at).getTime()
+            : card.created_at
+              ? new Date(card.created_at).getTime()
+              : Date.now();
+          const diffDays = (nowTime - cardTime) / (1000 * 60 * 60 * 24);
+
+          const activityMatch = boardFilters.activities.some((act) => {
+            if (act === 'past_week') return diffDays <= 7;
+            if (act === 'past_2_weeks') return diffDays <= 14;
+            if (act === 'past_4_weeks') return diffDays <= 28;
+            if (act === 'no_activity_4_weeks') return diffDays > 28;
+            return false;
+          });
+          if (!activityMatch) return false;
+        }
+
+        return true;
+      });
+
+      return {
+        ...list,
+        cards: matchingCards,
+      };
+    });
+  }, [board?.lists, boardFilters, user?.id]);
+
+  const totalFilteredCards = React.useMemo(() => {
+    return filteredLists.reduce(
+      (acc: number, l: any) => acc + (l.cards?.length || 0),
+      0
+    );
+  }, [filteredLists]);
+
+  const effectiveBoard = React.useMemo(() => {
+    if (!board) return null;
+    return {
+      ...board,
+      lists: filteredLists,
+    };
+  }, [board, filteredLists]);
 
   const fetchBoard = async (silent = false) => {
     try {
@@ -1015,13 +1231,6 @@ export default function BoardDetailPage({
                 </span>
               )}
             </div>
-
-            {/* View Switcher Controls */}
-            <div className="hidden sm:block h-5 w-[1px] bg-[#2b1572]/15" />
-            <BoardViewSwitcher
-              activeView={activeView}
-              onViewChange={setActiveView}
-            />
           </div>
 
           {/* Right Header Actions */}
@@ -1275,6 +1484,82 @@ export default function BoardDetailPage({
           </div>
         </div>
 
+        {/* View Switcher Sub-Header Bar */}
+        <div className="h-12 px-6 glass-surface !rounded-none !border-x-0 !border-t-0 border-b border-white/30 flex items-center justify-between gap-4 shrink-0 select-none bg-white/20 backdrop-blur-md">
+          <BoardViewSwitcher
+            activeView={activeView}
+            onViewChange={setActiveView}
+          />
+
+          {/* Board In-Page Search & Filter Controls */}
+          <div className="flex items-center gap-2">
+            {/* Search Input (bound to boardFilters.keyword) */}
+            <div className="relative flex items-center">
+              <Search className="w-3.5 h-3.5 absolute left-2.5 text-[#2b1572]/50 pointer-events-none" />
+              <input
+                ref={boardSearchInputRef}
+                type="text"
+                value={boardFilters.keyword}
+                onChange={(e) =>
+                  setBoardFilters((prev) => ({
+                    ...prev,
+                    keyword: e.target.value,
+                  }))
+                }
+                placeholder="Tìm thẻ trong bảng..."
+                className="w-36 sm:w-56 focus:w-64 pl-8 pr-7 py-1 text-xs glass-input placeholder:text-[#2b1572]/40 text-[#2b1572] font-medium transition-all"
+              />
+              {boardFilters.keyword && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBoardFilters((prev) => ({ ...prev, keyword: '' }));
+                    boardSearchInputRef.current?.focus();
+                  }}
+                  className="absolute right-2 p-0.5 rounded-full hover:bg-slate-200/50 text-[#2b1572]/50 hover:text-[#2b1572] transition-colors"
+                  title="Xóa từ khóa"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+
+            {/* Dedicated "Lọc" Button opening Filter Modal matching Trello screenshots */}
+            <button
+              type="button"
+              onClick={() => setIsFilterModalOpen(true)}
+              className={`h-7 px-3 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${activeFilterCount > 0
+                  ? 'bg-[#2b1572] text-white hover:bg-[#1e0f52]'
+                  : 'glass-input text-[#2b1572] hover:bg-white/60'
+                }`}
+              title="Mở bảng Lọc"
+            >
+              <Filter className="w-3.5 h-3.5" />
+              <span>Lọc</span>
+              {activeFilterCount > 0 && (
+                <span className="min-w-[16px] h-4 px-1 rounded-full bg-white text-[#2b1572] text-[10px] font-black flex items-center justify-center shadow-2xs">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+
+            {/* Filter / Result count badge */}
+            {activeFilterCount > 0 && (
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-xl bg-[#2b1572] text-white text-[11px] font-bold shadow-xs animate-in zoom-in-95">
+                <span>{totalFilteredCards}/{totalAllCards} thẻ</span>
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="p-0.5 rounded-full hover:bg-white/20 text-white/80 hover:text-white transition-colors"
+                  title="Xóa tất cả bộ lọc"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Multi-view Container */}
         {activeView === 'kanban' && (
           <div className="flex-1 overflow-x-auto overflow-y-hidden p-6">
@@ -1287,7 +1572,7 @@ export default function BoardDetailPage({
             ) : (
               <div className="flex items-start gap-5 h-full select-none">
                 {/* Render List Columns */}
-                {board?.lists?.map((list: any) => (
+                {filteredLists.map((list: any) => (
                   <ListColumn
                     key={list.id}
                     list={list}
@@ -1371,7 +1656,7 @@ export default function BoardDetailPage({
         {/* Table View */}
         {activeView === 'table' && (
           <BoardTableView
-            board={board}
+            board={effectiveBoard || board}
             onOpenCardDetail={handleOpenCardDetail}
             onRefreshBoard={fetchBoard}
             onDeleteCard={handleDeleteCard}
@@ -1381,7 +1666,7 @@ export default function BoardDetailPage({
         {/* Calendar View */}
         {activeView === 'calendar' && (
           <BoardCalendarView
-            board={board}
+            board={effectiveBoard || board}
             onOpenCardDetail={handleOpenCardDetail}
             onRefreshBoard={fetchBoard}
           />
@@ -1390,7 +1675,7 @@ export default function BoardDetailPage({
         {/* Schedule / Timeline View */}
         {activeView === 'schedule' && (
           <BoardScheduleView
-            board={board}
+            board={effectiveBoard || board}
             onOpenCardDetail={handleOpenCardDetail}
             onRefreshBoard={fetchBoard}
           />
@@ -1647,11 +1932,10 @@ export default function BoardDetailPage({
                   {/* Button 1: Copy for Zalo (Clean, formatted memo) */}
                   <button
                     onClick={handleCopyZalo}
-                    className={`px-3.5 py-2 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
-                      copyMode === 'zalo'
+                    className={`px-3.5 py-2 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${copyMode === 'zalo'
                         ? 'bg-emerald-600 text-white shadow-sm'
                         : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white hover:shadow-md'
-                    }`}
+                      }`}
                     title="Sao chép báo cáo sạch đẹp (đã loại bỏ ký tự ## và **), phù hợp dán vào Zalo / Teams / Messenger"
                   >
                     {copyMode === 'zalo' ? (
@@ -1670,11 +1954,10 @@ export default function BoardDetailPage({
                   {/* Button 2: Copy Markdown (Slack / Notion) */}
                   <button
                     onClick={handleCopyMarkdown}
-                    className={`px-3 py-2 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer border ${
-                      copyMode === 'markdown'
+                    className={`px-3 py-2 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer border ${copyMode === 'markdown'
                         ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                    }`}
+                      }`}
                     title="Sao chép định dạng Markdown gốc cho Slack, Notion hoặc Discord"
                   >
                     {copyMode === 'markdown' ? (
@@ -1751,8 +2034,8 @@ export default function BoardDetailPage({
                 <button
                   onClick={() => setBoardActivityFilter('all')}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${boardActivityFilter === 'all'
-                      ? 'bg-[#2b1572] text-white shadow-xs'
-                      : 'text-slate-600 hover:bg-slate-200/70'
+                    ? 'bg-[#2b1572] text-white shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-200/70'
                     }`}
                 >
                   Tất cả ({boardActivities.length})
@@ -1760,8 +2043,8 @@ export default function BoardDetailPage({
                 <button
                   onClick={() => setBoardActivityFilter('card')}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${boardActivityFilter === 'card'
-                      ? 'bg-[#2b1572] text-white shadow-xs'
-                      : 'text-slate-600 hover:bg-slate-200/70'
+                    ? 'bg-[#2b1572] text-white shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-200/70'
                     }`}
                 >
                   Thẻ ({boardActivities.filter((a) => a.target_type.startsWith('card:')).length})
@@ -1769,8 +2052,8 @@ export default function BoardDetailPage({
                 <button
                   onClick={() => setBoardActivityFilter('board')}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${boardActivityFilter === 'board'
-                      ? 'bg-[#2b1572] text-white shadow-xs'
-                      : 'text-slate-600 hover:bg-slate-200/70'
+                    ? 'bg-[#2b1572] text-white shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-200/70'
                     }`}
                 >
                   Bảng ({boardActivities.filter((a) => a.target_type.startsWith('board:')).length})
@@ -1850,8 +2133,8 @@ export default function BoardDetailPage({
                           }
                         }}
                         className={`p-3 rounded-2xl border transition-all ${cardId
-                            ? 'bg-white hover:bg-slate-50/90 border-slate-200 shadow-2xs hover:shadow-xs cursor-pointer hover:border-[#a6d1fd]'
-                            : 'bg-slate-50/80 border-slate-200/80'
+                          ? 'bg-white hover:bg-slate-50/90 border-slate-200 shadow-2xs hover:shadow-xs cursor-pointer hover:border-[#a6d1fd]'
+                          : 'bg-slate-50/80 border-slate-200/80'
                           }`}
                       >
                         <div className="flex items-start gap-2.5">
@@ -1956,6 +2239,20 @@ export default function BoardDetailPage({
           setSelectedCardId(cardId);
           setIsCardDetailOpen(true);
         }}
+      />
+
+      {/* Comprehensive Board Filter Modal matching Trello design */}
+      <BoardFilterModal
+        isOpen={isFilterModalOpen}
+        onClose={() => setIsFilterModalOpen(false)}
+        filters={boardFilters}
+        onChangeFilters={setBoardFilters}
+        onResetFilters={handleResetFilters}
+        boardMembers={board?.members || []}
+        currentUser={user}
+        totalFilteredCards={totalFilteredCards}
+        totalAllCards={totalAllCards}
+        allCards={allBoardCards}
       />
 
     </>
