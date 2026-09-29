@@ -44,6 +44,9 @@ import {
   MessageSquare,
   Sparkles,
   Upload,
+  UserCheck,
+  Info,
+  HelpCircle,
 } from 'lucide-react';
 import { ActivityItem } from '@/components/modals/MyActivityModal';
 
@@ -67,7 +70,12 @@ export default function WorkspaceDetailPage({
   const [workspace, setWorkspace] = useState<any>(null);
   const [pendingInvites, setPendingInvites] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [accessDenied, setAccessDenied] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'boards' | 'members' | 'settings' | 'activities'>('boards');
+
+  // Sub-tabs in Member Management
+  const [memberSubTab, setMemberSubTab] = useState<'members' | 'single_guests' | 'multi_guests' | 'invites'>('members');
+  const [actionGuestId, setActionGuestId] = useState<string | null>(null);
 
   // Workspace Activities State
   const [activities, setActivities] = useState<ActivityItem[]>([]);
@@ -89,8 +97,10 @@ export default function WorkspaceDetailPage({
         setActivities([]);
         setHasMoreActivities(false);
       }
-    } catch {
-      // Error
+    } catch (err: any) {
+      if (err?.message?.includes('quyền') || err?.message?.includes('xóa')) {
+        setAccessDenied('Bạn đã bị xóa hoặc không có quyền truy cập hoạt động của Không gian làm việc này.');
+      }
     } finally {
       setIsLoadingActivities(false);
     }
@@ -109,8 +119,10 @@ export default function WorkspaceDetailPage({
       } else {
         setHasMoreActivities(false);
       }
-    } catch {
-      // Error
+    } catch (err: any) {
+      if (err?.message?.includes('quyền') || err?.message?.includes('xóa')) {
+        setAccessDenied('Bạn đã bị xóa hoặc không có quyền truy cập hoạt động của Không gian làm việc này.');
+      }
     } finally {
       setIsLoadingMoreActivities(false);
     }
@@ -144,12 +156,15 @@ export default function WorkspaceDetailPage({
       const res = await apiClient<any>(`/workspaces/${workspaceId}`);
       if (res.success && res.data) {
         setWorkspace(res.data);
+        setAccessDenied(null);
         setSettingsName(res.data.name || '');
         setSettingsDescription(res.data.description || '');
         shell?.setCurrentWorkspaceId(workspaceId);
+      } else {
+        setAccessDenied(res.message || 'Không tìm thấy hoặc bạn không có quyền truy cập vào Không gian làm việc này.');
       }
-    } catch {
-      // Error
+    } catch (err: any) {
+      setAccessDenied(err?.message || 'Bạn không có quyền truy cập vào Không gian làm việc này hoặc đã bị xóa.');
     } finally {
       setIsLoading(false);
     }
@@ -317,6 +332,59 @@ export default function WorkspaceDetailPage({
     }
   };
 
+  const handleConvertGuest = async (guestUserId: string, role: string = 'MEMBER') => {
+    try {
+      setActionGuestId(guestUserId);
+      const res = await apiClient(`/workspaces/${workspaceId}/guests/${guestUserId}/convert`, {
+        method: 'POST',
+        data: { role },
+      });
+      if (res.success) {
+        await fetchWorkspace();
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Không thể chuyển đổi khách thành thành viên');
+    } finally {
+      setActionGuestId(null);
+    }
+  };
+
+  const handleRemoveGuest = async (guestUserId: string, guestName?: string) => {
+    const confirmMsg = `Bạn có chắc chắn muốn xóa khách "${guestName || 'này'}" khỏi toàn bộ các Bảng trong Không gian làm việc không?`;
+    if (!confirm(confirmMsg)) return;
+
+    try {
+      setActionGuestId(guestUserId);
+      const res = await apiClient(`/workspaces/${workspaceId}/guests/${guestUserId}`, {
+        method: 'DELETE',
+      });
+      if (res.success) {
+        await fetchWorkspace();
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Không thể xóa khách');
+    } finally {
+      setActionGuestId(null);
+    }
+  };
+
+  const handleUpdateBoardGuestRole = async (boardId: string, guestUserId: string, newRole: string) => {
+    try {
+      setActionGuestId(guestUserId);
+      const res = await apiClient(`/boards/${boardId}/members/${guestUserId}`, {
+        method: 'PATCH',
+        data: { role: newRole },
+      });
+      if (res.success) {
+        await fetchWorkspace();
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Không thể thay đổi vai trò trong Bảng');
+    } finally {
+      setActionGuestId(null);
+    }
+  };
+
   const handleCopyInviteLink = (token: string) => {
     const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
     const link = `${origin}/invite/${token}`;
@@ -404,6 +472,35 @@ export default function WorkspaceDetailPage({
       setIsDeleting(false);
     }
   };
+
+  if ((accessDenied || (!workspace && !isLoading))) {
+    return (
+      <div className="max-w-2xl mx-auto py-16 px-4 text-center">
+        <div className="glass-surface p-8 sm:p-10 rounded-3xl border border-white/80 shadow-xl space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center mx-auto text-[#c40000]">
+            <ShieldAlert className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl sm:text-2xl font-black text-[#2b1572]">
+              Không thể truy cập Không gian làm việc
+            </h2>
+            <p className="text-xs sm:text-sm text-[#2b1572]/70 max-w-md mx-auto leading-relaxed">
+              {accessDenied || 'Bạn hiện không phải là thành viên hoặc đã bị xóa khỏi Không gian làm việc này.'}
+            </p>
+          </div>
+          <div className="pt-2 flex justify-center">
+            <Link
+              href="/dashboard"
+              className="px-6 py-3 btn-primary text-xs font-bold rounded-2xl flex items-center gap-2 shadow-md cursor-pointer hover:scale-105 transition-all"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Quay về Bảng điều khiển (Dashboard)</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -530,7 +627,9 @@ export default function WorkspaceDetailPage({
             }`}
           >
             <Users className="w-4 h-4" />
-            <span>Thành viên & Lời mời ({workspace?.members?.length || 0})</span>
+            <span>
+              Thành viên & Khách ({(workspace?.members?.length || 0) + (workspace?.guestCount || 0)})
+            </span>
           </button>
 
           <button
@@ -624,121 +723,454 @@ export default function WorkspaceDetailPage({
         )}
 
         {/* ==================================================================== */}
-        {/* TAB 2: MEMBERS & INVITATIONS */}
+        {/* TAB 2: MEMBERS & GUESTS */}
         {/* ==================================================================== */}
         {activeTab === 'members' && (
           <div className="space-y-6">
-            {/* Members Section */}
-            <div className="glass-surface p-6 sm:p-8 rounded-2xl border border-white/60">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#2b1572]/10">
-                <div>
-                  <h3 className="text-base font-bold text-[#2b1572]">Danh sách thành viên hiện tại</h3>
-                  <p className="text-xs text-[#2b1572]/65 mt-0.5">
-                    Tất cả người dùng có quyền xem và thao tác trên các bảng trong Workspace này
-                  </p>
-                </div>
+            {/* Sub-tab navigation */}
+            <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-2xl glass-surface border border-white/70">
+              <button
+                onClick={() => setMemberSubTab('members')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                  memberSubTab === 'members'
+                    ? 'bg-[#2b1572] text-[#a6d1fd] shadow-sm'
+                    : 'text-[#2b1572]/70 hover:bg-white/50 hover:text-[#2b1572]'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Thành viên Không gian ({workspace?.members?.length || 0})</span>
+              </button>
 
-                {workspace?.isAdmin && (
-                  <div className="flex items-center gap-2">
-                    {workspace?.isOwner && (
-                      <button
-                        onClick={() => setIsTransferOpen(true)}
-                        className="px-3 py-1.5 btn-secondary text-xs font-semibold flex items-center gap-1.5 text-amber-800"
-                      >
-                        <Crown className="w-3.5 h-3.5 text-amber-600" />
-                        <span>Chuyển quyền Owner</span>
-                      </button>
-                    )}
-                    <button
-                      onClick={() => setIsInviteOpen(true)}
-                      className="px-3.5 py-1.5 btn-primary text-xs font-semibold flex items-center gap-1.5"
-                    >
-                      <UserPlus className="w-3.5 h-3.5" />
-                      <span>Mời thành viên</span>
-                    </button>
-                  </div>
-                )}
-              </div>
+              <button
+                onClick={() => setMemberSubTab('single_guests')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                  memberSubTab === 'single_guests'
+                    ? 'bg-amber-600 text-white shadow-sm'
+                    : 'text-amber-800/80 hover:bg-amber-500/10 hover:text-amber-900'
+                }`}
+              >
+                <Kanban className="w-3.5 h-3.5" />
+                <span>Khách một bảng ({workspace?.singleBoardGuestsCount || 0})</span>
+              </button>
 
-              {/* Members Table */}
-              <div className="divide-y divide-[#2b1572]/10 mt-2">
-                {workspace?.members?.map((m: any) => {
-                  const isCurrent = user?.id === m.user_id;
-                  const isItemOwner = m.role === 'OWNER' || m.user_id === workspace.owner_id;
-                  const canManageThisUser =
-                    workspace.isOwner || (workspace.isAdmin && !isItemOwner && m.role !== 'ADMIN');
+              <button
+                onClick={() => setMemberSubTab('multi_guests')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                  memberSubTab === 'multi_guests'
+                    ? 'bg-purple-700 text-white shadow-sm'
+                    : 'text-purple-900/80 hover:bg-purple-500/10 hover:text-purple-950'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Khách đa bảng ({workspace?.multiBoardGuestsCount || 0})</span>
+              </button>
 
-                  return (
-                    <div key={m.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="flex items-center gap-3.5">
-                        <div className="w-10 h-10 rounded-full bg-[#2b1572]/10 border border-white/80 flex items-center justify-center text-[#2b1572] font-bold text-sm shadow-sm shrink-0">
-                          {m.user?.name?.charAt(0).toUpperCase() || 'U'}
-                        </div>
-                        <div>
-                          <div className="text-sm font-bold text-[#2b1572] flex items-center gap-2">
-                            <span>{m.user?.name}</span>
-                            {isCurrent && (
-                              <span className="text-[10px] text-[#2b1572]/60 font-semibold">(Bạn)</span>
-                            )}
-                            {isItemOwner ? (
-                              <span className="badge-ai text-[10px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
-                                <Crown className="w-3 h-3" />
-                                Chủ sở hữu
-                              </span>
-                            ) : m.role === 'ADMIN' ? (
-                              <span className="badge-info text-[10px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
-                                <Shield className="w-3 h-3" />
-                                Quản trị viên
-                              </span>
-                            ) : (
-                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/60 text-[#2b1572]/70 font-semibold border border-white/80">
-                                Thành viên
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-xs text-[#2b1572]/60 flex items-center gap-2 mt-0.5">
-                            <span>{m.user?.email}</span>
-                            {m.joined_at && (
-                              <>
-                                <span>•</span>
-                                <span>Tham gia: {new Date(m.joined_at).toLocaleDateString('vi-VN')}</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Role selection & actions */}
-                      <div className="flex items-center gap-2.5 self-end sm:self-center">
-                        {canManageThisUser && !isCurrent && !isItemOwner ? (
-                          <>
-                            <select
-                              value={m.role}
-                              onChange={(e) => handleUpdateRole(m.user_id, e.target.value as any)}
-                              className="px-2.5 py-1 text-xs glass-input font-semibold text-[#2b1572] cursor-pointer"
-                            >
-                              <option value="MEMBER">Thành viên</option>
-                              <option value="ADMIN">Quản trị viên</option>
-                            </select>
-
-                            <button
-                              onClick={() => handleRemoveMember(m.user_id, m.user?.name)}
-                              className="p-1.5 text-[#2b1572]/40 hover:text-[#c40000] hover:bg-[#c40000]/10 rounded-lg transition-colors cursor-pointer"
-                              title="Xóa khỏi Workspace"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </>
-                        ) : null}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              {workspace?.isAdmin && (
+                <button
+                  onClick={() => setMemberSubTab('invites')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                    memberSubTab === 'invites'
+                      ? 'bg-[#2b1572] text-[#a6d1fd] shadow-sm'
+                      : 'text-[#2b1572]/70 hover:bg-white/50 hover:text-[#2b1572]'
+                  }`}
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Lời mời đang chờ ({pendingInvites.length})</span>
+                </button>
+              )}
             </div>
 
-            {/* Pending Invites Section */}
-            {workspace?.isAdmin && (
+            {/* ------------------------------------------------------------------ */}
+            {/* SUB-TAB 1: WORKSPACE MEMBERS */}
+            {/* ------------------------------------------------------------------ */}
+            {memberSubTab === 'members' && (
+              <div className="glass-surface p-6 sm:p-8 rounded-2xl border border-white/60">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#2b1572]/10">
+                  <div>
+                    <h3 className="text-base font-bold text-[#2b1572]">Danh sách thành viên chính thức</h3>
+                    <p className="text-xs text-[#2b1572]/65 mt-0.5">
+                      Thành viên có quyền xem và truy cập tất cả các Bảng thuộc Không gian làm việc này
+                    </p>
+                  </div>
+
+                  {workspace?.isAdmin && (
+                    <div className="flex items-center gap-2">
+                      {workspace?.isOwner && (
+                        <button
+                          onClick={() => setIsTransferOpen(true)}
+                          className="px-3 py-1.5 btn-secondary text-xs font-semibold flex items-center gap-1.5 text-amber-800"
+                        >
+                          <Crown className="w-3.5 h-3.5 text-amber-600" />
+                          <span>Chuyển quyền Owner</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setIsInviteOpen(true)}
+                        className="px-3.5 py-1.5 btn-primary text-xs font-semibold flex items-center gap-1.5"
+                      >
+                        <UserPlus className="w-3.5 h-3.5" />
+                        <span>Mời thành viên</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Members Table */}
+                <div className="divide-y divide-[#2b1572]/10 mt-2">
+                  {workspace?.members?.map((m: any) => {
+                    const isCurrent = user?.id === m.user_id;
+                    const isItemOwner = m.role === 'OWNER' || m.user_id === workspace.owner_id;
+                    const canManageThisUser =
+                      workspace.isOwner || (workspace.isAdmin && !isItemOwner && m.role !== 'ADMIN');
+
+                    return (
+                      <div key={m.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3.5">
+                          <div className="w-10 h-10 rounded-full bg-[#2b1572]/10 border border-white/80 flex items-center justify-center text-[#2b1572] font-bold text-sm shadow-sm shrink-0">
+                            {m.user?.name?.charAt(0).toUpperCase() || 'U'}
+                          </div>
+                          <div>
+                            <div className="text-sm font-bold text-[#2b1572] flex items-center gap-2">
+                              <span>{m.user?.name}</span>
+                              {isCurrent && (
+                                <span className="text-[10px] text-[#2b1572]/60 font-semibold">(Bạn)</span>
+                              )}
+                              {isItemOwner ? (
+                                <span className="badge-ai text-[10px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                                  <Crown className="w-3 h-3" />
+                                  Chủ sở hữu
+                                </span>
+                              ) : m.role === 'ADMIN' ? (
+                                <span className="badge-info text-[10px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                                  <Shield className="w-3 h-3" />
+                                  Quản trị viên
+                                </span>
+                              ) : (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/60 text-[#2b1572]/70 font-semibold border border-white/80">
+                                  Thành viên
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-[#2b1572]/60 flex items-center gap-2 mt-0.5">
+                              <span>{m.user?.email}</span>
+                              {m.joined_at && (
+                                <>
+                                  <span>•</span>
+                                  <span>Tham gia: {new Date(m.joined_at).toLocaleDateString('vi-VN')}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Role selection & actions */}
+                        <div className="flex items-center gap-2.5 self-end sm:self-center">
+                          {canManageThisUser && !isCurrent && !isItemOwner ? (
+                            <>
+                              <select
+                                value={m.role}
+                                onChange={(e) => handleUpdateRole(m.user_id, e.target.value as any)}
+                                className="px-2.5 py-1 text-xs glass-input font-semibold text-[#2b1572] cursor-pointer"
+                              >
+                                <option value="MEMBER">Thành viên</option>
+                                <option value="ADMIN">Quản trị viên</option>
+                              </select>
+
+                              <button
+                                onClick={() => handleRemoveMember(m.user_id, m.user?.name)}
+                                className="p-1.5 text-[#2b1572]/40 hover:text-[#c40000] hover:bg-[#c40000]/10 rounded-lg transition-colors cursor-pointer"
+                                title="Xóa khỏi Workspace"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ------------------------------------------------------------------ */}
+            {/* SUB-TAB 2: SINGLE-BOARD GUESTS */}
+            {/* ------------------------------------------------------------------ */}
+            {memberSubTab === 'single_guests' && (
+              <div className="space-y-4">
+                <div className="glass-surface p-6 sm:p-8 rounded-2xl border border-white/60 space-y-5">
+                  <div className="pb-4 border-b border-[#2b1572]/10">
+                    <div className="flex items-center gap-2">
+                      <span className="p-1.5 rounded-lg bg-amber-500/20 text-amber-800">
+                        <Kanban className="w-4 h-4" />
+                      </span>
+                      <h3 className="text-base font-bold text-[#2b1572]">
+                        Danh sách Khách một bảng ({workspace?.singleBoardGuestsCount || 0})
+                      </h3>
+                    </div>
+                    <p className="text-xs text-[#2b1572]/65 mt-1">
+                      Người dùng bên ngoài chỉ tham gia vào duy nhất đúng 1 Bảng trong Không gian làm việc này
+                    </p>
+                  </div>
+
+                  {/* Single Guests Table */}
+                  {(() => {
+                    const singleGuests: any[] = workspace?.singleBoardGuests || (workspace?.guests || []).filter((g: any) => g.guestType === 'SINGLE_BOARD');
+
+                    if (singleGuests.length === 0) {
+                      return (
+                        <div className="py-10 text-center text-xs text-[#2b1572]/60 space-y-1">
+                          <p className="font-bold text-sm text-[#2b1572]">Không có khách một bảng nào</p>
+                          <p>Hiện tại không có người dùng bên ngoài nào chỉ tham gia 1 bảng trong Không gian này.</p>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="divide-y divide-[#2b1572]/10 mt-2">
+                        {singleGuests.map((g: any) => {
+                          const isProcessing = actionGuestId === g.user_id;
+
+                          return (
+                            <div
+                              key={g.id}
+                              className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4"
+                            >
+                              <div className="flex items-start gap-3.5 min-w-0">
+                                <div className="w-10 h-10 rounded-full bg-amber-500/15 border border-white/80 flex items-center justify-center text-amber-900 font-bold text-sm shadow-sm shrink-0">
+                                  {g.user?.name?.charAt(0).toUpperCase() || 'K'}
+                                </div>
+                                <div className="space-y-1 min-w-0">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-sm font-bold text-[#2b1572] truncate">
+                                      {g.user?.name}
+                                    </span>
+                                    <span className="badge-warning text-[10px] px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1">
+                                      <Kanban className="w-3 h-3" />
+                                      Khách 1 bảng
+                                    </span>
+                                  </div>
+
+                                  <div className="text-xs text-[#2b1572]/60">
+                                    {g.user?.email}
+                                  </div>
+
+                                  {/* List of boards guest is in */}
+                                  <div className="pt-1 flex flex-wrap items-center gap-1.5">
+                                    <span className="text-[11px] text-[#2b1572]/50 font-medium">Bảng tham gia:</span>
+                                    {g.boards?.map((b: any) => (
+                                      <Link
+                                        key={b.id}
+                                        href={`/boards/${b.id}`}
+                                        className="px-2.5 py-1 rounded-lg bg-white/70 hover:bg-white text-[11px] font-semibold text-[#2b1572] border border-[#2b1572]/15 flex items-center gap-1.5 hover:scale-105 transition-all shadow-2xs"
+                                        title="Mở bảng"
+                                      >
+                                        <Kanban className="w-3.5 h-3.5 text-[#2b1572]/60" />
+                                        <span>{b.name}</span>
+                                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#2b1572]/10 text-[#2b1572]/70 font-bold">
+                                          {b.role === 'ADMIN' ? 'Admin' : b.role === 'VIEWER' ? 'Chỉ xem' : 'Thành viên'}
+                                        </span>
+                                      </Link>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Guest Actions (Admin only) */}
+                              {workspace?.isAdmin && (
+                                <div className="flex flex-wrap items-center gap-2 self-end md:self-center shrink-0">
+                                  {/* Change Role in Board */}
+                                  {g.boards?.length > 0 && (
+                                    <select
+                                      value={g.boards[0]?.role === 'MEMBER' ? 'EDITOR' : g.boards[0]?.role || 'EDITOR'}
+                                      disabled={isProcessing}
+                                      onChange={(e) => handleUpdateBoardGuestRole(g.boards[0]?.id, g.user_id, e.target.value)}
+                                      className="px-2.5 py-1 text-xs glass-input font-semibold text-[#2b1572] cursor-pointer"
+                                      title="Thay đổi quyền của khách trong Bảng"
+                                    >
+                                      <option value="EDITOR">Thành viên (Chỉnh sửa)</option>
+                                      <option value="ADMIN">Quản trị viên Bảng</option>
+                                      <option value="VIEWER">Chỉ xem</option>
+                                    </select>
+                                  )}
+
+                                  <button
+                                    onClick={() => handleConvertGuest(g.user_id, 'MEMBER')}
+                                    disabled={isProcessing}
+                                    className="px-3 py-1.5 btn-secondary text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                                    title="Nâng cấp khách thành Thành viên chính thức của Workspace"
+                                  >
+                                    {isProcessing ? (
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : (
+                                      <UserCheck className="w-3.5 h-3.5 text-[#358200]" />
+                                    )}
+                                    <span>Thêm vào Workspace</span>
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleRemoveGuest(g.user_id, g.user?.name)}
+                                    disabled={isProcessing}
+                                    className="p-1.5 text-[#2b1572]/40 hover:text-[#c40000] hover:bg-[#c40000]/10 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                                    title="Xóa khách khỏi Bảng trong Không gian làm việc"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {/* ------------------------------------------------------------------ */}
+            {/* SUB-TAB 3: MULTI-BOARD GUESTS */}
+            {/* ------------------------------------------------------------------ */}
+            {memberSubTab === 'multi_guests' && (
+              <div className="space-y-4">
+                <div className="glass-surface p-6 sm:p-8 rounded-2xl border border-white/60 space-y-5">
+                  <div className="pb-4 border-b border-[#2b1572]/10">
+                    <div className="flex items-center gap-2">
+                      <span className="p-1.5 rounded-lg bg-purple-500/20 text-purple-800">
+                        <Layers className="w-4 h-4" />
+                      </span>
+                      <h3 className="text-base font-bold text-[#2b1572]">
+                        Danh sách Khách đa bảng ({workspace?.multiBoardGuestsCount || 0})
+                      </h3>
+                    </div>
+                    <p className="text-xs text-[#2b1572]/65 mt-1">
+                      Người dùng bên ngoài được mời tham gia vào từ 2 Bảng trở lên trong Không gian làm việc này
+                    </p>
+                  </div>
+
+                  {/* Multi Guests Table */}
+                  {(() => {
+                    const multiGuests: any[] = workspace?.multiBoardGuests || (workspace?.guests || []).filter((g: any) => g.guestType === 'MULTI_BOARD');
+
+                    if (multiGuests.length === 0) {
+                      return (
+                        <div className="py-10 text-center text-xs text-[#2b1572]/60 space-y-1">
+                          <p className="font-bold text-sm text-[#2b1572]">Không có khách đa bảng nào</p>
+                          <p>Hiện tại không có người dùng bên ngoài nào tham gia từ 2 bảng trở lên trong Không gian này.</p>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="divide-y divide-[#2b1572]/10 mt-2">
+                        {multiGuests.map((g: any) => {
+                          const isProcessing = actionGuestId === g.user_id;
+
+                          return (
+                            <div
+                              key={g.id}
+                              className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4"
+                            >
+                              <div className="flex items-start gap-3.5 min-w-0">
+                                <div className="w-10 h-10 rounded-full bg-purple-500/15 border border-white/80 flex items-center justify-center text-purple-900 font-bold text-sm shadow-sm shrink-0">
+                                  {g.user?.name?.charAt(0).toUpperCase() || 'K'}
+                                </div>
+                                <div className="space-y-1 min-w-0">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-sm font-bold text-[#2b1572] truncate">
+                                      {g.user?.name}
+                                    </span>
+                                    <span className="badge-ai text-[10px] px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1">
+                                      <Layers className="w-3 h-3" />
+                                      Khách đa bảng ({g.boardCount} bảng)
+                                    </span>
+                                  </div>
+
+                                  <div className="text-xs text-[#2b1572]/60">
+                                    {g.user?.email}
+                                  </div>
+
+                                  {/* List of boards guest is in with role changer */}
+                                  <div className="pt-1 flex flex-wrap items-center gap-2">
+                                    <span className="text-[11px] text-[#2b1572]/50 font-medium">Bảng tham gia:</span>
+                                    {g.boards?.map((b: any) => (
+                                      <div
+                                        key={b.id}
+                                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/70 hover:bg-white border border-[#2b1572]/15 shadow-2xs transition-all"
+                                      >
+                                        <Link
+                                          href={`/boards/${b.id}`}
+                                          className="text-[11px] font-semibold text-[#2b1572] hover:text-[#0051a8] flex items-center gap-1"
+                                          title="Mở bảng"
+                                        >
+                                          <Kanban className="w-3 h-3 text-[#2b1572]/60" />
+                                          <span>{b.name}</span>
+                                        </Link>
+
+                                        {workspace?.isAdmin ? (
+                                          <select
+                                            value={b.role === 'MEMBER' ? 'EDITOR' : b.role || 'EDITOR'}
+                                            disabled={isProcessing}
+                                            onChange={(e) => handleUpdateBoardGuestRole(b.id, g.user_id, e.target.value)}
+                                            className="text-[10px] px-1.5 py-0.5 rounded bg-[#2b1572]/10 text-[#2b1572] font-bold border-0 cursor-pointer hover:bg-[#2b1572]/20"
+                                            title="Thay đổi quyền trong Bảng này"
+                                          >
+                                            <option value="EDITOR">Thành viên</option>
+                                            <option value="ADMIN">Admin</option>
+                                            <option value="VIEWER">Chỉ xem</option>
+                                          </select>
+                                        ) : (
+                                          <span className="text-[9px] px-1 py-0.2 rounded bg-[#2b1572]/10 text-[#2b1572]/70 font-bold">
+                                            {b.role === 'ADMIN' ? 'Admin' : b.role === 'VIEWER' ? 'Chỉ xem' : 'Thành viên'}
+                                          </span>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Guest Actions (Admin only) */}
+                              {workspace?.isAdmin && (
+                                <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+                                  <button
+                                    onClick={() => handleConvertGuest(g.user_id, 'MEMBER')}
+                                    disabled={isProcessing}
+                                    className="px-3 py-1.5 btn-secondary text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                                    title="Nâng cấp khách thành Thành viên chính thức của Workspace"
+                                  >
+                                    {isProcessing ? (
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : (
+                                      <UserCheck className="w-3.5 h-3.5 text-[#358200]" />
+                                    )}
+                                    <span>Thêm vào Workspace</span>
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleRemoveGuest(g.user_id, g.user?.name)}
+                                    disabled={isProcessing}
+                                    className="p-1.5 text-[#2b1572]/40 hover:text-[#c40000] hover:bg-[#c40000]/10 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                                    title="Xóa khách khỏi toàn bộ các Bảng trong Không gian làm việc"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {/* ------------------------------------------------------------------ */}
+            {/* SUB-TAB 4: PENDING INVITATIONS */}
+            {/* ------------------------------------------------------------------ */}
+            {memberSubTab === 'invites' && workspace?.isAdmin && (
               <div className="glass-surface p-6 sm:p-8 rounded-2xl border border-white/60">
                 <div className="pb-4 border-b border-[#2b1572]/10 flex items-center justify-between">
                   <div>

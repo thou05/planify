@@ -197,6 +197,16 @@ export default function MyActivitiesPage() {
   };
 
   const handleItemClick = (act: ActivityItem) => {
+    const isRemovalAction =
+      act.action.toLowerCase().includes('đã xóa') ||
+      act.action.toLowerCase().includes('đã rời khỏi') ||
+      act.action.toLowerCase().includes('xóa thành viên');
+
+    if (isRemovalAction) {
+      alert('Không thể chuyển tiếp: Hoạt động này ghi nhận thao tác xóa hoặc rời khỏi dự án.');
+      return;
+    }
+
     if (act.target_type.startsWith('card:')) {
       const cardId = act.target_meta?.card_id || act.target_type.replace('card:', '');
       const boardId = act.target_meta?.board_id;
@@ -487,7 +497,12 @@ export default function MyActivitiesPage() {
                 {groupedActivities[groupLabel].map((act) => {
                   const badgeInfo = getActionBadge(act.action, act.target_type);
                   const IconComp = badgeInfo.icon;
-                  const isClickable = Boolean(
+                  const isRemoval =
+                    act.action.toLowerCase().includes('đã xóa') ||
+                    act.action.toLowerCase().includes('đã rời khỏi') ||
+                    act.action.toLowerCase().includes('xóa thành viên');
+
+                  const isClickable = !isRemoval && Boolean(
                     act.target_meta?.board_id ||
                     act.target_type.startsWith('card:') ||
                     act.target_type.startsWith('board:') ||
@@ -499,11 +514,17 @@ export default function MyActivitiesPage() {
                       key={act.id}
                       onClick={() => handleItemClick(act)}
                       className={`kanban-card p-4 flex items-start gap-3.5 group ${
-                        isClickable ? 'cursor-pointer' : ''
+                        isClickable
+                          ? 'cursor-pointer hover:border-[#a6d1fd]'
+                          : 'cursor-default opacity-85'
                       }`}
                     >
                       {/* Icon */}
-                      <div className="w-9 h-9 rounded-xl bg-white/70 border border-white/80 shadow-2xs flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform text-[#2b1572]">
+                      <div className={`w-9 h-9 rounded-xl border shadow-2xs flex items-center justify-center shrink-0 transition-transform ${
+                        isRemoval
+                          ? 'bg-rose-500/10 border-rose-500/20 text-[#c40000]'
+                          : 'bg-white/70 border-white/80 group-hover:scale-105 text-[#2b1572]'
+                      }`}>
                         <IconComp className="w-4 h-4" />
                       </div>
 

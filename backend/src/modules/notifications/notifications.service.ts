@@ -22,9 +22,34 @@ export class NotificationsService implements OnModuleInit {
   }
 
   /**
-   * Tạo thông báo mới cho người dùng
+   * Tạo thông báo mới cho người dùng (có kiểm tra Tùy chọn thông báo)
    */
   async createNotification(dto: CreateNotificationDto) {
+    try {
+      const { data: user } = await this.supabase
+        .from('users')
+        .select('notification_preferences')
+        .eq('id', dto.userId)
+        .maybeSingle();
+
+      if (user?.notification_preferences && typeof user.notification_preferences === 'object') {
+        const prefs = user.notification_preferences;
+        const type = (dto.type || '').toUpperCase();
+        if (
+          (type.includes('INVITE') && prefs.invitations === false) ||
+          (type.includes('REMOVED') && prefs.removals === false) ||
+          (type.includes('ASSIGN') && prefs.assignments === false) ||
+          (type.includes('MENTION') && prefs.mentions === false) ||
+          ((type.includes('DUE') || type.includes('OVERDUE')) && prefs.due_reminders === false) ||
+          (type.includes('COMMENT') && prefs.comments === false)
+        ) {
+          return null;
+        }
+      }
+    } catch {
+      // Bỏ qua lỗi truy vấn preferences nếu cột chưa tồn tại
+    }
+
     const { data, error } = await this.supabase
       .from('notifications')
       .insert({
@@ -267,19 +292,20 @@ export class NotificationsService implements OnModuleInit {
 
           if (recipientUserIds.size === 0) continue;
 
-          const isOverdue = dueDate.getTime() < now.getTime();
-          const overdueThresholdMs = 3 * 24 * 60 * 60 * 1000; // 3 ngày
-          const isTooOldOverdue = isOverdue && now.getTime() - dueDate.getTime() > overdueThresholdMs;
+          const isOverdue = dueDate.getTime() <= now.getTime();
+          // Chỉ thông báo quá hạn nếu VỪA MỚI quá hạn (trong vòng 60 phút vừa qua)
+          // Các thẻ đã quá hạn từ trước/lâu thì tuyệt đối không thông báo lại
+          const justBecameOverdue = isOverdue && now.getTime() - dueDate.getTime() <= 60 * 60 * 1000;
 
-          // Nếu quá hạn quá 3 ngày trước thì không spam thông báo
-          if (isTooOldOverdue) continue;
-
+          // Chỉ thông báo sắp đến hạn nếu thẻ CÓ cài đặt lời nhắc (reminder_at) và thời gian nhắc nhở đã tới
           const reminderTime = c.reminder_at ? new Date(c.reminder_at).getTime() : null;
-          const isReminderHit = reminderTime
-            ? reminderTime <= now.getTime() && reminderTime > now.getTime() - 24 * 60 * 60 * 1000
-            : false;
-          const isWithin24h =
-            dueDate.getTime() - now.getTime() <= 24 * 60 * 60 * 1000 && dueDate.getTime() > now.getTime();
+          const isReminderHit = Boolean(
+            c.reminder_at &&
+            reminderTime &&
+            reminderTime <= now.getTime() &&
+            reminderTime > now.getTime() - 60 * 60 * 1000 &&
+            !isOverdue
+          );
 
           let notifType: 'DUE_SOON' | 'OVERDUE' | null = null;
           let notifTitle = '';
@@ -295,17 +321,18 @@ export class NotificationsService implements OnModuleInit {
           });
 
           if (isOverdue) {
+            if (!justBecameOverdue) {
+              continue; // Bỏ qua nếu thẻ đã quá hạn từ lâu
+            }
             notifType = 'OVERDUE';
             notifTitle = `🚨 Thẻ đã quá hạn: ${c.title}`;
             notifMessage = `Thẻ "${c.title}" trong bảng "${boardTitle}" đã quá hạn vào lúc ${formattedDueDate}||/boards/${boardId}?cardId=${c.id}`;
-            // Với OVERDUE: kiểm tra xem đã gửi thông báo kể từ thời điểm dueDate đến nay chưa (chỉ gửi 1 lần duy nhất cho mỗi deadline)
             deduplicateFromDate = dueDate.toISOString();
-          } else if (isReminderHit || isWithin24h) {
+          } else if (isReminderHit) {
             notifType = 'DUE_SOON';
             notifTitle = `⏰ Thẻ sắp đến hạn: ${c.title}`;
             notifMessage = `Thẻ "${c.title}" trong bảng "${boardTitle}" sẽ hết hạn vào lúc ${formattedDueDate}||/boards/${boardId}?cardId=${c.id}`;
-            // Với DUE_SOON: kiểm tra trong khoảng 24h trước hạn
-            deduplicateFromDate = new Date(dueDate.getTime() - 24 * 60 * 60 * 1000).toISOString();
+            deduplicateFromDate = new Date(reminderTime!).toISOString();
           }
 
           if (!notifType || !deduplicateFromDate) continue;
@@ -327,24 +354,13 @@ export class NotificationsService implements OnModuleInit {
               continue; // Đã gửi 1 lần trong chu kỳ deadline này rồi, bỏ qua
             }
 
-            // Tạo thông báo mới và phát sự kiện realtime WebSocket
-            const { data: createdNotif } = await this.supabase
-              .from('notifications')
-              .insert({
-                user_id: uId,
-                title: notifTitle,
-                message: notifMessage,
-                type: notifType,
-                is_read: false,
-              })
-              .select('id, user_id, title, message, type, is_read, created_at')
-              .single();
-
-            if (createdNotif) {
-              this.supabase.emitUserEvent(uId, 'NOTIFICATION_RECEIVED', {
-                notification: createdNotif,
-              });
-            }
+            // Gửi thông báo (tự động kiểm tra tùy chọn thông báo của người dùng)
+            await this.createNotification({
+              userId: uId,
+              title: notifTitle,
+              message: notifMessage,
+              type: notifType,
+            });
           }
         }
       }
@@ -423,20 +439,16 @@ export class NotificationsService implements OnModuleInit {
 
           if (recipientUserIds.size === 0) continue;
 
-          const isOverdue = dueDate.getTime() < now.getTime();
-          const overdueThresholdMs = 3 * 24 * 60 * 60 * 1000; // 3 ngày
-          const isTooOldOverdue = isOverdue && now.getTime() - dueDate.getTime() > overdueThresholdMs;
+          const isOverdue = dueDate.getTime() <= now.getTime();
+          // Chỉ thông báo quá hạn nếu VỪA MỚI quá hạn (trong vòng 60 phút vừa qua)
+          const justBecameOverdue = isOverdue && now.getTime() - dueDate.getTime() <= 60 * 60 * 1000;
 
-          if (isTooOldOverdue) continue;
+          if (!isOverdue || !justBecameOverdue) {
+            // Không gửi nếu không phải vừa mới quá hạn (checklist không có reminder_at riêng nên không gửi due_soon)
+            continue;
+          }
 
-          const isWithin24h =
-            dueDate.getTime() - now.getTime() <= 24 * 60 * 60 * 1000 && dueDate.getTime() > now.getTime();
-
-          let notifType: 'DUE_SOON' | 'OVERDUE' | null = null;
-          let notifTitle = '';
-          let notifMessage = '';
-          let deduplicateFromDate = '';
-
+          const notifType: 'OVERDUE' = 'OVERDUE';
           const formattedDueDate = dueDate.toLocaleString('vi-VN', {
             hour: '2-digit',
             minute: '2-digit',
@@ -445,19 +457,9 @@ export class NotificationsService implements OnModuleInit {
             year: 'numeric',
           });
 
-          if (isOverdue) {
-            notifType = 'OVERDUE';
-            notifTitle = `🚨 Mục công việc đã quá hạn: ${itemContent}`;
-            notifMessage = `Mục "${itemContent}" (thuộc thẻ "${cardTitle}") trong bảng "${boardTitle}" đã quá hạn vào lúc ${formattedDueDate}||/boards/${boardId}?cardId=${card.id}&itemId=${item.id}`;
-            deduplicateFromDate = dueDate.toISOString();
-          } else if (isWithin24h) {
-            notifType = 'DUE_SOON';
-            notifTitle = `⏰ Mục công việc sắp đến hạn: ${itemContent}`;
-            notifMessage = `Mục "${itemContent}" (thuộc thẻ "${cardTitle}") trong bảng "${boardTitle}" sẽ hết hạn vào lúc ${formattedDueDate}||/boards/${boardId}?cardId=${card.id}&itemId=${item.id}`;
-            deduplicateFromDate = new Date(dueDate.getTime() - 24 * 60 * 60 * 1000).toISOString();
-          }
-
-          if (!notifType || !deduplicateFromDate) continue;
+          const notifTitle = `🚨 Mục công việc đã quá hạn: ${itemContent}`;
+          const notifMessage = `Mục "${itemContent}" (thuộc thẻ "${cardTitle}") trong bảng "${boardTitle}" đã quá hạn vào lúc ${formattedDueDate}||/boards/${boardId}?cardId=${card.id}&itemId=${item.id}`;
+          const deduplicateFromDate = dueDate.toISOString();
 
           for (const uId of Array.from(recipientUserIds)) {
             if (targetUserId && uId !== targetUserId) continue;
@@ -476,23 +478,13 @@ export class NotificationsService implements OnModuleInit {
               continue;
             }
 
-            const { data: createdNotif } = await this.supabase
-              .from('notifications')
-              .insert({
-                user_id: uId,
-                title: notifTitle,
-                message: notifMessage,
-                type: notifType,
-                is_read: false,
-              })
-              .select('id, user_id, title, message, type, is_read, created_at')
-              .single();
-
-            if (createdNotif) {
-              this.supabase.emitUserEvent(uId, 'NOTIFICATION_RECEIVED', {
-                notification: createdNotif,
-              });
-            }
+            // Gửi thông báo (tự động kiểm tra tùy chọn thông báo)
+            await this.createNotification({
+              userId: uId,
+              title: notifTitle,
+              message: notifMessage,
+              type: notifType,
+            });
           }
         }
       }

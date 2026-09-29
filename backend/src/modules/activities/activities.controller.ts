@@ -35,10 +35,11 @@ export class ActivitiesController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   async getCardActivities(
     @Param('cardId') cardId: string,
+    @CurrentUser('id') userId: string,
     @Query('limit') limit?: number,
     @Query('page') page?: number,
   ) {
-    return this.activitiesService.getCardActivities(cardId, limit, page);
+    return this.activitiesService.getCardActivities(cardId, userId, limit, page);
   }
 
   @Get('boards/:boardId/activities')
@@ -47,10 +48,11 @@ export class ActivitiesController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   async getBoardActivities(
     @Param('boardId') boardId: string,
+    @CurrentUser('id') userId: string,
     @Query('limit') limit?: number,
     @Query('page') page?: number,
   ) {
-    return this.activitiesService.getBoardActivities(boardId, limit, page);
+    return this.activitiesService.getBoardActivities(boardId, userId, limit, page);
   }
 
   @Get('workspaces/:workspaceId/activities')
@@ -59,9 +61,10 @@ export class ActivitiesController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   async getWorkspaceActivities(
     @Param('workspaceId') workspaceId: string,
+    @CurrentUser('id') userId: string,
     @Query('limit') limit?: number,
     @Query('page') page?: number,
   ) {
-    return this.activitiesService.getWorkspaceActivities(workspaceId, limit, page);
+    return this.activitiesService.getWorkspaceActivities(workspaceId, userId, limit, page);
   }
 }

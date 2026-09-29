@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../../integrations/supabase/supabase.service';
 import { CreateActivityDto } from './dto/create-activity.dto';
 
@@ -149,7 +149,49 @@ export class ActivitiesService {
   /**
    * Get all activities related to a single Card
    */
-  async getCardActivities(cardId: string, limit = 15, page = 1): Promise<ActivityLogItem[]> {
+  async getCardActivities(cardId: string, userId?: string, limit = 15, page = 1): Promise<ActivityLogItem[]> {
+    if (userId) {
+      const { data: card, error: cError } = await this.supabase
+        .from('cards')
+        .select('id, list_id, lists:lists(id, board_id, boards:boards(id, workspace_id, workspaces:workspaces(id, owner_id)))')
+        .eq('id', cardId)
+        .maybeSingle();
+
+      if (cError || !card) {
+        throw new NotFoundException('Không tìm thấy Thẻ');
+      }
+
+      const board = (card.lists as any)?.boards;
+      const wsOwnerId = board?.workspaces?.owner_id;
+      const boardId = board?.id;
+      const workspaceId = board?.workspace_id;
+
+      if (wsOwnerId !== userId) {
+        let hasAccess = false;
+        if (boardId) {
+          const { data: bm } = await this.supabase
+            .from('board_members')
+            .select('id')
+            .eq('board_id', boardId)
+            .eq('user_id', userId)
+            .maybeSingle();
+          if (bm) hasAccess = true;
+        }
+        if (!hasAccess && workspaceId) {
+          const { data: wm } = await this.supabase
+            .from('workspace_members')
+            .select('id')
+            .eq('workspace_id', workspaceId)
+            .eq('user_id', userId)
+            .maybeSingle();
+          if (wm) hasAccess = true;
+        }
+        if (!hasAccess) {
+          throw new ForbiddenException('Bạn không có quyền truy cập hoạt động của Thẻ này');
+        }
+      }
+    }
+
     const safeLimit = Math.min(Math.max(1, Number(limit) || 15), 50);
     const safePage = Math.max(1, Number(page) || 1);
     const from = (safePage - 1) * safeLimit;
@@ -182,8 +224,43 @@ export class ActivitiesService {
   /**
    * Get all activities for a Board, including the board itself AND all cards in that board
    */
-  async getBoardActivities(boardId: string, limit = 15, page = 1): Promise<ActivityLogItem[]> {
+  async getBoardActivities(boardId: string, userId?: string, limit = 15, page = 1): Promise<ActivityLogItem[]> {
     try {
+      if (userId) {
+        const { data: board, error: bError } = await this.supabase
+          .from('boards')
+          .select('id, workspace_id, workspaces:workspaces(id, owner_id)')
+          .eq('id', boardId)
+          .maybeSingle();
+
+        if (bError || !board) {
+          throw new NotFoundException('Không tìm thấy Bảng');
+        }
+
+        const wsOwnerId = (board.workspaces as any)?.owner_id;
+        if (wsOwnerId !== userId) {
+          const { data: bm } = await this.supabase
+            .from('board_members')
+            .select('id')
+            .eq('board_id', boardId)
+            .eq('user_id', userId)
+            .maybeSingle();
+
+          if (!bm) {
+            const { data: wm } = await this.supabase
+              .from('workspace_members')
+              .select('id')
+              .eq('workspace_id', board.workspace_id)
+              .eq('user_id', userId)
+              .maybeSingle();
+
+            if (!wm) {
+              throw new ForbiddenException('Bạn không có quyền truy cập hoạt động của Bảng này');
+            }
+          }
+        }
+      }
+
       const safeLimit = Math.min(Math.max(1, Number(limit) || 15), 50);
       const safePage = Math.max(1, Number(page) || 1);
       const from = (safePage - 1) * safeLimit;
@@ -232,6 +309,9 @@ export class ActivitiesService {
       const items = (data as unknown as ActivityLogItem[]) || [];
       return this.enrichActivitiesWithMetadata(items);
     } catch (err: any) {
+      if (err instanceof ForbiddenException || err instanceof NotFoundException) {
+        throw err;
+      }
       this.logger.error(`Exception fetching board activities: ${err.message}`);
       return [];
     }
@@ -240,7 +320,32 @@ export class ActivitiesService {
   /**
    * Get all activities in a Workspace (includes workspace actions, board actions, and card actions)
    */
-  async getWorkspaceActivities(workspaceId: string, limit = 15, page = 1): Promise<ActivityLogItem[]> {
+  async getWorkspaceActivities(workspaceId: string, userId?: string, limit = 15, page = 1): Promise<ActivityLogItem[]> {
+    if (userId) {
+      const { data: ws, error: wsError } = await this.supabase
+        .from('workspaces')
+        .select('id, owner_id')
+        .eq('id', workspaceId)
+        .maybeSingle();
+
+      if (wsError || !ws) {
+        throw new NotFoundException('Không tìm thấy Không gian làm việc');
+      }
+
+      if (ws.owner_id !== userId) {
+        const { data: member } = await this.supabase
+          .from('workspace_members')
+          .select('id')
+          .eq('workspace_id', workspaceId)
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (!member) {
+          throw new ForbiddenException('Bạn không có quyền truy cập hoạt động của Không gian làm việc này hoặc đã bị xóa');
+        }
+      }
+    }
+
     const safeLimit = Math.min(Math.max(1, Number(limit) || 15), 50);
     const safePage = Math.max(1, Number(page) || 1);
     const from = (safePage - 1) * safeLimit;

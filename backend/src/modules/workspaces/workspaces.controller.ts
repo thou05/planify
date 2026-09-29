@@ -162,6 +162,30 @@ export class WorkspacesController {
     return this.workspacesService.removeMember(workspaceId, currentUserId, targetUserId);
   }
 
+  // --- GUESTS MANAGEMENT ---
+  @Delete(':id/guests/:guestUserId')
+  @ApiOperation({ summary: 'Xóa khách khỏi toàn bộ các Bảng trong Workspace' })
+  @ApiResponse({ status: 200, description: 'Xóa khách thành công' })
+  async removeGuest(
+    @Param('id') workspaceId: string,
+    @Param('guestUserId') guestUserId: string,
+    @CurrentUser('id') currentUserId: string,
+  ) {
+    return this.workspacesService.removeGuestFromWorkspace(workspaceId, currentUserId, guestUserId);
+  }
+
+  @Post(':id/guests/:guestUserId/convert')
+  @ApiOperation({ summary: 'Chuyển đổi khách thành thành viên chính thức của Workspace' })
+  @ApiResponse({ status: 200, description: 'Chuyển đổi thành công' })
+  async convertGuestToMember(
+    @Param('id') workspaceId: string,
+    @Param('guestUserId') guestUserId: string,
+    @CurrentUser('id') currentUserId: string,
+    @Body('role') role?: string,
+  ) {
+    return this.workspacesService.convertGuestToMember(workspaceId, currentUserId, guestUserId, role as any);
+  }
+
   // --- INVITATIONS ---
   @Post(':id/invites')
   @ApiOperation({ summary: 'Mời thành viên qua email (tạo liên kết mời)' })

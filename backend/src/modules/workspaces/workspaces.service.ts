@@ -64,7 +64,7 @@ export class WorkspacesService {
   }
 
   async findAllForUser(userId: string) {
-    // Tìm các workspace_id mà user là member
+    // 1. Tìm các workspace_id mà user là member
     const { data: memberships } = await this.supabase
       .from('workspace_members')
       .select('workspace_id, role')
@@ -72,7 +72,37 @@ export class WorkspacesService {
 
     const memberWsIds = (memberships || []).map((m) => m.workspace_id);
 
-    // Tìm các workspace mà user là owner HOẶC là member
+    // 2. Tìm các board_id & workspace_id mà user là board_member (kể cả không phải workspace member)
+    const { data: boardMemberships } = await this.supabase
+      .from('board_members')
+      .select('board_id, role, board:boards(id, workspace_id, name, description, is_favorite, is_archived)')
+      .eq('user_id', userId);
+
+    const userBoardMap = new Map<string, any[]>();
+    const boardWsIds: string[] = [];
+
+    (boardMemberships || []).forEach((bm: any) => {
+      const b = bm.board;
+      if (b && b.workspace_id) {
+        if (!boardWsIds.includes(b.workspace_id)) {
+          boardWsIds.push(b.workspace_id);
+        }
+        const existing = userBoardMap.get(b.workspace_id) || [];
+        existing.push({
+          id: b.id,
+          name: b.name,
+          description: b.description,
+          is_favorite: b.is_favorite ?? false,
+          is_archived: b.is_archived ?? false,
+          currentUserBoardRole: bm.role,
+        });
+        userBoardMap.set(b.workspace_id, existing);
+      }
+    });
+
+    const allRelatedWsIds = Array.from(new Set([...memberWsIds, ...boardWsIds]));
+
+    // 3. Tìm các workspace mà user là owner HOẶC là member HOẶC có board tham gia
     let query = this.supabase
       .from('workspaces')
       .select(`
@@ -88,12 +118,12 @@ export class WorkspacesService {
           user_id,
           user:users (id, name, email, avatar)
         ),
-        boards (id, name, description, is_favorite)
+        boards (id, name, description, is_favorite, is_archived)
       `)
       .order('created_at', { ascending: false });
 
-    if (memberWsIds.length > 0) {
-      query = query.or(`owner_id.eq.${userId},id.in.(${memberWsIds.join(',')})`);
+    if (allRelatedWsIds.length > 0) {
+      query = query.or(`owner_id.eq.${userId},id.in.(${allRelatedWsIds.join(',')})`);
     } else {
       query = query.eq('owner_id', userId);
     }
@@ -106,14 +136,39 @@ export class WorkspacesService {
     // Gắn thêm vai trò của người dùng hiện tại (currentUserRole)
     const roleMap = new Map((memberships || []).map((m) => [m.workspace_id, m.role]));
 
-    return (workspaces || []).map((ws: any) => ({
-      ...ws,
-      currentUserRole: ws.owner_id === userId ? 'OWNER' : roleMap.get(ws.id) || 'MEMBER',
-      _count: {
-        members: ws.members?.length || 0,
-        boards: ws.boards?.length || 0,
-      },
-    }));
+    return (workspaces || []).map((ws: any) => {
+      const isOwner = ws.owner_id === userId;
+      const isWsMember = roleMap.has(ws.id);
+      let currentUserRole = 'MEMBER';
+      if (isOwner) {
+        currentUserRole = 'OWNER';
+      } else if (isWsMember) {
+        currentUserRole = roleMap.get(ws.id) || 'MEMBER';
+      } else {
+        currentUserRole = 'GUEST'; // Người dùng chỉ là thành viên của 1 số Bảng trong WS này
+      }
+
+      let boardsList = ws.boards || [];
+      // Nếu chỉ là GUEST (không phải thành viên chính thức của Workspace), chỉ hiển thị đúng các Bảng mà user có tham gia
+      if (currentUserRole === 'GUEST') {
+        const guestBoards = userBoardMap.get(ws.id) || [];
+        const guestBoardIds = new Set(guestBoards.map((b: any) => b.id));
+        boardsList = boardsList.filter((b: any) => guestBoardIds.has(b.id));
+      }
+
+      return {
+        ...ws,
+        currentUserRole,
+        isOwner,
+        isAdmin: currentUserRole === 'OWNER' || currentUserRole === 'ADMIN',
+        isGuest: currentUserRole === 'GUEST',
+        boards: boardsList,
+        _count: {
+          members: ws.members?.length || 0,
+          boards: boardsList.length,
+        },
+      };
+    });
   }
 
   async findById(workspaceId: string, userId: string) {
@@ -154,11 +209,80 @@ export class WorkspacesService {
 
     const currentUserRole = workspace.owner_id === userId ? 'OWNER' : currentMember?.role || 'MEMBER';
 
+    // Query guests from boards belonging to this workspace
+    const boardIds = (workspace.boards || []).map((b: any) => b.id);
+    let guests: any[] = [];
+
+    if (boardIds.length > 0) {
+      const { data: boardMembers } = await this.supabase
+        .from('board_members')
+        .select(`
+          id,
+          board_id,
+          user_id,
+          role,
+          joined_at,
+          user:users (id, name, email, avatar),
+          board:boards (id, name)
+        `)
+        .in('board_id', boardIds);
+
+      if (boardMembers && boardMembers.length > 0) {
+        const wsMemberUserIds = new Set((workspace.members || []).map((m: any) => m.user_id));
+        wsMemberUserIds.add(workspace.owner_id);
+
+        const guestMap = new Map<string, {
+          user: any;
+          boards: Array<{ id: string; name: string; role: string; boardMemberId: string; joined_at?: string }>;
+        }>();
+
+        for (const bm of boardMembers as any[]) {
+          if (!wsMemberUserIds.has(bm.user_id) && bm.user) {
+            if (!guestMap.has(bm.user_id)) {
+              guestMap.set(bm.user_id, {
+                user: bm.user,
+                boards: [],
+              });
+            }
+            guestMap.get(bm.user_id)!.boards.push({
+              id: bm.board?.id || bm.board_id,
+              name: bm.board?.name || 'Bảng',
+              role: bm.role,
+              boardMemberId: bm.id,
+              joined_at: bm.joined_at,
+            });
+          }
+        }
+
+        guests = Array.from(guestMap.entries()).map(([uId, data]) => {
+          const isMulti = data.boards.length > 1;
+          return {
+            id: uId,
+            user_id: uId,
+            user: data.user,
+            guestType: isMulti ? 'MULTI_BOARD' : 'SINGLE_BOARD',
+            guestTypeLabel: isMulti ? 'Khách đa bảng' : 'Khách 1 bảng',
+            boardCount: data.boards.length,
+            boards: data.boards,
+          };
+        });
+      }
+    }
+
+    const singleBoardGuests = guests.filter((g) => g.guestType === 'SINGLE_BOARD');
+    const multiBoardGuests = guests.filter((g) => g.guestType === 'MULTI_BOARD');
+
     return {
       ...workspace,
       currentUserRole,
       isOwner: workspace.owner_id === userId,
       isAdmin: currentUserRole === 'OWNER' || currentUserRole === 'ADMIN',
+      guests,
+      singleBoardGuests,
+      multiBoardGuests,
+      guestCount: guests.length,
+      singleBoardGuestsCount: singleBoardGuests.length,
+      multiBoardGuestsCount: multiBoardGuests.length,
     };
   }
 
@@ -272,12 +396,34 @@ export class WorkspacesService {
       throw new BadRequestException(error.message);
     }
 
+    const targetUserObj = Array.isArray((updated as any)?.user) ? (updated as any)?.user[0] : (updated as any)?.user;
+    const targetName = targetUserObj?.name || targetUserObj?.email || 'thành viên';
+    const roleLabel = dto.role === 'ADMIN' ? 'Quản trị viên' : 'Thành viên';
+
     await this.activitiesService.logActivity({
       workspaceId,
       userId: currentUserId,
-      action: `đã đổi vai trò thành viên thành ${dto.role}`,
+      action: `đã đổi vai trò của "${targetName}" thành ${roleLabel}`,
       targetType: `workspace:${workspaceId}`,
     });
+
+    if (currentUserId !== targetUserId) {
+      const { data: changerUser } = await this.supabase
+        .from('users')
+        .select('name')
+        .eq('id', currentUserId)
+        .maybeSingle();
+
+      const changerName = changerUser?.name || 'Quản trị viên';
+      this.notificationsService
+        .createNotification({
+          userId: targetUserId,
+          title: 'Thay đổi vai trò trong Không gian làm việc',
+          message: `${changerName} đã thay đổi vai trò của bạn thành "${roleLabel}" trong Không gian làm việc "${workspace.name}".`,
+          type: 'WORKSPACE_ROLE_UPDATED',
+        })
+        .catch(() => {});
+    }
 
     this.supabase.emitWorkspaceEvent(workspaceId, 'WORKSPACE_MEMBERS_CHANGED', {
       senderId: currentUserId,
@@ -472,7 +618,10 @@ export class WorkspacesService {
   }
 
   async createInvite(workspaceId: string, currentUserId: string, dto: InviteMemberDto) {
-    await this.checkAdminOrOwner(workspaceId, currentUserId);
+    const { workspace, currentMember } = await this.getWorkspaceAndMember(workspaceId, currentUserId);
+    if (currentMember.role !== 'OWNER' && currentMember.role !== 'ADMIN') {
+      throw new ForbiddenException('Bạn không có quyền quản lý thành viên trong Workspace này');
+    }
     const normalizedEmail = dto.email.toLowerCase().trim();
 
     // 1. Kiểm tra nếu người dùng đã có tài khoản
@@ -481,6 +630,13 @@ export class WorkspacesService {
       .select('id, name, email, avatar')
       .eq('email', normalizedEmail)
       .maybeSingle();
+
+    const { data: inviterUser } = await this.supabase
+      .from('users')
+      .select('name')
+      .eq('id', currentUserId)
+      .maybeSingle();
+    const inviterName = inviterUser?.name || 'Quản trị viên';
 
     if (targetUser) {
       const { data: existingMember } = await this.supabase
@@ -513,6 +669,16 @@ export class WorkspacesService {
           .single();
 
         if (error) throw new BadRequestException(error.message);
+
+        // Gửi thông báo cho thành viên vừa được thêm trực tiếp
+        this.notificationsService
+          .createNotification({
+            userId: targetUser.id,
+            title: 'Thành viên Không gian làm việc mới',
+            message: `${inviterName} đã thêm bạn vào không gian làm việc "${workspace.name}".`,
+            type: 'WORKSPACE_INVITE',
+          })
+          .catch(() => {});
 
         return {
           type: 'ADDED_DIRECTLY',
@@ -565,6 +731,18 @@ export class WorkspacesService {
       action: `đã gửi lời mời tham gia tới ${normalizedEmail}`,
       targetType: `workspace:${workspaceId}`,
     });
+
+    // Nếu người được mời qua email đã có tài khoản, gửi thông báo in-app
+    if (targetUser) {
+      this.notificationsService
+        .createNotification({
+          userId: targetUser.id,
+          title: 'Lời mời tham gia Không gian làm việc',
+          message: `${inviterName} đã mời bạn tham gia không gian làm việc "${workspace.name}".`,
+          type: 'WORKSPACE_INVITE',
+        })
+        .catch(() => {});
+    }
 
     this.supabase.emitWorkspaceEvent(workspaceId, 'WORKSPACE_MEMBERS_CHANGED', {
       senderId: currentUserId,
@@ -756,6 +934,15 @@ export class WorkspacesService {
       await this.checkAdminOrOwner(workspaceId, currentUserId);
     }
 
+    // Lấy thông tin thành viên bị xóa để ghi rõ tên trong dòng hoạt động
+    const { data: targetUser } = await this.supabase
+      .from('users')
+      .select('id, name, email')
+      .eq('id', targetUserId)
+      .maybeSingle();
+
+    const targetName = targetUser?.name || targetUser?.email || 'thành viên';
+
     const { error } = await this.supabase
       .from('workspace_members')
       .delete()
@@ -769,9 +956,27 @@ export class WorkspacesService {
     await this.activitiesService.logActivity({
       workspaceId,
       userId: currentUserId,
-      action: `đã xóa thành viên khỏi Không gian làm việc`,
+      action: `đã xóa thành viên "${targetName}" khỏi Không gian làm việc`,
       targetType: `workspace:${workspaceId}`,
     });
+
+    if (currentUserId !== targetUserId) {
+      const { data: removerUser } = await this.supabase
+        .from('users')
+        .select('name')
+        .eq('id', currentUserId)
+        .maybeSingle();
+
+      const removerName = removerUser?.name || 'Quản trị viên';
+      this.notificationsService
+        .createNotification({
+          userId: targetUserId,
+          title: 'Thông báo rời khỏi Không gian làm việc',
+          message: `Bạn đã bị ${removerName} xóa khỏi không gian làm việc "${workspace.name}".`,
+          type: 'WORKSPACE_REMOVED',
+        })
+        .catch(() => {});
+    }
 
     this.supabase.emitWorkspaceEvent(workspaceId, 'WORKSPACE_MEMBERS_CHANGED', {
       senderId: currentUserId,
@@ -779,6 +984,103 @@ export class WorkspacesService {
     this.supabase.emitUserEvent(targetUserId, 'USER_WORKSPACES_CHANGED', {});
 
     return { message: 'Đã xóa thành viên khỏi Workspace' };
+  }
+
+  /**
+   * Xóa một Khách khỏi toàn bộ các Bảng trong Không gian làm việc
+   */
+  async removeGuestFromWorkspace(workspaceId: string, currentUserId: string, guestUserId: string) {
+    await this.checkAdminOrOwner(workspaceId, currentUserId);
+
+    const { data: workspace } = await this.supabase
+      .from('workspaces')
+      .select('id, name')
+      .eq('id', workspaceId)
+      .maybeSingle();
+
+    if (!workspace) {
+      throw new NotFoundException('Không tìm thấy Workspace');
+    }
+
+    const { data: boards } = await this.supabase
+      .from('boards')
+      .select('id')
+      .eq('workspace_id', workspaceId);
+
+    const boardIds = (boards || []).map((b) => b.id);
+    if (boardIds.length === 0) {
+      return { message: 'Không có Bảng nào để xóa khách' };
+    }
+
+    const { data: targetUser } = await this.supabase
+      .from('users')
+      .select('id, name, email')
+      .eq('id', guestUserId)
+      .maybeSingle();
+
+    const targetName = targetUser?.name || targetUser?.email || 'khách';
+
+    const { error } = await this.supabase
+      .from('board_members')
+      .delete()
+      .in('board_id', boardIds)
+      .eq('user_id', guestUserId);
+
+    if (error) {
+      throw new BadRequestException(error.message);
+    }
+
+    await this.activitiesService.logActivity({
+      workspaceId,
+      userId: currentUserId,
+      action: `đã xóa khách "${targetName}" khỏi các Bảng trong Không gian làm việc`,
+      targetType: `workspace:${workspaceId}`,
+    });
+
+    const { data: removerUser } = await this.supabase
+      .from('users')
+      .select('name')
+      .eq('id', currentUserId)
+      .maybeSingle();
+
+    const removerName = removerUser?.name || 'Quản trị viên';
+    this.notificationsService
+      .createNotification({
+        userId: guestUserId,
+        title: 'Thông báo rời khỏi Bảng Không gian làm việc',
+        message: `Bạn đã bị ${removerName} xóa khỏi các Bảng trong Không gian làm việc "${workspace.name}".`,
+        type: 'WORKSPACE_REMOVED',
+      })
+      .catch(() => {});
+
+    return { message: `Đã xóa khách "${targetName}" khỏi các Bảng trong Không gian làm việc` };
+  }
+
+  /**
+   * Chuyển đổi Khách thành Thành viên chính thức của Workspace
+   */
+  async convertGuestToMember(
+    workspaceId: string,
+    currentUserId: string,
+    guestUserId: string,
+    role: 'MEMBER' | 'ADMIN' = 'MEMBER',
+  ) {
+    await this.checkAdminOrOwner(workspaceId, currentUserId);
+
+    const { data: targetUser } = await this.supabase
+      .from('users')
+      .select('id, email, name')
+      .eq('id', guestUserId)
+      .maybeSingle();
+
+    if (!targetUser || !targetUser.email) {
+      throw new NotFoundException('Không tìm thấy người dùng');
+    }
+
+    return this.addMember(workspaceId, currentUserId, {
+      email: targetUser.email,
+      role: role || 'MEMBER',
+    });
   }
 
   private async checkAdminOrOwner(workspaceId: string, userId: string) {

@@ -53,4 +53,21 @@ export class UsersController {
   async getMyInvitations(@CurrentUser('id') userId: string) {
     return this.usersService.getUserInvitations(userId);
   }
+
+  @Get('notification-preferences')
+  @ApiOperation({ summary: 'Lấy cài đặt tùy chọn nhận thông báo của người dùng' })
+  @ApiResponse({ status: 200, description: 'Tùy chọn nhận thông báo' })
+  async getNotificationPreferences(@CurrentUser('id') userId: string) {
+    return this.usersService.getNotificationPreferences(userId);
+  }
+
+  @Patch('notification-preferences')
+  @ApiOperation({ summary: 'Cập nhật cài đặt tùy chọn nhận thông báo của người dùng' })
+  @ApiResponse({ status: 200, description: 'Cập nhật tùy chọn thông báo thành công' })
+  async updateNotificationPreferences(
+    @CurrentUser('id') userId: string,
+    @Body() dto: Record<string, any>,
+  ) {
+    return this.usersService.updateNotificationPreferences(userId, dto);
+  }
 }

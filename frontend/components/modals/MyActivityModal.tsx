@@ -162,6 +162,16 @@ export default function MyActivityModal({
   });
 
   const handleItemClick = (act: ActivityItem) => {
+    const isRemovalAction =
+      act.action.toLowerCase().includes('đã xóa') ||
+      act.action.toLowerCase().includes('đã rời khỏi') ||
+      act.action.toLowerCase().includes('xóa thành viên');
+
+    if (isRemovalAction) {
+      alert('Không thể chuyển tiếp: Hoạt động này ghi nhận thao tác xóa hoặc rời khỏi dự án.');
+      return;
+    }
+
     if (act.target_type.startsWith('card:')) {
       const cardId = act.target_meta?.card_id || act.target_type.replace('card:', '');
       const boardId = act.target_meta?.board_id;

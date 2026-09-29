@@ -21,6 +21,8 @@ import {
   Clock,
   AlertCircle,
   AlertTriangle,
+  UserPlus,
+  UserX,
 } from 'lucide-react';
 
 export interface NotificationItem {
@@ -285,15 +287,17 @@ export default function NotificationPopover({
           </div>
         );
       case 'BOARD_INVITE':
-        return (
-          <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0 shadow-xs border border-purple-200/60">
-            <Layout className="w-4 h-4" />
-          </div>
-        );
       case 'WORKSPACE_INVITE':
         return (
           <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 shadow-xs border border-indigo-200/60">
-            <Briefcase className="w-4 h-4" />
+            <UserPlus className="w-4 h-4" />
+          </div>
+        );
+      case 'BOARD_REMOVED':
+      case 'WORKSPACE_REMOVED':
+        return (
+          <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 shadow-xs border border-rose-200/70">
+            <UserX className="w-4 h-4" />
           </div>
         );
       default:
