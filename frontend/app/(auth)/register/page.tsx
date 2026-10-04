@@ -50,19 +50,19 @@ function RegisterForm() {
   };
 
   return (
-    <div className="w-full max-w-md glass-panel-strong p-8 sm:p-10 border border-white/60">
+    <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-300 p-8 sm:p-10 relative">
       <div className="flex flex-col items-center mb-8">
-        <div className="w-14 h-14 rounded-2xl bg-[#2b1572] flex items-center justify-center text-[#a6d1fd] shadow-lg mb-3 shadow-[#2b1572]/20">
-          <LayoutGrid className="w-7 h-7" />
+        <div className="w-12 h-12 rounded-md bg-slate-900 flex items-center justify-center text-white shadow-2xs mb-3">
+          <LayoutGrid className="w-6 h-6" />
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#2b1572]">Tạo tài khoản Planify</h1>
-        <p className="text-sm text-[#2b1572]/70 mt-1">
+        <h1 className="text-xl sm:text-2xl font-semibold text-slate-900">Tạo tài khoản Planify</h1>
+        <p className="text-xs text-slate-500 mt-1 text-center">
           Bắt đầu trải nghiệm quản lý công việc thế hệ mới
         </p>
       </div>
 
       {error && (
-        <div className="mb-6 p-3.5 rounded-xl bg-[#c40000]/10 border border-[#c40000]/20 text-[#c40000] text-sm font-medium flex items-center gap-2">
+        <div className="mb-4 p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
           <span>⚠️</span>
           <span>{error}</span>
         </div>
@@ -70,59 +70,59 @@ function RegisterForm() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-[#2b1572]/80 mb-1.5">
+          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
             Họ và tên
           </label>
           <div className="relative">
-            <User className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#2b1572]/40" />
+            <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Nguyễn Văn A"
-              className="w-full pl-11 pr-4 py-3 text-sm glass-input placeholder:text-[#2b1572]/30 text-[#2b1572] font-medium"
+              className="w-full pl-10 pr-4 py-2.5 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-slate-800 transition-colors"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-[#2b1572]/80 mb-1.5">
+          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
             Email
           </label>
           <div className="relative">
-            <Mail className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#2b1572]/40" />
+            <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="tenban@example.com"
-              className="w-full pl-11 pr-4 py-3 text-sm glass-input placeholder:text-[#2b1572]/30 text-[#2b1572] font-medium"
+              className="w-full pl-10 pr-4 py-2.5 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-slate-800 transition-colors"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-semibold uppercase tracking-wider text-[#2b1572]/80 mb-1.5">
+          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
             Mật khẩu
           </label>
           <div className="relative">
-            <Lock className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#2b1572]/40" />
+            <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type={showPassword ? 'text' : 'password'}
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Tối thiểu 6 ký tự"
-              className="w-full pl-11 pr-11 py-3 text-sm glass-input placeholder:text-[#2b1572]/30 text-[#2b1572] font-medium"
+              className="w-full pl-10 pr-10 py-2.5 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-slate-800 transition-colors"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#2b1572]/40 hover:text-[#2b1572] transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
             >
-              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
         </div>
@@ -131,11 +131,11 @@ function RegisterForm() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3.5 px-4 btn-primary text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" />
                 <span>Đang khởi tạo tài khoản...</span>
               </>
             ) : (
@@ -148,12 +148,12 @@ function RegisterForm() {
         </div>
       </form>
 
-      <div className="mt-8 pt-6 border-t border-[#2b1572]/10 text-center">
-        <p className="text-sm text-[#2b1572]/70">
+      <div className="mt-8 pt-6 border-t border-slate-200 text-center">
+        <p className="text-xs text-slate-500">
           Đã có tài khoản?{' '}
           <Link
             href={`/login${redirectUrl !== '/dashboard' ? `?redirect=${encodeURIComponent(redirectUrl)}` : ''}`}
-            className="font-bold text-[#2b1572] hover:underline"
+            className="font-semibold text-slate-900 hover:underline"
           >
             Đăng nhập ngay
           </Link>
@@ -165,12 +165,8 @@ function RegisterForm() {
 
 export default function RegisterPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative">
-      {/* Glow Orbs background effect */}
-      <div className="absolute top-1/4 right-1/4 w-80 h-80 rounded-full bg-[#a6d1fd]/30 blur-3xl pointer-events-none -z-10" />
-      <div className="absolute bottom-1/4 left-1/4 w-80 h-80 rounded-full bg-[#a000c8]/20 blur-3xl pointer-events-none -z-10" />
-
-      <Suspense fallback={<div className="text-sm font-bold text-[#2b1572]">Đang tải...</div>}>
+    <div className="min-h-screen flex items-center justify-center p-4 relative bg-[#f8fafc] bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:24px_24px]">
+      <Suspense fallback={<div className="text-xs font-semibold text-slate-700">Đang tải...</div>}>
         <RegisterForm />
       </Suspense>
     </div>

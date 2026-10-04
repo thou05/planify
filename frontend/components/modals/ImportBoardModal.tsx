@@ -464,28 +464,28 @@ export default function ImportBoardModal({
   const isFileValid = Boolean(validationResult && (validationResult.isValid ?? validationResult.valid));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#2b1572]/25 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-lg glass-strong border border-white/80 rounded-3xl p-6 sm:p-8 relative shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
+      <div className="w-full max-w-lg bg-white rounded-lg shadow-xl border border-slate-300 p-6 sm:p-7 relative overflow-hidden flex flex-col max-h-[90vh]">
         <button
           onClick={handleClose}
-          className="absolute top-5 right-5 p-2 rounded-full hover:bg-white/40 text-[#2b1572]/60 hover:text-[#2b1572] transition-colors cursor-pointer"
+          className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
 
         {/* Header */}
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-11 h-11 rounded-2xl bg-[#2b1572] flex items-center justify-center text-[#a6d1fd] shadow-md shadow-[#2b1572]/20">
-            <Upload className="w-5 h-5" />
+          <div className="w-9 h-9 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800">
+            <Upload className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-[#2b1572]">Nhập dữ liệu (Import)</h2>
-            <p className="text-xs text-[#2b1572]/70">Nhập danh sách & thẻ từ tệp JSON hoặc Excel (.xlsx)</p>
+            <h2 className="text-base font-bold text-slate-900">Nhập dữ liệu (Import)</h2>
+            <p className="text-xs text-slate-500">Nhập danh sách & thẻ từ tệp JSON hoặc Excel (.xlsx)</p>
           </div>
         </div>
 
         {errorMsg && (
-          <div className="mb-4 p-3 rounded-xl bg-[#c40000]/10 border border-[#c40000]/20 text-[#c40000] text-xs font-semibold flex items-center gap-2">
+          <div className="mb-4 p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
             <XCircle className="w-4 h-4 shrink-0" />
             <span>{errorMsg}</span>
           </div>
@@ -498,7 +498,7 @@ export default function ImportBoardModal({
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-[#2b1572]/30 hover:border-[#2b1572] rounded-3xl p-8 flex flex-col items-center justify-center text-center cursor-pointer bg-white/40 hover:bg-white/60 transition-all group"
+              className="border border-dashed border-slate-300 hover:border-slate-800 rounded-lg p-7 flex flex-col items-center justify-center text-center cursor-pointer bg-slate-50/60 hover:bg-slate-50 transition-colors group"
             >
               <input
                 ref={fileInputRef}
@@ -507,15 +507,15 @@ export default function ImportBoardModal({
                 onChange={handleFileChange}
                 className="hidden"
               />
-              <div className="w-14 h-14 rounded-2xl bg-[#2b1572]/10 group-hover:bg-[#2b1572]/20 text-[#2b1572] flex items-center justify-center mb-3 transition-colors">
-                <Upload className="w-7 h-7" />
+              <div className="w-12 h-12 rounded-md bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center mb-3 group-hover:bg-slate-200 transition-colors">
+                <Upload className="w-6 h-6" />
               </div>
-              <div className="text-sm font-bold text-[#2b1572] mb-1">
+              <div className="text-xs font-bold text-slate-900 mb-1">
                 Kéo thả tệp vào đây hoặc nhấn để duyệt
               </div>
-              <div className="text-xs text-[#2b1572]/60 flex items-center gap-2">
+              <div className="text-[11px] text-slate-500 flex items-center gap-2">
                 <span className="flex items-center gap-1">
-                  <FileJson className="w-3.5 h-3.5" /> JSON (.json)
+                  <FileJson className="w-3.5 h-3.5 text-amber-600" /> JSON (.json)
                 </span>
                 <span>•</span>
                 <span className="flex items-center gap-1">
@@ -528,8 +528,8 @@ export default function ImportBoardModal({
           {/* Loading validation */}
           {isValidating && (
             <div className="p-8 text-center space-y-3">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#2b1572]" />
-              <div className="text-xs font-bold text-[#2b1572]">Đang kiểm tra và phân tích tệp...</div>
+              <Loader2 className="w-7 h-7 animate-spin mx-auto text-slate-800" />
+              <div className="text-xs font-semibold text-slate-700">Đang kiểm tra và phân tích tệp...</div>
             </div>
           )}
 
@@ -537,18 +537,18 @@ export default function ImportBoardModal({
           {file && !isValidating && validationResult && (
             <div className="space-y-4 animate-fade-in">
               {/* File details card */}
-              <div className="p-3.5 rounded-2xl bg-white/70 border border-white flex items-center justify-between">
+              <div className="p-3 rounded-md bg-slate-50 border border-slate-200 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-[#2b1572]/10 text-[#2b1572] flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-md bg-white border border-slate-200 flex items-center justify-center">
                     {file.name.endsWith('.json') ? (
-                      <FileJson className="w-5 h-5 text-[#2b1572]" />
+                      <FileJson className="w-4 h-4 text-amber-600" />
                     ) : (
-                      <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
+                      <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
                     )}
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-[#2b1572] line-clamp-1">{file.name}</div>
-                    <div className="text-[10px] text-[#2b1572]/60">
+                    <div className="text-xs font-bold text-slate-900 line-clamp-1">{file.name}</div>
+                    <div className="text-[10px] text-slate-500">
                       {(file.size / 1024).toFixed(1)} KB
                     </div>
                   </div>
@@ -556,7 +556,7 @@ export default function ImportBoardModal({
                 <button
                   type="button"
                   onClick={handleResetFile}
-                  className="px-2.5 py-1 text-[11px] font-semibold text-[#2b1572]/70 hover:text-[#c40000] hover:bg-white/80 rounded-lg transition-colors cursor-pointer"
+                  className="px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:text-rose-600 hover:bg-slate-200/60 rounded-md transition-colors cursor-pointer"
                 >
                   Chọn tệp khác
                 </button>
@@ -564,21 +564,21 @@ export default function ImportBoardModal({
 
               {/* Validation Status */}
               {isFileValid ? (
-                <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 flex items-start gap-2.5">
+                <div className="p-3 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-start gap-2.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                   <div className="text-xs">
-                    <div className="font-bold">Tệp hợp lệ để nhập</div>
-                    <div className="text-[11px] opacity-80">
+                    <div className="font-bold text-emerald-900">Tệp hợp lệ để nhập</div>
+                    <div className="text-[11px] text-emerald-700">
                       Cấu trúc dữ liệu chuẩn, sẵn sàng tạo danh sách và thẻ.
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="p-3 rounded-2xl bg-[#c40000]/10 border border-[#c40000]/20 text-[#c40000] flex items-start gap-2.5">
-                  <XCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <div className="p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-800 flex items-start gap-2.5">
+                  <XCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
                   <div className="text-xs">
-                    <div className="font-bold">Tệp có lỗi cấu trúc</div>
-                    <ul className="list-disc list-inside mt-1 space-y-0.5 text-[11px]">
+                    <div className="font-bold text-rose-900">Tệp có lỗi cấu trúc</div>
+                    <ul className="list-disc list-inside mt-1 space-y-0.5 text-[11px] text-rose-700">
                       {(validationResult.errors || []).map((e, idx) => (
                         <li key={idx}>{e}</li>
                       ))}
@@ -589,22 +589,22 @@ export default function ImportBoardModal({
 
               {/* Warnings if any */}
               {validationResult.warnings && validationResult.warnings.length > 0 && (
-                <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-800 space-y-1.5">
+                <div className="p-3 rounded-md bg-amber-50 border border-amber-200 text-amber-800 space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-xs font-bold">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900">
                       <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
                       <span>{validationResult.warnings.length} cảnh báo trong dữ liệu</span>
                     </div>
                     <button
                       type="button"
                       onClick={() => setShowWarnings(!showWarnings)}
-                      className="text-[10px] font-bold text-amber-700 underline cursor-pointer"
+                      className="text-[10px] font-bold text-amber-800 underline cursor-pointer"
                     >
                       {showWarnings ? 'Ẩn chi tiết' : 'Xem chi tiết'}
                     </button>
                   </div>
                   {showWarnings && (
-                    <ul className="list-disc list-inside text-[10px] space-y-0.5 text-amber-700/90 pt-1">
+                    <ul className="list-disc list-inside text-[10px] space-y-0.5 text-amber-800/90 pt-1">
                       {validationResult.warnings.slice(0, 10).map((w, idx) => (
                         <li key={idx}>{w}</li>
                       ))}
@@ -614,39 +614,39 @@ export default function ImportBoardModal({
               )}
 
               {/* Preview Stats */}
-              <div className="bg-white/40 border border-white/60 rounded-2xl p-3.5">
-                <div className="text-xs font-bold text-[#2b1572] mb-2">Xem trước nội dung (Preview)</div>
+              <div className="bg-slate-50 border border-slate-200 rounded-md p-3">
+                <div className="text-xs font-semibold uppercase tracking-wider text-slate-700 mb-2">Xem trước nội dung (Preview)</div>
                 <div className="grid grid-cols-4 gap-2 text-center">
-                  <div className="p-2 rounded-xl bg-white/60 border border-white/80">
-                    <div className="text-base font-bold text-[#2b1572]">
+                  <div className="p-2 rounded-md bg-white border border-slate-200">
+                    <div className="text-base font-bold text-slate-900">
                       {validationResult.summary?.totalLists ?? validationResult.summary?.listsCount ?? 0}
                     </div>
-                    <div className="text-[10px] font-semibold text-[#2b1572]/60">Danh sách</div>
+                    <div className="text-[10px] font-semibold text-slate-500">Danh sách</div>
                   </div>
-                  <div className="p-2 rounded-xl bg-white/60 border border-white/80">
-                    <div className="text-base font-bold text-[#2b1572]">
+                  <div className="p-2 rounded-md bg-white border border-slate-200">
+                    <div className="text-base font-bold text-slate-900">
                       {validationResult.summary?.totalCards ?? validationResult.summary?.cardsCount ?? 0}
                     </div>
-                    <div className="text-[10px] font-semibold text-[#2b1572]/60">Thẻ</div>
+                    <div className="text-[10px] font-semibold text-slate-500">Thẻ</div>
                   </div>
-                  <div className="p-2 rounded-xl bg-white/60 border border-white/80">
-                    <div className="text-base font-bold text-[#2b1572]">
+                  <div className="p-2 rounded-md bg-white border border-slate-200">
+                    <div className="text-base font-bold text-slate-900">
                       {validationResult.summary?.totalLabels ?? validationResult.summary?.labelsCount ?? 0}
                     </div>
-                    <div className="text-[10px] font-semibold text-[#2b1572]/60">Nhãn</div>
+                    <div className="text-[10px] font-semibold text-slate-500">Nhãn</div>
                   </div>
-                  <div className="p-2 rounded-xl bg-white/60 border border-white/80">
-                    <div className="text-base font-bold text-[#2b1572]">
+                  <div className="p-2 rounded-md bg-white border border-slate-200">
+                    <div className="text-base font-bold text-slate-900">
                       {validationResult.summary?.totalChecklists ?? validationResult.summary?.checklistsCount ?? 0}
                     </div>
-                    <div className="text-[10px] font-semibold text-[#2b1572]/60">Checklist</div>
+                    <div className="text-[10px] font-semibold text-slate-500">Checklist</div>
                   </div>
                 </div>
               </div>
 
               {/* Step 3: Destination selection */}
               <div className="space-y-3 pt-1">
-                <label className="block text-xs font-bold text-[#2b1572]">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
                   Chọn vị trí nhập dữ liệu (Destination)
                 </label>
 
@@ -654,10 +654,10 @@ export default function ImportBoardModal({
                   {/* Option 1: New Board */}
                   <div
                     onClick={() => setDestination('new')}
-                    className={`p-3 rounded-2xl border transition-all cursor-pointer ${
+                    className={`p-3 rounded-md border transition-all cursor-pointer ${
                       destination === 'new'
-                        ? 'bg-white/90 border-[#2b1572] ring-1 ring-[#2b1572]/20'
-                        : 'bg-white/40 border-white/60 hover:bg-white/70'
+                        ? 'bg-white border-slate-800 ring-1 ring-slate-800'
+                        : 'bg-slate-50/60 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
@@ -666,14 +666,14 @@ export default function ImportBoardModal({
                         name="destination"
                         checked={destination === 'new'}
                         onChange={() => setDestination('new')}
-                        className="text-[#2b1572] focus:ring-[#2b1572]"
+                        className="text-slate-900 focus:ring-slate-900"
                       />
                       <div className="flex-1">
-                        <div className="text-xs font-bold text-[#2b1572] flex items-center gap-1.5">
-                          <FolderPlus className="w-3.5 h-3.5 text-[#2b1572]" />
+                        <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                          <FolderPlus className="w-3.5 h-3.5 text-slate-700" />
                           <span>Tạo Bảng mới (New Board)</span>
                         </div>
-                        <div className="text-[10px] text-[#2b1572]/60">
+                        <div className="text-[10px] text-slate-500">
                           Tạo bảng riêng biệt chứa toàn bộ dữ liệu tệp nhập
                         </div>
                       </div>
@@ -681,7 +681,7 @@ export default function ImportBoardModal({
 
                     {destination === 'new' && (
                       <div className="mt-3 pl-6">
-                        <label className="block text-[11px] font-semibold text-[#2b1572]/80 mb-1">
+                        <label className="block text-[11px] font-semibold text-slate-700 mb-1">
                           Tên Bảng mới:
                         </label>
                         <input
@@ -689,7 +689,7 @@ export default function ImportBoardModal({
                           value={newBoardTitle}
                           onChange={(e) => setNewBoardTitle(e.target.value)}
                           placeholder="Nhập tên bảng..."
-                          className="w-full px-3 py-1.5 text-xs glass-input font-bold text-[#2b1572]"
+                          className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800"
                         />
                       </div>
                     )}
@@ -699,10 +699,10 @@ export default function ImportBoardModal({
                   {currentBoardId && (
                     <div
                       onClick={() => setDestination('existing')}
-                      className={`p-3 rounded-2xl border transition-all cursor-pointer ${
+                      className={`p-3 rounded-md border transition-all cursor-pointer ${
                         destination === 'existing'
-                          ? 'bg-white/90 border-[#2b1572] ring-1 ring-[#2b1572]/20'
-                          : 'bg-white/40 border-white/60 hover:bg-white/70'
+                          ? 'bg-white border-slate-800 ring-1 ring-slate-800'
+                          : 'bg-slate-50/60 border-slate-200 hover:bg-slate-50'
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
@@ -711,25 +711,25 @@ export default function ImportBoardModal({
                           name="destination"
                           checked={destination === 'existing'}
                           onChange={() => setDestination('existing')}
-                          className="text-[#2b1572] focus:ring-[#2b1572]"
+                          className="text-slate-900 focus:ring-slate-900"
                         />
                         <div className="flex-1">
-                          <div className="text-xs font-bold text-[#2b1572] flex items-center gap-1.5">
-                            <Layers className="w-3.5 h-3.5 text-[#2b1572]" />
+                          <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                            <Layers className="w-3.5 h-3.5 text-slate-700" />
                             <span>Nhập vào Bảng hiện tại ({currentBoardTitle || 'Board'})</span>
                           </div>
-                          <div className="text-[10px] text-[#2b1572]/60">
+                          <div className="text-[10px] text-slate-500">
                             Thêm các danh sách và thẻ vào bảng đang mở
                           </div>
                         </div>
                       </div>
 
                       {destination === 'existing' && (
-                        <div className="mt-3 pl-6 space-y-2 border-t border-[#2b1572]/10 pt-2.5">
-                          <label className="block text-[11px] font-bold text-[#2b1572]">
+                        <div className="mt-3 pl-6 space-y-2 border-t border-slate-200 pt-2.5">
+                          <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-700">
                             Xử lý thẻ trùng tên trong cùng danh sách:
                           </label>
-                          <div className="space-y-1.5 text-[11px] text-[#2b1572]/80">
+                          <div className="space-y-1.5 text-[11px] text-slate-700">
                             <label className="flex items-center gap-2 cursor-pointer">
                               <input
                                 type="radio"
@@ -737,7 +737,7 @@ export default function ImportBoardModal({
                                 value="skip"
                                 checked={duplicateStrategy === 'skip'}
                                 onChange={() => setDuplicateStrategy('skip')}
-                                className="text-[#2b1572] focus:ring-[#2b1572]"
+                                className="text-slate-900 focus:ring-slate-900"
                               />
                               <span>Bỏ qua thẻ trùng lặp (Skip)</span>
                             </label>
@@ -748,7 +748,7 @@ export default function ImportBoardModal({
                                 value="replace"
                                 checked={duplicateStrategy === 'replace'}
                                 onChange={() => setDuplicateStrategy('replace')}
-                                className="text-[#2b1572] focus:ring-[#2b1572]"
+                                className="text-slate-900 focus:ring-slate-900"
                               />
                               <span>Cập nhật/Ghi đè mô tả & checklist (Replace)</span>
                             </label>
@@ -759,7 +759,7 @@ export default function ImportBoardModal({
                                 value="create_new"
                                 checked={duplicateStrategy === 'create_new'}
                                 onChange={() => setDuplicateStrategy('create_new')}
-                                className="text-[#2b1572] focus:ring-[#2b1572]"
+                                className="text-slate-900 focus:ring-slate-900"
                               />
                               <span>Tạo thẻ mới trùng tên (Create new)</span>
                             </label>
@@ -775,11 +775,11 @@ export default function ImportBoardModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="pt-4 border-t border-white/60 flex items-center justify-end gap-2.5 mt-2">
+        <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2.5 mt-2">
           <button
             type="button"
             onClick={handleClose}
-            className="px-4 py-2 rounded-xl text-xs font-semibold text-[#2b1572]/70 hover:bg-white/50 cursor-pointer"
+            className="px-4 py-2 rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer transition-colors"
           >
             Hủy
           </button>
@@ -789,7 +789,7 @@ export default function ImportBoardModal({
               type="button"
               onClick={handleExecuteImport}
               disabled={isImporting || !isFileValid}
-              className="px-5 py-2 btn-primary text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs"
+              className="px-4 py-2 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-xs"
             >
               {isImporting ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />

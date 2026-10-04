@@ -92,48 +92,48 @@ export default function InviteMemberModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#2b1572]/20 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-lg glass-strong p-6 sm:p-8 border border-white/60 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
+      <div className="w-full max-w-lg bg-white border border-slate-300 rounded-lg p-6 sm:p-7 relative shadow-xl">
         <button
           onClick={handleClose}
-          className="absolute top-5 right-5 p-1.5 rounded-full hover:bg-white/40 text-[#2b1572]/60 hover:text-[#2b1572] transition-colors cursor-pointer"
+          className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
 
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-[#2b1572] flex items-center justify-center text-[#a6d1fd] shadow-md shadow-[#2b1572]/20">
-            <UserPlus className="w-5 h-5" />
+          <div className="w-9 h-9 rounded-md bg-slate-900 flex items-center justify-center text-white shadow-2xs">
+            <UserPlus className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-[#2b1572]">Mời thành viên</h2>
-            <p className="text-xs text-[#2b1572]/70">
+            <h2 className="text-base font-bold text-slate-900">Mời thành viên</h2>
+            <p className="text-xs text-slate-500">
               Thêm cộng tác viên vào {workspaceName ? <strong>{workspaceName}</strong> : 'Workspace'}
             </p>
           </div>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 rounded-xl bg-[#c40000]/10 border border-[#c40000]/20 text-[#c40000] text-xs font-medium">
+          <div className="mb-4 p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-xs font-medium">
             {error}
           </div>
         )}
 
         {successInfo ? (
           <div className="space-y-4 my-2">
-            <div className="p-4 rounded-xl bg-[#358200]/10 border border-[#358200]/20 text-[#358200] text-xs font-semibold flex items-center gap-2">
-              <Check className="w-4 h-4 shrink-0" />
+            <div className="p-3.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
+              <Check className="w-4 h-4 shrink-0 text-emerald-600" />
               <span>{successInfo.message}</span>
             </div>
 
             {successInfo.inviteLink && (
-              <div className="p-4 rounded-xl bg-white/50 border border-white/70 space-y-2">
+              <div className="p-3.5 rounded-md bg-slate-50 border border-slate-200 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-[#2b1572]/70 uppercase tracking-wider flex items-center gap-1.5">
-                    <LinkIcon className="w-3.5 h-3.5 text-[#2b1572]" />
+                  <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                    <LinkIcon className="w-3.5 h-3.5 text-slate-600" />
                     Đường dẫn mời tham gia:
                   </span>
-                  <span className="text-[10px] text-[#2b1572]/60">Hiệu lực 7 ngày</span>
+                  <span className="text-[10px] text-slate-500">Hiệu lực 7 ngày</span>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -141,11 +141,11 @@ export default function InviteMemberModal({
                     type="text"
                     readOnly
                     value={successInfo.inviteLink}
-                    className="w-full px-3 py-2 text-xs glass-input text-[#2b1572] font-mono bg-white/60 select-all"
+                    className="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md text-slate-800 font-mono select-all focus:outline-none"
                   />
                   <button
                     onClick={handleCopyLink}
-                    className="px-3.5 py-2 btn-primary text-xs font-semibold flex items-center gap-1.5 shrink-0 cursor-pointer shadow-sm"
+                    className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold flex items-center gap-1.5 shrink-0 cursor-pointer transition-colors shadow-2xs"
                   >
                     {copied ? (
                       <>
@@ -163,18 +163,18 @@ export default function InviteMemberModal({
               </div>
             )}
 
-            <div className="pt-2 flex justify-end gap-2">
+            <div className="pt-2 flex justify-end gap-2.5">
               <button
                 type="button"
                 onClick={() => setSuccessInfo(null)}
-                className="px-4 py-2.5 btn-secondary text-xs font-semibold cursor-pointer"
+                className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 rounded-md hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 Mời thêm người khác
               </button>
               <button
                 type="button"
                 onClick={handleClose}
-                className="px-5 py-2.5 btn-primary text-xs font-semibold cursor-pointer"
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold cursor-pointer transition-colors shadow-2xs"
               >
                 Hoàn tất
               </button>
@@ -183,41 +183,41 @@ export default function InviteMemberModal({
         ) : (
           <form onSubmit={handleInvite} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[#2b1572]/80 mb-1.5">
-                Địa chỉ Email <span className="text-[#c40000]">*</span>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Địa chỉ Email <span className="text-red-500">*</span>
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#2b1572]/40" />
+                <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="nhanvien@example.com"
-                  className="w-full pl-10 pr-4 py-2.5 text-xs glass-input placeholder:text-[#2b1572]/30 text-[#2b1572] font-medium"
+                  className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-md placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-slate-800"
                 />
               </div>
-              <p className="text-[11px] text-[#2b1572]/60 mt-1">
+              <p className="text-[11px] text-slate-500 mt-1">
                 Nếu người dùng đã có tài khoản, họ sẽ được thêm ngay. Nếu chưa, hệ thống sẽ tạo link mời.
               </p>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[#2b1572]/80 mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                 Vai trò phân quyền
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setRole('MEMBER')}
-                  className={`p-3 rounded-xl text-left border transition-all cursor-pointer ${
+                  className={`p-3 rounded-md text-left border transition-all cursor-pointer ${
                     role === 'MEMBER'
-                      ? 'bg-white/80 border-[#2b1572] shadow-sm'
-                      : 'bg-white/40 border-white/60 hover:bg-white/60'
+                      ? 'bg-slate-100 border-slate-900 text-slate-900'
+                      : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
                   }`}
                 >
-                  <div className="text-xs font-bold text-[#2b1572] mb-0.5">Thành viên (Member)</div>
-                  <div className="text-[11px] text-[#2b1572]/70 leading-tight">
+                  <div className="text-xs font-bold text-slate-900 mb-0.5">Thành viên (Member)</div>
+                  <div className="text-[11px] text-slate-500 leading-tight">
                     Có thể xem, tạo và chỉnh sửa Board, List, Card được giao.
                   </div>
                 </button>
@@ -225,45 +225,45 @@ export default function InviteMemberModal({
                 <button
                   type="button"
                   onClick={() => setRole('ADMIN')}
-                  className={`p-3 rounded-xl text-left border transition-all cursor-pointer ${
+                  className={`p-3 rounded-md text-left border transition-all cursor-pointer ${
                     role === 'ADMIN'
-                      ? 'bg-white/80 border-[#2b1572] shadow-sm'
-                      : 'bg-white/40 border-white/60 hover:bg-white/60'
+                      ? 'bg-slate-100 border-slate-900 text-slate-900'
+                      : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
                   }`}
                 >
-                  <div className="text-xs font-bold text-[#2b1572] mb-0.5 flex items-center gap-1">
+                  <div className="text-xs font-bold text-slate-900 mb-0.5 flex items-center gap-1">
                     <Shield className="w-3.5 h-3.5" />
                     Quản trị (Admin)
                   </div>
-                  <div className="text-[11px] text-[#2b1572]/70 leading-tight">
+                  <div className="text-[11px] text-slate-500 leading-tight">
                     Quản lý thành viên, cài đặt Workspace và toàn bộ Board.
                   </div>
                 </button>
               </div>
             </div>
 
-            <div className="pt-3 flex items-center justify-end gap-3">
+            <div className="pt-3 flex items-center justify-end gap-2.5">
               <button
                 type="button"
                 onClick={handleClose}
                 disabled={isLoading}
-                className="px-4 py-2.5 btn-secondary text-xs font-semibold cursor-pointer"
+                className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 rounded-md hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 Hủy
               </button>
               <button
                 type="submit"
                 disabled={isLoading || !email.trim()}
-                className="px-5 py-2.5 btn-primary text-xs font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     <span>Đang xử lý...</span>
                   </>
                 ) : (
                   <>
-                    <UserPlus className="w-4 h-4" />
+                    <UserPlus className="w-3.5 h-3.5" />
                     <span>Gửi lời mời</span>
                   </>
                 )}

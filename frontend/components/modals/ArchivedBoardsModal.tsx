@@ -81,47 +81,47 @@ export default function ArchivedBoardsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#2b1572]/20 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-lg glass-strong p-6 sm:p-8 border border-white/60 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
+      <div className="w-full max-w-lg bg-white border border-slate-300 rounded-lg p-6 sm:p-7 relative shadow-xl">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-1.5 rounded-full hover:bg-white/40 text-[#2b1572]/60 hover:text-[#2b1572] transition-colors cursor-pointer"
+          className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
 
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-700 flex items-center justify-center shadow-md">
-            <Archive className="w-5 h-5" />
+          <div className="w-9 h-9 rounded-md bg-amber-100 text-amber-800 flex items-center justify-center border border-amber-300">
+            <Archive className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-[#2b1572]">Bảng công việc đã lưu trữ</h2>
-            <p className="text-xs text-[#2b1572]/70">Khôi phục hoặc xóa vĩnh viễn các bảng lưu trữ</p>
+            <h2 className="text-base font-bold text-slate-900">Bảng công việc đã lưu trữ</h2>
+            <p className="text-xs text-slate-500">Khôi phục hoặc xóa vĩnh viễn các bảng lưu trữ</p>
           </div>
         </div>
 
         {isLoading ? (
           <div className="py-8 flex flex-col items-center gap-2">
-            <Loader2 className="w-6 h-6 animate-spin text-[#2b1572]" />
-            <span className="text-xs text-[#2b1572]/60 font-semibold">Đang tải danh sách...</span>
+            <Loader2 className="w-5 h-5 animate-spin text-slate-700" />
+            <span className="text-xs text-slate-500 font-medium">Đang tải danh sách...</span>
           </div>
         ) : archivedBoards.length === 0 ? (
           <div className="py-10 text-center space-y-2">
-            <AlertCircle className="w-8 h-8 text-[#2b1572]/40 mx-auto" />
-            <p className="text-xs text-[#2b1572]/60 font-medium">
+            <AlertCircle className="w-8 h-8 text-slate-300 mx-auto" />
+            <p className="text-xs text-slate-500 font-medium">
               Không có Bảng nào đang ở trạng thái Lưu trữ trong Không gian này.
             </p>
           </div>
         ) : (
-          <div className="max-h-72 overflow-y-auto divide-y divide-[#2b1572]/10 my-2">
+          <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 my-2">
             {archivedBoards.map((b) => (
               <div key={b.id} className="py-3 flex items-center justify-between gap-3">
                 <div>
-                  <h4 className="text-xs font-bold text-[#2b1572] line-clamp-1">{b.name}</h4>
+                  <h4 className="text-xs font-bold text-slate-900 line-clamp-1">{b.name}</h4>
                   {b.description && (
-                    <p className="text-[11px] text-[#2b1572]/60 line-clamp-1 mt-0.5">{b.description}</p>
+                    <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{b.description}</p>
                   )}
-                  <div className="text-[10px] text-[#2b1572]/50 mt-1">
+                  <div className="text-[10px] text-slate-400 font-mono mt-1">
                     {b._count?.lists || 0} danh sách • {b._count?.members || 0} thành viên
                   </div>
                 </div>
@@ -130,7 +130,7 @@ export default function ArchivedBoardsModal({
                   <button
                     onClick={() => handleRestore(b.id)}
                     disabled={actionLoadingId === b.id}
-                    className="px-3 py-1.5 btn-primary text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
                   >
                     {actionLoadingId === b.id ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -143,7 +143,7 @@ export default function ArchivedBoardsModal({
                   <button
                     onClick={() => handleDeletePermanently(b.id, b.name)}
                     disabled={actionLoadingId === b.id}
-                    className="p-1.5 text-[#2b1572]/40 hover:text-[#c40000] hover:bg-[#c40000]/10 rounded-lg transition-colors cursor-pointer"
+                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
                     title="Xóa vĩnh viễn"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -154,11 +154,11 @@ export default function ArchivedBoardsModal({
           </div>
         )}
 
-        <div className="pt-4 mt-2 border-t border-[#2b1572]/10 flex justify-end">
+        <div className="pt-4 mt-2 border-t border-slate-200 flex justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 btn-secondary text-xs font-semibold cursor-pointer"
+            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-semibold cursor-pointer transition-colors"
           >
             Đóng
           </button>

@@ -225,7 +225,7 @@ export default function AppShell({
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-10 h-10 rounded-full border-3 border-[#2b1572]/20 border-t-[#2b1572] animate-spin" />
+        <div className="w-8 h-8 rounded-full border-2 border-slate-200 border-t-slate-800 animate-spin" />
       </div>
     );
   }
@@ -234,7 +234,7 @@ export default function AppShell({
 
   return (
     <ShellContext.Provider value={shellContextValue}>
-      <div className="min-h-screen flex flex-col h-screen overflow-hidden">
+      <div className="min-h-screen flex flex-col h-screen overflow-hidden bg-[#f8fafc]">
         {/* TopBar */}
         <TopBar
           onOpenCreateWorkspace={() => setIsCreateWsOpen(true)}

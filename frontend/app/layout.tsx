@@ -5,7 +5,7 @@ import AppLayoutClient from '@/components/layout/AppLayoutClient';
 
 export const metadata: Metadata = {
   title: 'Planify — Collaborative Work Management',
-  description: 'Nền tảng quản lý công việc và dự án cộng tác thời gian thực hiện đại phong cách Glassmorphism',
+  description: 'Nền tảng quản lý công việc và dự án Kanban cộng tác thời gian thực hiện đại, chuyên nghiệp',
 };
 
 export default function RootLayout({

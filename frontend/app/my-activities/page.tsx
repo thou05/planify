@@ -150,48 +150,48 @@ export default function MyActivitiesPage() {
     if (actLower.includes('bình luận') || actLower.includes('comment')) {
       return {
         icon: MessageSquare,
-        badgeClass: 'badge-info',
+        badgeClass: 'bg-sky-50 text-sky-700 border border-sky-200',
         label: 'Bình luận',
       };
     }
     if (actLower.includes('đính kèm') || actLower.includes('tệp') || actLower.includes('file')) {
       return {
         icon: Paperclip,
-        badgeClass: 'badge-info',
+        badgeClass: 'bg-slate-100 text-slate-700 border border-slate-200',
         label: 'Tệp đính kèm',
       };
     }
     if (actLower.includes('hoàn thành') || actLower.includes('xong') || actLower.includes('complete')) {
       return {
         icon: CheckSquare,
-        badgeClass: 'badge-success',
+        badgeClass: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
         label: 'Hoàn thành',
       };
     }
     if (actLower.includes('hạn chót') || actLower.includes('ngày hết hạn') || actLower.includes('quá hạn') || actLower.includes('due')) {
       return {
         icon: Clock,
-        badgeClass: 'badge-error',
+        badgeClass: 'bg-rose-50 text-rose-700 border border-rose-200',
         label: 'Thời hạn',
       };
     }
     if (targetType.startsWith('board:')) {
       return {
         icon: Kanban,
-        badgeClass: 'badge-info',
+        badgeClass: 'bg-slate-100 text-slate-700 border border-slate-200',
         label: 'Bảng Kanban',
       };
     }
     if (targetType.startsWith('workspace:')) {
       return {
         icon: Layers,
-        badgeClass: 'badge-ai',
+        badgeClass: 'bg-slate-100 text-slate-700 border border-slate-200',
         label: 'Workspace',
       };
     }
     return {
-      icon: Sparkles,
-      badgeClass: 'badge-ai',
+      icon: Activity,
+      badgeClass: 'bg-slate-100 text-slate-700 border border-slate-200',
       label: 'Hoạt động',
     };
   };
@@ -302,166 +302,163 @@ export default function MyActivitiesPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-12">
-      {/* Welcome / Hero Banner - Exactly matching dashboard/workspace style */}
-      <div className="glass-surface p-6 sm:p-8 relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div className="absolute -right-8 -bottom-8 w-64 h-64 rounded-full bg-[#a6d1fd]/25 blur-3xl pointer-events-none" />
-        <div className="absolute -right-4 -top-8 w-64 h-64 rounded-full bg-[#a000c8]/15 blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 max-w-xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/60 border border-white/80 text-xs font-semibold text-[#2b1572] mb-3">
-            <Sparkles className="w-3.5 h-3.5 text-[#a000c8]" />
-            <span>Nhật ký hành động Planify</span>
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
+            <Activity className="w-3.5 h-3.5 text-slate-600" />
+            <span>Audit Log</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#2b1572] tracking-tight">
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
             Hoạt động của tôi
           </h1>
-          <p className="text-sm text-[#2b1572]/70 mt-1 max-w-xl">
-            Xem lại toàn bộ lịch sử thao tác, chỉnh sửa thẻ, bảng làm việc và không gian làm việc của bạn theo dòng thời gian.
+          <p className="text-xs text-slate-500 mt-1 max-w-xl">
+            Lịch sử toàn bộ thao tác, chỉnh sửa thẻ, bảng và không gian làm việc của bạn theo dòng thời gian.
           </p>
         </div>
 
-        <div className="relative z-10 flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => fetchActivities(true)}
             disabled={isLoading || isRefreshing}
-            className="px-4 py-2 btn-secondary text-xs font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            className="px-3 py-1.5 rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
             title="Làm mới hoạt động"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-[#a000c8]' : 'text-[#2b1572]'}`} />
-            <span>{isRefreshing ? 'Đang cập nhật...' : 'Làm mới'}</span>
+            <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>{isRefreshing ? 'Đang tải...' : 'Làm mới'}</span>
           </button>
         </div>
       </div>
 
-      {/* Quick Statistics Overview - Styled with kanban-card */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="kanban-card p-4 flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-[#2b1572]/10 flex items-center justify-center text-[#2b1572] shrink-0">
-            <Activity className="w-5 h-5" />
+      {/* Quick Statistics Overview */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="p-3.5 bg-white border border-slate-200 rounded-md shadow-2xs flex items-center gap-3">
+          <div className="w-8 h-8 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 shrink-0">
+            <Activity className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-[11px] font-semibold text-[#2b1572]/60 uppercase tracking-wider">Tổng hoạt động</div>
-            <div className="text-xl font-bold text-[#2b1572]">{stats.total}</div>
+            <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Tổng hoạt động</div>
+            <div className="text-lg font-bold text-slate-900">{stats.total}</div>
           </div>
         </div>
 
-        <div className="kanban-card p-4 flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-[#a6d1fd]/30 flex items-center justify-center text-[#2b1572] shrink-0">
-            <CheckSquare className="w-5 h-5" />
+        <div className="p-3.5 bg-white border border-slate-200 rounded-md shadow-2xs flex items-center gap-3">
+          <div className="w-8 h-8 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 shrink-0">
+            <CheckSquare className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-[11px] font-semibold text-[#2b1572]/60 uppercase tracking-wider">Thẻ & Nhiệm vụ</div>
-            <div className="text-xl font-bold text-[#2b1572]">{stats.cardsCount}</div>
+            <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Thẻ & Nhiệm vụ</div>
+            <div className="text-lg font-bold text-slate-900">{stats.cardsCount}</div>
           </div>
         </div>
 
-        <div className="kanban-card p-4 flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-[#a000c8]/15 flex items-center justify-center text-[#a000c8] shrink-0">
-            <Kanban className="w-5 h-5" />
+        <div className="p-3.5 bg-white border border-slate-200 rounded-md shadow-2xs flex items-center gap-3">
+          <div className="w-8 h-8 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 shrink-0">
+            <Kanban className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-[11px] font-semibold text-[#2b1572]/60 uppercase tracking-wider">Bảng Kanban</div>
-            <div className="text-xl font-bold text-[#2b1572]">{stats.boardsCount}</div>
+            <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Bảng Kanban</div>
+            <div className="text-lg font-bold text-slate-900">{stats.boardsCount}</div>
           </div>
         </div>
 
-        <div className="kanban-card p-4 flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-700 shrink-0">
-            <Layers className="w-5 h-5" />
+        <div className="p-3.5 bg-white border border-slate-200 rounded-md shadow-2xs flex items-center gap-3">
+          <div className="w-8 h-8 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 shrink-0">
+            <Layers className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-[11px] font-semibold text-[#2b1572]/60 uppercase tracking-wider">Workspace</div>
-            <div className="text-xl font-bold text-[#2b1572]">{stats.wsCount}</div>
+            <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Workspace</div>
+            <div className="text-lg font-bold text-slate-900">{stats.wsCount}</div>
           </div>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="glass-surface p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3.5">
-        {/* Filter Tabs using btn-primary-glass and btn-secondary */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+      <div className="p-2.5 bg-white border border-slate-200 rounded-md shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        {/* Filter Tabs */}
+        <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
           <button
             onClick={() => setFilter('all')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+            className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors shrink-0 cursor-pointer ${
               filter === 'all'
-                ? 'btn-primary shadow-xs'
-                : 'btn-secondary text-[#2b1572]/70'
+                ? 'bg-slate-900 text-white'
+                : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             Tất cả ({activities.length})
           </button>
           <button
             onClick={() => setFilter('card')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+            className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors shrink-0 cursor-pointer ${
               filter === 'card'
-                ? 'btn-primary shadow-xs'
-                : 'btn-secondary text-[#2b1572]/70'
+                ? 'bg-slate-900 text-white'
+                : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             Thẻ & Công việc
           </button>
           <button
             onClick={() => setFilter('board')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+            className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors shrink-0 cursor-pointer ${
               filter === 'board'
-                ? 'btn-primary shadow-xs'
-                : 'btn-secondary text-[#2b1572]/70'
+                ? 'bg-slate-900 text-white'
+                : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             Bảng làm việc
           </button>
           <button
             onClick={() => setFilter('workspace')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+            className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors shrink-0 cursor-pointer ${
               filter === 'workspace'
-                ? 'btn-primary shadow-xs'
-                : 'btn-secondary text-[#2b1572]/70'
+                ? 'bg-slate-900 text-white'
+                : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             Không gian làm việc
           </button>
           <button
             onClick={() => setFilter('comment')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
+            className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors shrink-0 cursor-pointer ${
               filter === 'comment'
-                ? 'btn-primary shadow-xs'
-                : 'btn-secondary text-[#2b1572]/70'
+                ? 'bg-slate-900 text-white'
+                : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             Bình luận
           </button>
         </div>
 
-        {/* Search Input styled with .glass-input */}
-        <div className="relative w-full md:w-72">
-          <Search className="w-4 h-4 text-[#2b1572]/50 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+        {/* Search Input */}
+        <div className="relative w-full md:w-64">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Tìm theo nội dung, tên thẻ, bảng..."
-            className="glass-input pl-9 pr-3.5 py-1.5 text-xs w-full font-medium"
+            placeholder="Tìm kiếm hành động..."
+            className="pl-8 pr-3 py-1 text-xs w-full rounded-md border border-slate-300 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
           />
         </div>
       </div>
 
       {/* Main Activities Feed */}
       {isLoading ? (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="glass-weak h-20 animate-pulse rounded-2xl" />
+            <div key={i} className="h-16 bg-slate-100 border border-slate-200 rounded-md animate-pulse" />
           ))}
         </div>
       ) : filteredActivities.length === 0 ? (
-        <div className="glass-surface p-8 text-center rounded-2xl border-dashed border-2 border-white/60 space-y-3">
-          <div className="w-12 h-12 rounded-2xl bg-[#2b1572]/10 flex items-center justify-center text-[#2b1572] mx-auto">
-            <History className="w-6 h-6" />
+        <div className="p-8 text-center rounded-md border border-dashed border-slate-300 bg-white space-y-3">
+          <div className="w-10 h-10 rounded-md bg-slate-100 text-slate-500 flex items-center justify-center mx-auto border border-slate-200">
+            <History className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-[#2b1572]">
+            <h3 className="text-sm font-bold text-slate-800">
               {searchQuery ? 'Không tìm thấy hoạt động phù hợp' : 'Chưa có hoạt động nào'}
             </h3>
-            <p className="text-xs text-[#2b1572]/60 mt-1 max-w-sm mx-auto">
+            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
               {searchQuery
                 ? `Không có kết quả nào khớp với "${searchQuery}". Hãy thử từ khóa khác.`
                 : 'Mọi thao tác bạn thực hiện trên các thẻ, bảng hoặc không gian làm việc sẽ xuất hiện tại đây.'}
@@ -470,7 +467,7 @@ export default function MyActivitiesPage() {
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="px-3.5 py-1.5 btn-secondary text-xs font-semibold cursor-pointer"
+              className="px-3 py-1.5 rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer shadow-2xs"
             >
               Xóa bộ lọc tìm kiếm
             </button>
@@ -479,21 +476,21 @@ export default function MyActivitiesPage() {
       ) : (
         <div className="space-y-6">
           {groupKeys.map((groupLabel) => (
-            <div key={groupLabel} className="space-y-3">
+            <div key={groupLabel} className="space-y-2.5">
               {/* Timeline Group Header */}
               <div className="flex items-center gap-2 px-1">
-                <Calendar className="w-4 h-4 text-[#a000c8]" />
-                <span className="text-xs font-bold uppercase tracking-wider text-[#2b1572]">
+                <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
                   {groupLabel}
                 </span>
-                <div className="h-px flex-1 bg-[#2b1572]/10" />
-                <span className="text-[11px] font-semibold text-[#2b1572]/50">
+                <div className="h-px flex-1 bg-slate-200" />
+                <span className="text-[11px] font-medium text-slate-400">
                   {groupedActivities[groupLabel].length} thao tác
                 </span>
               </div>
 
-              {/* Items in this group - styled with kanban-card */}
-              <div className="space-y-2.5">
+              {/* Items in this group */}
+              <div className="space-y-2">
                 {groupedActivities[groupLabel].map((act) => {
                   const badgeInfo = getActionBadge(act.action, act.target_type);
                   const IconComp = badgeInfo.icon;
@@ -513,60 +510,60 @@ export default function MyActivitiesPage() {
                     <div
                       key={act.id}
                       onClick={() => handleItemClick(act)}
-                      className={`kanban-card p-4 flex items-start gap-3.5 group ${
+                      className={`p-3 bg-white border border-slate-200 rounded-md shadow-2xs flex items-start gap-3 group transition-colors ${
                         isClickable
-                          ? 'cursor-pointer hover:border-[#a6d1fd]'
+                          ? 'cursor-pointer hover:border-slate-300 hover:bg-slate-50/50'
                           : 'cursor-default opacity-85'
                       }`}
                     >
                       {/* Icon */}
-                      <div className={`w-9 h-9 rounded-xl border shadow-2xs flex items-center justify-center shrink-0 transition-transform ${
+                      <div className={`w-8 h-8 rounded-md border flex items-center justify-center shrink-0 ${
                         isRemoval
-                          ? 'bg-rose-500/10 border-rose-500/20 text-[#c40000]'
-                          : 'bg-white/70 border-white/80 group-hover:scale-105 text-[#2b1572]'
+                          ? 'bg-rose-50 border-rose-200 text-rose-600'
+                          : 'bg-slate-50 border-slate-200 text-slate-700'
                       }`}>
                         <IconComp className="w-4 h-4" />
                       </div>
 
                       {/* Content */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-baseline gap-1.5 text-xs text-[#2b1572] leading-relaxed">
-                          <span className="font-bold text-[#2b1572]">
+                        <div className="flex flex-wrap items-baseline gap-1.5 text-xs text-slate-800 leading-relaxed">
+                          <span className="font-semibold text-slate-900">
                             {act.user?.name || 'Bạn'}
                           </span>
-                          <span className="text-[#2b1572]/80">
+                          <span className="text-slate-600">
                             {act.action}
                           </span>
                           {act.target_meta?.card_title && (
-                            <span className="badge-info text-[11px] px-2 py-0.5 rounded-full font-bold inline-flex items-center gap-1">
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-xs text-[11px] font-semibold bg-slate-100 text-slate-800 border border-slate-200">
                               {act.target_meta.card_title}
                             </span>
                           )}
                         </div>
 
                         {/* Location Meta Tags */}
-                        <div className="mt-3 pt-2.5 border-t border-[#2b1572]/10 flex flex-wrap items-center justify-between gap-2 text-xs text-[#2b1572]/60">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className={`${badgeInfo.badgeClass} text-[10px] px-2 py-0.5 rounded-full font-semibold`}>
+                        <div className="mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className={`${badgeInfo.badgeClass} text-[10px] px-1.5 py-0.2 rounded-xs font-semibold`}>
                               {badgeInfo.label}
                             </span>
 
                             {act.workspace?.name && (
-                              <span className="flex items-center gap-1 text-[11px] text-[#2b1572]/70 font-medium">
-                                <Layers className="w-3 h-3 text-[#a000c8]" />
+                              <span className="flex items-center gap-1 text-[11px] text-slate-600 font-medium">
+                                <Layers className="w-3 h-3 text-slate-400" />
                                 <span>{act.workspace.name}</span>
                               </span>
                             )}
 
                             {act.target_meta?.board_name && (
-                              <span className="flex items-center gap-1 text-[11px] text-[#2b1572]/70 font-medium">
-                                <Kanban className="w-3 h-3" />
+                              <span className="flex items-center gap-1 text-[11px] text-slate-600 font-medium">
+                                <Kanban className="w-3 h-3 text-slate-400" />
                                 <span>{act.target_meta.board_name}</span>
                               </span>
                             )}
 
                             {act.target_meta?.list_title && (
-                              <span className="flex items-center gap-1 text-[11px] text-[#2b1572]/50">
+                              <span className="flex items-center gap-1 text-[11px] text-slate-400">
                                 <ChevronRight className="w-3 h-3" />
                                 <span>{act.target_meta.list_title}</span>
                               </span>
@@ -574,12 +571,12 @@ export default function MyActivitiesPage() {
                           </div>
 
                           <div className="flex items-center gap-2">
-                            <span className="text-[11px] text-[#2b1572]/50 font-medium">
+                            <span className="text-[11px] text-slate-400">
                               {formatRelativeTime(act.created_at)} ({formatExactTime(act.created_at)})
                             </span>
                             {isClickable && (
-                              <span className="font-semibold text-[#2b1572] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                                Xem <ArrowRight className="w-3.5 h-3.5" />
+                              <span className="font-semibold text-slate-900 flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform text-[11px]">
+                                Xem <ArrowRight className="w-3 h-3" />
                               </span>
                             )}
                           </div>
@@ -594,21 +591,21 @@ export default function MyActivitiesPage() {
 
           {/* Load More Button */}
           {hasMore && (
-            <div className="text-center pt-4">
+            <div className="text-center pt-2">
               <button
                 onClick={handleLoadMore}
                 disabled={isLoadingMore}
-                className="px-6 py-2 btn-secondary text-xs font-semibold inline-flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                className="px-4 py-2 rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold inline-flex items-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
               >
                 {isLoadingMore ? (
                   <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#a000c8]" />
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-slate-500" />
                     <span>Đang tải thêm...</span>
                   </>
                 ) : (
                   <>
                     <span>Tải thêm hoạt động</span>
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronRight className="w-3.5 h-3.5" />
                   </>
                 )}
               </button>

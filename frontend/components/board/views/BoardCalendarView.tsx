@@ -194,7 +194,7 @@ export default function BoardCalendarView({
   // Get status color chip according to DESIGN_SYSTEM.md Section 22
   const getCardChipStyle = (card: any) => {
     if (card.is_due_date_completed) {
-      return 'bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200';
+      return 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100';
     }
 
     if (card.due_date) {
@@ -202,14 +202,14 @@ export default function BoardCalendarView({
       const diffHours = (dueTime - Date.now()) / (1000 * 60 * 60);
 
       if (diffHours < 0) {
-        return 'bg-rose-100 text-rose-800 border-rose-300 hover:bg-rose-200 font-semibold';
+        return 'bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100 font-medium';
       }
       if (diffHours <= 24) {
-        return 'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200';
+        return 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100';
       }
     }
 
-    return 'bg-[#a6d1fd]/30 text-[#2b1572] border-[#2b1572]/20 hover:bg-[#a6d1fd]/50';
+    return 'bg-slate-100 text-slate-800 border-slate-200 hover:bg-slate-200/70';
   };
 
   const dayHeaders = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ Nhật'];
@@ -217,34 +217,34 @@ export default function BoardCalendarView({
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden p-6 max-w-7xl mx-auto w-full">
       {/* Calendar Header Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 p-3 rounded-2xl glass-surface border border-white/60 shadow-xs">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 p-2.5 rounded-lg bg-white border border-slate-300 shadow-2xs">
         {/* Navigation & Month Title */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1">
             <button
               onClick={handlePrevMonth}
-              className="p-1.5 rounded-xl glass-weak hover:bg-white/80 text-[#2b1572] transition-colors cursor-pointer border border-white/60"
+              className="p-1.5 rounded-md border border-slate-300 hover:bg-slate-50 text-slate-700 transition-colors cursor-pointer"
               title="Tháng trước"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               onClick={handleNextMonth}
-              className="p-1.5 rounded-xl glass-weak hover:bg-white/80 text-[#2b1572] transition-colors cursor-pointer border border-white/60"
+              className="p-1.5 rounded-md border border-slate-300 hover:bg-slate-50 text-slate-700 transition-colors cursor-pointer"
               title="Tháng sau"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
 
-          <h2 className="text-sm sm:text-base font-bold text-[#2b1572] flex items-center gap-2">
-            <CalendarIcon className="w-4 h-4 text-[#2b1572]" />
+          <h2 className="text-sm sm:text-base font-semibold text-slate-900 flex items-center gap-2">
+            <CalendarIcon className="w-4 h-4 text-slate-600" />
             <span>{monthName}</span>
           </h2>
 
           <button
             onClick={handleToday}
-            className="px-2.5 py-1 text-xs font-semibold rounded-xl glass-weak hover:bg-white text-[#2b1572] transition-colors border border-white/60 cursor-pointer shadow-2xs"
+            className="px-2.5 py-1 text-xs font-semibold rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-colors cursor-pointer shadow-2xs"
           >
             Hôm nay
           </button>
@@ -253,12 +253,12 @@ export default function BoardCalendarView({
         {/* Filter & Unscheduled Toggle */}
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Filter by List */}
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-[#2b1572]">
-            <Filter className="w-3.5 h-3.5 text-[#2b1572]/60" />
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+            <Filter className="w-3.5 h-3.5 text-slate-500" />
             <select
               value={selectedListFilter}
               onChange={(e) => setSelectedListFilter(e.target.value)}
-              className="px-2.5 py-1.5 rounded-xl glass-weak border border-white/60 text-xs font-semibold text-[#2b1572] cursor-pointer focus:outline-none"
+              className="px-2.5 py-1.5 rounded-md border border-slate-300 text-xs font-medium text-slate-800 cursor-pointer focus:outline-none bg-white"
             >
               <option value="all">Tất cả danh sách</option>
               {board?.lists?.map((list: any) => (
@@ -272,10 +272,10 @@ export default function BoardCalendarView({
           {/* Toggle Unscheduled Drawer */}
           <button
             onClick={() => setShowUnscheduled(!showUnscheduled)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer border shadow-xs ${
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border ${
               showUnscheduled
-                ? 'bg-[#2b1572] text-[#a6d1fd] border-[#2b1572]'
-                : 'glass-weak text-[#2b1572] hover:bg-white/80 border-white/60'
+                ? 'bg-slate-900 text-white border-slate-900'
+                : 'bg-white text-slate-700 hover:bg-slate-50 border-slate-300 shadow-2xs'
             }`}
           >
             <ListTodo className="w-3.5 h-3.5" />
@@ -287,14 +287,14 @@ export default function BoardCalendarView({
       {/* Main Content Area: Grid + Optional Unscheduled Sidebar */}
       <div className="flex-1 flex gap-4 overflow-hidden">
         {/* Calendar Grid Container */}
-        <div className="flex-1 flex flex-col rounded-2xl glass-surface border border-white/60 shadow-md overflow-hidden">
+        <div className="flex-1 flex flex-col rounded-lg bg-white border border-slate-300 shadow-2xs overflow-hidden">
           {/* Days of Week Header */}
-          <div className="grid grid-cols-7 bg-white/70 backdrop-blur-md border-b border-white/80">
+          <div className="grid grid-cols-7 bg-slate-50 border-b border-slate-200">
             {dayHeaders.map((day, idx) => (
               <div
                 key={day}
-                className={`py-2 text-center text-[11px] font-bold uppercase tracking-wider ${
-                  idx >= 5 ? 'text-[#c40000]/80' : 'text-[#2b1572]'
+                className={`py-2 text-center text-[11px] font-semibold uppercase tracking-wider ${
+                  idx >= 5 ? 'text-rose-600' : 'text-slate-600'
                 }`}
               >
                 {day}
@@ -303,7 +303,7 @@ export default function BoardCalendarView({
           </div>
 
           {/* Days Grid */}
-          <div className="flex-1 grid grid-cols-7 grid-rows-5 sm:grid-rows-6 gap-[1px] bg-[#2b1572]/10 overflow-y-auto">
+          <div className="flex-1 grid grid-cols-7 grid-rows-5 sm:grid-rows-6 gap-[1px] bg-slate-200 overflow-y-auto">
             {daysMatrix.map((item) => {
               const dayCards = cardsByDate.get(item.dateKey) || [];
 
@@ -312,21 +312,21 @@ export default function BoardCalendarView({
                   key={item.dateKey}
                   className={`group relative p-1.5 sm:p-2 flex flex-col min-h-[90px] transition-colors select-none ${
                     item.isCurrentMonth
-                      ? 'bg-white/75 hover:bg-white/95'
-                      : 'bg-white/35 text-slate-400'
+                      ? 'bg-white hover:bg-slate-50/60'
+                      : 'bg-slate-50/70 text-slate-400'
                   } ${
-                    item.isToday ? 'ring-2 ring-[#2b1572] ring-inset bg-[#a6d1fd]/15' : ''
+                    item.isToday ? 'ring-2 ring-slate-900 ring-inset bg-slate-50' : ''
                   }`}
                 >
                   {/* Day Cell Header */}
                   <div className="flex items-center justify-between mb-1">
                     <span
-                      className={`text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full ${
+                      className={`text-xs font-semibold w-5 h-5 flex items-center justify-center rounded-full ${
                         item.isToday
-                          ? 'bg-[#2b1572] text-[#a6d1fd] shadow-xs'
+                          ? 'bg-slate-900 text-white'
                           : item.isCurrentMonth
-                          ? 'text-[#2b1572]'
-                          : 'text-[#2b1572]/30'
+                          ? 'text-slate-800'
+                          : 'text-slate-400'
                       }`}
                     >
                       {item.date.getDate()}
@@ -336,7 +336,7 @@ export default function BoardCalendarView({
                     {!board?.is_archived && board?.canEdit && item.isCurrentMonth && (
                       <button
                         onClick={(e) => handleOpenQuickAdd(item.date, e)}
-                        className="opacity-0 group-hover:opacity-100 p-0.5 rounded-md hover:bg-[#2b1572]/10 text-[#2b1572] transition-opacity cursor-pointer"
+                        className="opacity-0 group-hover:opacity-100 p-0.5 rounded-xs hover:bg-slate-100 text-slate-600 transition-opacity cursor-pointer"
                         title="Thêm thẻ vào ngày này"
                       >
                         <Plus className="w-3.5 h-3.5" />
@@ -352,10 +352,10 @@ export default function BoardCalendarView({
                         <div
                           key={card.id}
                           onClick={() => onOpenCardDetail(card.id)}
-                          className={`p-1.5 rounded-lg border text-[11px] leading-tight cursor-pointer shadow-2xs transition-all ${chipStyle}`}
+                          className={`p-1.5 rounded-xs border text-[11px] leading-tight cursor-pointer transition-colors ${chipStyle}`}
                           title={`${card.title} - ${card.listName}`}
                         >
-                          <div className="font-semibold truncate">{card.title}</div>
+                          <div className="font-medium truncate">{card.title}</div>
                           <div className="flex items-center justify-between text-[9px] opacity-75 mt-0.5">
                             <span className="truncate">{card.listName}</span>
                             {card.is_due_date_completed && (
@@ -374,17 +374,17 @@ export default function BoardCalendarView({
 
         {/* Unscheduled Cards Drawer / Sidebar */}
         {showUnscheduled && (
-          <div className="w-72 sm:w-80 rounded-2xl glass-strong border border-white/80 shadow-xl flex flex-col overflow-hidden animate-in slide-in-from-right duration-200">
-            <div className="p-3 border-b border-[#2b1572]/10 flex items-center justify-between">
+          <div className="w-72 sm:w-80 rounded-lg bg-white border border-slate-300 shadow-xl flex flex-col overflow-hidden animate-fade-in">
+            <div className="p-3 border-b border-slate-200 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <ListTodo className="w-4 h-4 text-[#2b1572]" />
-                <h3 className="text-xs font-bold text-[#2b1572]">
+                <ListTodo className="w-4 h-4 text-slate-700" />
+                <h3 className="text-xs font-semibold text-slate-900">
                   Chưa lên ngày hết hạn ({unscheduledCards.length})
                 </h3>
               </div>
               <button
                 onClick={() => setShowUnscheduled(false)}
-                className="p-1 rounded-lg hover:bg-white/60 text-[#2b1572]/60 hover:text-[#2b1572] transition-colors cursor-pointer"
+                className="p-1 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -392,7 +392,7 @@ export default function BoardCalendarView({
 
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
               {unscheduledCards.length === 0 ? (
-                <div className="py-12 text-center text-[#2b1572]/50 text-xs">
+                <div className="py-12 text-center text-slate-400 text-xs">
                   Tất cả các thẻ đều đã được lên lịch ngày hết hạn!
                 </div>
               ) : (
@@ -400,16 +400,16 @@ export default function BoardCalendarView({
                   <div
                     key={card.id}
                     onClick={() => onOpenCardDetail(card.id)}
-                    className="p-2.5 bg-white/80 hover:bg-white rounded-xl border border-white/80 shadow-2xs hover:shadow-xs transition-all cursor-pointer group"
+                    className="p-2.5 bg-slate-50 hover:bg-slate-100 rounded-md border border-slate-200 transition-colors cursor-pointer group"
                   >
-                    <div className="text-xs font-semibold text-[#2b1572] group-hover:text-[#1e0f52]">
+                    <div className="text-xs font-medium text-slate-800 group-hover:text-blue-600">
                       {card.title}
                     </div>
-                    <div className="flex items-center justify-between text-[10px] text-[#2b1572]/60 mt-1">
-                      <span className="px-1.5 py-0.5 rounded bg-[#2b1572]/10 font-medium">
+                    <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1">
+                      <span className="px-1.5 py-0.2 rounded-xs bg-slate-200 text-slate-700 font-medium">
                         {card.listName}
                       </span>
-                      <span className="text-[#a000c8] font-semibold hover:underline">
+                      <span className="text-blue-600 font-medium hover:underline">
                         Thiết lập ngày →
                       </span>
                     </div>
@@ -423,16 +423,16 @@ export default function BoardCalendarView({
 
       {/* Quick Add Card Modal for Date */}
       {quickAddDate && (
-        <div className="fixed inset-0 z-50 bg-[#2b1572]/30 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="w-full max-w-sm glass-strong rounded-2xl p-4 shadow-xl border border-white/80 animate-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#2b1572]/10">
-              <h4 className="text-xs font-bold text-[#2b1572] flex items-center gap-1.5">
-                <CalendarIcon className="w-3.5 h-3.5" />
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-white rounded-lg p-5 shadow-xl border border-slate-300 animate-fade-in">
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-200">
+              <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-1.5">
+                <CalendarIcon className="w-3.5 h-3.5 text-slate-600" />
                 <span>Thêm thẻ cho ngày {quickAddDate.toLocaleDateString('vi-VN')}</span>
               </h4>
               <button
                 onClick={() => setQuickAddDate(null)}
-                className="p-1 rounded-lg text-[#2b1572]/60 hover:text-[#2b1572] hover:bg-white/60 transition-colors"
+                className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -440,7 +440,7 @@ export default function BoardCalendarView({
 
             <form onSubmit={handleSubmitQuickAdd} className="space-y-3">
               <div>
-                <label className="block text-[11px] font-semibold text-[#2b1572] mb-1">
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">
                   Tiêu đề thẻ
                 </label>
                 <input
@@ -449,18 +449,18 @@ export default function BoardCalendarView({
                   value={quickAddTitle}
                   onChange={(e) => setQuickAddTitle(e.target.value)}
                   placeholder="Nhập tiêu đề thẻ..."
-                  className="w-full text-xs font-semibold text-[#2b1572] bg-white border border-[#2b1572]/30 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-[#2b1572]/20"
+                  className="w-full text-xs font-medium text-slate-900 bg-white border border-slate-300 rounded-md px-3 py-1.5 focus:outline-none focus:border-slate-800"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-[#2b1572] mb-1">
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">
                   Thêm vào danh sách
                 </label>
                 <select
                   value={quickAddListId}
                   onChange={(e) => setQuickAddListId(e.target.value)}
-                  className="w-full text-xs font-semibold text-[#2b1572] bg-white border border-[#2b1572]/30 rounded-xl p-2.5 focus:outline-none"
+                  className="w-full text-xs font-medium text-slate-900 bg-white border border-slate-300 rounded-md px-3 py-1.5 focus:outline-none"
                 >
                   {board?.lists?.map((l: any) => (
                     <option key={l.id} value={l.id}>
@@ -470,18 +470,18 @@ export default function BoardCalendarView({
                 </select>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => setQuickAddDate(null)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-semibold text-[#2b1572]/70 hover:text-[#2b1572] hover:bg-white/60 transition-colors cursor-pointer"
+                  className="px-3 py-1.5 rounded-md text-xs font-semibold border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={!quickAddTitle.trim() || isSubmittingQuickAdd}
-                  className="px-4 py-1.5 bg-[#2b1572] text-[#a6d1fd] rounded-xl text-xs font-semibold hover:bg-[#1e0f52] disabled:opacity-50 transition-colors cursor-pointer shadow-xs"
+                  className="px-4 py-1.5 bg-slate-900 text-white rounded-md text-xs font-semibold hover:bg-slate-800 disabled:opacity-50 transition-colors cursor-pointer shadow-2xs"
                 >
                   {isSubmittingQuickAdd ? 'Đang tạo...' : 'Tạo thẻ'}
                 </button>

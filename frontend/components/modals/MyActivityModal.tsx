@@ -146,12 +146,12 @@ export default function MyActivityModal({
       return <Clock className="w-3.5 h-3.5 text-rose-500" />;
     }
     if (targetType.startsWith('board:')) {
-      return <Kanban className="w-3.5 h-3.5 text-[#2b1572]" />;
+      return <Kanban className="w-3.5 h-3.5 text-slate-600" />;
     }
     if (targetType.startsWith('workspace:')) {
-      return <Layers className="w-3.5 h-3.5 text-[#a000c8]" />;
+      return <Layers className="w-3.5 h-3.5 text-slate-600" />;
     }
-    return <Sparkles className="w-3.5 h-3.5 text-[#2b1572]" />;
+    return <Sparkles className="w-3.5 h-3.5 text-slate-600" />;
   };
 
   const filteredActivities = activities.filter((act) => {
@@ -200,22 +200,22 @@ export default function MyActivityModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-70 animate-in fade-in duration-150"
+      className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-70 animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150"
+        className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+        <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-white shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#2b1572] flex items-center justify-center text-[#a6d1fd] shadow-sm">
+            <div className="w-8 h-8 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800">
               <History className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-[#2b1572]">Hoạt động của tôi</h3>
-              <p className="text-[11px] text-slate-400">
+              <h3 className="text-sm font-bold text-slate-900">Hoạt động của tôi</h3>
+              <p className="text-[11px] text-slate-500">
                 Toàn bộ lịch sử thao tác của bạn trên hệ thống
               </p>
             </div>
@@ -225,14 +225,14 @@ export default function MyActivityModal({
             <button
               onClick={fetchActivities}
               disabled={isLoading}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-[#2b1572] hover:bg-slate-100 transition-colors cursor-pointer"
+              className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
               title="Làm mới"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -240,57 +240,61 @@ export default function MyActivityModal({
         </div>
 
         {/* Filter Pills */}
-        <div className="px-5 py-2.5 border-b border-slate-100 bg-slate-50/50 flex items-center gap-1.5 shrink-0 overflow-x-auto">
+        <div className="px-4 py-2 border-b border-slate-200 bg-slate-50 flex items-center gap-1.5 shrink-0 overflow-x-auto">
           <button
             onClick={() => setFilter('all')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${filter === 'all'
-                ? 'bg-[#2b1572] text-white shadow-xs'
+            className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+              filter === 'all'
+                ? 'bg-slate-900 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-200/70'
-              }`}
+            }`}
           >
             Tất cả ({activities.length})
           </button>
           <button
             onClick={() => setFilter('card')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${filter === 'card'
-                ? 'bg-[#2b1572] text-white shadow-xs'
+            className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+              filter === 'card'
+                ? 'bg-slate-900 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-200/70'
-              }`}
+            }`}
           >
-            Thẻ công việc ({activities.filter((a) => a.target_type.startsWith('card:')).length})
+            Thẻ ({activities.filter((a) => a.target_type.startsWith('card:')).length})
           </button>
           <button
             onClick={() => setFilter('board')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${filter === 'board'
-                ? 'bg-[#2b1572] text-white shadow-xs'
+            className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+              filter === 'board'
+                ? 'bg-slate-900 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-200/70'
-              }`}
+            }`}
           >
             Bảng ({activities.filter((a) => a.target_type.startsWith('board:')).length})
           </button>
           <button
             onClick={() => setFilter('workspace')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${filter === 'workspace'
-                ? 'bg-[#2b1572] text-white shadow-xs'
+            className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+              filter === 'workspace'
+                ? 'bg-slate-900 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-200/70'
-              }`}
+            }`}
           >
             Workspace ({activities.filter((a) => a.target_type.startsWith('workspace:')).length})
           </button>
         </div>
 
         {/* Activity Stream */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
+        <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {isLoading && activities.length === 0 ? (
             <div className="py-12 flex flex-col items-center justify-center gap-2 text-slate-400">
-              <RefreshCw className="w-5 h-5 animate-spin text-[#2b1572]" />
+              <RefreshCw className="w-5 h-5 animate-spin text-slate-700" />
               <span className="text-xs">Đang tải lịch sử hoạt động...</span>
             </div>
           ) : filteredActivities.length === 0 ? (
             <div className="py-12 text-center text-slate-400">
-              <History className="w-8 h-8 mx-auto mb-2 opacity-30 text-[#2b1572]" />
-              <p className="text-xs font-semibold">Chưa có hoạt động nào</p>
-              <p className="text-[11px] mt-0.5">Các thao tác của bạn sẽ được tự động lưu lại ở đây.</p>
+              <History className="w-8 h-8 mx-auto mb-2 opacity-30 text-slate-600" />
+              <p className="text-xs font-semibold text-slate-700">Chưa có hoạt động nào</p>
+              <p className="text-[11px] mt-0.5 text-slate-500">Các thao tác của bạn sẽ được tự động lưu lại ở đây.</p>
             </div>
           ) : (
             <>
@@ -298,16 +302,16 @@ export default function MyActivityModal({
                 <div
                   key={act.id}
                   onClick={() => handleItemClick(act)}
-                  className="group p-3 rounded-2xl border border-slate-100 bg-slate-50/60 hover:bg-white hover:border-[#2b1572]/20 hover:shadow-xs transition-all flex items-start gap-3 cursor-pointer"
+                  className="group p-3 rounded-md border border-slate-200 bg-white hover:border-slate-400 hover:bg-slate-50/50 transition-colors flex items-start gap-3 cursor-pointer"
                 >
-                  <div className="w-7 h-7 rounded-xl bg-white border border-slate-200/80 shadow-2xs flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+                  <div className="w-7 h-7 rounded-md bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0 mt-0.5">
                     {getActionIcon(act.action, act.target_type)}
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-xs text-slate-800 font-medium leading-relaxed break-words">
-                        <span className="font-bold text-[#2b1572]">Bạn </span>
+                        <span className="font-bold text-slate-900">Bạn </span>
                         {act.action}
                       </p>
                       <span className="text-[10px] text-slate-400 shrink-0 font-medium whitespace-nowrap">
@@ -315,19 +319,19 @@ export default function MyActivityModal({
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2 mt-1.5 text-[10px] text-slate-400">
+                    <div className="flex items-center gap-1.5 mt-1.5 text-[10px]">
                       {act.workspace?.name && (
-                        <span className="px-1.5 py-0.5 rounded-md bg-slate-100 font-medium text-slate-500">
+                        <span className="px-1.5 py-0.2 rounded-xs bg-slate-100 font-medium text-slate-600 border border-slate-200">
                           {act.workspace.name}
                         </span>
                       )}
                       {act.target_type.startsWith('card:') && (
-                        <span className="px-1.5 py-0.5 rounded-md bg-purple-50 text-[#2b1572] font-semibold flex items-center gap-1 group-hover:bg-purple-100 transition-colors">
+                        <span className="px-1.5 py-0.2 rounded-xs bg-slate-100 text-slate-700 border border-slate-200 font-medium flex items-center gap-1">
                           Thẻ{act.target_meta?.board_name ? ` • ${act.target_meta.board_name}` : ''} <ExternalLink className="w-2.5 h-2.5 opacity-60" />
                         </span>
                       )}
                       {act.target_type.startsWith('board:') && (
-                        <span className="px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-700 font-semibold flex items-center gap-1 group-hover:bg-blue-100 transition-colors">
+                        <span className="px-1.5 py-0.2 rounded-xs bg-slate-100 text-slate-700 border border-slate-200 font-medium flex items-center gap-1">
                           Bảng{act.target_meta?.board_name ? `: ${act.target_meta.board_name}` : ''} <ExternalLink className="w-2.5 h-2.5 opacity-60" />
                         </span>
                       )}
@@ -341,7 +345,7 @@ export default function MyActivityModal({
                   <button
                     onClick={handleLoadMore}
                     disabled={isLoadingMore}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold text-[#2b1572] bg-slate-100 hover:bg-slate-200/80 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    className="px-4 py-2 rounded-md text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
                     {isLoadingMore && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                     <span>{isLoadingMore ? 'Đang tải thêm...' : 'Tải thêm hoạt động cũ hơn'}</span>

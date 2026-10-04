@@ -130,44 +130,44 @@ export const BoardRiskScannerModal: React.FC<BoardRiskScannerModalProps> = ({
   if (!isOpen) return null;
 
   const getScoreColor = (score: number) => {
-    if (score <= 30) return { text: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', gradient: 'from-emerald-500 to-teal-600', label: 'Rủi ro thấp / An toàn' };
-    if (score <= 60) return { text: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200', gradient: 'from-amber-500 to-orange-500', label: 'Cần chú ý / Trung bình' };
-    if (score <= 80) return { text: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200', gradient: 'from-orange-500 to-rose-500', label: 'Rủi ro cao' };
-    return { text: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-200', gradient: 'from-rose-600 to-red-700', label: 'Báo động nghiêm trọng' };
+    if (score <= 30) return { text: 'text-emerald-700', bg: 'bg-emerald-50/50', border: 'border-emerald-200', barColor: 'bg-emerald-600', label: 'Rủi ro thấp / An toàn' };
+    if (score <= 60) return { text: 'text-amber-700', bg: 'bg-amber-50/50', border: 'border-amber-200', barColor: 'bg-amber-500', label: 'Cần chú ý / Trung bình' };
+    if (score <= 80) return { text: 'text-orange-700', bg: 'bg-orange-50/50', border: 'border-orange-200', barColor: 'bg-orange-500', label: 'Rủi ro cao' };
+    return { text: 'text-rose-700', bg: 'bg-rose-50/50', border: 'border-rose-200', barColor: 'bg-rose-600', label: 'Báo động nghiêm trọng' };
   };
 
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
       case 'CRITICAL':
-        return <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-700 border border-rose-200">NGHIÊM TRỌNG</span>;
+        return <span className="px-2 py-0.5 rounded-xs text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 uppercase tracking-wide">Nghiêm trọng</span>;
       case 'HIGH':
-        return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200">CAO</span>;
+        return <span className="px-2 py-0.5 rounded-xs text-[10px] font-bold bg-orange-50 text-orange-700 border border-orange-200 uppercase tracking-wide">Cao</span>;
       case 'MEDIUM':
-        return <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-200">TRUNG BÌNH</span>;
+        return <span className="px-2 py-0.5 rounded-xs text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 uppercase tracking-wide">Trung bình</span>;
       default:
-        return <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">THẤP</span>;
+        return <span className="px-2 py-0.5 rounded-xs text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200 uppercase tracking-wide">Thấp</span>;
     }
   };
 
   const scoreTheme = data ? getScoreColor(data.riskScore) : getScoreColor(0);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 backdrop-blur-2xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl shadow-2xl border border-slate-200/80 w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 backdrop-blur-2xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
+      <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-98 duration-150">
         {/* Header */}
-        <div className="px-6 py-4.5 bg-gradient-to-r from-slate-900 via-[#2b1572] to-[#1e1050] text-white flex items-center justify-between shrink-0">
+        <div className="px-5 py-3.5 bg-[#0f172a] text-white flex items-center justify-between shrink-0 border-b border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner">
-              <ShieldAlert className="w-5 h-5 text-amber-300" />
+            <div className="w-8 h-8 rounded-md bg-white/10 border border-white/15 flex items-center justify-center">
+              <ShieldAlert className="w-4.5 h-4.5 text-amber-300" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-bold tracking-tight">AI Quét Rủi Ro & Điểm Nghẽn</h2>
-                <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded-md bg-amber-400/20 text-amber-200 border border-amber-300/30">
-                  AI Auditor
+                <h2 className="text-sm sm:text-base font-semibold tracking-tight text-white">AI Quét Rủi Ro & Điểm Nghẽn</h2>
+                <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase rounded-xs bg-amber-400/20 text-amber-300 border border-amber-300/30">
+                  Auditor
                 </span>
               </div>
-              <p className="text-xs text-white/70 line-clamp-1">
+              <p className="text-xs text-slate-300 line-clamp-1">
                 Phân tích tiến độ, nút thắt công việc và phân bổ tải nhóm trên {boardTitle ? `"${boardTitle}"` : 'Bảng'}
               </p>
             </div>
@@ -177,7 +177,7 @@ export const BoardRiskScannerModal: React.FC<BoardRiskScannerModalProps> = ({
             <button
               onClick={handleScan}
               disabled={isLoading}
-              className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer border border-white/15 disabled:opacity-50"
+              className="px-2.5 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-white text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer border border-white/15 disabled:opacity-50"
               title="Quét lại toàn bộ bảng"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
@@ -185,37 +185,32 @@ export const BoardRiskScannerModal: React.FC<BoardRiskScannerModalProps> = ({
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-xl text-white/70 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
+              className="p-1.5 rounded-md text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4.5 h-4.5" />
             </button>
           </div>
         </div>
 
         {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-5 space-y-5">
           {isLoading ? (
-            <div className="py-20 flex flex-col items-center justify-center gap-4 text-center">
-              <div className="relative">
-                <div className="w-16 h-16 rounded-full border-4 border-purple-200 border-t-[#2b1572] animate-spin" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <ShieldAlert className="w-7 h-7 text-[#2b1572] animate-pulse" />
-                </div>
-              </div>
+            <div className="py-20 flex flex-col items-center justify-center gap-3 text-center">
+              <div className="w-8 h-8 rounded-full border-2 border-slate-200 border-t-[#0f172a] animate-spin" />
               <div>
-                <h3 className="text-sm font-bold text-[#2b1572]">Gemini đang phân tích toàn bộ Bảng...</h3>
-                <p className="text-xs text-slate-400 mt-1 max-w-sm">
+                <h3 className="text-sm font-semibold text-slate-900">Đang quét phân tích rủi ro...</h3>
+                <p className="text-xs text-slate-500 mt-1 max-w-sm">
                   Kiểm tra chuỗi phụ thuộc (blockers), hạn chót quá hạn, cột ứ đọng công việc và phân bổ nhân sự...
                 </p>
               </div>
             </div>
           ) : error ? (
-            <div className="py-16 flex flex-col items-center justify-center text-center p-6 bg-rose-50/70 rounded-2xl border border-rose-200 gap-3">
-              <AlertCircle className="w-10 h-10 text-rose-500" />
-              <p className="text-sm font-semibold text-rose-800">{error}</p>
+            <div className="py-12 flex flex-col items-center justify-center text-center p-6 bg-rose-50 rounded-lg border border-rose-200 gap-3">
+              <AlertCircle className="w-8 h-8 text-rose-500" />
+              <p className="text-sm font-medium text-rose-800">{error}</p>
               <button
                 onClick={handleScan}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer"
+                className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-md transition-colors cursor-pointer"
               >
                 Thử quét lại
               </button>
@@ -223,62 +218,62 @@ export const BoardRiskScannerModal: React.FC<BoardRiskScannerModalProps> = ({
           ) : data ? (
             <>
               {/* Top Banner: Risk Gauge & Overview */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                 {/* Score Card */}
-                <div className={`p-5 rounded-2xl border ${scoreTheme.bg} ${scoreTheme.border} flex flex-col justify-between shadow-2xs`}>
+                <div className={`p-4 rounded-lg border ${scoreTheme.bg} ${scoreTheme.border} flex flex-col justify-between`}>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Chỉ số rủi ro Bảng</span>
+                    <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Chỉ số rủi ro Bảng</span>
                     <TrendingUp className={`w-4 h-4 ${scoreTheme.text}`} />
                   </div>
-                  <div className="my-3 flex items-baseline gap-2">
-                    <span className={`text-4xl font-black ${scoreTheme.text}`}>{data.riskScore}</span>
-                    <span className="text-sm font-semibold text-slate-400">/ 100</span>
+                  <div className="my-3 flex items-baseline gap-1.5">
+                    <span className={`text-3xl font-bold tracking-tight ${scoreTheme.text}`}>{data.riskScore}</span>
+                    <span className="text-xs font-medium text-slate-400">/ 100</span>
                   </div>
                   <div>
-                    <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden mb-2">
+                    <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden mb-2">
                       <div
-                        className={`h-full bg-gradient-to-r ${scoreTheme.gradient} transition-all duration-700 rounded-full`}
+                        className={`h-full ${scoreTheme.barColor} transition-all duration-500 rounded-full`}
                         style={{ width: `${Math.min(data.riskScore, 100)}%` }}
                       />
                     </div>
-                    <span className={`text-xs font-bold ${scoreTheme.text}`}>{scoreTheme.label}</span>
+                    <span className={`text-xs font-semibold ${scoreTheme.text}`}>{scoreTheme.label}</span>
                   </div>
                 </div>
 
                 {/* Overall Assessment */}
-                <div className="md:col-span-2 p-5 rounded-2xl border border-slate-200 bg-slate-50/70 flex flex-col justify-between shadow-2xs">
+                <div className="md:col-span-2 p-4 rounded-lg border border-slate-200 bg-white flex flex-col justify-between">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <div className="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center">
+                      <div className="w-5 h-5 rounded-xs bg-slate-100 text-slate-700 flex items-center justify-center">
                         <Flame className="w-3.5 h-3.5" />
                       </div>
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Đánh giá tổng thể từ AI</h4>
+                      <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-800">Đánh giá tổng thể từ AI</h4>
                     </div>
-                    <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium">
+                    <p className="text-xs sm:text-sm text-slate-700 leading-relaxed font-normal">
                       {data.overallAssessment}
                     </p>
                   </div>
-                  <div className="mt-3 flex items-center gap-4 text-[11px] text-slate-500 pt-2 border-t border-slate-200/80">
-                    <span>Điểm nghẽn: <strong className="text-slate-700">{data.bottlenecks?.length || 0}</strong></span>
+                  <div className="mt-3 flex items-center gap-4 text-[11px] text-slate-500 pt-2.5 border-t border-slate-100">
+                    <span>Điểm nghẽn: <strong className="text-slate-800 font-semibold">{data.bottlenecks?.length || 0}</strong></span>
                     <span>•</span>
-                    <span>Rủi ro hạn chót: <strong className="text-rose-600">{data.deadlineRisks?.length || 0}</strong></span>
+                    <span>Rủi ro hạn chót: <strong className="text-rose-600 font-semibold">{data.deadlineRisks?.length || 0}</strong></span>
                     <span>•</span>
-                    <span>Nhân sự quá tải: <strong className="text-amber-600">{data.workloadImbalance?.filter(w => w.overdueCardCount > 0 || w.assignedCardCount > 5).length || 0}</strong></span>
+                    <span>Nhân sự quá tải: <strong className="text-amber-600 font-semibold">{data.workloadImbalance?.filter(w => w.overdueCardCount > 0 || w.assignedCardCount > 5).length || 0}</strong></span>
                   </div>
                 </div>
               </div>
 
               {/* Actionable Recommendations */}
               {data.actionableRecommendations && data.actionableRecommendations.length > 0 && (
-                <div className="p-4.5 rounded-2xl bg-gradient-to-br from-indigo-50/90 via-purple-50/60 to-white border border-indigo-100 shadow-2xs">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Lightbulb className="w-4 h-4 text-indigo-600" />
-                    <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-wider">Đề xuất hành động cấp thiết</h4>
+                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200">
+                  <div className="flex items-center gap-2 mb-2.5">
+                    <Lightbulb className="w-4 h-4 text-amber-600" />
+                    <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wider">Đề xuất hành động cấp thiết</h4>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {data.actionableRecommendations.map((rec, idx) => (
-                      <div key={idx} className="flex items-start gap-2 bg-white/80 p-2.5 rounded-xl border border-indigo-100/80 text-xs text-indigo-950 font-medium shadow-2xs">
-                        <span className="w-5 h-5 rounded-md bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
+                      <div key={idx} className="flex items-start gap-2 bg-white p-2.5 rounded-md border border-slate-200 text-xs text-slate-800">
+                        <span className="w-4 h-4 rounded-xs bg-[#0f172a] text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
                           {idx + 1}
                         </span>
                         <span className="leading-relaxed">{rec}</span>
@@ -289,35 +284,43 @@ export const BoardRiskScannerModal: React.FC<BoardRiskScannerModalProps> = ({
               )}
 
               {/* Tabs Filter */}
-              <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+              <div className="flex items-center gap-1.5 border-b border-slate-200 pb-2">
                 <button
                   onClick={() => setActiveTab('all')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    activeTab === 'all' ? 'bg-[#2b1572] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer border ${
+                    activeTab === 'all'
+                      ? 'bg-[#0f172a] text-white border-[#0f172a]'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                   }`}
                 >
                   Tất cả phân tích
                 </button>
                 <button
                   onClick={() => setActiveTab('bottlenecks')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    activeTab === 'bottlenecks' ? 'bg-[#2b1572] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer border ${
+                    activeTab === 'bottlenecks'
+                      ? 'bg-[#0f172a] text-white border-[#0f172a]'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                   }`}
                 >
                   Điểm nghẽn ({data.bottlenecks?.length || 0})
                 </button>
                 <button
                   onClick={() => setActiveTab('deadlines')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    activeTab === 'deadlines' ? 'bg-[#2b1572] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer border ${
+                    activeTab === 'deadlines'
+                      ? 'bg-[#0f172a] text-white border-[#0f172a]'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                   }`}
                 >
                   Hạn chót & Quá hạn ({data.deadlineRisks?.length || 0})
                 </button>
                 <button
                   onClick={() => setActiveTab('workload')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    activeTab === 'workload' ? 'bg-[#2b1572] text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer border ${
+                    activeTab === 'workload'
+                      ? 'bg-[#0f172a] text-white border-[#0f172a]'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                   }`}
                 >
                   Phân bổ nhân sự ({data.workloadImbalance?.length || 0})
@@ -326,22 +329,22 @@ export const BoardRiskScannerModal: React.FC<BoardRiskScannerModalProps> = ({
 
               {/* Section 1: Bottlenecks */}
               {(activeTab === 'all' || activeTab === 'bottlenecks') && (
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-amber-600" />
-                    <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Điểm nghẽn quy trình</h4>
+                    <h4 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">Điểm nghẽn quy trình</h4>
                   </div>
                   {(!data.bottlenecks || data.bottlenecks.length === 0) ? (
-                    <div className="p-4 bg-emerald-50/60 border border-emerald-200 rounded-2xl flex items-center gap-2 text-xs font-medium text-emerald-800">
+                    <div className="p-3.5 bg-emerald-50/50 border border-emerald-200 rounded-md flex items-center gap-2 text-xs font-medium text-emerald-800">
                       <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>Không phát hiện điểm nghẽn nghiêm trọng nào trên luồng công việc!</span>
+                      <span>Không phát hiện điểm nghẽn nghiêm trọng nào trên luồng công việc.</span>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                       {data.bottlenecks.map((item, idx) => (
-                        <div key={idx} className="p-3.5 rounded-2xl border border-slate-200 bg-white hover:border-[#a6d1fd] transition-all shadow-2xs space-y-2">
+                        <div key={idx} className="p-3.5 rounded-md border border-slate-200 bg-white hover:border-slate-400 transition-colors space-y-2">
                           <div className="flex items-start justify-between gap-2">
-                            <span className="text-xs font-bold text-[#2b1572] line-clamp-1">{item.title}</span>
+                            <span className="text-xs font-semibold text-slate-900 line-clamp-1">{item.title}</span>
                             {getSeverityBadge(item.severity)}
                           </div>
                           <p className="text-xs text-slate-600 leading-relaxed">{item.description}</p>
@@ -354,9 +357,9 @@ export const BoardRiskScannerModal: React.FC<BoardRiskScannerModalProps> = ({
                                     onOpenCard(cid);
                                     onClose();
                                   }}
-                                  className="px-2 py-0.5 bg-slate-100 hover:bg-[#a6d1fd]/40 text-[#2b1572] text-[11px] font-semibold rounded-md transition-colors flex items-center gap-1 cursor-pointer"
+                                  className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-medium rounded-xs transition-colors flex items-center gap-1 cursor-pointer border border-slate-200"
                                 >
-                                  <span>Xem thẻ liên quan</span>
+                                  <span>Xem thẻ</span>
                                   <ExternalLink className="w-3 h-3" />
                                 </button>
                               ))}
@@ -371,15 +374,15 @@ export const BoardRiskScannerModal: React.FC<BoardRiskScannerModalProps> = ({
 
               {/* Section 2: Deadline Risks */}
               {(activeTab === 'all' || activeTab === 'deadlines') && (
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-rose-600" />
-                    <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Thẻ có nguy cơ trễ hạn hoặc quá hạn</h4>
+                    <h4 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">Thẻ có nguy cơ trễ hạn hoặc quá hạn</h4>
                   </div>
                   {(!data.deadlineRisks || data.deadlineRisks.length === 0) ? (
-                    <div className="p-4 bg-emerald-50/60 border border-emerald-200 rounded-2xl flex items-center gap-2 text-xs font-medium text-emerald-800">
+                    <div className="p-3.5 bg-emerald-50/50 border border-emerald-200 rounded-md flex items-center gap-2 text-xs font-medium text-emerald-800">
                       <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>Các thẻ đều nằm trong hạn chót an toàn hoặc chưa có deadline nguy hiểm!</span>
+                      <span>Các thẻ đều nằm trong hạn chót an toàn hoặc chưa có deadline quá hạn.</span>
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -392,18 +395,18 @@ export const BoardRiskScannerModal: React.FC<BoardRiskScannerModalProps> = ({
                               onClose();
                             }
                           }}
-                          className="p-3 bg-white hover:bg-slate-50/90 rounded-2xl border border-slate-200 hover:border-rose-300 transition-all shadow-2xs flex items-center justify-between gap-3 cursor-pointer group"
+                          className="p-3 bg-white hover:bg-slate-50 rounded-md border border-slate-200 hover:border-slate-400 transition-colors flex items-center justify-between gap-3 cursor-pointer group"
                         >
                           <div className="flex items-start gap-3 min-w-0">
-                            <div className="w-7 h-7 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 mt-0.5">
+                            <div className="w-6 h-6 rounded-xs bg-rose-50 text-rose-700 border border-rose-200 flex items-center justify-center shrink-0 mt-0.5">
                               <Clock className="w-3.5 h-3.5" />
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-xs font-bold text-slate-900 group-hover:text-rose-600 transition-colors">
+                                <span className="text-xs font-semibold text-slate-900 group-hover:text-rose-600 transition-colors">
                                   {d.cardTitle}
                                 </span>
-                                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-semibold">
+                                <span className="px-1.5 py-0.2 rounded-xs bg-slate-100 text-slate-600 text-[10px] font-medium border border-slate-200">
                                   {d.listTitle}
                                 </span>
                                 {getSeverityBadge(d.severity)}
@@ -416,7 +419,7 @@ export const BoardRiskScannerModal: React.FC<BoardRiskScannerModalProps> = ({
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-1 text-slate-400 group-hover:text-rose-600 text-xs font-bold shrink-0">
+                          <div className="flex items-center gap-1 text-slate-400 group-hover:text-slate-800 text-xs font-medium shrink-0">
                             <span className="hidden sm:inline">Mở thẻ</span>
                             <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                           </div>
@@ -429,42 +432,42 @@ export const BoardRiskScannerModal: React.FC<BoardRiskScannerModalProps> = ({
 
               {/* Section 3: Workload Balance */}
               {(activeTab === 'all' || activeTab === 'workload') && (
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-indigo-600" />
-                    <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Phân bổ khối lượng nhân sự</h4>
+                    <User className="w-4 h-4 text-slate-700" />
+                    <h4 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">Phân bổ khối lượng nhân sự</h4>
                   </div>
                   {(!data.workloadImbalance || data.workloadImbalance.length === 0) ? (
-                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-500">
+                    <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-500">
                       Chưa có đủ dữ liệu gán người phụ trách trên bảng để phân tích khối lượng.
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
                       {data.workloadImbalance.map((w, idx) => {
                         const isOverloaded = w.overdueCardCount > 0 || w.assignedCardCount > 5;
                         return (
                           <div
                             key={idx}
-                            className={`p-3.5 rounded-2xl border transition-all shadow-2xs space-y-2 ${
-                              isOverloaded ? 'bg-amber-50/60 border-amber-200' : 'bg-white border-slate-200'
+                            className={`p-3 rounded-md border transition-colors space-y-2 ${
+                              isOverloaded ? 'bg-amber-50/50 border-amber-200' : 'bg-white border-slate-200'
                             }`}
                           >
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-bold text-slate-800 truncate">{w.memberName}</span>
+                              <span className="text-xs font-semibold text-slate-800 truncate">{w.memberName}</span>
                               {isOverloaded ? (
-                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-200 text-amber-800">Căng thẳng</span>
+                                <span className="px-1.5 py-0.5 rounded-xs text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">Quá tải</span>
                               ) : (
-                                <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600">Ổn định</span>
+                                <span className="px-1.5 py-0.5 rounded-xs text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">Ổn định</span>
                               )}
                             </div>
                             <div className="flex items-center gap-3 text-xs">
                               <div>
                                 <span className="text-slate-400 block text-[10px]">Đang phụ trách</span>
-                                <strong className="text-slate-700">{w.assignedCardCount} thẻ</strong>
+                                <strong className="text-slate-800 font-semibold">{w.assignedCardCount} thẻ</strong>
                               </div>
                               <div>
                                 <span className="text-slate-400 block text-[10px]">Quá hạn</span>
-                                <strong className={w.overdueCardCount > 0 ? 'text-rose-600' : 'text-slate-700'}>
+                                <strong className={w.overdueCardCount > 0 ? 'text-rose-600 font-semibold' : 'text-slate-800 font-semibold'}>
                                   {w.overdueCardCount} thẻ
                                 </strong>
                               </div>
@@ -482,13 +485,13 @@ export const BoardRiskScannerModal: React.FC<BoardRiskScannerModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between shrink-0">
-          <span className="text-[11px] text-slate-400">
-            Powered by Gemini AI • Tự động quét theo cấu trúc Kanban thực tế
+        <div className="px-5 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
+          <span className="text-[11px] text-slate-500">
+            Hệ thống phân tích rủi ro theo cấu trúc dữ liệu Kanban thực tế
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+            className="px-3.5 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 rounded-md border border-slate-200 transition-colors cursor-pointer"
           >
             Đóng
           </button>

@@ -100,30 +100,30 @@ export default function ExportBoardModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#2b1572]/25 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-md glass-strong border border-white/80 rounded-3xl p-6 sm:p-8 relative shadow-2xl overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-300 p-6 relative overflow-hidden flex flex-col">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-full hover:bg-white/40 text-[#2b1572]/60 hover:text-[#2b1572] transition-colors cursor-pointer"
+          className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
 
         {/* Header */}
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-11 h-11 rounded-2xl bg-[#2b1572] flex items-center justify-center text-[#a6d1fd] shadow-md shadow-[#2b1572]/20">
-            <Download className="w-5 h-5" />
+          <div className="w-9 h-9 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800">
+            <Download className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-[#2b1572]">Xuất dữ liệu Bảng</h2>
-            <p className="text-xs text-[#2b1572]/70">
-              Bảng: <span className="font-semibold text-[#2b1572]">{boardTitle}</span>
+            <h2 className="text-base font-bold text-slate-900">Xuất dữ liệu Bảng</h2>
+            <p className="text-xs text-slate-500">
+              Bảng: <span className="font-semibold text-slate-800">{boardTitle}</span>
             </p>
           </div>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 rounded-xl bg-[#c40000]/10 border border-[#c40000]/20 text-[#c40000] text-xs font-semibold flex items-center gap-2">
+          <div className="mb-4 p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -132,24 +132,24 @@ export default function ExportBoardModal({
         <form onSubmit={handleExport} className="space-y-4">
           {/* Format selection */}
           <div>
-            <label className="block text-xs font-bold text-[#2b1572] mb-2">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-2">
               Định dạng tệp xuất (Format)
             </label>
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => setFormat('json')}
-                className={`p-3.5 rounded-2xl border flex items-center gap-3 transition-all cursor-pointer text-left ${
+                className={`p-3 rounded-md border flex items-center gap-2.5 transition-all cursor-pointer text-left ${
                   format === 'json'
-                    ? 'bg-[#2b1572] text-white border-[#2b1572] shadow-md shadow-[#2b1572]/20'
-                    : 'bg-white/50 border-white/80 text-[#2b1572] hover:bg-white/80'
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                 }`}
               >
-                <FileJson className={`w-6 h-6 shrink-0 ${format === 'json' ? 'text-[#a6d1fd]' : 'text-[#2b1572]'}`} />
+                <FileJson className={`w-5 h-5 shrink-0 ${format === 'json' ? 'text-amber-300' : 'text-slate-600'}`} />
                 <div>
                   <div className="text-xs font-bold">JSON (.json)</div>
-                  <div className={`text-[10px] ${format === 'json' ? 'text-white/70' : 'text-[#2b1572]/60'}`}>
-                    Chuẩn sạch, import lại dễ dàng
+                  <div className={`text-[10px] ${format === 'json' ? 'text-slate-300' : 'text-slate-500'}`}>
+                    Chuẩn sạch, import dễ dàng
                   </div>
                 </div>
               </button>
@@ -157,17 +157,17 @@ export default function ExportBoardModal({
               <button
                 type="button"
                 onClick={() => setFormat('xlsx')}
-                className={`p-3.5 rounded-2xl border flex items-center gap-3 transition-all cursor-pointer text-left ${
+                className={`p-3 rounded-md border flex items-center gap-2.5 transition-all cursor-pointer text-left ${
                   format === 'xlsx'
-                    ? 'bg-[#2b1572] text-white border-[#2b1572] shadow-md shadow-[#2b1572]/20'
-                    : 'bg-white/50 border-white/80 text-[#2b1572] hover:bg-white/80'
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                 }`}
               >
-                <FileSpreadsheet className={`w-6 h-6 shrink-0 ${format === 'xlsx' ? 'text-emerald-300' : 'text-emerald-600'}`} />
+                <FileSpreadsheet className={`w-5 h-5 shrink-0 ${format === 'xlsx' ? 'text-emerald-300' : 'text-emerald-600'}`} />
                 <div>
                   <div className="text-xs font-bold">Excel (.xlsx)</div>
-                  <div className={`text-[10px] ${format === 'xlsx' ? 'text-white/70' : 'text-[#2b1572]/60'}`}>
-                    Nhiều Sheet, xem & báo cáo
+                  <div className={`text-[10px] ${format === 'xlsx' ? 'text-slate-300' : 'text-slate-500'}`}>
+                    Xem báo cáo, bảng tính
                   </div>
                 </div>
               </button>
@@ -176,46 +176,46 @@ export default function ExportBoardModal({
 
           {/* Include Options */}
           <div>
-            <label className="block text-xs font-bold text-[#2b1572] mb-2">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-2">
               Dữ liệu muốn bao gồm (Include)
             </label>
-            <div className="space-y-2 bg-white/40 border border-white/60 rounded-2xl p-3">
-              <label className="flex items-center gap-2.5 text-xs font-semibold text-[#2b1572] cursor-pointer">
+            <div className="space-y-2 bg-slate-50 border border-slate-200 rounded-md p-3">
+              <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-800 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={includeCards}
                   onChange={(e) => setIncludeCards(e.target.checked)}
-                  className="rounded text-[#2b1572] focus:ring-[#2b1572]"
+                  className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                 />
                 <span>Danh sách & Thẻ (Lists & Cards)</span>
               </label>
 
-              <label className="flex items-center gap-2.5 text-xs font-semibold text-[#2b1572] cursor-pointer">
+              <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-800 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={includeLabels}
                   onChange={(e) => setIncludeLabels(e.target.checked)}
-                  className="rounded text-[#2b1572] focus:ring-[#2b1572]"
+                  className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                 />
                 <span>Nhãn màu (Labels)</span>
               </label>
 
-              <label className="flex items-center gap-2.5 text-xs font-semibold text-[#2b1572] cursor-pointer">
+              <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-800 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={includeChecklists}
                   onChange={(e) => setIncludeChecklists(e.target.checked)}
-                  className="rounded text-[#2b1572] focus:ring-[#2b1572]"
+                  className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                 />
                 <span>Checklists & Công việc phụ</span>
               </label>
 
-              <label className="flex items-center gap-2.5 text-xs font-semibold text-[#2b1572] cursor-pointer">
+              <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-800 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={includeMembers}
                   onChange={(e) => setIncludeMembers(e.target.checked)}
-                  className="rounded text-[#2b1572] focus:ring-[#2b1572]"
+                  className="rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                 />
                 <span>Danh sách thành viên (Members)</span>
               </label>
@@ -227,7 +227,7 @@ export default function ExportBoardModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-[#2b1572]/70 hover:bg-white/50 cursor-pointer"
+              className="px-4 py-2 rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer transition-colors"
             >
               Hủy
             </button>
@@ -235,7 +235,7 @@ export default function ExportBoardModal({
             <button
               type="submit"
               disabled={isLoading}
-              className="px-5 py-2 btn-primary text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs"
+              className="px-4 py-2 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-xs"
             >
               {isLoading ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />

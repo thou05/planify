@@ -257,7 +257,7 @@ export default function KanbanCard({
     <div className="relative">
       {/* Top drop insertion indicator line */}
       {dropPosition === 'top' && (
-        <div className="absolute -top-1.5 left-0 right-0 h-1 bg-[#2b1572] rounded-full z-20 shadow-sm animate-in fade-in duration-75" />
+        <div className="absolute -top-1 left-0 right-0 h-0.5 bg-[#2563eb] rounded-xs z-20" />
       )}
 
       <div
@@ -280,17 +280,17 @@ export default function KanbanCard({
         onClick={() => {
           if (!isEditingTitle && !isMenuOpen) onOpenDetail(card.id);
         }}
-        className={`kanban-card group relative p-3 bg-white/95 hover:bg-white rounded-xl shadow-xs hover:shadow-md border border-white/60 hover:border-[#2b1572]/20 transition-all duration-150 cursor-pointer select-none active:cursor-grabbing active:scale-[0.99] ${
-          dropPosition ? 'ring-1 ring-[#2b1572]/30' : ''
-        } ${isMenuOpen ? '!z-30 ring-2 ring-[#2b1572]/20' : ''}`}
+        className={`kanban-card group relative p-3 bg-white rounded-md border border-slate-200 hover:border-slate-400 transition-colors duration-150 cursor-pointer select-none active:cursor-grabbing ${
+          dropPosition ? 'ring-1 ring-blue-500' : ''
+        } ${isMenuOpen ? '!z-30 ring-1 ring-slate-400' : ''}`}
       >
         {/* Labels preview */}
         {card.card_labels?.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-2">
+          <div className="flex flex-wrap gap-1 mb-2">
             {card.card_labels.map((cl: any) => (
               <span
                 key={cl.label?.id || Math.random()}
-                className="px-2 py-0.5 rounded-md text-[10px] font-bold text-white shadow-2xs"
+                className="px-1.5 py-0.5 rounded-xs text-[10px] font-semibold text-white tracking-wide"
                 style={{ backgroundColor: cl.label?.color || '#3b82f6' }}
               >
                 {cl.label?.name}
@@ -310,10 +310,10 @@ export default function KanbanCard({
               onBlur={handleSaveTitle}
               onKeyDown={handleKeyDown}
               onClick={(e) => e.stopPropagation()}
-              className="w-full text-xs font-semibold text-[#2b1572] bg-white border border-[#2b1572]/40 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#2b1572]/20"
+              className="w-full text-xs font-semibold text-slate-900 bg-white border border-blue-500 rounded-md px-2 py-1 focus:outline-none"
             />
           ) : (
-            <h4 className="text-xs font-semibold text-[#2b1572] leading-snug break-words flex-1 group-hover:text-[#1e0f52]">
+            <h4 className="text-xs font-semibold text-slate-900 leading-snug break-words flex-1 group-hover:text-blue-700 transition-colors">
               {card.title}
             </h4>
           )}
@@ -327,10 +327,10 @@ export default function KanbanCard({
             <button
               ref={buttonRef}
               onClick={handleToggleMenu}
-              className={`p-1 rounded-md transition-all cursor-pointer ${
+              className={`p-1 rounded transition-colors cursor-pointer ${
                 isMenuOpen
-                  ? 'opacity-100 bg-[#2b1572]/15 text-[#2b1572]'
-                  : 'opacity-0 group-hover:opacity-100 text-[#2b1572]/50 hover:text-[#2b1572] hover:bg-[#2b1572]/10'
+                  ? 'opacity-100 bg-slate-100 text-slate-900'
+                  : 'opacity-0 group-hover:opacity-100 text-slate-400 hover:text-slate-800 hover:bg-slate-100'
               }`}
               title="Tùy chọn thẻ"
             >
@@ -341,19 +341,19 @@ export default function KanbanCard({
 
         {/* Description Snippet */}
         {card.description && !isEditingTitle && (
-          <p className="text-[11px] text-[#2b1572]/60 mt-1 line-clamp-2 leading-relaxed">
+          <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">
             {card.description}
           </p>
         )}
 
         {/* Card Footer Badges */}
-        <div className="mt-2.5 pt-1.5 border-t border-[#2b1572]/10 flex flex-wrap items-center justify-between gap-2 text-[10px] text-[#2b1572]/60">
-          <div className="flex items-center gap-2.5">
+        <div className="mt-2.5 pt-1.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-500">
+          <div className="flex items-center gap-2">
             {/* Due date badge */}
             {card.due_date && (
               <span
-                className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md border ${
-                  dueDateStatus?.className || ''
+                className={`flex items-center gap-1 px-1.5 py-0.5 rounded-xs border font-medium ${
+                  dueDateStatus?.className || 'bg-slate-50 text-slate-600 border-slate-200'
                 }`}
                 title={`Hạn chót: ${new Date(card.due_date).toLocaleString('vi-VN')}`}
               >
@@ -375,7 +375,7 @@ export default function KanbanCard({
             {/* Checklist badge */}
             {totalChecklistItems > 0 && (
               <span
-                className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md border ${
+                className={`flex items-center gap-1 px-1.5 py-0.5 rounded-xs border font-medium ${
                   completedChecklistItems === totalChecklistItems
                     ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                     : 'bg-slate-50 text-slate-600 border-slate-200'
@@ -390,7 +390,7 @@ export default function KanbanCard({
 
             {/* Comments count */}
             {(card.comments?.length > 0 || card._count?.comments > 0) && (
-              <span className="flex items-center gap-1 text-[#2b1572]/60">
+              <span className="flex items-center gap-1 text-slate-500 font-medium">
                 <MessageSquare className="w-3 h-3 shrink-0" />
                 <span>{card.comments?.length || card._count?.comments}</span>
               </span>
@@ -398,7 +398,7 @@ export default function KanbanCard({
 
             {/* Attachments count */}
             {(card.attachments?.length > 0 || card._count?.attachments > 0) && (
-              <span className="flex items-center gap-1 text-[#2b1572]/60" title="Tệp đính kèm">
+              <span className="flex items-center gap-1 text-slate-500 font-medium" title="Tệp đính kèm">
                 <Paperclip className="w-3 h-3 shrink-0" />
                 <span>{card.attachments?.length || card._count?.attachments}</span>
               </span>
@@ -418,13 +418,13 @@ export default function KanbanCard({
                     key={ca.id || Math.random()}
                     src={uAvatar}
                     alt={uName}
-                    className="w-5 h-5 rounded-full object-cover border-2 border-white shadow-2xs shrink-0"
+                    className="w-5 h-5 rounded-full object-cover border border-white shrink-0"
                     title={uName}
                   />
                 ) : (
                   <div
                     key={ca.id || Math.random()}
-                    className="w-5 h-5 rounded-full bg-[#2b1572] border-2 border-white text-white flex items-center justify-center text-[9px] font-bold shadow-2xs shrink-0"
+                    className="w-5 h-5 rounded-full bg-slate-900 border border-white text-white flex items-center justify-center text-[9px] font-bold shrink-0"
                     title={uName}
                   >
                     {firstLetter}
@@ -434,7 +434,7 @@ export default function KanbanCard({
 
               {card.card_assignees.length > 3 && (
                 <div
-                  className="w-5 h-5 rounded-full bg-slate-200 border-2 border-white text-[#2b1572] flex items-center justify-center text-[8px] font-bold shadow-2xs shrink-0"
+                  className="w-5 h-5 rounded-full bg-slate-200 border border-white text-slate-700 flex items-center justify-center text-[8px] font-bold shrink-0"
                   title={`+${card.card_assignees.length - 3} thành viên khác`}
                 >
                   +{card.card_assignees.length - 3}
@@ -446,7 +446,7 @@ export default function KanbanCard({
 
         {/* Copy link feedback toast overlay */}
         {copySuccess && (
-          <div className="absolute inset-0 bg-[#2b1572]/90 backdrop-blur-xs rounded-xl flex items-center justify-center gap-1.5 text-white text-xs font-semibold z-20 animate-in fade-in duration-150">
+          <div className="absolute inset-0 bg-[#0f172a]/95 rounded-md flex items-center justify-center gap-1.5 text-white text-xs font-semibold z-20 animate-in fade-in duration-150">
             <Check className="w-4 h-4 text-emerald-400" />
             <span>Đã sao chép liên kết thẻ!</span>
           </div>
@@ -455,7 +455,7 @@ export default function KanbanCard({
 
       {/* Bottom drop insertion indicator line */}
       {dropPosition === 'bottom' && (
-        <div className="absolute -bottom-1.5 left-0 right-0 h-1 bg-[#2b1572] rounded-full z-20 shadow-sm animate-in fade-in duration-75" />
+        <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-[#2563eb] rounded-xs z-20" />
       )}
 
       {/* PORTAL FLOATING MENU: Perfectly aligned whether popping above or below */}
@@ -475,7 +475,7 @@ export default function KanbanCard({
             }}
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
-            className="bg-white rounded-xl shadow-2xl border border-[#2b1572]/20 py-1.5 animate-in fade-in zoom-in-95 duration-100"
+            className="bg-white rounded-md shadow-md border border-slate-200 py-1 animate-in fade-in zoom-in-95 duration-100"
           >
             <button
               onClick={(e) => {
@@ -483,9 +483,9 @@ export default function KanbanCard({
                 setIsMenuOpen(false);
                 setIsEditingTitle(true);
               }}
-              className="w-full px-3 py-1.5 text-left text-xs text-[#2b1572] hover:bg-[#2b1572]/10 flex items-center gap-2 transition-colors cursor-pointer"
+              className="w-full px-2.5 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 transition-colors cursor-pointer"
             >
-              <Edit2 className="w-3.5 h-3.5 text-[#2b1572]/70" />
+              <Edit2 className="w-3.5 h-3.5 text-slate-500" />
               <span>Sửa tiêu đề nhanh</span>
             </button>
 
@@ -495,9 +495,9 @@ export default function KanbanCard({
                 setIsMenuOpen(false);
                 onMoveCardRequest(card);
               }}
-              className="w-full px-3 py-1.5 text-left text-xs text-[#2b1572] hover:bg-[#2b1572]/10 flex items-center gap-2 transition-colors cursor-pointer"
+              className="w-full px-2.5 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 transition-colors cursor-pointer"
             >
-              <ArrowRightLeft className="w-3.5 h-3.5 text-[#2b1572]/70" />
+              <ArrowRightLeft className="w-3.5 h-3.5 text-slate-500" />
               <span>Di chuyển thẻ...</span>
             </button>
 
@@ -507,21 +507,21 @@ export default function KanbanCard({
                 setIsMenuOpen(false);
                 onCopyCardRequest(card);
               }}
-              className="w-full px-3 py-1.5 text-left text-xs text-[#2b1572] hover:bg-[#2b1572]/10 flex items-center gap-2 transition-colors cursor-pointer"
+              className="w-full px-2.5 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 transition-colors cursor-pointer"
             >
-              <Copy className="w-3.5 h-3.5 text-[#2b1572]/70" />
+              <Copy className="w-3.5 h-3.5 text-slate-500" />
               <span>Sao chép thẻ...</span>
             </button>
 
             <button
               onClick={handleCopyLink}
-              className="w-full px-3 py-1.5 text-left text-xs text-[#2b1572] hover:bg-[#2b1572]/10 flex items-center gap-2 transition-colors cursor-pointer"
+              className="w-full px-2.5 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 transition-colors cursor-pointer"
             >
-              <LinkIcon className="w-3.5 h-3.5 text-[#2b1572]/70" />
+              <LinkIcon className="w-3.5 h-3.5 text-slate-500" />
               <span>Sao chép liên kết</span>
             </button>
 
-            <div className="h-[1px] bg-[#2b1572]/10 my-1" />
+            <div className="h-[1px] bg-slate-100 my-1" />
 
             <button
               onClick={(e) => {
@@ -529,7 +529,7 @@ export default function KanbanCard({
                 setIsMenuOpen(false);
                 onDeleteCard(card.id);
               }}
-              className="w-full px-3 py-1.5 text-left text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors cursor-pointer"
+              className="w-full px-2.5 py-1.5 text-left text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors cursor-pointer"
             >
               <Trash2 className="w-3.5 h-3.5 text-rose-600" />
               <span>Xóa thẻ</span>

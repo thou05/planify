@@ -48,18 +48,18 @@ export default function CopyListModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-      <div className="bg-white rounded-2xl shadow-2xl border border-[#2b1572]/15 w-full max-w-md overflow-hidden">
-        <div className="p-4 border-b border-[#2b1572]/10 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-2 bg-[#2b1572]/10 text-[#2b1572] rounded-lg">
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+      <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-md overflow-hidden">
+        <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800">
               <Copy className="w-4 h-4" />
             </div>
-            <h3 className="font-bold text-sm text-[#2b1572]">Sao chép danh sách</h3>
+            <h3 className="font-bold text-sm text-slate-900">Sao chép danh sách</h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1 text-[#2b1572]/40 hover:text-[#2b1572] rounded-lg transition-colors cursor-pointer"
+            className="p-1.5 text-slate-400 hover:text-slate-700 rounded-md hover:bg-slate-100 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -67,7 +67,7 @@ export default function CopyListModal({
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-[#2b1572] mb-1.5">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
               Tên danh sách mới
             </label>
             <input
@@ -76,28 +76,28 @@ export default function CopyListModal({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Nhập tên danh sách..."
               autoFocus
-              className="w-full text-xs text-[#2b1572] bg-slate-50 border border-slate-200 focus:border-[#2b1572] rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-[#2b1572]/15"
+              className="w-full text-xs text-slate-900 bg-white border border-slate-300 focus:border-slate-800 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-900/10 transition-all font-medium"
             />
           </div>
 
           <p className="text-[11px] text-slate-500">
             Tất cả {list.cards?.length || 0} thẻ bên trong danh sách{' '}
-            <strong className="text-[#2b1572]">{list.title}</strong> sẽ được sao chép
+            <strong className="text-slate-900 font-semibold">{list.title}</strong> sẽ được sao chép
             nguyên vẹn sang danh sách mới.
           </p>
 
-          <div className="flex items-center justify-end gap-2 pt-2">
+          <div className="flex items-center justify-end gap-2.5 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+              className="px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-md border border-slate-300 transition-colors cursor-pointer"
             >
               Hủy
             </button>
             <button
               type="submit"
               disabled={!title.trim() || isLoading}
-              className="px-4 py-2 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] disabled:opacity-50 rounded-xl shadow-xs transition-colors cursor-pointer"
+              className="px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-50 rounded-md shadow-xs transition-colors cursor-pointer"
             >
               {isLoading ? 'Đang sao chép...' : 'Tạo bản sao'}
             </button>

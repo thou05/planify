@@ -192,17 +192,17 @@ export default function TopBar({
 
   return (
     <>
-      <header className="h-16 px-6 flex items-center justify-between glass-surface !rounded-none !border-x-0 !border-t-0 border-b border-white/40 sticky top-0 z-40 shrink-0">
+      <header className="h-14 px-6 flex items-center justify-between bg-white border-b border-slate-200 sticky top-0 z-40 shrink-0">
         {/* Brand */}
         <div className="flex items-center gap-6">
-          <Link href="/dashboard" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 rounded-xl bg-[#2b1572] flex items-center justify-center text-[#a6d1fd] shadow-md shadow-[#2b1572]/20 group-hover:scale-105 transition-transform">
-              <LayoutGrid className="w-5 h-5" />
+          <Link href="/dashboard" className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 rounded-md bg-slate-900 flex items-center justify-center text-white transition-colors">
+              <LayoutGrid className="w-4 h-4" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-[#2b1572]">
+            <span className="text-lg font-bold tracking-tight text-[#0f172a]">
               Planify
             </span>
-            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#a6d1fd]/50 text-[#2b1572] border border-white/50">
+            <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-sm bg-slate-100 text-slate-600 border border-slate-200">
               v1.0
             </span>
           </Link>
@@ -217,7 +217,7 @@ export default function TopBar({
             onSubmit={handleSearchSubmit}
             className="relative w-full flex items-center"
           >
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#2b1572]/40 pointer-events-none" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             <input
               ref={searchInputRef}
               type="text"
@@ -232,7 +232,7 @@ export default function TopBar({
                 }
               }}
               placeholder="Tìm kiếm không gian, bảng, thẻ..."
-              className="w-full pl-10 pr-28 py-2 text-xs glass-input placeholder:text-[#2b1572]/40 text-[#2b1572] font-medium"
+              className="w-full pl-9 pr-24 py-1.5 text-xs bg-white border border-slate-200 focus:border-blue-600 rounded-md placeholder:text-slate-400 text-slate-900 font-normal outline-none transition-colors"
             />
 
             {/* Clear Button */}
@@ -245,7 +245,7 @@ export default function TopBar({
                   setIsSearchDropdownOpen(false);
                   searchInputRef.current?.focus();
                 }}
-                className="absolute right-24 p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                className="absolute right-20 p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
                 title="Xóa tìm kiếm"
               >
                 <X className="w-3.5 h-3.5" />
@@ -255,7 +255,7 @@ export default function TopBar({
             {/* Dedicated Search Button */}
             <button
               type="submit"
-              className="absolute right-1 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-[#2b1572] hover:bg-[#1e0f52] active:scale-95 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+              className="absolute right-1 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
               title="Tìm kiếm"
             >
               {isSearching ? (
@@ -263,15 +263,15 @@ export default function TopBar({
               ) : (
                 <Search className="w-3.5 h-3.5" />
               )}
-              <span>Tìm kiếm</span>
+              <span>Tìm</span>
             </button>
           </form>
 
           {/* Live Search Results Dropdown directly below Search Bar */}
           {isSearchDropdownOpen && searchQuery.trim().length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-xl border border-white/80 rounded-2xl shadow-2xl shadow-[#2b1572]/20 overflow-hidden z-50 max-h-[70vh] overflow-y-auto animate-scale-up p-2.5 space-y-3">
+            <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden z-50 max-h-[70vh] overflow-y-auto p-2 space-y-2">
               {isSearching && (
-                <div className="flex items-center justify-center gap-2 py-4 text-xs font-medium text-[#2b1572]">
+                <div className="flex items-center justify-center gap-2 py-4 text-xs font-medium text-slate-700">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span>Đang tìm kiếm...</span>
                 </div>
@@ -292,35 +292,36 @@ export default function TopBar({
                 )}
 
               {/* Workspaces list */}
+              {/* Workspaces list */}
               {searchResults.workspaces.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold text-[#2b1572]/60 uppercase tracking-wider">
-                    <FolderKanban className="w-3 h-3 text-[#2b1572]" />
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    <FolderKanban className="w-3 h-3 text-slate-600" />
                     <span>Không gian làm việc ({searchResults.workspaces.length})</span>
                   </div>
-                  <div className="mt-1 space-y-1">
+                  <div className="mt-1 space-y-0.5">
                     {searchResults.workspaces.map((w: any) => (
                       <div
                         key={w.id}
                         onClick={() => handleSelectResult(`/workspaces/${w.id}`)}
-                        className="group flex items-center justify-between p-2 rounded-xl hover:bg-[#2b1572] cursor-pointer transition-colors"
+                        className="group flex items-center justify-between p-2 rounded-md hover:bg-slate-100 cursor-pointer transition-colors"
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-7 h-7 rounded-lg bg-[#a6d1fd]/30 group-hover:bg-white/20 text-[#2b1572] group-hover:text-white flex items-center justify-center shrink-0">
+                          <div className="w-6 h-6 rounded bg-slate-100 text-slate-700 flex items-center justify-center shrink-0 border border-slate-200">
                             <FolderKanban className="w-3.5 h-3.5" />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-xs font-bold text-[#2b1572] group-hover:text-white truncate">
+                            <p className="text-xs font-semibold text-slate-900 truncate">
                               {w.name}
                             </p>
                             {w.description && (
-                              <p className="text-[10px] text-slate-400 group-hover:text-white/70 truncate">
+                              <p className="text-[10px] text-slate-500 truncate">
                                 {w.description}
                               </p>
                             )}
                           </div>
                         </div>
-                        <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-white shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                        <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 shrink-0 group-hover:translate-x-0.5 transition-transform" />
                       </div>
                     ))}
                   </div>
@@ -330,40 +331,40 @@ export default function TopBar({
               {/* Boards list */}
               {searchResults.boards.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold text-[#2b1572]/60 uppercase tracking-wider">
-                    <LayoutGrid className="w-3 h-3 text-[#2b1572]" />
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    <LayoutGrid className="w-3 h-3 text-slate-600" />
                     <span>Bảng công việc ({searchResults.boards.length})</span>
                   </div>
-                  <div className="mt-1 space-y-1">
+                  <div className="mt-1 space-y-0.5">
                     {searchResults.boards.map((b: any) => (
                       <div
                         key={b.id}
                         onClick={() => handleSelectResult(`/boards/${b.id}`)}
-                        className="group flex items-center justify-between p-2 rounded-xl hover:bg-[#2b1572] cursor-pointer transition-colors"
+                        className="group flex items-center justify-between p-2 rounded-md hover:bg-slate-100 cursor-pointer transition-colors"
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-7 h-7 rounded-lg bg-emerald-100 group-hover:bg-white/20 text-emerald-700 group-hover:text-white flex items-center justify-center shrink-0">
+                          <div className="w-6 h-6 rounded bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200">
                             <LayoutGrid className="w-3.5 h-3.5" />
                           </div>
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <p className="text-xs font-bold text-[#2b1572] group-hover:text-white truncate">
+                              <p className="text-xs font-semibold text-slate-900 truncate">
                                 {b.name}
                               </p>
                               {b.workspace_name && (
-                                <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-slate-100 group-hover:bg-white/20 text-slate-600 group-hover:text-white font-medium truncate">
+                                <span className="text-[9px] px-1.5 py-0.2 rounded-sm bg-slate-100 text-slate-600 font-medium truncate border border-slate-200">
                                   {b.workspace_name}
                                 </span>
                               )}
                             </div>
                             {b.description && (
-                              <p className="text-[10px] text-slate-400 group-hover:text-white/70 truncate">
+                              <p className="text-[10px] text-slate-500 truncate">
                                 {b.description}
                               </p>
                             )}
                           </div>
                         </div>
-                        <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-white shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                        <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 shrink-0 group-hover:translate-x-0.5 transition-transform" />
                       </div>
                     ))}
                   </div>
@@ -373,42 +374,42 @@ export default function TopBar({
               {/* Cards list */}
               {searchResults.cards.length > 0 && (
                 <div>
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold text-[#2b1572]/60 uppercase tracking-wider">
-                    <CreditCard className="w-3 h-3 text-[#2b1572]" />
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    <CreditCard className="w-3 h-3 text-slate-600" />
                     <span>Thẻ công việc ({searchResults.cards.length})</span>
                   </div>
-                  <div className="mt-1 space-y-1">
+                  <div className="mt-1 space-y-0.5">
                     {searchResults.cards.map((c: any) => (
                       <div
                         key={c.id}
                         onClick={() =>
                           handleSelectResult(`/boards/${c.board_id}?cardId=${c.id}`)
                         }
-                        className="group flex items-center justify-between p-2 rounded-xl hover:bg-[#2b1572] cursor-pointer transition-colors"
+                        className="group flex items-center justify-between p-2 rounded-md hover:bg-slate-100 cursor-pointer transition-colors"
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="w-7 h-7 rounded-lg bg-indigo-100 group-hover:bg-white/20 text-[#2b1572] group-hover:text-white flex items-center justify-center shrink-0">
+                          <div className="w-6 h-6 rounded bg-slate-100 text-slate-700 flex items-center justify-center shrink-0 border border-slate-200">
                             <CreditCard className="w-3.5 h-3.5" />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-xs font-bold text-[#2b1572] group-hover:text-white truncate">
+                            <p className="text-xs font-semibold text-slate-900 truncate">
                               {c.title}
                             </p>
                             <div className="flex items-center gap-1.5 mt-0.5">
                               {c.board_name && (
-                                <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-[#a6d1fd]/30 group-hover:bg-white/20 text-[#2b1572] group-hover:text-white font-medium truncate">
+                                <span className="text-[9px] px-1.5 py-0.2 rounded-sm bg-slate-100 text-slate-600 font-medium truncate border border-slate-200">
                                   Bảng: {c.board_name}
                                 </span>
                               )}
                               {c.list_name && (
-                                <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-slate-100 group-hover:bg-white/20 text-slate-600 group-hover:text-white font-medium truncate">
+                                <span className="text-[9px] px-1.5 py-0.2 rounded-sm bg-slate-100 text-slate-600 font-medium truncate border border-slate-200">
                                   Cột: {c.list_name}
                                 </span>
                               )}
                             </div>
                           </div>
                         </div>
-                        <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-white shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                        <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 shrink-0 group-hover:translate-x-0.5 transition-transform" />
                       </div>
                     ))}
                   </div>
@@ -419,11 +420,11 @@ export default function TopBar({
         </div>
 
         {/* Right Controls */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {/* Mobile Search Button */}
           <button
             onClick={() => setIsGlobalSearchOpen(true)}
-            className="md:hidden p-2 text-[#2b1572]/70 hover:text-[#2b1572] hover:bg-white/40 rounded-xl transition-colors cursor-pointer"
+            className="md:hidden p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
             title="Tìm kiếm (Ctrl + K)"
           >
             <Search className="w-4 h-4" />
@@ -431,7 +432,7 @@ export default function TopBar({
           {onOpenCreateBoard && (
             <button
               onClick={onOpenCreateBoard}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 btn-primary-glass text-xs cursor-pointer"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 btn-primary text-xs cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Tạo Board</span>
@@ -440,7 +441,7 @@ export default function TopBar({
 
           <button
             onClick={() => setIsMyActivityOpen(true)}
-            className="p-2 text-[#2b1572]/70 hover:text-[#2b1572] hover:bg-white/40 rounded-xl transition-colors cursor-pointer relative"
+            className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors cursor-pointer relative"
             title="Hoạt động của tôi"
           >
             <History className="w-4 h-4" />
@@ -451,16 +452,16 @@ export default function TopBar({
             <button
               type="button"
               onClick={() => setIsNotificationOpen((prev) => !prev)}
-              className={`p-2 rounded-xl transition-all cursor-pointer relative ${
+              className={`p-1.5 rounded-md transition-colors cursor-pointer relative ${
                 isNotificationOpen
-                  ? 'bg-white text-[#2b1572] shadow-xs'
-                  : 'text-[#2b1572]/70 hover:text-[#2b1572] hover:bg-white/40'
+                  ? 'bg-slate-100 text-slate-900'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
               title="Thông báo"
             >
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
-                <span className="min-w-[16px] h-4 px-1 rounded-full bg-[#c40000] text-white text-[9px] font-black flex items-center justify-center absolute -top-0.5 -right-0.5 ring-2 ring-white shadow-xs animate-in zoom-in-50">
+                <span className="min-w-[15px] h-3.5 px-1 rounded-full bg-[#dc2626] text-white text-[9px] font-bold flex items-center justify-center absolute -top-0.5 -right-0.5 ring-1 ring-white">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
@@ -475,13 +476,13 @@ export default function TopBar({
 
           {/* User Profile Pill & Dropdown */}
           {user && (
-            <div className="relative pl-2 border-l border-[#2b1572]/15" ref={userMenuRef}>
+            <div className="relative pl-1.5 border-l border-slate-200" ref={userMenuRef}>
               <button
                 type="button"
                 onClick={() => setIsUserMenuOpen((prev) => !prev)}
-                className="flex items-center gap-2 p-1.5 rounded-2xl hover:bg-white/50 transition-colors cursor-pointer"
+                className="flex items-center gap-2 p-1 rounded-md hover:bg-slate-100 transition-colors cursor-pointer"
               >
-                <div className="w-8 h-8 rounded-full bg-[#2b1572]/10 border border-white/80 overflow-hidden flex items-center justify-center text-[#2b1572] font-bold text-xs shadow-sm relative">
+                <div className="w-7 h-7 rounded-full bg-slate-900 text-white overflow-hidden flex items-center justify-center font-bold text-xs relative">
                   {user.avatar ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
@@ -489,27 +490,27 @@ export default function TopBar({
                     <span>{user.name.charAt(0).toUpperCase()}</span>
                   )}
                   {pendingInvitesCount > 0 && (
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#c40000] ring-2 ring-white absolute top-0 right-0" />
+                    <span className="w-2 h-2 rounded-full bg-[#dc2626] ring-1 ring-white absolute top-0 right-0" />
                   )}
                 </div>
                 <div className="hidden lg:block text-left">
-                  <div className="text-xs font-bold text-[#2b1572] leading-tight truncate max-w-[120px]">
+                  <div className="text-xs font-semibold text-slate-900 leading-tight truncate max-w-[120px]">
                     {user.name}
                   </div>
-                  <div className="text-[10px] text-[#2b1572]/60 truncate max-w-[120px]">
+                  <div className="text-[10px] text-slate-500 truncate max-w-[120px]">
                     {user.email}
                   </div>
                 </div>
-                <ChevronDown className="w-3.5 h-3.5 text-[#2b1572]/50 hidden sm:block" />
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
               </button>
 
               {/* User Dropdown Menu */}
               {isUserMenuOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-2xl py-2 z-50 animate-fade-in">
-                  <div className="px-4 py-2 border-b border-slate-100">
-                    <p className="text-xs font-black text-[#2b1572] truncate">{user.name}</p>
-                    <p className="text-[11px] text-[#2b1572]/60 truncate">{user.email}</p>
-                    <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-800 font-bold text-[9px]">
+                <div className="absolute right-0 mt-1.5 w-60 bg-white border border-slate-200 rounded-lg shadow-md py-1.5 z-50">
+                  <div className="px-3 py-1.5 border-b border-slate-100">
+                    <p className="text-xs font-bold text-slate-900 truncate">{user.name}</p>
+                    <p className="text-[11px] text-slate-500 truncate">{user.email}</p>
+                    <span className="inline-block mt-1 px-1.5 py-0.5 rounded-sm bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold text-[9px]">
                       {user.status || 'ACTIVE'}
                     </span>
                   </div>
@@ -518,32 +519,32 @@ export default function TopBar({
                     <button
                       type="button"
                       onClick={() => openProfileTab('profile')}
-                      className="w-full px-4 py-2 text-left text-xs font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2.5 cursor-pointer transition-colors"
+                      className="w-full px-3 py-1.5 text-left text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
                     >
-                      <UserIcon className="w-4 h-4 text-[#2b1572]/70" />
+                      <UserIcon className="w-3.5 h-3.5 text-slate-500" />
                       <span>Thông tin cá nhân</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => openProfileTab('security')}
-                      className="w-full px-4 py-2 text-left text-xs font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2.5 cursor-pointer transition-colors"
+                      className="w-full px-3 py-1.5 text-left text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
                     >
-                      <Shield className="w-4 h-4 text-[#2b1572]/70" />
+                      <Shield className="w-3.5 h-3.5 text-slate-500" />
                       <span>Bảo mật & Đổi mật khẩu</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => openProfileTab('invitations')}
-                      className="w-full px-4 py-2 text-left text-xs font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center justify-between cursor-pointer transition-colors"
+                      className="w-full px-3 py-1.5 text-left text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center justify-between cursor-pointer transition-colors"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <Mail className="w-4 h-4 text-[#2b1572]/70" />
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-3.5 h-3.5 text-slate-500" />
                         <span>Lời mời tham gia</span>
                       </div>
                       {pendingInvitesCount > 0 && (
-                        <span className="px-1.5 py-0.5 rounded-full bg-[#c40000] text-white text-[10px] font-black">
+                        <span className="px-1.5 py-0.2 rounded-full bg-[#dc2626] text-white text-[9px] font-bold">
                           {pendingInvitesCount}
                         </span>
                       )}
@@ -552,16 +553,16 @@ export default function TopBar({
                     <button
                       type="button"
                       onClick={() => openProfileTab('notifications')}
-                      className="w-full px-4 py-2 text-left text-xs font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2.5 cursor-pointer transition-colors"
+                      className="w-full px-3 py-1.5 text-left text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
                     >
-                      <Bell className="w-4 h-4 text-[#2b1572]/70" />
+                      <Bell className="w-3.5 h-3.5 text-slate-500" />
                       <span>Cài đặt thông báo</span>
                     </button>
 
                     <Link
                       href="/profile"
                       onClick={() => setIsUserMenuOpen(false)}
-                      className="w-full px-4 py-2 text-left text-xs font-semibold text-[#2b1572]/80 hover:bg-slate-100 flex items-center gap-2.5 cursor-pointer transition-colors border-t border-slate-100"
+                      className="w-full px-3 py-1.5 text-left text-xs font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors border-t border-slate-100"
                     >
                       <span>Trang hồ sơ chi tiết</span>
                     </Link>
@@ -574,9 +575,9 @@ export default function TopBar({
                         setIsUserMenuOpen(false);
                         logout();
                       }}
-                      className="w-full px-4 py-2 text-left text-xs font-bold text-[#c40000] hover:bg-rose-50 flex items-center gap-2.5 cursor-pointer transition-colors"
+                      className="w-full px-3 py-1.5 text-left text-xs font-medium text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors"
                     >
-                      <LogOut className="w-4 h-4" />
+                      <LogOut className="w-3.5 h-3.5" />
                       <span>Đăng xuất</span>
                     </button>
                   </div>

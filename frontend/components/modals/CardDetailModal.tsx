@@ -1257,7 +1257,7 @@ export default function CardDetailModal({
       return <FileCode className="w-5 h-5 text-indigo-600" />;
     }
     if (url && !url.includes('/attachments/') && (url.startsWith('http://') || url.startsWith('https://'))) {
-      return <ExternalLink className="w-5 h-5 text-[#2b1572]" />;
+      return <ExternalLink className="w-5 h-5 text-slate-900" />;
     }
     return <File className="w-5 h-5 text-slate-600" />;
   };
@@ -1496,7 +1496,7 @@ export default function CardDetailModal({
       status: 'normal',
       label: 'Đang thực hiện',
       badgeBg: 'bg-slate-50 text-slate-700 border-slate-200',
-      dotBg: 'bg-[#2b1572]',
+      dotBg: 'bg-slate-900',
       icon: Calendar,
     };
   };
@@ -2112,11 +2112,11 @@ export default function CardDetailModal({
               <span
                 key={idx}
                 className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[11px] font-bold mx-0.5 transition-all ${isMember
-                    ? 'bg-[#a6d1fd]/40 text-[#2b1572] border border-[#a6d1fd]/70 shadow-2xs'
+                    ? 'bg-slate-200 text-slate-900 border border-slate-300 shadow-2xs'
                     : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                   }`}
               >
-                <span className="text-[#2b1572]/70 font-black">@</span>
+                <span className="text-slate-500 font-black">@</span>
                 <span>{part.slice(1)}</span>
               </span>
             );
@@ -2128,14 +2128,14 @@ export default function CardDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-      <div className="bg-white rounded-2xl shadow-2xl border border-[#2b1572]/15 w-full max-w-5xl h-[88vh] max-h-[850px] flex flex-col overflow-hidden relative">
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+      <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-5xl h-[88vh] max-h-[850px] flex flex-col overflow-hidden relative">
         {/* Modal Header */}
-        <div className="p-5 pb-3 border-b border-[#2b1572]/10 flex items-start justify-between gap-4 shrink-0">
+        <div className="p-4 sm:p-5 pb-3 border-b border-slate-200 flex items-start justify-between gap-4 shrink-0">
           <div className="flex-1">
-            <div className="flex items-center gap-2 text-xs text-[#2b1572]/60 mb-1">
+            <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
               <span>Trong danh sách</span>
-              <span className="font-bold text-[#2b1572] underline">
+              <span className="font-semibold text-slate-800 underline underline-offset-2">
                 {card?.list?.title || 'Đang tải...'}
               </span>
             </div>
@@ -2144,14 +2144,14 @@ export default function CardDetailModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               onBlur={handleSaveAll}
-              className="w-full text-base sm:text-lg font-bold text-[#2b1572] bg-transparent hover:bg-slate-50 focus:bg-white border border-transparent hover:border-slate-200 focus:border-[#2b1572]/30 rounded-lg px-2 py-1 -ml-2 focus:outline-none transition-all"
+              className="w-full text-base sm:text-lg font-bold text-slate-900 bg-transparent hover:bg-slate-50 focus:bg-white border border-transparent hover:border-slate-200 focus:border-slate-800 rounded-md px-2 py-1 -ml-2 focus:outline-none transition-all"
               placeholder="Tiêu đề thẻ..."
             />
           </div>
 
           <button
             onClick={onClose}
-            className="p-1.5 text-[#2b1572]/40 hover:text-[#2b1572] hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -2160,8 +2160,8 @@ export default function CardDetailModal({
         {/* Modal Body */}
         {isLoading && !card ? (
           <div className="flex-1 p-12 flex flex-col items-center justify-center gap-3">
-            <div className="w-8 h-8 border-3 border-[#2b1572]/20 border-t-[#2b1572] rounded-full animate-spin" />
-            <span className="text-xs text-[#2b1572]/60 font-medium">Đang tải thông tin thẻ...</span>
+            <div className="w-8 h-8 border-3 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
+            <span className="text-xs text-slate-500 font-medium">Đang tải thông tin thẻ...</span>
           </div>
         ) : (
           <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
@@ -2179,11 +2179,11 @@ export default function CardDetailModal({
                     setMemberSearchQuery('');
                   }}
                   className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer ${assignees.length > 0
-                      ? 'text-[#2b1572] bg-[#a6d1fd]/30 hover:bg-[#a6d1fd]/50 border border-[#a6d1fd]/60'
-                      : 'text-[#2b1572] bg-slate-100 hover:bg-slate-200'
+                      ? 'text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300'
+                      : 'text-slate-900 bg-slate-100 hover:bg-slate-200'
                     }`}
                 >
-                  <Users className="w-3.5 h-3.5 text-[#2b1572]/70" />
+                  <Users className="w-3.5 h-3.5 text-slate-500" />
                   <span>Thành viên {assignees.length > 0 && `(${assignees.length})`}</span>
                 </button>
 
@@ -2196,11 +2196,11 @@ export default function CardDetailModal({
                     setLabelSearchQuery('');
                   }}
                   className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer ${cardLabels.length > 0
-                      ? 'text-[#2b1572] bg-[#a6d1fd]/30 hover:bg-[#a6d1fd]/50 border border-[#a6d1fd]/60'
-                      : 'text-[#2b1572] bg-slate-100 hover:bg-slate-200'
+                      ? 'text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300'
+                      : 'text-slate-900 bg-slate-100 hover:bg-slate-200'
                     }`}
                 >
-                  <Tag className="w-3.5 h-3.5 text-[#2b1572]/70" />
+                  <Tag className="w-3.5 h-3.5 text-slate-500" />
                   <span>Nhãn {cardLabels.length > 0 && `(${cardLabels.length})`}</span>
                 </button>
 
@@ -2210,9 +2210,9 @@ export default function CardDetailModal({
                     setIsAddingChecklist(true);
                     setNewChecklistTitle('Việc cần làm');
                   }}
-                  className="px-2.5 py-1.5 text-xs font-semibold text-[#2b1572] bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="px-2.5 py-1.5 text-xs font-semibold text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <CheckSquare className="w-3.5 h-3.5 text-[#2b1572]/70" />
+                  <CheckSquare className="w-3.5 h-3.5 text-slate-500" />
                   <span>Checklist</span>
                 </button>
 
@@ -2234,11 +2234,11 @@ export default function CardDetailModal({
                   type="button"
                   onClick={handleOpenDatesModal}
                   className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer ${dueDate
-                      ? 'text-[#2b1572] bg-[#a6d1fd]/30 hover:bg-[#a6d1fd]/50 border border-[#a6d1fd]/60'
-                      : 'text-[#2b1572] bg-slate-100 hover:bg-slate-200'
+                      ? 'text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300'
+                      : 'text-slate-900 bg-slate-100 hover:bg-slate-200'
                     }`}
                 >
-                  <Calendar className="w-3.5 h-3.5 text-[#2b1572]/70" />
+                  <Calendar className="w-3.5 h-3.5 text-slate-500" />
                   <span>{dueDate ? 'Thời hạn' : 'Ngày hạn'}</span>
                 </button>
 
@@ -2250,11 +2250,11 @@ export default function CardDetailModal({
                     setSelectedUploadFile(null);
                   }}
                   className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer ${attachments.length > 0
-                      ? 'text-[#2b1572] bg-[#a6d1fd]/30 hover:bg-[#a6d1fd]/50 border border-[#a6d1fd]/60'
-                      : 'text-[#2b1572] bg-slate-100 hover:bg-slate-200'
+                      ? 'text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300'
+                      : 'text-slate-900 bg-slate-100 hover:bg-slate-200'
                     }`}
                 >
-                  <Paperclip className="w-3.5 h-3.5 text-[#2b1572]/70" />
+                  <Paperclip className="w-3.5 h-3.5 text-slate-500" />
                   <span>Đính kèm {attachments.length > 0 && `(${attachments.length})`}</span>
                 </button>
 
@@ -2262,12 +2262,12 @@ export default function CardDetailModal({
                   type="button"
                   onClick={handleOpenRelationsModal}
                   className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer ${relations.length > 0
-                      ? 'text-[#2b1572] bg-[#a6d1fd]/30 hover:bg-[#a6d1fd]/50 border border-[#a6d1fd]/60'
-                      : 'text-[#2b1572] bg-slate-100 hover:bg-slate-200'
+                      ? 'text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300'
+                      : 'text-slate-900 bg-slate-100 hover:bg-slate-200'
                     }`}
                   title="Quản lý mối quan hệ giữa các thẻ (cha/con, chặn/bị chặn, liên quan)"
                 >
-                  <GitBranch className="w-3.5 h-3.5 text-[#2b1572]/70" />
+                  <GitBranch className="w-3.5 h-3.5 text-slate-500" />
                   <span>Liên kết {relations.length > 0 && `(${relations.length})`}</span>
                 </button>
 
@@ -2276,7 +2276,7 @@ export default function CardDetailModal({
                 <button
                   type="button"
                   onClick={() => onMoveRequest(card)}
-                  className="px-2 py-1.5 text-xs font-semibold text-slate-600 hover:text-[#2b1572] hover:bg-slate-100 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                  className="px-2 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
                   title="Di chuyển thẻ"
                 >
                   <ArrowRightLeft className="w-3.5 h-3.5" />
@@ -2286,7 +2286,7 @@ export default function CardDetailModal({
                 <button
                   type="button"
                   onClick={() => onCopyRequest(card)}
-                  className="px-2 py-1.5 text-xs font-semibold text-slate-600 hover:text-[#2b1572] hover:bg-slate-100 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                  className="px-2 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
                   title="Sao chép thẻ"
                 >
                   <Copy className="w-3.5 h-3.5" />
@@ -2296,7 +2296,7 @@ export default function CardDetailModal({
                 <button
                   type="button"
                   onClick={handleCopyLink}
-                  className="px-2 py-1.5 text-xs font-semibold text-slate-600 hover:text-[#2b1572] hover:bg-slate-100 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                  className="px-2 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
                   title="Sao chép liên kết"
                 >
                   <LinkIcon className="w-3.5 h-3.5" />
@@ -2316,8 +2316,8 @@ export default function CardDetailModal({
 
               {/* Inline Add Checklist Form if active */}
               {isAddingChecklist && (
-                <div className="p-3 bg-slate-50 border border-[#2b1572]/20 rounded-xl space-y-2 animate-in fade-in duration-150 shadow-2xs">
-                  <div className="text-xs font-bold text-[#2b1572]">Tiêu đề Checklist</div>
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-md space-y-2 animate-in fade-in duration-150 shadow-2xs">
+                  <div className="text-xs font-bold text-slate-900">Tiêu đề Checklist</div>
                   <input
                     type="text"
                     value={newChecklistTitle}
@@ -2327,14 +2327,14 @@ export default function CardDetailModal({
                       if (e.key === 'Escape') setIsAddingChecklist(false);
                     }}
                     autoFocus
-                    className="w-full text-xs text-[#2b1572] bg-white border border-slate-200 focus:border-[#2b1572] rounded-lg p-2 focus:outline-none shadow-2xs"
+                    className="w-full text-xs text-slate-900 bg-white border border-slate-200 focus:border-slate-300 rounded-lg p-2 focus:outline-none shadow-2xs"
                     placeholder="Ví dụ: Việc cần làm..."
                   />
                   <div className="flex items-center gap-2 pt-1">
                     <button
                       type="button"
                       onClick={handleCreateChecklist}
-                      className="px-3 py-1.5 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] rounded-lg transition-colors cursor-pointer shadow-2xs"
+                      className="px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer shadow-2xs"
                     >
                       Thêm
                     </button>
@@ -2354,7 +2354,7 @@ export default function CardDetailModal({
                   {/* Assigned Members Section */}
                   {assignees.length > 0 && (
                     <div className="space-y-1.5">
-                      <div className="text-[11px] font-bold text-[#2b1572]/70 uppercase tracking-wider">
+                      <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                         Thành viên
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5">
@@ -2371,7 +2371,7 @@ export default function CardDetailModal({
                                 setIsMembersModalOpen(true);
                                 setMemberSearchQuery('');
                               }}
-                              className="group flex items-center gap-1.5 pl-1 pr-2.5 py-1 bg-slate-100 hover:bg-[#2b1572]/10 rounded-full border border-slate-200/80 transition-all cursor-pointer shadow-2xs"
+                              className="group flex items-center gap-1.5 pl-1 pr-2.5 py-1 bg-slate-100 hover:bg-slate-100 rounded-full border border-slate-200/80 transition-all cursor-pointer shadow-2xs"
                               title={`${uName} (${member?.role || 'MEMBER'}) - Bấm để thay đổi`}
                             >
                               {uAvatar ? (
@@ -2381,11 +2381,11 @@ export default function CardDetailModal({
                                   className="w-5 h-5 rounded-full object-cover"
                                 />
                               ) : (
-                                <div className="w-5 h-5 rounded-full bg-[#2b1572] text-white flex items-center justify-center text-[10px] font-bold shadow-2xs">
+                                <div className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold shadow-2xs">
                                   {firstLetter}
                                 </div>
                               )}
-                              <span className="text-xs font-semibold text-[#2b1572]">{uName}</span>
+                              <span className="text-xs font-semibold text-slate-900">{uName}</span>
                             </div>
                           );
                         })}
@@ -2396,7 +2396,7 @@ export default function CardDetailModal({
                             setIsMembersModalOpen(true);
                             setMemberSearchQuery('');
                           }}
-                          className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-[#2b1572] flex items-center justify-center transition-colors cursor-pointer"
+                          className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-900 flex items-center justify-center transition-colors cursor-pointer"
                           title="Thêm thành viên"
                         >
                           <Plus className="w-3.5 h-3.5" />
@@ -2408,7 +2408,7 @@ export default function CardDetailModal({
                   {/* Card Labels Section */}
                   {cardLabels.length > 0 && (
                     <div className="space-y-1.5">
-                      <div className="text-[11px] font-bold text-[#2b1572]/70 uppercase tracking-wider">
+                      <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                         Nhãn
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5">
@@ -2437,7 +2437,7 @@ export default function CardDetailModal({
                             setEditingLabel(null);
                             setLabelSearchQuery('');
                           }}
-                          className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#2b1572] flex items-center justify-center transition-colors cursor-pointer"
+                          className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-900 flex items-center justify-center transition-colors cursor-pointer"
                           title="Thêm nhãn"
                         >
                           <Plus className="w-3.5 h-3.5" />
@@ -2452,9 +2452,9 @@ export default function CardDetailModal({
               {dueDate && deadlineStatus && (
                 <div
                   ref={datesSectionRef}
-                  className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs transition-all ${
+                  className={`p-3.5 rounded-lg border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs transition-all ${
                     highlightedSection === 'dates'
-                      ? 'ring-2 ring-[#2b1572] bg-[#a6d1fd]/25 scale-[1.01]'
+                      ? 'ring-2 ring-slate-900 bg-slate-100 scale-[1.01]'
                       : isCompleted
                         ? 'bg-emerald-50/80 border-emerald-200'
                         : deadlineStatus.status === 'overdue'
@@ -2471,7 +2471,7 @@ export default function CardDetailModal({
                           ? 'bg-emerald-600 text-white'
                           : relations.some(r => r.type === 'BLOCKED_BY' && !r.related_card?.is_due_date_completed && r.related_card?.status !== 'DONE')
                             ? 'border-2 border-rose-400 bg-rose-50 text-rose-600 hover:border-rose-600'
-                            : 'border-2 border-slate-300 hover:border-[#2b1572] bg-white'
+                            : 'border-2 border-slate-300 hover:border-slate-300 bg-white'
                         }`}
                       title={
                         isCompleted
@@ -2490,7 +2490,7 @@ export default function CardDetailModal({
 
                     <div className="space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs font-bold text-[#2b1572]">
+                        <span className="text-xs font-bold text-slate-900">
                           {startDate ? (
                             <>
                               {new Date(startDate).toLocaleDateString('vi-VN', {
@@ -2518,8 +2518,8 @@ export default function CardDetailModal({
                       </div>
 
                       {reminderLabel && (
-                        <div className="flex items-center gap-1.5 text-[11px] text-[#2b1572]/70 font-medium">
-                          <Bell className="w-3 h-3 text-[#2b1572]/60" />
+                        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
+                          <Bell className="w-3 h-3 text-slate-500" />
                           <span>{reminderLabel}</span>
                         </div>
                       )}
@@ -2529,7 +2529,7 @@ export default function CardDetailModal({
                   <button
                     type="button"
                     onClick={handleOpenDatesModal}
-                    className="self-end sm:self-center px-2.5 py-1 text-xs font-semibold text-[#2b1572] hover:bg-[#2b1572]/10 bg-white/70 border border-[#2b1572]/20 rounded-lg transition-colors cursor-pointer"
+                    className="self-end sm:self-center px-2.5 py-1 text-xs font-semibold text-slate-900 hover:bg-slate-100 bg-white/70 border border-slate-200 rounded-lg transition-colors cursor-pointer"
                   >
                     Sửa ngày
                   </button>
@@ -2538,8 +2538,8 @@ export default function CardDetailModal({
 
               {/* Description Section */}
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-xs font-bold text-[#2b1572] uppercase tracking-wider">
-                  <AlignLeft className="w-4 h-4 text-[#2b1572]/70" />
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-900 uppercase tracking-wider">
+                  <AlignLeft className="w-4 h-4 text-slate-500" />
                   <span>Mô tả chi tiết</span>
                 </div>
                 <textarea
@@ -2548,7 +2548,7 @@ export default function CardDetailModal({
                   onChange={(e) => setDescription(e.target.value)}
                   onBlur={handleSaveAll}
                   placeholder="Thêm mô tả chi tiết hơn về công việc này..."
-                  className="w-full text-xs text-[#2b1572] bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-[#2b1572]/40 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#2b1572]/15 transition-all resize-y"
+                  className="w-full text-xs text-slate-900 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-slate-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-all resize-y"
                 />
               </div>
 
@@ -2556,17 +2556,17 @@ export default function CardDetailModal({
               {attachments.length > 0 && (
                 <div
                   ref={attachmentsSectionRef}
-                  className={`space-y-3 pt-4 border-t border-slate-100 transition-all rounded-2xl ${
+                  className={`space-y-3 pt-4 border-t border-slate-100 transition-all rounded-lg ${
                     highlightedSection === 'attachments'
-                      ? 'ring-2 ring-[#2b1572] bg-[#a6d1fd]/20 p-2'
+                      ? 'ring-2 ring-slate-900 bg-slate-100 p-2'
                       : ''
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs font-bold text-[#2b1572] uppercase tracking-wider">
-                      <Paperclip className="w-4 h-4 text-[#2b1572]/70" />
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-900 uppercase tracking-wider">
+                      <Paperclip className="w-4 h-4 text-slate-500" />
                       <span>Tệp đính kèm</span>
-                      <span className="px-2 py-0.5 rounded-full bg-[#2b1572]/10 text-[#2b1572] text-[11px] font-bold">
+                      <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-900 text-[11px] font-bold">
                         {attachments.length}
                       </span>
                     </div>
@@ -2578,7 +2578,7 @@ export default function CardDetailModal({
                         setAttachmentTab('upload');
                         setSelectedUploadFile(null);
                       }}
-                      className="text-xs font-semibold text-[#2b1572] hover:bg-[#a6d1fd]/30 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                      className="text-xs font-semibold text-slate-900 hover:bg-slate-100 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Thêm</span>
@@ -2594,7 +2594,7 @@ export default function CardDetailModal({
                       return (
                         <div
                           key={att.id}
-                          className="group flex items-start gap-3 p-2.5 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-slate-50 transition-all shadow-2xs relative"
+                          className="group flex items-start gap-3 p-2.5 rounded-md border border-slate-200/80 bg-slate-50/50 hover:bg-slate-50 transition-all shadow-2xs relative"
                         >
                           {/* Thumbnail / File Icon */}
                           {isImg ? (
@@ -2619,7 +2619,7 @@ export default function CardDetailModal({
                               </div>
                             </div>
                           ) : (
-                            <div className="w-12 h-12 rounded-xl bg-white border border-slate-200/90 flex items-center justify-center shrink-0 shadow-2xs">
+                            <div className="w-12 h-12 rounded-md bg-white border border-slate-200/90 flex items-center justify-center shrink-0 shadow-2xs">
                               {getFileIcon(att.file_name, att.file_url)}
                             </div>
                           )}
@@ -2637,13 +2637,13 @@ export default function CardDetailModal({
                                     if (e.key === 'Escape') setEditingAttachmentId(null);
                                   }}
                                   autoFocus
-                                  className="text-xs text-[#2b1572] font-semibold bg-white border border-[#2b1572] rounded-lg px-2 py-1 focus:outline-none flex-1 shadow-2xs"
+                                  className="text-xs text-slate-900 font-semibold bg-white border border-slate-300 rounded-lg px-2 py-1 focus:outline-none flex-1 shadow-2xs"
                                 />
                                 <button
                                   type="button"
                                   onClick={() => handleUpdateAttachmentName(att.id)}
                                   disabled={isUpdatingAttachment}
-                                  className="px-2.5 py-1 text-xs font-semibold text-white bg-[#2b1572] rounded-lg cursor-pointer"
+                                  className="px-2.5 py-1 text-xs font-semibold text-white bg-slate-900 rounded-lg cursor-pointer"
                                 >
                                   Lưu
                                 </button>
@@ -2662,7 +2662,7 @@ export default function CardDetailModal({
                                     href={att.file_url || '#'}
                                     target={att.file_url ? '_blank' : undefined}
                                     rel="noopener noreferrer"
-                                    className="text-xs font-bold text-[#2b1572] hover:underline truncate"
+                                    className="text-xs font-bold text-slate-900 hover:underline truncate"
                                     title={att.file_name || att.file_url || ''}
                                   >
                                     {att.file_name || att.file_url || 'Tệp đính kèm'}
@@ -2672,7 +2672,7 @@ export default function CardDetailModal({
                                       href={att.file_url}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="text-slate-400 hover:text-[#2b1572] shrink-0"
+                                      className="text-slate-400 hover:text-slate-900 shrink-0"
                                       title="Mở trong tab mới"
                                     >
                                       <ExternalLink className="w-3 h-3" />
@@ -2694,7 +2694,7 @@ export default function CardDetailModal({
                                   <button
                                     type="button"
                                     onClick={() => setPreviewImageAttachment(att)}
-                                    className="hover:text-[#2b1572] hover:underline cursor-pointer flex items-center gap-0.5 text-[11px]"
+                                    className="hover:text-slate-900 hover:underline cursor-pointer flex items-center gap-0.5 text-[11px]"
                                   >
                                     <span>Xem trước</span>
                                   </button>
@@ -2706,7 +2706,7 @@ export default function CardDetailModal({
                                     download={att.file_name || 'attachment'}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="hover:text-[#2b1572] hover:underline cursor-pointer flex items-center gap-0.5 text-[11px]"
+                                    className="hover:text-slate-900 hover:underline cursor-pointer flex items-center gap-0.5 text-[11px]"
                                   >
                                     <span>Tải xuống</span>
                                   </a>
@@ -2718,7 +2718,7 @@ export default function CardDetailModal({
                                     setEditingAttachmentId(att.id);
                                     setEditingAttachmentName(att.file_name || '');
                                   }}
-                                  className="hover:text-[#2b1572] hover:underline cursor-pointer text-[11px]"
+                                  className="hover:text-slate-900 hover:underline cursor-pointer text-[11px]"
                                 >
                                   <span>Đổi tên</span>
                                 </button>
@@ -2761,17 +2761,17 @@ export default function CardDetailModal({
                 return (
                   <div
                     ref={relationsSectionRef}
-                    className={`space-y-4 pt-4 border-t border-slate-100 transition-all rounded-2xl ${
+                    className={`space-y-4 pt-4 border-t border-slate-100 transition-all rounded-lg ${
                       highlightedSection === 'relations'
-                        ? 'ring-2 ring-[#2b1572] bg-[#a6d1fd]/20 p-2'
+                        ? 'ring-2 ring-slate-900 bg-slate-100 p-2'
                         : ''
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-xs font-bold text-[#2b1572] uppercase tracking-wider">
-                        <GitBranch className="w-4 h-4 text-[#2b1572]/70" />
+                      <div className="flex items-center gap-2 text-xs font-bold text-slate-900 uppercase tracking-wider">
+                        <GitBranch className="w-4 h-4 text-slate-500" />
                         <span>Mối quan hệ thẻ</span>
-                        <span className="px-2 py-0.5 rounded-full bg-[#2b1572]/10 text-[#2b1572] text-[11px] font-bold">
+                        <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-900 text-[11px] font-bold">
                           {relations.length}
                         </span>
                       </div>
@@ -2779,7 +2779,7 @@ export default function CardDetailModal({
                       <button
                         type="button"
                         onClick={handleOpenRelationsModal}
-                        className="text-xs font-semibold text-[#2b1572] hover:bg-[#a6d1fd]/30 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                        className="text-xs font-semibold text-slate-900 hover:bg-slate-100 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>Thêm</span>
@@ -2788,7 +2788,7 @@ export default function CardDetailModal({
 
                     {/* 1. Parent Card (if this card is a subtask of another card) */}
                     {parentRelation?.related_card && (
-                      <div className="p-3.5 bg-purple-50/70 border border-purple-200/80 rounded-2xl space-y-2 shadow-2xs">
+                      <div className="p-3.5 bg-purple-50/70 border border-purple-200/80 rounded-lg space-y-2 shadow-2xs">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5 text-[11px] font-bold text-purple-800 uppercase tracking-wider">
                             <FolderTree className="w-3.5 h-3.5" />
@@ -2805,10 +2805,10 @@ export default function CardDetailModal({
                         </div>
                         <div
                           onClick={() => handleNavigateToRelatedCard(parentRelation.related_card!.id)}
-                          className="flex items-center justify-between gap-3 p-2.5 bg-white rounded-xl border border-purple-100 hover:border-purple-300 hover:shadow-2xs cursor-pointer transition-all"
+                          className="flex items-center justify-between gap-3 p-2.5 bg-white rounded-md border border-purple-100 hover:border-purple-300 hover:shadow-2xs cursor-pointer transition-all"
                         >
                           <div className="min-w-0 flex items-center gap-2">
-                            <span className="text-xs font-bold text-[#2b1572] hover:underline truncate">
+                            <span className="text-xs font-bold text-slate-900 hover:underline truncate">
                               {parentRelation.related_card.title}
                             </span>
                             {parentRelation.related_card.list?.name && (
@@ -2831,11 +2831,11 @@ export default function CardDetailModal({
 
                     {/* 2. Subtasks (if this card has subtasks) */}
                     {subtasks.length > 0 && (
-                      <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3 shadow-2xs">
+                      <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-lg space-y-3 shadow-2xs">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
-                            <ListTodo className="w-4 h-4 text-[#2b1572]" />
-                            <span className="text-xs font-bold text-[#2b1572]">Thẻ con (Subtasks)</span>
+                            <ListTodo className="w-4 h-4 text-slate-900" />
+                            <span className="text-xs font-bold text-slate-900">Thẻ con (Subtasks)</span>
                             <span className="text-[11px] font-semibold text-slate-500">
                               {completedSubtasksCount}/{subtasks.length} hoàn thành ({subtaskProgress}%)
                             </span>
@@ -2860,7 +2860,7 @@ export default function CardDetailModal({
                             return (
                               <div
                                 key={st.id}
-                                className="flex items-center justify-between gap-2 p-2 bg-white rounded-xl border border-slate-200/80 hover:border-[#a6d1fd] hover:shadow-2xs transition-all group"
+                                className="flex items-center justify-between gap-2 p-2 bg-white rounded-md border border-slate-200/80 hover:border-slate-300 hover:shadow-2xs transition-all group"
                               >
                                 <div
                                   onClick={() => handleNavigateToRelatedCard(relCard.id)}
@@ -2877,7 +2877,7 @@ export default function CardDetailModal({
                                   </div>
                                   <span
                                     className={`text-xs font-semibold truncate ${
-                                      isDone ? 'line-through text-slate-400' : 'text-[#2b1572] hover:underline'
+                                      isDone ? 'line-through text-slate-400' : 'text-slate-900 hover:underline'
                                     }`}
                                   >
                                     {relCard.title}
@@ -2909,7 +2909,7 @@ export default function CardDetailModal({
                     {/* 3. Blocked By Warning & List */}
                     {blockedBy.length > 0 && (
                       <div
-                        className={`p-3.5 rounded-2xl border space-y-2.5 shadow-2xs ${
+                        className={`p-3.5 rounded-lg border space-y-2.5 shadow-2xs ${
                           hasUncompletedBlocker
                             ? 'bg-rose-50/90 border-rose-200 text-rose-900'
                             : 'bg-slate-50 border-slate-200'
@@ -2934,7 +2934,7 @@ export default function CardDetailModal({
                             return (
                               <div
                                 key={b.id}
-                                className="flex items-center justify-between gap-2 p-2 bg-white rounded-xl border border-slate-200 hover:border-rose-300 hover:shadow-2xs transition-all group"
+                                className="flex items-center justify-between gap-2 p-2 bg-white rounded-md border border-slate-200 hover:border-rose-300 hover:shadow-2xs transition-all group"
                               >
                                 <div
                                   onClick={() => handleNavigateToRelatedCard(relCard.id)}
@@ -2942,7 +2942,7 @@ export default function CardDetailModal({
                                 >
                                   <span
                                     className={`text-xs font-semibold truncate ${
-                                      isDone ? 'line-through text-slate-400' : 'text-[#2b1572] hover:underline'
+                                      isDone ? 'line-through text-slate-400' : 'text-slate-900 hover:underline'
                                     }`}
                                   >
                                     {relCard.title}
@@ -2982,7 +2982,7 @@ export default function CardDetailModal({
 
                     {/* 4. Blocks (Chặn thẻ khác) */}
                     {blocks.length > 0 && (
-                      <div className="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-2xl space-y-2 shadow-2xs">
+                      <div className="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-lg space-y-2 shadow-2xs">
                         <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
                           <AlertCircle className="w-4 h-4 text-amber-600" />
                           <span>Thẻ này đang chặn tiến độ của ({blocks.length}) thẻ</span>
@@ -2996,13 +2996,13 @@ export default function CardDetailModal({
                             return (
                               <div
                                 key={blk.id}
-                                className="flex items-center justify-between gap-2 p-2 bg-white rounded-xl border border-amber-100 hover:border-amber-300 hover:shadow-2xs transition-all group"
+                                className="flex items-center justify-between gap-2 p-2 bg-white rounded-md border border-amber-100 hover:border-amber-300 hover:shadow-2xs transition-all group"
                               >
                                 <div
                                   onClick={() => handleNavigateToRelatedCard(relCard.id)}
                                   className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer"
                                 >
-                                  <span className="text-xs font-semibold text-[#2b1572] hover:underline truncate">
+                                  <span className="text-xs font-semibold text-slate-900 hover:underline truncate">
                                     {relCard.title}
                                   </span>
                                   {(relCard.list?.title || relCard.list?.name) && (
@@ -3031,11 +3031,11 @@ export default function CardDetailModal({
 
                     {/* 5. Relates to & Duplicate */}
                     {(relatesTo.length > 0 || duplicates.length > 0) && (
-                      <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-2.5 shadow-2xs">
+                      <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-lg space-y-2.5 shadow-2xs">
                         {relatesTo.length > 0 && (
                           <div className="space-y-1.5">
-                            <div className="flex items-center gap-1.5 text-xs font-bold text-[#2b1572]">
-                              <Link2 className="w-3.5 h-3.5 text-[#2b1572]/70" />
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
+                              <Link2 className="w-3.5 h-3.5 text-slate-500" />
                               <span>Thẻ liên quan ({relatesTo.length})</span>
                             </div>
                             <div className="space-y-1">
@@ -3046,13 +3046,13 @@ export default function CardDetailModal({
                                 return (
                                   <div
                                     key={rel.id}
-                                    className="flex items-center justify-between gap-2 p-2 bg-white rounded-xl border border-slate-200 hover:border-[#a6d1fd] hover:shadow-2xs transition-all group"
+                                    className="flex items-center justify-between gap-2 p-2 bg-white rounded-md border border-slate-200 hover:border-slate-300 hover:shadow-2xs transition-all group"
                                   >
                                     <div
                                       onClick={() => handleNavigateToRelatedCard(relCard.id)}
                                       className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer"
                                     >
-                                      <span className="text-xs font-semibold text-[#2b1572] hover:underline truncate">
+                                      <span className="text-xs font-semibold text-slate-900 hover:underline truncate">
                                         {relCard.title}
                                       </span>
                                       {relCard.list?.name && (
@@ -3078,7 +3078,7 @@ export default function CardDetailModal({
 
                         {duplicates.length > 0 && (
                           <div className="space-y-1.5 pt-2 border-t border-slate-200/60">
-                            <div className="flex items-center gap-1.5 text-xs font-bold text-[#2b1572]">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
                               <CopyCheck className="w-3.5 h-3.5 text-indigo-600" />
                               <span>Trùng lặp với ({duplicates.length})</span>
                             </div>
@@ -3090,13 +3090,13 @@ export default function CardDetailModal({
                                 return (
                                   <div
                                     key={dup.id}
-                                    className="flex items-center justify-between gap-2 p-2 bg-white rounded-xl border border-indigo-100 hover:border-indigo-300 hover:shadow-2xs transition-all group"
+                                    className="flex items-center justify-between gap-2 p-2 bg-white rounded-md border border-indigo-100 hover:border-indigo-300 hover:shadow-2xs transition-all group"
                                   >
                                     <div
                                       onClick={() => handleNavigateToRelatedCard(relCard.id)}
                                       className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer"
                                     >
-                                      <span className="text-xs font-semibold text-[#2b1572] hover:underline truncate">
+                                      <span className="text-xs font-semibold text-slate-900 hover:underline truncate">
                                         {relCard.title}
                                       </span>
                                       {relCard.list?.name && (
@@ -3128,9 +3128,9 @@ export default function CardDetailModal({
               {/* Checklists Section */}
               <div
                 ref={checklistsSectionRef}
-                className={`space-y-4 transition-all rounded-2xl ${
+                className={`space-y-4 transition-all rounded-lg ${
                   highlightedSection === 'checklists'
-                    ? 'ring-2 ring-[#2b1572] bg-[#a6d1fd]/20 p-2'
+                    ? 'ring-2 ring-slate-900 bg-slate-100 p-2'
                     : ''
                 }`}
               >
@@ -3149,7 +3149,7 @@ export default function CardDetailModal({
                         <button
                           type="button"
                           onClick={() => toggleChecklistCollapse(cl.id)}
-                          className="p-1 -ml-1 text-[#2b1572]/60 hover:text-[#2b1572] hover:bg-slate-100 rounded-lg transition-colors cursor-pointer shrink-0"
+                          className="p-1 -ml-1 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer shrink-0"
                           title={isCollapsed ? 'Mở rộng checklist' : 'Thu gọn checklist'}
                         >
                           <ChevronDown
@@ -3158,7 +3158,7 @@ export default function CardDetailModal({
                           />
                         </button>
 
-                        <CheckSquare className="w-4 h-4 text-[#2b1572] shrink-0" />
+                        <CheckSquare className="w-4 h-4 text-slate-900 shrink-0" />
                         {editingChecklistId === cl.id ? (
                           <input
                             type="text"
@@ -3170,7 +3170,7 @@ export default function CardDetailModal({
                               if (e.key === 'Escape') setEditingChecklistId(null);
                             }}
                             autoFocus
-                            className="text-xs font-bold text-[#2b1572] bg-white border border-[#2b1572]/40 rounded-md px-2 py-1 focus:outline-none w-full"
+                            className="text-xs font-bold text-slate-900 bg-white border border-slate-300 rounded-md px-2 py-1 focus:outline-none w-full"
                           />
                         ) : (
                           <span
@@ -3178,7 +3178,7 @@ export default function CardDetailModal({
                               setEditingChecklistId(cl.id);
                               setEditingChecklistTitle(cl.title);
                             }}
-                            className="text-xs font-bold text-[#2b1572] uppercase tracking-wider cursor-pointer hover:bg-slate-100 px-1.5 py-0.5 rounded-md transition-colors truncate"
+                            className="text-xs font-bold text-slate-900 uppercase tracking-wider cursor-pointer hover:bg-slate-100 px-1.5 py-0.5 rounded-md transition-colors truncate"
                             title="Bấm để đổi tên checklist"
                           >
                             {cl.title}
@@ -3208,7 +3208,7 @@ export default function CardDetailModal({
                       </div>
                       <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
                         <div
-                          className={`h-full transition-all duration-300 rounded-full ${isAllDone ? 'bg-emerald-500' : 'bg-[#2b1572]'
+                          className={`h-full transition-all duration-300 rounded-full ${isAllDone ? 'bg-emerald-500' : 'bg-slate-900'
                             }`}
                           style={{ width: `${progressPercent}%` }}
                         />
@@ -3221,7 +3221,7 @@ export default function CardDetailModal({
                         {cl.items?.map((item) => (
                           <div
                             key={item.id}
-                            className="group flex items-start justify-between gap-2.5 p-2 hover:bg-slate-50/90 rounded-xl transition-all border border-transparent hover:border-slate-200/60"
+                            className="group flex items-start justify-between gap-2.5 p-2 hover:bg-slate-50/90 rounded-md transition-all border border-transparent hover:border-slate-200/60"
                           >
                             <div className="flex items-start gap-2.5 flex-1 min-w-0">
                               <button
@@ -3231,7 +3231,7 @@ export default function CardDetailModal({
                                 }
                                 className={`mt-0.5 w-4 h-4 rounded shrink-0 flex items-center justify-center transition-all cursor-pointer ${item.is_completed
                                     ? 'bg-emerald-600 text-white shadow-2xs'
-                                    : 'border border-slate-300 hover:border-[#2b1572] bg-white'
+                                    : 'border border-slate-300 hover:border-slate-300 bg-white'
                                   }`}
                               >
                                 {item.is_completed && <Check className="w-3 h-3" />}
@@ -3249,7 +3249,7 @@ export default function CardDetailModal({
                                       if (e.key === 'Escape') setEditingItemId(null);
                                     }}
                                     autoFocus
-                                    className="text-xs text-[#2b1572] bg-white border border-[#2b1572]/40 rounded-md px-2 py-0.5 focus:outline-none w-full"
+                                    className="text-xs text-slate-900 bg-white border border-slate-300 rounded-md px-2 py-0.5 focus:outline-none w-full"
                                   />
                                 ) : (
                                   <span
@@ -3259,7 +3259,7 @@ export default function CardDetailModal({
                                     }}
                                     className={`text-xs leading-relaxed cursor-pointer break-words block ${item.is_completed
                                         ? 'line-through text-slate-400'
-                                        : 'text-slate-800 hover:text-[#2b1572]'
+                                        : 'text-slate-800 hover:text-slate-900'
                                       }`}
                                   >
                                     {item.content}
@@ -3307,7 +3307,7 @@ export default function CardDetailModal({
                                           setActiveItemMember({ checklistId: cl.id, item });
                                           setItemMemberSearchQuery('');
                                         }}
-                                        className="flex items-center gap-1 pl-0.5 pr-2 py-0.5 bg-slate-100 hover:bg-[#2b1572]/10 rounded-full border border-slate-200 transition-all cursor-pointer shadow-2xs"
+                                        className="flex items-center gap-1 pl-0.5 pr-2 py-0.5 bg-slate-100 hover:bg-slate-100 rounded-full border border-slate-200 transition-all cursor-pointer shadow-2xs"
                                         title={`${item.member.user?.name || 'Thành viên'} - Bấm để đổi`}
                                       >
                                         {item.member.user?.avatar ? (
@@ -3317,11 +3317,11 @@ export default function CardDetailModal({
                                             className="w-4 h-4 rounded-full object-cover shrink-0"
                                           />
                                         ) : (
-                                          <div className="w-4 h-4 rounded-full bg-[#2b1572] text-white flex items-center justify-center text-[8px] font-bold shrink-0">
+                                          <div className="w-4 h-4 rounded-full bg-slate-900 text-white flex items-center justify-center text-[8px] font-bold shrink-0">
                                             {(item.member.user?.name || 'U').charAt(0).toUpperCase()}
                                           </div>
                                         )}
-                                        <span className="text-[10px] font-semibold text-[#2b1572] truncate max-w-[100px]">
+                                        <span className="text-[10px] font-semibold text-slate-900 truncate max-w-[100px]">
                                           {item.member.user?.name}
                                         </span>
                                       </button>
@@ -3339,7 +3339,7 @@ export default function CardDetailModal({
                                   setActiveItemDate({ checklistId: cl.id, item });
                                   setTempItemDueDate(toLocalDatetimeString(item.due_date));
                                 }}
-                                className="p-1 text-slate-400 hover:text-[#2b1572] hover:bg-slate-200/60 rounded-md transition-colors cursor-pointer"
+                                className="p-1 text-slate-400 hover:text-slate-900 hover:bg-slate-200/60 rounded-md transition-colors cursor-pointer"
                                 title="Thời hạn mục này"
                               >
                                 <Calendar className="w-3.5 h-3.5" />
@@ -3351,7 +3351,7 @@ export default function CardDetailModal({
                                   setActiveItemMember({ checklistId: cl.id, item });
                                   setItemMemberSearchQuery('');
                                 }}
-                                className="p-1 text-slate-400 hover:text-[#2b1572] hover:bg-slate-200/60 rounded-md transition-colors cursor-pointer"
+                                className="p-1 text-slate-400 hover:text-slate-900 hover:bg-slate-200/60 rounded-md transition-colors cursor-pointer"
                                 title="Phân công thành viên"
                               >
                                 <UserPlus className="w-3.5 h-3.5" />
@@ -3388,13 +3388,13 @@ export default function CardDetailModal({
                                 }
                               }}
                               placeholder="Nhập nội dung công việc cần làm..."
-                              className="w-full text-xs text-[#2b1572] bg-slate-50 border border-[#2b1572]/30 focus:border-[#2b1572] rounded-xl px-3 py-2 focus:outline-none focus:bg-white shadow-2xs"
+                              className="w-full text-xs text-slate-900 bg-slate-50 border border-slate-200 focus:border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:bg-white shadow-2xs"
                             />
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
                                 onClick={() => handleCreateChecklistItem(cl.id)}
-                                className="px-3 py-1.5 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] rounded-lg transition-colors cursor-pointer shadow-2xs"
+                                className="px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer shadow-2xs"
                               >
                                 Thêm
                               </button>
@@ -3417,7 +3417,7 @@ export default function CardDetailModal({
                               setActiveNewItemChecklistId(cl.id);
                               setNewItemContent('');
                             }}
-                            className="mt-2 text-xs font-semibold text-[#2b1572] bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+                            className="mt-2 text-xs font-semibold text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-colors cursor-pointer"
                           >
                             <Plus className="w-3.5 h-3.5" />
                             <span>Thêm một mục</span>
@@ -3435,12 +3435,12 @@ export default function CardDetailModal({
             <div className="w-full lg:w-[380px] xl:w-[420px] shrink-0 bg-[#f8fafc] border-t lg:border-t-0 lg:border-l border-slate-200 flex flex-col min-h-0 overflow-hidden">
               {/* Pane Header */}
               <div className="px-4 py-3.5 border-b border-slate-200 bg-white/80 backdrop-blur-xs flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-2 text-xs font-bold text-[#2b1572]">
-                  <div className="w-6 h-6 rounded-lg bg-[#a6d1fd]/30 flex items-center justify-center text-[#2b1572]">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                  <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-slate-900">
                     <MessageSquare className="w-3.5 h-3.5" />
                   </div>
-                  <span className="text-sm font-bold text-[#2b1572]">Hoạt động & Bình luận</span>
-                  <span className="px-2 py-0.5 rounded-full bg-[#2b1572]/10 text-[#2b1572] text-[11px] font-bold">
+                  <span className="text-sm font-bold text-slate-900">Hoạt động & Bình luận</span>
+                  <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-900 text-[11px] font-bold">
                     {comments.length + activities.length}
                   </span>
                 </div>
@@ -3448,10 +3448,10 @@ export default function CardDetailModal({
                   type="button"
                   onClick={() => cardId && fetchCardActivities(cardId)}
                   disabled={isLoadingActivities}
-                  className="p-1 rounded-lg text-slate-400 hover:text-[#2b1572] hover:bg-slate-100 transition-colors cursor-pointer"
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
                   title="Làm mới hoạt động"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingActivities ? 'animate-spin text-[#2b1572]' : ''}`} />
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingActivities ? 'animate-spin text-slate-900' : ''}`} />
                 </button>
               </div>
 
@@ -3461,7 +3461,7 @@ export default function CardDetailModal({
                   type="button"
                   onClick={() => setActivityTab('comments')}
                   className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activityTab === 'comments'
-                      ? 'bg-[#2b1572] text-white shadow-xs'
+                      ? 'bg-slate-900 text-white shadow-xs'
                       : 'text-slate-600 hover:bg-slate-200/70'
                     }`}
                 >
@@ -3471,7 +3471,7 @@ export default function CardDetailModal({
                   type="button"
                   onClick={() => setActivityTab('activities')}
                   className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${activityTab === 'activities'
-                      ? 'bg-[#2b1572] text-white shadow-xs'
+                      ? 'bg-slate-900 text-white shadow-xs'
                       : 'text-slate-600 hover:bg-slate-200/70'
                     }`}
                 >
@@ -3488,16 +3488,16 @@ export default function CardDetailModal({
                       <img
                         src={currentUser.avatar}
                         alt={currentUser.name || 'User'}
-                        className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5 ring-2 ring-[#a6d1fd]/40 shadow-2xs"
+                        className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5 ring-2 ring-slate-200 shadow-2xs"
                       />
                     ) : (
-                      <div className="w-7 h-7 rounded-full bg-[#2b1572] text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 shadow-2xs">
+                      <div className="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 shadow-2xs">
                         {(currentUser?.name || 'U').charAt(0).toUpperCase()}
                       </div>
                     )}
 
                     {/* Composer Input Box */}
-                    <div className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl p-2.5 focus-within:border-[#2b1572] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#2b1572]/10 transition-all shadow-2xs relative">
+                    <div className="flex-1 bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus-within:border-slate-300 focus-within:bg-white focus-within:ring-2 focus-within:ring-slate-200 transition-all shadow-2xs relative">
                       <textarea
                         ref={commentInputRef}
                         value={commentText}
@@ -3505,15 +3505,15 @@ export default function CardDetailModal({
                         onKeyDown={handleCommentKeyDown}
                         rows={commentText.length > 50 || isMentionOpen ? 3 : 2}
                         placeholder="Viết bình luận..."
-                        className="w-full text-xs text-[#2b1572] bg-transparent resize-none focus:outline-none placeholder:text-slate-400 leading-relaxed"
+                        className="w-full text-xs text-slate-900 bg-transparent resize-none focus:outline-none placeholder:text-slate-400 leading-relaxed"
                       />
 
                       {/* Mention Autocomplete Dropdown */}
                       {isMentionOpen && (
-                        <div className="absolute left-0 bottom-full mb-1 z-30 w-64 max-h-48 overflow-y-auto bg-white rounded-xl shadow-xl border border-[#2b1572]/20 p-1 space-y-0.5 animate-in zoom-in-95 duration-100">
+                        <div className="absolute left-0 bottom-full mb-1 z-30 w-64 max-h-48 overflow-y-auto bg-white rounded-md shadow-xl border border-slate-200 p-1 space-y-0.5 animate-in zoom-in-95 duration-100">
                           <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 flex items-center justify-between">
                             <span>Nhắc tên thành viên</span>
-                            <span className="text-[9px] text-[#2b1572] font-semibold">Enter chèn</span>
+                            <span className="text-[9px] text-slate-900 font-semibold">Enter chèn</span>
                           </div>
                           {filteredMentionMembers.length === 0 ? (
                             <div className="p-3 text-center text-xs text-slate-400">
@@ -3533,7 +3533,7 @@ export default function CardDetailModal({
                                   onClick={() => handleSelectMention(mName)}
                                   className={`w-full p-1.5 rounded-lg flex items-center gap-2 text-left transition-colors cursor-pointer ${
                                     isSelected
-                                      ? 'bg-[#a6d1fd]/40 text-[#2b1572]'
+                                      ? 'bg-slate-200 text-slate-900'
                                       : 'hover:bg-slate-100 text-slate-700'
                                   }`}
                                 >
@@ -3544,7 +3544,7 @@ export default function CardDetailModal({
                                       className="w-5 h-5 rounded-full object-cover shrink-0"
                                     />
                                   ) : (
-                                    <div className="w-5 h-5 rounded-full bg-[#2b1572] text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                                    <div className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
                                       {mName.charAt(0).toUpperCase()}
                                     </div>
                                   )}
@@ -3552,7 +3552,7 @@ export default function CardDetailModal({
                                     <div className="text-xs font-bold truncate leading-tight flex items-center gap-1.5">
                                       <span className="truncate">{mName}</span>
                                       {m.isBoardMember ? (
-                                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#a6d1fd]/40 text-[#2b1572] font-semibold shrink-0">
+                                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-200 text-slate-900 font-semibold shrink-0">
                                           Bảng
                                         </span>
                                       ) : (
@@ -3580,7 +3580,7 @@ export default function CardDetailModal({
                           type="button"
                           onClick={handleSubmitComment}
                           disabled={!commentText.trim() || isSubmittingComment}
-                          className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] disabled:opacity-40 rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+                          className="px-3.5 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-40 rounded-md shadow-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
                         >
                           {isSubmittingComment ? (
                             <span>Đang gửi...</span>
@@ -3626,7 +3626,7 @@ export default function CardDetailModal({
                     if (action.includes('thành viên') || action.includes('phụ trách')) {
                       return <Users className="w-3.5 h-3.5 text-blue-600 shrink-0" />;
                     }
-                    return <History className="w-3.5 h-3.5 text-[#2b1572] shrink-0" />;
+                    return <History className="w-3.5 h-3.5 text-slate-900 shrink-0" />;
                   };
 
                   const renderActivityBlock = (act: ActivityItem) => {
@@ -3647,13 +3647,13 @@ export default function CardDetailModal({
                             className="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5 shadow-2xs"
                           />
                         ) : (
-                          <div className="w-6 h-6 rounded-full bg-slate-200 text-[#2b1572] flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 shadow-2xs">
+                          <div className="w-6 h-6 rounded-full bg-slate-200 text-slate-900 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 shadow-2xs">
                             {actorName.charAt(0).toUpperCase()}
                           </div>
                         )}
-                        <div className="flex-1 min-w-0 bg-slate-100/80 group-hover:bg-white group-hover:border-[#a6d1fd] group-hover:shadow-xs rounded-xl p-2.5 border border-slate-200/80 transition-all shadow-2xs">
+                        <div className="flex-1 min-w-0 bg-slate-100/80 group-hover:bg-white group-hover:border-slate-300 group-hover:shadow-xs rounded-md p-2.5 border border-slate-200/80 transition-all shadow-2xs">
                           <div className="flex items-center justify-between gap-1.5 mb-1">
-                            <span className="text-xs font-bold text-[#2b1572] truncate">
+                            <span className="text-xs font-bold text-slate-900 truncate">
                               {actorName}
                             </span>
                             <span className="text-[10px] text-slate-400 shrink-0" title={act.created_at}>
@@ -3663,7 +3663,7 @@ export default function CardDetailModal({
                           <div className="text-xs text-slate-600 flex items-start gap-1.5 break-words leading-relaxed">
                             <span className="mt-0.5 shrink-0">{getActivityActionIcon(act.action)}</span>
                             <span className="flex-1">{act.action}</span>
-                            <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-[#2b1572] transition-opacity shrink-0 mt-0.5" />
+                            <ChevronRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 text-slate-900 transition-opacity shrink-0 mt-0.5" />
                           </div>
                         </div>
                       </div>
@@ -3686,21 +3686,21 @@ export default function CardDetailModal({
                             className="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5 shadow-2xs"
                           />
                         ) : (
-                          <div className="w-6 h-6 rounded-full bg-[#2b1572] text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 shadow-2xs">
+                          <div className="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 shadow-2xs">
                             {authorName.charAt(0).toUpperCase()}
                           </div>
                         )}
 
                         {/* Comment Bubble */}
-                        <div className="flex-1 bg-white hover:bg-slate-50/90 rounded-xl p-2.5 border border-slate-200 transition-colors relative min-w-0 shadow-2xs">
+                        <div className="flex-1 bg-white hover:bg-slate-50/90 rounded-md p-2.5 border border-slate-200 transition-colors relative min-w-0 shadow-2xs">
                           {/* Comment Header */}
                           <div className="flex items-center justify-between gap-1.5 mb-1">
                             <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                              <span className="text-xs font-bold text-[#2b1572] truncate">
+                              <span className="text-xs font-bold text-slate-900 truncate">
                                 {authorName}
                               </span>
                               {isAuthor && (
-                                <span className="text-[9px] px-1 py-0.2 bg-[#a6d1fd]/40 text-[#2b1572] font-semibold rounded">
+                                <span className="text-[9px] px-1 py-0.2 bg-slate-200 text-slate-900 font-semibold rounded">
                                   Bạn
                                 </span>
                               )}
@@ -3715,7 +3715,7 @@ export default function CardDetailModal({
                                 <button
                                   type="button"
                                   onClick={() => handleStartEditComment(cmt)}
-                                  className="p-1 text-slate-400 hover:text-[#2b1572] hover:bg-slate-100 rounded transition-colors cursor-pointer"
+                                  className="p-1 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors cursor-pointer"
                                   title="Chỉnh sửa"
                                 >
                                   <Edit2 className="w-2.5 h-2.5" />
@@ -3742,12 +3742,12 @@ export default function CardDetailModal({
                                 onChange={handleEditCommentChange}
                                 onKeyDown={(e) => handleEditCommentKeyDown(e, cmt.id)}
                                 rows={2}
-                                className="w-full text-xs text-[#2b1572] bg-white border border-[#2b1572] rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-[#2b1572]/15 shadow-2xs leading-relaxed"
+                                className="w-full text-xs text-slate-900 bg-white border border-slate-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-slate-200 shadow-2xs leading-relaxed"
                               />
 
                               {/* Edit Mention Autocomplete Dropdown */}
                               {isEditMentionOpen && (
-                                <div className="absolute left-0 bottom-full mb-1 z-30 w-56 max-h-40 overflow-y-auto bg-white rounded-xl shadow-xl border border-[#2b1572]/20 p-1 space-y-0.5 animate-in zoom-in-95 duration-100">
+                                <div className="absolute left-0 bottom-full mb-1 z-30 w-56 max-h-40 overflow-y-auto bg-white rounded-md shadow-xl border border-slate-200 p-1 space-y-0.5 animate-in zoom-in-95 duration-100">
                                   <div className="px-2 py-1 text-[9px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
                                     Nhắc tên thành viên
                                   </div>
@@ -3767,7 +3767,7 @@ export default function CardDetailModal({
                                           type="button"
                                           onClick={() => handleSelectEditMention(mName)}
                                           className={`w-full p-1.5 rounded-lg flex items-center gap-1.5 text-left transition-colors cursor-pointer ${isSelected
-                                              ? 'bg-[#a6d1fd]/40 text-[#2b1572]'
+                                              ? 'bg-slate-200 text-slate-900'
                                               : 'hover:bg-slate-100 text-slate-700'
                                             }`}
                                         >
@@ -3778,7 +3778,7 @@ export default function CardDetailModal({
                                               className="w-4 h-4 rounded-full object-cover shrink-0"
                                             />
                                           ) : (
-                                            <div className="w-4 h-4 rounded-full bg-[#2b1572] text-white flex items-center justify-center text-[9px] font-bold shrink-0">
+                                            <div className="w-4 h-4 rounded-full bg-slate-900 text-white flex items-center justify-center text-[9px] font-bold shrink-0">
                                               {mName.charAt(0).toUpperCase()}
                                             </div>
                                           )}
@@ -3802,7 +3802,7 @@ export default function CardDetailModal({
                                   type="button"
                                   onClick={() => handleSaveEditComment(cmt.id)}
                                   disabled={!editingCommentText.trim() || isUpdatingComment}
-                                  className="px-3 py-1 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] disabled:opacity-50 rounded-lg shadow-xs transition-colors cursor-pointer"
+                                  className="px-3 py-1 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-50 rounded-lg shadow-xs transition-colors cursor-pointer"
                                 >
                                   {isUpdatingComment ? '...' : 'Lưu'}
                                 </button>
@@ -3821,7 +3821,7 @@ export default function CardDetailModal({
                   if (activityTab === 'activities') {
                     if (activities.length === 0) {
                       return (
-                        <div className="py-10 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-2 bg-white/70 rounded-2xl border border-dashed border-slate-200 p-4">
+                        <div className="py-10 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-2 bg-white/70 rounded-lg border border-dashed border-slate-200 p-4">
                           <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
                             <History className="w-4 h-4" />
                           </div>
@@ -3841,7 +3841,7 @@ export default function CardDetailModal({
                               type="button"
                               onClick={handleLoadMoreCardActivities}
                               disabled={isLoadingMoreActivities}
-                              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-[#2b1572] bg-slate-100 hover:bg-slate-200/80 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-900 bg-slate-100 hover:bg-slate-200/80 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                             >
                               {isLoadingMoreActivities ? 'Đang tải thêm...' : 'Tải thêm hoạt động cũ hơn'}
                             </button>
@@ -3854,7 +3854,7 @@ export default function CardDetailModal({
                   // Default: 'comments'
                   if (sortedComments.length === 0) {
                     return (
-                      <div className="py-10 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-2 bg-white/70 rounded-2xl border border-dashed border-slate-200 p-4">
+                      <div className="py-10 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-2 bg-white/70 rounded-lg border border-dashed border-slate-200 p-4">
                         <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
                           <MessageCircle className="w-4 h-4" />
                         </div>
@@ -3876,14 +3876,14 @@ export default function CardDetailModal({
         <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-md transition-colors cursor-pointer"
           >
             Đóng
           </button>
           <button
             onClick={handleSaveAll}
             disabled={isSaving}
-            className="px-4 py-2 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] disabled:opacity-50 rounded-xl shadow-xs transition-colors cursor-pointer"
+            className="px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-50 rounded-md shadow-xs transition-colors cursor-pointer"
           >
             {isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
           </button>
@@ -3891,20 +3891,20 @@ export default function CardDetailModal({
 
         {/* AI TASK BREAKDOWN MODAL */}
         {isAiBreakdownOpen && (
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-60 animate-in fade-in duration-150">
-            <div className="bg-white rounded-3xl shadow-2xl border border-purple-200/80 w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-60 animate-in fade-in duration-150">
+            <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
               {/* Header */}
-              <div className="p-4 sm:p-5 border-b border-purple-100 flex items-center justify-between bg-gradient-to-r from-purple-50 via-indigo-50/50 to-white">
+              <div className="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between bg-[#0f172a] text-white">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-600 to-indigo-500 text-white flex items-center justify-center shadow-sm">
-                    <Sparkles className="w-5 h-5 animate-pulse" />
+                  <div className="w-8 h-8 rounded-md bg-white/10 text-white flex items-center justify-center border border-white/20">
+                    <Sparkles className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm sm:text-base font-bold text-[#2b1572] flex items-center gap-1.5">
+                    <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-1.5">
                       <span>AI Phân Rã Công Việc</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-semibold">Gemini 2.5</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-xs bg-white/20 text-white font-mono font-semibold">Gemini 2.5</span>
                     </h3>
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-[11px] text-slate-300">
                       Tự động phân tích và chia nhỏ công việc thành checklist chi tiết
                     </p>
                   </div>
@@ -3912,7 +3912,7 @@ export default function CardDetailModal({
                 <button
                   type="button"
                   onClick={() => setIsAiBreakdownOpen(false)}
-                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                  className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-md transition-colors cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -3921,13 +3921,13 @@ export default function CardDetailModal({
               {/* Content Body */}
               <div className="p-5 overflow-y-auto space-y-4 flex-1">
                 {/* Target Card Info */}
-                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs">
-                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                <div className="p-3 rounded-md bg-slate-50 border border-slate-200 text-xs">
+                  <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                     Thẻ đang phân rã:
                   </div>
-                  <div className="font-bold text-[#2b1572] text-sm">{title || card?.title}</div>
+                  <div className="font-bold text-slate-900 text-sm">{title || card?.title}</div>
                   {description && (
-                    <div className="text-slate-500 line-clamp-2 mt-1 text-[11px]">
+                    <div className="text-slate-600 line-clamp-2 mt-1 text-[11px]">
                       {description}
                     </div>
                   )}
@@ -3936,7 +3936,7 @@ export default function CardDetailModal({
                 {/* Prompt instructions input */}
                 {!aiBreakdownResult && (
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                    <label className="text-xs font-semibold text-slate-700 flex items-center justify-between">
                       <span>Gợi ý thêm cho AI (Tùy chọn):</span>
                       <span className="text-[10px] font-normal text-slate-400">Enter để gửi</span>
                     </label>
@@ -3945,11 +3945,11 @@ export default function CardDetailModal({
                       onChange={(e) => setAiCustomPrompt(e.target.value)}
                       placeholder="Ví dụ: Chia thành 4 bước: Thiết kế DB, Viết API NestJS, Làm UI React, và Viết Unit Test..."
                       rows={2}
-                      className="w-full text-xs text-[#2b1572] bg-white border border-slate-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 rounded-xl p-3 focus:outline-none transition-all shadow-2xs resize-none"
+                      className="w-full text-xs text-slate-900 bg-white border border-slate-300 focus:border-slate-800 rounded-md p-2.5 focus:outline-none transition-all resize-none font-medium"
                     />
 
                     {aiBreakdownError && (
-                      <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2">
+                      <div className="p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-xs flex items-start gap-2">
                         <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                         <div>{aiBreakdownError}</div>
                       </div>
@@ -3960,7 +3960,7 @@ export default function CardDetailModal({
                         type="button"
                         onClick={handleRequestAiBreakdown}
                         disabled={isLoadingAiBreakdown}
-                        className="w-full py-2.5 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                        className="w-full py-2 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                       >
                         {isLoadingAiBreakdown ? (
                           <>
@@ -3982,26 +3982,26 @@ export default function CardDetailModal({
                 {aiBreakdownResult && (
                   <div className="space-y-4 animate-in fade-in duration-200">
                     {/* Summary Card */}
-                    <div className="p-3.5 rounded-2xl bg-purple-50/70 border border-purple-200/80 space-y-2">
+                    <div className="p-3.5 rounded-md bg-slate-50 border border-slate-200 space-y-2">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-bold text-purple-900 flex items-center gap-1.5">
-                          <Wand2 className="w-3.5 h-3.5 text-purple-600" />
+                        <span className="font-semibold text-slate-800 flex items-center gap-1.5">
+                          <Wand2 className="w-3.5 h-3.5 text-slate-600" />
                           <span>Mục tiêu & Hướng tiếp cận:</span>
                         </span>
                         {aiBreakdownResult.estimatedHours && (
-                          <span className="px-2 py-0.5 rounded-full bg-purple-200/80 text-purple-900 font-bold text-[11px]">
+                          <span className="px-2 py-0.5 rounded-xs bg-slate-200 text-slate-800 font-mono font-bold text-[11px]">
                             ⏱️ ~{aiBreakdownResult.estimatedHours} giờ
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-purple-950 leading-relaxed">
+                      <p className="text-xs text-slate-700 leading-relaxed">
                         {aiBreakdownResult.summary}
                       </p>
                     </div>
 
                     {/* Checklist title edit */}
                     <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                      <label className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider">
                         Tên danh sách công việc:
                       </label>
                       <input
@@ -4013,13 +4013,13 @@ export default function CardDetailModal({
                             checklistTitle: e.target.value,
                           })
                         }
-                        className="w-full text-xs font-bold text-[#2b1572] bg-white border border-slate-200 focus:border-purple-500 rounded-xl px-3 py-2 focus:outline-none"
+                        className="w-full text-xs font-semibold text-slate-900 bg-white border border-slate-300 focus:border-slate-800 rounded-md px-3 py-2 focus:outline-none"
                       />
                     </div>
 
                     {/* Checklist items with selection */}
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                      <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
                         <span>Danh sách đầu việc đề xuất ({aiBreakdownResult.items?.length || 0}):</span>
                         <button
                           type="button"
@@ -4030,7 +4030,7 @@ export default function CardDetailModal({
                               items: aiBreakdownResult.items?.map((i) => ({ ...i, selected: !allSelected })),
                             });
                           }}
-                          className="text-[11px] text-purple-600 hover:underline cursor-pointer"
+                          className="text-[11px] text-slate-600 hover:text-slate-900 font-medium underline cursor-pointer"
                         >
                           {aiBreakdownResult.items?.every((i) => i.selected) ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
                         </button>
@@ -4045,10 +4045,10 @@ export default function CardDetailModal({
                               newItems[idx].selected = !newItems[idx].selected;
                               setAiBreakdownResult({ ...aiBreakdownResult, items: newItems });
                             }}
-                            className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 transition-all cursor-pointer ${
+                            className={`p-2.5 rounded-md border flex items-center justify-between gap-3 transition-all cursor-pointer ${
                               item.selected
-                                ? 'bg-white border-purple-300 shadow-2xs'
-                                : 'bg-slate-50 border-slate-200/70 opacity-60'
+                                ? 'bg-slate-50 border-slate-300'
+                                : 'bg-white border-slate-100 opacity-60'
                             }`}
                           >
                             <div className="flex items-center gap-2.5 flex-1 min-w-0">
@@ -4056,7 +4056,7 @@ export default function CardDetailModal({
                                 type="checkbox"
                                 checked={!!item.selected}
                                 onChange={() => {}}
-                                className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer"
+                                className="w-4 h-4 rounded text-slate-800 focus:ring-slate-800 cursor-pointer"
                               />
                               <span className="text-xs font-medium text-slate-800 break-words">
                                 {item.content}
@@ -4065,18 +4065,18 @@ export default function CardDetailModal({
 
                             <div className="flex items-center gap-1.5 shrink-0">
                               {item.estimatedMinutes && (
-                                <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                                <span className="text-[10px] font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-xs border border-slate-200">
                                   {item.estimatedMinutes}m
                                 </span>
                               )}
                               {item.priority && (
                                 <span
-                                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase ${
+                                  className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-xs uppercase ${
                                     item.priority === 'HIGH'
-                                      ? 'bg-rose-100 text-rose-700'
+                                      ? 'bg-rose-100 text-rose-700 border border-rose-200'
                                       : item.priority === 'MEDIUM'
-                                      ? 'bg-amber-100 text-amber-700'
-                                      : 'bg-slate-100 text-slate-600'
+                                      ? 'bg-amber-100 text-amber-700 border border-amber-200'
+                                      : 'bg-slate-100 text-slate-600 border border-slate-200'
                                   }`}
                                 >
                                   {item.priority}
@@ -4092,21 +4092,21 @@ export default function CardDetailModal({
               </div>
 
               {/* Footer */}
-              <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+              <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
                 {aiBreakdownResult ? (
                   <>
                     <button
                       type="button"
                       onClick={() => setAiBreakdownResult(null)}
-                      className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                      className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-md transition-colors cursor-pointer"
                     >
                       ← Phân rã lại
                     </button>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2.5">
                       <button
                         type="button"
                         onClick={() => setIsAiBreakdownOpen(false)}
-                        className="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                        className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-md transition-colors cursor-pointer"
                       >
                         Hủy
                       </button>
@@ -4114,7 +4114,7 @@ export default function CardDetailModal({
                         type="button"
                         onClick={handleApplyAiBreakdown}
                         disabled={isApplyingAiBreakdown}
-                        className="px-4 py-2 bg-[#2b1572] hover:bg-[#1e0f52] text-white rounded-xl text-xs font-bold transition-all shadow-xs disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                        className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold transition-colors disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
                       >
                         {isApplyingAiBreakdown ? (
                           <>
@@ -4137,7 +4137,7 @@ export default function CardDetailModal({
                     <button
                       type="button"
                       onClick={() => setIsAiBreakdownOpen(false)}
-                      className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                      className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-md transition-colors cursor-pointer"
                     >
                       Đóng
                     </button>
@@ -4150,25 +4150,25 @@ export default function CardDetailModal({
 
         {/* MEMBERS ASSIGNMENT POPOVER / MODAL */}
         {isMembersModalOpen && (
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-2xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-100">
-            <div className="bg-white rounded-2xl shadow-2xl border border-[#2b1572]/20 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[80vh]">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-100">
+            <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[80vh]">
               {/* Header */}
-              <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold text-[#2b1572]">
-                  <Users className="w-4 h-4 text-[#2b1572]" />
+              <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                  <Users className="w-4 h-4 text-slate-700" />
                   <span>Thành viên ({assignableMembers.length})</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsMembersModalOpen(false)}
-                  className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Search */}
-              <div className="p-3 border-b border-slate-100">
+              <div className="p-3 border-b border-slate-200">
                 <div className="relative">
                   <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
@@ -4176,7 +4176,7 @@ export default function CardDetailModal({
                     value={memberSearchQuery}
                     onChange={(e) => setMemberSearchQuery(e.target.value)}
                     placeholder="Tìm kiếm thành viên..."
-                    className="w-full text-xs text-[#2b1572] bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-2 focus:outline-none focus:border-[#2b1572] focus:bg-white transition-all shadow-2xs"
+                    className="w-full text-xs text-slate-900 bg-white border border-slate-300 rounded-md pl-8 pr-3 py-2 focus:outline-none focus:border-slate-800 transition-all font-medium"
                   />
                 </div>
               </div>
@@ -4214,7 +4214,7 @@ export default function CardDetailModal({
                         key={m.id || uId}
                         type="button"
                         onClick={() => handleToggleAssignee(m.id || uId)}
-                        className="w-full p-2.5 rounded-xl hover:bg-slate-50 flex items-center justify-between gap-3 text-left transition-colors cursor-pointer group"
+                        className="w-full p-2.5 rounded-md hover:bg-slate-50 flex items-center justify-between gap-3 text-left transition-colors cursor-pointer group"
                       >
                         <div className="flex items-center gap-2.5 flex-1 min-w-0">
                           {uAvatar ? (
@@ -4224,17 +4224,17 @@ export default function CardDetailModal({
                               className="w-7 h-7 rounded-full object-cover shrink-0"
                             />
                           ) : (
-                            <div className="w-7 h-7 rounded-full bg-[#2b1572] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
+                            <div className="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
                               {uName.charAt(0).toUpperCase()}
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <span className="text-xs font-bold text-[#2b1572] truncate">
+                              <span className="text-xs font-bold text-slate-900 truncate">
                                 {uName}
                               </span>
                               {m.isBoardMember ? (
-                                <span className="text-[10px] px-1.5 py-0.2 bg-[#a6d1fd]/40 text-[#2b1572] rounded font-semibold shrink-0">
+                                <span className="text-[10px] px-1.5 py-0.2 bg-slate-200 text-slate-900 rounded font-semibold shrink-0">
                                   Bảng
                                 </span>
                               ) : (
@@ -4255,8 +4255,8 @@ export default function CardDetailModal({
                         <div
                           className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
                             isAssigned
-                              ? 'bg-[#2b1572] text-white'
-                              : 'border border-slate-200 group-hover:border-[#2b1572]/40'
+                              ? 'bg-slate-900 text-white'
+                              : 'border border-slate-200 group-hover:border-slate-300'
                           }`}
                         >
                           {isAssigned && <Check className="w-3.5 h-3.5" />}
@@ -4272,7 +4272,7 @@ export default function CardDetailModal({
                 <button
                   type="button"
                   onClick={() => setIsMembersModalOpen(false)}
-                  className="px-4 py-1.5 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] rounded-xl shadow-xs transition-colors cursor-pointer"
+                  className="px-4 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-xs transition-colors cursor-pointer"
                 >
                   Hoàn tất
                 </button>
@@ -4283,18 +4283,18 @@ export default function CardDetailModal({
 
         {/* DATES CONFIGURATION POPOVER / MODAL */}
         {isDatesModalOpen && (
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-2xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-100">
-            <div className="bg-white rounded-2xl shadow-2xl border border-[#2b1572]/20 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-100">
+            <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150">
               {/* Header */}
-              <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold text-[#2b1572]">
-                  <Calendar className="w-4 h-4 text-[#2b1572]" />
+              <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                  <Calendar className="w-4 h-4 text-slate-700" />
                   <span>Thời hạn thực hiện & Nhắc nhở</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsDatesModalOpen(false)}
-                  className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -4314,7 +4314,7 @@ export default function CardDetailModal({
                           setTempStartDate(toLocalDatetimeString(new Date()));
                         }
                       }}
-                      className="w-4 h-4 accent-[#2b1572] rounded cursor-pointer"
+                      className="w-4 h-4 accent-slate-900 rounded-xs cursor-pointer"
                     />
                     <span className="text-xs font-semibold text-slate-700">Ngày bắt đầu</span>
                   </label>
@@ -4323,7 +4323,7 @@ export default function CardDetailModal({
                       type="datetime-local"
                       value={tempStartDate}
                       onChange={(e) => setTempStartDate(e.target.value)}
-                      className="w-full text-xs text-slate-800 bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-[#2b1572] focus:bg-white transition-all"
+                      className="w-full text-xs text-slate-900 bg-white border border-slate-300 rounded-md p-2.5 focus:outline-none focus:border-slate-800 transition-all font-medium"
                     />
                   )}
                 </div>
@@ -4340,7 +4340,7 @@ export default function CardDetailModal({
                           setTempDueDate(getDefaultDueDateString());
                         }
                       }}
-                      className="w-4 h-4 accent-[#2b1572] rounded cursor-pointer"
+                      className="w-4 h-4 accent-slate-900 rounded-xs cursor-pointer"
                     />
                     <span className="text-xs font-semibold text-slate-700">Ngày hết hạn (Due date)</span>
                   </label>
@@ -4349,7 +4349,7 @@ export default function CardDetailModal({
                       type="datetime-local"
                       value={tempDueDate}
                       onChange={(e) => setTempDueDate(e.target.value)}
-                      className="w-full text-xs text-slate-800 bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-[#2b1572] focus:bg-white transition-all"
+                      className="w-full text-xs text-slate-900 bg-white border border-slate-300 rounded-md p-2.5 focus:outline-none focus:border-slate-800 transition-all font-medium"
                     />
                   )}
                 </div>
@@ -4358,13 +4358,13 @@ export default function CardDetailModal({
                 {tempEnableDue && (
                   <div className="space-y-1.5 pt-1">
                     <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-                      <Bell className="w-3.5 h-3.5 text-[#2b1572]" />
+                      <Bell className="w-3.5 h-3.5 text-slate-600" />
                       <span>Đặt lời nhắc nhở</span>
                     </label>
                     <select
                       value={tempReminderMinutes}
                       onChange={(e) => setTempReminderMinutes(Number(e.target.value))}
-                      className="w-full text-xs text-slate-800 bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-[#2b1572] focus:bg-white cursor-pointer"
+                      className="w-full text-xs text-slate-900 bg-white border border-slate-300 rounded-md p-2.5 focus:outline-none focus:border-slate-800 cursor-pointer font-medium"
                     >
                       {REMINDER_OPTIONS.map((opt) => (
                         <option key={opt.value} value={opt.value}>
@@ -4377,11 +4377,11 @@ export default function CardDetailModal({
               </div>
 
               {/* Footer */}
-              <div className="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2">
+              <div className="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2">
                 <button
                   type="button"
                   onClick={handleRemoveDates}
-                  className="px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                  className="px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
                 >
                   Gỡ bỏ
                 </button>
@@ -4389,14 +4389,14 @@ export default function CardDetailModal({
                   <button
                     type="button"
                     onClick={() => setIsDatesModalOpen(false)}
-                    className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+                    className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-md transition-colors cursor-pointer"
                   >
                     Hủy
                   </button>
                   <button
                     type="button"
                     onClick={handleSaveDates}
-                    className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] rounded-lg shadow-xs transition-colors cursor-pointer"
+                    className="px-3.5 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-md transition-colors cursor-pointer"
                   >
                     Lưu
                   </button>
@@ -4407,11 +4407,12 @@ export default function CardDetailModal({
         )}
 
         {/* LABELS POPOVER / MODAL */}
+        {/* LABELS POPOVER / MODAL */}
         {isLabelsModalOpen && (
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-2xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-100">
-            <div className="bg-white rounded-2xl shadow-2xl border border-[#2b1572]/20 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-100">
+            <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]">
               {/* Header */}
-              <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+              <div className="p-4 border-b border-slate-200 flex items-center justify-between">
                 {isCreatingLabel || editingLabel ? (
                   <button
                     type="button"
@@ -4419,19 +4420,19 @@ export default function CardDetailModal({
                       setIsCreatingLabel(false);
                       setEditingLabel(null);
                     }}
-                    className="p-1 text-slate-500 hover:text-[#2b1572] hover:bg-slate-100 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-bold"
+                    className="p-1 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
                   >
                     <ArrowLeft className="w-4 h-4" />
                     <span>Quay lại</span>
                   </button>
                 ) : (
-                  <div className="flex items-center gap-2 text-xs font-bold text-[#2b1572]">
-                    <Tag className="w-4 h-4 text-[#2b1572]" />
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                    <Tag className="w-4 h-4 text-slate-700" />
                     <span>Nhãn ({boardLabels.length})</span>
                   </div>
                 )}
 
-                <div className="text-xs font-bold text-[#2b1572]">
+                <div className="text-xs font-bold text-slate-900">
                   {isCreatingLabel ? 'Tạo nhãn mới' : editingLabel ? 'Chỉnh sửa nhãn' : ''}
                 </div>
 
@@ -4442,7 +4443,7 @@ export default function CardDetailModal({
                     setIsCreatingLabel(false);
                     setEditingLabel(null);
                   }}
-                  className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -4453,10 +4454,10 @@ export default function CardDetailModal({
                 /* Create / Edit Sub-view */
                 <div className="p-4 space-y-4 overflow-y-auto">
                   {/* Preview */}
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex flex-col items-center justify-center gap-1.5">
+                  <div className="p-3 bg-slate-50 rounded-md border border-slate-200 flex flex-col items-center justify-center gap-1.5">
                     <span className="text-[11px] font-semibold text-slate-500">Xem trước nhãn</span>
                     <div
-                      className="px-4 py-1.5 rounded-lg text-xs font-bold text-white shadow-xs"
+                      className="px-3 py-1 rounded-xs text-xs font-bold text-white uppercase tracking-wider"
                       style={{ backgroundColor: formLabelColor }}
                     >
                       {formLabelName.trim() || 'Tên nhãn'}
@@ -4465,20 +4466,20 @@ export default function CardDetailModal({
 
                   {/* Name input */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700">Tên nhãn</label>
+                    <label className="text-xs font-semibold text-slate-700">Tên nhãn</label>
                     <input
                       type="text"
                       value={formLabelName}
                       onChange={(e) => setFormLabelName(e.target.value)}
                       placeholder="Ví dụ: Backend, Thiết kế..."
                       autoFocus
-                      className="w-full text-xs text-[#2b1572] bg-white border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:border-[#2b1572] shadow-2xs"
+                      className="w-full text-xs text-slate-900 bg-white border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:border-slate-800 font-medium"
                     />
                   </div>
 
                   {/* Color palette */}
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-700">Chọn màu sắc</label>
+                    <label className="text-xs font-semibold text-slate-700">Chọn màu sắc</label>
                     <div className="grid grid-cols-5 gap-2">
                       {LABEL_COLOR_PALETTE.map((item) => {
                         const isSelected = formLabelColor === item.color;
@@ -4488,7 +4489,7 @@ export default function CardDetailModal({
                             type="button"
                             onClick={() => setFormLabelColor(item.color)}
                             title={item.name}
-                            className={`h-8 rounded-lg transition-all cursor-pointer flex items-center justify-center shadow-2xs ${isSelected ? 'ring-2 ring-offset-2 ring-[#2b1572] scale-105' : 'hover:scale-105'
+                            className={`h-8 rounded-md transition-all cursor-pointer flex items-center justify-center ${isSelected ? 'ring-2 ring-offset-2 ring-slate-900' : 'hover:opacity-90'
                               }`}
                             style={{ backgroundColor: item.color }}
                           >
@@ -4505,7 +4506,7 @@ export default function CardDetailModal({
                       type="button"
                       onClick={handleSaveLabel}
                       disabled={!formLabelName.trim()}
-                      className="w-full py-2 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] disabled:opacity-50 rounded-xl shadow-xs transition-colors cursor-pointer"
+                      className="w-full py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-50 rounded-md transition-colors cursor-pointer"
                     >
                       {editingLabel ? 'Lưu thay đổi' : 'Tạo mới'}
                     </button>
@@ -4514,7 +4515,7 @@ export default function CardDetailModal({
                       <button
                         type="button"
                         onClick={() => requestDeleteLabel(editingLabel.id)}
-                        className="w-full py-2 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl transition-colors cursor-pointer"
+                        className="w-full py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors cursor-pointer"
                       >
                         Xóa nhãn khỏi bảng
                       </button>
@@ -4525,7 +4526,7 @@ export default function CardDetailModal({
                 /* Browsing / Search List */
                 <>
                   {/* Search */}
-                  <div className="p-3 border-b border-slate-100">
+                  <div className="p-3 border-b border-slate-200">
                     <div className="relative">
                       <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                       <input
@@ -4533,7 +4534,7 @@ export default function CardDetailModal({
                         value={labelSearchQuery}
                         onChange={(e) => setLabelSearchQuery(e.target.value)}
                         placeholder="Tìm kiếm nhãn..."
-                        className="w-full text-xs text-[#2b1572] bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-2 focus:outline-none focus:border-[#2b1572] focus:bg-white transition-all shadow-2xs"
+                        className="w-full text-xs text-slate-900 bg-white border border-slate-300 rounded-md pl-8 pr-3 py-2 focus:outline-none focus:border-slate-800 transition-all font-medium"
                       />
                     </div>
                   </div>
@@ -4560,19 +4561,19 @@ export default function CardDetailModal({
                             <button
                               type="button"
                               onClick={() => handleToggleCardLabel(l.id)}
-                              className="flex-1 p-2 rounded-xl hover:bg-slate-50 flex items-center justify-between gap-2 transition-colors cursor-pointer"
+                              className="flex-1 p-1.5 rounded-md hover:bg-slate-50 flex items-center justify-between gap-2 transition-colors cursor-pointer"
                             >
                               <div
-                                className="px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-2xs flex-1 text-left truncate"
+                                className="px-2.5 py-1 rounded-xs text-xs font-bold text-white uppercase tracking-wider flex-1 text-left truncate"
                                 style={{ backgroundColor: l.color }}
                               >
                                 {l.name}
                               </div>
 
                               <div
-                                className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-all ${isAssigned
-                                    ? 'bg-[#2b1572] text-white'
-                                    : 'border border-slate-200 group-hover:border-[#2b1572]/40'
+                                className={`w-5 h-5 rounded-xs flex items-center justify-center shrink-0 transition-all ${isAssigned
+                                    ? 'bg-slate-900 text-white'
+                                    : 'border border-slate-300 group-hover:border-slate-400'
                                   }`}
                               >
                                 {isAssigned && <Check className="w-3.5 h-3.5" />}
@@ -4587,7 +4588,7 @@ export default function CardDetailModal({
                                 setFormLabelName(l.name);
                                 setFormLabelColor(l.color || '#3b82f6');
                               }}
-                              className="p-2 text-slate-400 hover:text-[#2b1572] hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                              className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
                               title="Chỉnh sửa nhãn"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
@@ -4599,7 +4600,7 @@ export default function CardDetailModal({
                   </div>
 
                   {/* Footer Button: Create New */}
-                  <div className="p-3 bg-slate-50 border-t border-slate-100">
+                  <div className="p-3 bg-slate-50 border-t border-slate-200">
                     <button
                       type="button"
                       onClick={() => {
@@ -4608,7 +4609,7 @@ export default function CardDetailModal({
                         setFormLabelName(labelSearchQuery || '');
                         setFormLabelColor('#3b82f6');
                       }}
-                      className="w-full py-2 text-xs font-semibold text-[#2b1572] bg-white hover:bg-slate-100 border border-[#2b1572]/20 rounded-xl shadow-2xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      className="w-full py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-md flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Tạo nhãn mới</span>
@@ -4622,11 +4623,11 @@ export default function CardDetailModal({
         {/* CHECKLIST ITEM DEADLINE POPOVER / MODAL */}
         {activeItemDate && (
           <div className="absolute inset-0 bg-black/30 backdrop-blur-2xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-100">
-            <div className="bg-white rounded-2xl shadow-2xl border border-[#2b1572]/20 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150">
+            <div className="bg-white rounded-lg shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150">
               {/* Header */}
               <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold text-[#2b1572]">
-                  <Calendar className="w-4 h-4 text-[#2b1572]" />
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                  <Calendar className="w-4 h-4 text-slate-900" />
                   <span>Thời hạn mục công việc</span>
                 </div>
                 <button
@@ -4650,7 +4651,7 @@ export default function CardDetailModal({
                     type="datetime-local"
                     value={tempItemDueDate}
                     onChange={(e) => setTempItemDueDate(e.target.value)}
-                    className="w-full text-xs text-slate-800 bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-[#2b1572] focus:bg-white transition-all shadow-2xs"
+                    className="w-full text-xs text-slate-800 bg-slate-50 border border-slate-200 rounded-md p-2.5 focus:outline-none focus:border-slate-300 focus:bg-white transition-all shadow-2xs"
                   />
                 </div>
 
@@ -4726,7 +4727,7 @@ export default function CardDetailModal({
                         tempItemDueDate || null,
                       )
                     }
-                    className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] rounded-lg shadow-xs transition-colors cursor-pointer"
+                    className="px-3.5 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-xs transition-colors cursor-pointer"
                   >
                     Lưu
                   </button>
@@ -4739,11 +4740,11 @@ export default function CardDetailModal({
         {/* CHECKLIST ITEM MEMBER ASSIGNMENT POPOVER / MODAL */}
         {activeItemMember && (
           <div className="absolute inset-0 bg-black/30 backdrop-blur-2xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-100">
-            <div className="bg-white rounded-2xl shadow-2xl border border-[#2b1572]/20 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[80vh]">
+            <div className="bg-white rounded-lg shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[80vh]">
               {/* Header */}
               <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold text-[#2b1572]">
-                  <UserPlus className="w-4 h-4 text-[#2b1572]" />
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                  <UserPlus className="w-4 h-4 text-slate-900" />
                   <span>Phân công mục công việc</span>
                 </div>
                 <button
@@ -4764,7 +4765,7 @@ export default function CardDetailModal({
                     value={itemMemberSearchQuery}
                     onChange={(e) => setItemMemberSearchQuery(e.target.value)}
                     placeholder="Tìm kiếm thành viên..."
-                    className="w-full text-xs text-[#2b1572] bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-2 focus:outline-none focus:border-[#2b1572] focus:bg-white transition-all shadow-2xs"
+                    className="w-full text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-md pl-8 pr-3 py-2 focus:outline-none focus:border-slate-300 focus:bg-white transition-all shadow-2xs"
                   />
                 </div>
               </div>
@@ -4798,7 +4799,7 @@ export default function CardDetailModal({
                             isAssigned ? null : (m.id || uId),
                           )
                         }
-                        className="w-full p-2.5 rounded-xl hover:bg-slate-50 flex items-center justify-between gap-3 text-left transition-colors cursor-pointer group"
+                        className="w-full p-2.5 rounded-md hover:bg-slate-50 flex items-center justify-between gap-3 text-left transition-colors cursor-pointer group"
                       >
                         <div className="flex items-center gap-2.5 flex-1 min-w-0">
                           {uAvatar ? (
@@ -4808,17 +4809,17 @@ export default function CardDetailModal({
                               className="w-7 h-7 rounded-full object-cover shrink-0"
                             />
                           ) : (
-                            <div className="w-7 h-7 rounded-full bg-[#2b1572] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
+                            <div className="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
                               {uName.charAt(0).toUpperCase()}
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <span className="text-xs font-bold text-[#2b1572] truncate">
+                              <span className="text-xs font-bold text-slate-900 truncate">
                                 {uName}
                               </span>
                               {m.isBoardMember ? (
-                                <span className="text-[10px] px-1.5 py-0.2 bg-[#a6d1fd]/40 text-[#2b1572] rounded font-semibold shrink-0">
+                                <span className="text-[10px] px-1.5 py-0.2 bg-slate-200 text-slate-900 rounded font-semibold shrink-0">
                                   Bảng
                                 </span>
                               ) : (
@@ -4836,8 +4837,8 @@ export default function CardDetailModal({
                         <div
                           className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
                             isAssigned
-                              ? 'bg-[#2b1572] text-white'
-                              : 'border border-slate-200 group-hover:border-[#2b1572]/40'
+                              ? 'bg-slate-900 text-white'
+                              : 'border border-slate-200 group-hover:border-slate-300'
                           }`}
                         >
                           {isAssigned && <Check className="w-3.5 h-3.5" />}
@@ -4868,7 +4869,7 @@ export default function CardDetailModal({
                 <button
                   type="button"
                   onClick={() => setActiveItemMember(null)}
-                  className="ml-auto px-4 py-1.5 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] rounded-xl shadow-xs transition-colors cursor-pointer"
+                  className="ml-auto px-4 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-xs transition-colors cursor-pointer"
                 >
                   Đóng
                 </button>
@@ -4879,31 +4880,31 @@ export default function CardDetailModal({
 
         {/* ATTACHMENT MODAL / POPOVER */}
         {isAttachmentsModalOpen && (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-2xs flex items-center justify-center p-4 z-60 animate-in fade-in duration-100">
-            <div className="bg-white rounded-2xl shadow-2xl border border-[#2b1572]/20 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]">
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-60 animate-in fade-in duration-100">
+            <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]">
               {/* Header */}
-              <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold text-[#2b1572]">
-                  <Paperclip className="w-4 h-4 text-[#2b1572]" />
+              <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                  <Paperclip className="w-4 h-4 text-slate-700" />
                   <span>Đính kèm tệp & liên kết</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsAttachmentsModalOpen(false)}
-                  className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Tabs */}
-              <div className="flex border-b border-slate-100 bg-slate-50/60 p-1 gap-1">
+              <div className="flex border-b border-slate-200 bg-slate-50 p-1 gap-1">
                 <button
                   type="button"
                   onClick={() => setAttachmentTab('upload')}
-                  className={`flex-1 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${attachmentTab === 'upload'
-                      ? 'bg-white text-[#2b1572] shadow-2xs'
-                      : 'text-slate-500 hover:text-slate-800'
+                  className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${attachmentTab === 'upload'
+                      ? 'bg-white text-slate-900 border border-slate-200'
+                      : 'text-slate-600 hover:text-slate-900'
                     }`}
                 >
                   Tải tệp từ máy tính
@@ -4911,9 +4912,9 @@ export default function CardDetailModal({
                 <button
                   type="button"
                   onClick={() => setAttachmentTab('link')}
-                  className={`flex-1 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${attachmentTab === 'link'
-                      ? 'bg-white text-[#2b1572] shadow-2xs'
-                      : 'text-slate-500 hover:text-slate-800'
+                  className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${attachmentTab === 'link'
+                      ? 'bg-white text-slate-900 border border-slate-200'
+                      : 'text-slate-600 hover:text-slate-900'
                     }`}
                 >
                   Đính kèm liên kết
@@ -4944,15 +4945,15 @@ export default function CardDetailModal({
                         if (file) setSelectedUploadFile(file);
                       }}
                       onClick={() => attachmentFileInputRef.current?.click()}
-                      className="border-2 border-dashed border-[#2b1572]/20 hover:border-[#2b1572]/50 hover:bg-[#a6d1fd]/10 rounded-2xl p-6 flex flex-col items-center justify-center gap-2.5 transition-all cursor-pointer bg-slate-50/40"
+                      className="border border-dashed border-slate-300 hover:border-slate-500 rounded-md p-6 flex flex-col items-center justify-center gap-2 transition-all cursor-pointer bg-slate-50"
                     >
-                      <div className="w-10 h-10 rounded-full bg-[#a6d1fd]/30 text-[#2b1572] flex items-center justify-center">
-                        <Upload className="w-5 h-5" />
+                      <div className="w-9 h-9 rounded-md bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center">
+                        <Upload className="w-4 h-4" />
                       </div>
                       <div className="text-center">
-                        <span className="text-xs font-bold text-[#2b1572]">
+                        <span className="text-xs font-semibold text-slate-800">
                           Kéo thả tệp vào đây hoặc{' '}
-                          <span className="underline text-[#2b1572]">Chọn từ máy tính</span>
+                          <span className="underline underline-offset-2 text-slate-900">Chọn từ máy tính</span>
                         </span>
                         <p className="text-[11px] text-slate-400 mt-0.5">
                           Hỗ trợ ảnh, PDF, tài liệu, file nén (tối đa 25MB)
@@ -4962,14 +4963,14 @@ export default function CardDetailModal({
 
                     {/* Selected File Info */}
                     {selectedUploadFile && (
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-3 animate-in fade-in duration-150">
+                      <div className="p-3 bg-slate-50 rounded-md border border-slate-200 flex items-center justify-between gap-3 animate-in fade-in duration-150">
                         <div className="flex items-center gap-2.5 min-w-0">
                           {getFileIcon(selectedUploadFile.name)}
                           <div className="min-w-0">
-                            <p className="text-xs font-bold text-[#2b1572] truncate">
+                            <p className="text-xs font-bold text-slate-900 truncate">
                               {selectedUploadFile.name}
                             </p>
-                            <p className="text-[10px] text-slate-400">
+                            <p className="text-[10px] text-slate-400 font-mono">
                               {formatFileSize(selectedUploadFile.size)}
                             </p>
                           </div>
@@ -4978,7 +4979,7 @@ export default function CardDetailModal({
                         <button
                           type="button"
                           onClick={() => setSelectedUploadFile(null)}
-                          className="p-1 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer"
+                          className="p-1 text-slate-400 hover:text-rose-600 rounded-md hover:bg-slate-200 transition-colors cursor-pointer"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -4986,11 +4987,11 @@ export default function CardDetailModal({
                     )}
 
                     {/* Upload button */}
-                    <div className="flex items-center justify-end gap-2 pt-2">
+                    <div className="flex items-center justify-end gap-2.5 pt-2">
                       <button
                         type="button"
                         onClick={() => setIsAttachmentsModalOpen(false)}
-                        className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                        className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
                       >
                         Hủy
                       </button>
@@ -4998,7 +4999,7 @@ export default function CardDetailModal({
                         type="button"
                         onClick={() => handleUploadAttachment()}
                         disabled={!selectedUploadFile || isUploadingAttachment}
-                        className="px-4 py-1.5 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] disabled:opacity-40 rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                        className="px-4 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-40 rounded-md transition-colors cursor-pointer flex items-center gap-1.5"
                       >
                         {isUploadingAttachment ? (
                           <>
@@ -5017,33 +5018,33 @@ export default function CardDetailModal({
                 ) : (
                   <div className="space-y-3.5">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Đường dẫn liên kết (URL) *</label>
+                      <label className="text-xs font-semibold text-slate-700">Đường dẫn liên kết (URL) *</label>
                       <input
                         type="url"
                         value={linkAttachmentUrl}
                         onChange={(e) => setLinkAttachmentUrl(e.target.value)}
                         placeholder="https://example.com/tai-lieu"
                         autoFocus
-                        className="w-full text-xs text-[#2b1572] bg-white border border-slate-200 focus:border-[#2b1572] rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-[#2b1572]/15 shadow-2xs"
+                        className="w-full text-xs text-slate-900 bg-white border border-slate-300 rounded-md p-2 focus:outline-none focus:border-slate-800"
                       />
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Tên hiển thị (Tùy chọn)</label>
+                      <label className="text-xs font-semibold text-slate-700">Tên hiển thị (Tùy chọn)</label>
                       <input
                         type="text"
                         value={linkAttachmentName}
                         onChange={(e) => setLinkAttachmentName(e.target.value)}
                         placeholder="Ví dụ: Thiết kế Figma, Google Docs..."
-                        className="w-full text-xs text-[#2b1572] bg-white border border-slate-200 focus:border-[#2b1572] rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-[#2b1572]/15 shadow-2xs"
+                        className="w-full text-xs text-slate-900 bg-white border border-slate-300 rounded-md p-2 focus:outline-none focus:border-slate-800"
                       />
                     </div>
 
-                    <div className="flex items-center justify-end gap-2 pt-2">
+                    <div className="flex items-center justify-end gap-2.5 pt-2">
                       <button
                         type="button"
                         onClick={() => setIsAttachmentsModalOpen(false)}
-                        className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                        className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
                       >
                         Hủy
                       </button>
@@ -5051,7 +5052,7 @@ export default function CardDetailModal({
                         type="button"
                         onClick={handleAttachLink}
                         disabled={!linkAttachmentUrl.trim() || isAttachingLink}
-                        className="px-4 py-1.5 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] disabled:opacity-40 rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                        className="px-4 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-40 rounded-md transition-colors cursor-pointer flex items-center gap-1.5"
                       >
                         {isAttachingLink ? 'Đang lưu...' : 'Đính kèm liên kết'}
                       </button>
@@ -5105,7 +5106,7 @@ export default function CardDetailModal({
                 <img
                   src={previewImageAttachment.file_url}
                   alt={previewImageAttachment.file_name || 'Ảnh đính kèm'}
-                  className="max-h-[80vh] max-w-full rounded-xl object-contain shadow-2xl border border-white/20"
+                  className="max-h-[80vh] max-w-full rounded-md object-contain shadow-2xl border border-white/20"
                 />
               )}
             </div>
@@ -5114,24 +5115,24 @@ export default function CardDetailModal({
 
         {/* CUSTOM CONFIRMATION POPUP MODAL */}
         {confirmDialog.isOpen && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-70 animate-in fade-in duration-150">
-            <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden p-5 space-y-4 animate-in zoom-in-95 duration-150">
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-70 animate-in fade-in duration-150">
+            <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-sm overflow-hidden p-5 space-y-4 animate-in zoom-in-95 duration-150">
               <div className="flex items-start gap-3.5">
-                <div className="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 shadow-2xs">
-                  <Trash2 className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-md bg-red-100 text-red-600 border border-red-200 flex items-center justify-center shrink-0">
+                  <Trash2 className="w-4 h-4" />
                 </div>
                 <div className="space-y-1">
-                  <h4 className="text-sm font-bold text-[#2b1572]">{confirmDialog.title}</h4>
+                  <h4 className="text-sm font-bold text-slate-900">{confirmDialog.title}</h4>
                   <p className="text-xs text-slate-500 leading-relaxed">{confirmDialog.message}</p>
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setConfirmDialog((prev) => ({ ...prev, isOpen: false }))}
                   disabled={confirmDialog.isLoading}
-                  className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                  className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
                 >
                   {confirmDialog.cancelText || 'Hủy'}
                 </button>
@@ -5146,7 +5147,7 @@ export default function CardDetailModal({
                     }
                   }}
                   disabled={confirmDialog.isLoading}
-                  className="px-4 py-1.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                  className="px-4 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-md transition-colors cursor-pointer flex items-center gap-1.5"
                 >
                   {confirmDialog.isLoading ? 'Đang xóa...' : confirmDialog.confirmText || 'Xóa'}
                 </button>
@@ -5157,18 +5158,18 @@ export default function CardDetailModal({
 
         {/* ADD CARD RELATION MODAL POPUP */}
         {isRelationsModalOpen && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-70 animate-in fade-in duration-150">
-            <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-150">
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-70 animate-in fade-in duration-150">
+            <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-150">
               {/* Header */}
-              <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
-                <div className="flex items-center gap-2 text-sm font-bold text-[#2b1572]">
-                  <GitBranch className="w-4 h-4 text-[#2b1572]" />
+              <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
+                  <GitBranch className="w-4 h-4 text-slate-700" />
                   <span>Thêm mối quan hệ thẻ</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsRelationsModalOpen(false)}
-                  className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -5177,7 +5178,7 @@ export default function CardDetailModal({
               <div className="p-5 overflow-y-auto space-y-4">
                 {/* 1. Choose Relationship Type */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Loại mối quan hệ
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -5236,17 +5237,17 @@ export default function CardDetailModal({
                             setRelationTypeToCreate(opt.type as any);
                             setRelationError(null);
                           }}
-                          className={`p-2.5 rounded-xl border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
+                          className={`p-2.5 rounded-md border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
                             isSelected
-                              ? 'border-[#2b1572] bg-[#2b1572]/5 ring-2 ring-[#2b1572]/15 shadow-2xs'
-                              : 'border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-slate-50'
+                              ? 'border-slate-900 bg-slate-100 ring-1 ring-slate-900'
+                              : 'border-slate-200 hover:border-slate-300 bg-white'
                           }`}
                         >
-                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border ${opt.color}`}>
+                          <div className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 border ${opt.color}`}>
                             <Icon className="w-3.5 h-3.5" />
                           </div>
                           <div className="min-w-0">
-                            <div className="text-xs font-bold text-[#2b1572]">{opt.title}</div>
+                            <div className="text-xs font-bold text-slate-900">{opt.title}</div>
                             <div className="text-[10px] text-slate-500 leading-tight mt-0.5">{opt.desc}</div>
                           </div>
                         </button>
@@ -5257,7 +5258,7 @@ export default function CardDetailModal({
 
                 {/* 2. Candidate Cards Search & Selection */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
                     Chọn thẻ để liên kết
                   </label>
                   <div className="relative">
@@ -5272,15 +5273,15 @@ export default function CardDetailModal({
                         if (targetId) searchCandidateCards(targetId, val);
                       }}
                       placeholder="Tìm kiếm thẻ theo tên..."
-                      className="w-full text-xs text-[#2b1572] bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-[#2b1572] rounded-xl pl-9 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#2b1572]/15 shadow-2xs transition-all"
+                      className="w-full text-xs text-slate-900 bg-white border border-slate-300 focus:border-slate-800 rounded-md pl-9 pr-3 py-2 focus:outline-none transition-all font-medium"
                     />
                   </div>
 
                   {/* Candidate List */}
-                  <div className="border border-slate-200 rounded-xl overflow-hidden max-h-56 overflow-y-auto divide-y divide-slate-100 bg-slate-50/40">
+                  <div className="border border-slate-200 rounded-md overflow-hidden max-h-56 overflow-y-auto divide-y divide-slate-100 bg-white">
                     {isLoadingCandidates ? (
                       <div className="p-6 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-                        <RefreshCw className="w-4 h-4 animate-spin text-[#2b1572]" />
+                        <RefreshCw className="w-4 h-4 animate-spin text-slate-700" />
                         <span>Đang tìm kiếm thẻ...</span>
                       </div>
                     ) : candidateCards.length === 0 ? (
@@ -5300,15 +5301,15 @@ export default function CardDetailModal({
                             }}
                             className={`p-2.5 flex items-center justify-between gap-3 cursor-pointer transition-colors ${
                               isSelected
-                                ? 'bg-[#a6d1fd]/30 border-l-4 border-[#2b1572]'
-                                : 'hover:bg-white bg-transparent'
+                                ? 'bg-slate-100 border-l-4 border-slate-900'
+                                : 'hover:bg-slate-50 bg-white'
                             }`}
                           >
                             <div className="min-w-0 space-y-0.5">
-                              <div className="text-xs font-bold text-[#2b1572] truncate">{c.title}</div>
+                              <div className="text-xs font-bold text-slate-900 truncate">{c.title}</div>
                               <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
                                 {(c.list?.title || c.list?.name) && (
-                                  <span className="px-1.5 py-0.2 rounded bg-slate-200/70 text-slate-700 font-medium">
+                                  <span className="px-1.5 py-0.5 rounded-xs bg-slate-100 border border-slate-200 text-slate-700 font-medium">
                                     {c.list?.title || c.list?.name}
                                   </span>
                                 )}
@@ -5320,14 +5321,14 @@ export default function CardDetailModal({
 
                             <div className="flex items-center gap-2 shrink-0">
                               {c.status && (
-                                <span className="text-[10px] px-2 py-0.5 rounded-md font-semibold bg-slate-100 text-slate-600">
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-xs font-semibold bg-slate-100 border border-slate-200 text-slate-600">
                                   {c.status}
                                 </span>
                               )}
                               <div
-                                className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                                className={`w-4 h-4 rounded-xs border flex items-center justify-center ${
                                   isSelected
-                                    ? 'border-[#2b1572] bg-[#2b1572] text-white'
+                                    ? 'border-slate-900 bg-slate-900 text-white'
                                     : 'border-slate-300 bg-white'
                                 }`}
                               >
@@ -5343,19 +5344,19 @@ export default function CardDetailModal({
 
                 {/* Error Banner */}
                 {relationError && (
-                  <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs flex items-start gap-2 animate-in fade-in duration-150">
-                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-md text-xs flex items-start gap-2 animate-in fade-in duration-150">
+                    <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
                     <span className="leading-relaxed font-medium">{relationError}</span>
                   </div>
                 )}
               </div>
 
               {/* Footer */}
-              <div className="px-5 py-3.5 border-t border-slate-100 bg-slate-50/70 flex items-center justify-end gap-2 shrink-0">
+              <div className="px-5 py-3.5 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-2.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsRelationsModalOpen(false)}
-                  className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                  className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-md transition-colors cursor-pointer"
                 >
                   Hủy
                 </button>
@@ -5363,7 +5364,7 @@ export default function CardDetailModal({
                   type="button"
                   onClick={handleCreateRelation}
                   disabled={!selectedCandidateCardId || isCreatingRelation}
-                  className="px-4 py-1.5 text-xs font-semibold text-white bg-[#2b1572] hover:bg-[#1e0f52] disabled:opacity-40 rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                  className="px-4 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-40 rounded-md transition-colors cursor-pointer flex items-center gap-1.5"
                 >
                   {isCreatingRelation ? (
                     <>
@@ -5384,37 +5385,37 @@ export default function CardDetailModal({
         {/* Blocked Warning Popup Modal */}
         {blockedPopup.isOpen && (
           <div
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200"
             onClick={() => setBlockedPopup({ isOpen: false, blockers: [] })}
           >
             <div
-              className="bg-white rounded-3xl shadow-2xl border border-rose-100 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200"
+              className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="p-5 bg-gradient-to-br from-rose-50 via-rose-50/60 to-white border-b border-rose-100 flex items-start gap-3.5">
-                <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 shadow-xs border border-rose-200">
-                  <Ban className="w-5 h-5" />
+              <div className="p-4 bg-red-50 border-b border-red-200 flex items-start gap-3">
+                <div className="w-8 h-8 rounded-md bg-red-100 text-red-600 flex items-center justify-center shrink-0 border border-red-200">
+                  <Ban className="w-4 h-4" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-base font-bold text-rose-950">Không thể hoàn thành thẻ</h3>
+                    <h3 className="text-sm font-bold text-red-950">Không thể hoàn thành thẻ</h3>
                     <button
                       type="button"
                       onClick={() => setBlockedPopup({ isOpen: false, blockers: [] })}
-                      className="w-7 h-7 rounded-xl hover:bg-rose-100 text-rose-700 flex items-center justify-center transition-colors cursor-pointer"
+                      className="p-1 rounded-md hover:bg-red-100 text-red-700 flex items-center justify-center transition-colors cursor-pointer"
                     >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
-                  <p className="text-xs text-rose-700/80 mt-1 leading-relaxed">
-                    Thẻ này đang bị chặn bởi <strong className="text-rose-900 font-semibold">{blockedPopup.blockers.length} thẻ</strong> chưa hoàn thành. Bạn cần hoàn thành hoặc gỡ liên kết các thẻ chặn trước khi hoàn tất thẻ này:
+                  <p className="text-xs text-red-800 mt-1 leading-relaxed">
+                    Thẻ này đang bị chặn bởi <strong className="font-semibold">{blockedPopup.blockers.length} thẻ</strong> chưa hoàn thành. Bạn cần hoàn thành hoặc gỡ liên kết các thẻ chặn trước khi hoàn tất thẻ này:
                   </p>
                 </div>
               </div>
 
               {/* List of blocker cards */}
-              <div className="p-4 max-h-64 overflow-y-auto space-y-2 bg-slate-50/50">
+              <div className="p-3 max-h-64 overflow-y-auto space-y-2 bg-slate-50">
                 {blockedPopup.blockers.map((b) => {
                   const relCard = b.related_card;
                   if (!relCard) return null;
@@ -5425,15 +5426,15 @@ export default function CardDetailModal({
                         setBlockedPopup({ isOpen: false, blockers: [] });
                         handleNavigateToRelatedCard(relCard.id);
                       }}
-                      className="p-3 bg-white hover:bg-rose-50/50 border border-slate-200/80 hover:border-rose-300 rounded-2xl transition-all cursor-pointer shadow-2xs group flex items-center justify-between gap-3"
+                      className="p-2.5 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-md transition-all cursor-pointer group flex items-center justify-between gap-3"
                     >
                       <div className="min-w-0 space-y-1">
-                        <div className="text-xs font-bold text-[#2b1572] group-hover:text-rose-700 transition-colors truncate">
+                        <div className="text-xs font-bold text-slate-900 group-hover:text-red-700 transition-colors truncate">
                           {relCard.title}
                         </div>
-                        <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                        <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
                           {(relCard.list?.title || relCard.list?.name) && (
-                            <span className="px-1.5 py-0.5 rounded bg-slate-100 font-medium text-slate-600">
+                            <span className="px-1.5 py-0.5 rounded-xs bg-slate-100 border border-slate-200 font-medium text-slate-600">
                               {relCard.list?.title || relCard.list?.name}
                             </span>
                           )}
@@ -5442,7 +5443,7 @@ export default function CardDetailModal({
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 text-[11px] font-semibold text-rose-600 group-hover:translate-x-0.5 transition-transform shrink-0">
+                      <div className="flex items-center gap-1 text-[11px] font-semibold text-red-600 group-hover:translate-x-0.5 transition-transform shrink-0">
                         <span>Xem thẻ</span>
                         <ChevronRight className="w-3.5 h-3.5" />
                       </div>
@@ -5452,11 +5453,11 @@ export default function CardDetailModal({
               </div>
 
               {/* Footer */}
-              <div className="p-4 bg-white border-t border-slate-100 flex items-center justify-end">
+              <div className="p-3 bg-white border-t border-slate-200 flex items-center justify-end">
                 <button
                   type="button"
                   onClick={() => setBlockedPopup({ isOpen: false, blockers: [] })}
-                  className="w-full sm:w-auto px-5 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-xs transition-colors cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors cursor-pointer"
                 >
                   Đã hiểu
                 </button>

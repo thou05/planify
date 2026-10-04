@@ -165,7 +165,7 @@ export default function BoardTableView({
   const renderDueDateBadge = (card: any) => {
     if (!card.due_date) {
       return (
-        <span className="text-[#2b1572]/40 text-xs italic">
+        <span className="text-slate-400 text-xs italic">
           Chưa thiết lập
         </span>
       );
@@ -177,7 +177,7 @@ export default function BoardTableView({
 
     if (card.is_due_date_completed) {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-xs text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
           <CheckCircle2 className="w-3 h-3 text-emerald-600" />
           <span>{new Date(card.due_date).toLocaleDateString('vi-VN')}</span>
           <span className="text-[9px] uppercase font-bold">(Đã xong)</span>
@@ -187,7 +187,7 @@ export default function BoardTableView({
 
     if (diffHours < 0) {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-xs text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
           <AlertCircle className="w-3 h-3 text-rose-600" />
           <span>{new Date(card.due_date).toLocaleDateString('vi-VN')}</span>
           <span className="text-[9px] uppercase">(Quá hạn)</span>
@@ -197,7 +197,7 @@ export default function BoardTableView({
 
     if (diffHours <= 24) {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-xs text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
           <Clock className="w-3 h-3 text-amber-600" />
           <span>{new Date(card.due_date).toLocaleDateString('vi-VN')}</span>
           <span className="text-[9px] uppercase">(Gần hạn)</span>
@@ -206,7 +206,7 @@ export default function BoardTableView({
     }
 
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-50 text-slate-700 border border-slate-200">
+      <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-xs text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
         <Calendar className="w-3 h-3 text-slate-500" />
         <span>{new Date(card.due_date).toLocaleDateString('vi-VN')}</span>
       </span>
@@ -216,27 +216,27 @@ export default function BoardTableView({
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden p-6 max-w-7xl mx-auto w-full">
       {/* Table Filter & Action Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 p-3 rounded-2xl glass-surface border border-white/60 shadow-xs">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 p-2.5 rounded-lg bg-white border border-slate-300 shadow-2xs">
         <div className="flex flex-wrap items-center gap-3">
           {/* Search Bar */}
           <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#2b1572]/50" />
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm kiếm thẻ..."
-              className="pl-8 pr-3 py-1.5 text-xs rounded-xl glass-input w-48 sm:w-60 text-[#2b1572] placeholder:text-[#2b1572]/40 focus:ring-2 focus:ring-[#a6d1fd]"
+              className="pl-8 pr-3 py-1.5 text-xs rounded-md border border-slate-300 w-48 sm:w-60 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-800 transition-colors bg-white font-medium"
             />
           </div>
 
           {/* Filter by List */}
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-[#2b1572]">
-            <Filter className="w-3.5 h-3.5 text-[#2b1572]/60" />
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+            <Filter className="w-3.5 h-3.5 text-slate-500" />
             <select
               value={selectedListFilter}
               onChange={(e) => setSelectedListFilter(e.target.value)}
-              className="px-2.5 py-1.5 rounded-xl glass-weak border border-white/60 text-xs font-semibold text-[#2b1572] cursor-pointer focus:outline-none"
+              className="px-2.5 py-1.5 rounded-md border border-slate-300 text-xs font-medium text-slate-800 cursor-pointer focus:outline-none bg-white"
             >
               <option value="all">Tất cả danh sách ({board?.lists?.length || 0})</option>
               {board?.lists?.map((list: any) => (
@@ -248,32 +248,32 @@ export default function BoardTableView({
           </div>
 
           {/* Filter by Status */}
-          <div className="flex items-center gap-1 p-0.5 rounded-xl glass-weak border border-white/60 text-xs">
+          <div className="flex items-center gap-1 p-0.5 rounded-md border border-slate-200 bg-slate-100 text-xs">
             <button
               onClick={() => setStatusFilter('all')}
-              className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
                 statusFilter === 'all'
-                  ? 'bg-[#2b1572] text-[#a6d1fd] shadow-xs'
-                  : 'text-[#2b1572]/70 hover:text-[#2b1572]'
+                  ? 'bg-slate-900 text-white font-semibold shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Tất cả
             </button>
             <button
               onClick={() => setStatusFilter('in_progress')}
-              className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
                 statusFilter === 'in_progress'
-                  ? 'bg-[#2b1572] text-[#a6d1fd] shadow-xs'
-                  : 'text-[#2b1572]/70 hover:text-[#2b1572]'
+                  ? 'bg-slate-900 text-white font-semibold shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Đang làm
             </button>
             <button
               onClick={() => setStatusFilter('overdue')}
-              className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
                 statusFilter === 'overdue'
-                  ? 'bg-[#c40000] text-white shadow-xs'
+                  ? 'bg-rose-600 text-white font-semibold shadow-2xs'
                   : 'text-rose-700 hover:bg-rose-50'
               }`}
             >
@@ -281,9 +281,9 @@ export default function BoardTableView({
             </button>
             <button
               onClick={() => setStatusFilter('completed')}
-              className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
                 statusFilter === 'completed'
-                  ? 'bg-[#358200] text-white shadow-xs'
+                  ? 'bg-emerald-600 text-white font-semibold shadow-2xs'
                   : 'text-emerald-700 hover:bg-emerald-50'
               }`}
             >
@@ -294,8 +294,8 @@ export default function BoardTableView({
 
         {/* Right Action: Add Card Button */}
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-[#2b1572]/60 hidden sm:inline">
-            Tổng cộng: <strong className="text-[#2b1572]">{filteredCards.length}</strong> thẻ
+          <span className="text-xs text-slate-500 font-medium hidden sm:inline">
+            Tổng cộng: <strong className="text-slate-900">{filteredCards.length}</strong> thẻ
           </span>
           {!board?.is_archived && board?.canEdit && (
             <button
@@ -303,7 +303,7 @@ export default function BoardTableView({
                 setIsAddingCard(true);
                 setNewCardListId(board?.lists?.[0]?.id || '');
               }}
-              className="px-3 py-1.5 btn-primary text-xs font-semibold flex items-center gap-1.5 shadow-xs cursor-pointer"
+              className="px-3 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Thêm thẻ</span>
@@ -313,14 +313,14 @@ export default function BoardTableView({
       </div>
 
       {/* Main Table View Container */}
-      <div className="flex-1 overflow-auto rounded-2xl glass-surface border border-white/60 shadow-md">
+      <div className="flex-1 overflow-auto rounded-lg bg-white border border-slate-300 shadow-2xs">
         <table className="w-full text-left border-collapse text-xs">
           {/* Sticky Header */}
-          <thead className="sticky top-0 z-10 bg-white/70 backdrop-blur-md border-b border-white/80 shadow-2xs">
-            <tr className="text-[#2b1572] font-bold text-[11px] uppercase tracking-wider">
-              <th className="py-3 px-3 w-10 text-center">Xong</th>
+          <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
+            <tr className="text-slate-700 font-semibold text-[11px] uppercase tracking-wider">
+              <th className="py-2.5 px-3 w-10 text-center">Xong</th>
               <th
-                className="py-3 px-3 cursor-pointer hover:bg-white/40 transition-colors"
+                className="py-2.5 px-3 cursor-pointer hover:bg-slate-100 transition-colors"
                 onClick={() => {
                   setSortField('title');
                   setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -328,11 +328,11 @@ export default function BoardTableView({
               >
                 <div className="flex items-center gap-1.5">
                   <span>Thẻ công việc</span>
-                  <ArrowUpDown className="w-3 h-3 opacity-60" />
+                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
                 </div>
               </th>
               <th
-                className="py-3 px-3 cursor-pointer hover:bg-white/40 transition-colors w-44"
+                className="py-2.5 px-3 cursor-pointer hover:bg-slate-100 transition-colors w-44"
                 onClick={() => {
                   setSortField('list');
                   setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -340,12 +340,12 @@ export default function BoardTableView({
               >
                 <div className="flex items-center gap-1.5">
                   <span>Danh sách</span>
-                  <ArrowUpDown className="w-3 h-3 opacity-60" />
+                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
                 </div>
               </th>
-              <th className="py-3 px-3 w-40">Thành viên</th>
+              <th className="py-2.5 px-3 w-40">Thành viên</th>
               <th
-                className="py-3 px-3 cursor-pointer hover:bg-white/40 transition-colors w-44"
+                className="py-2.5 px-3 cursor-pointer hover:bg-slate-100 transition-colors w-44"
                 onClick={() => {
                   setSortField('due_date');
                   setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -353,24 +353,24 @@ export default function BoardTableView({
               >
                 <div className="flex items-center gap-1.5">
                   <span>Thời hạn</span>
-                  <ArrowUpDown className="w-3 h-3 opacity-60" />
+                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
                 </div>
               </th>
-              <th className="py-3 px-3 w-36">Tiến độ Checklist</th>
-              <th className="py-3 px-3 w-40">Nhãn</th>
-              <th className="py-3 px-3 w-16 text-center">Thao tác</th>
+              <th className="py-2.5 px-3 w-36">Tiến độ Checklist</th>
+              <th className="py-2.5 px-3 w-40">Nhãn</th>
+              <th className="py-2.5 px-3 w-16 text-center">Thao tác</th>
             </tr>
           </thead>
 
           {/* Table Body */}
-          <tbody className="divide-y divide-white/40">
+          <tbody className="divide-y divide-slate-100">
             {/* Inline Quick Add Card Row */}
             {isAddingCard && (
-              <tr className="bg-[#a6d1fd]/15 border-b-2 border-[#a6d1fd] animate-in fade-in">
-                <td className="py-2.5 px-3 text-center">
-                  <Circle className="w-4 h-4 text-[#2b1572]/30 mx-auto" />
+              <tr className="bg-slate-50 border-b border-slate-200 animate-fade-in">
+                <td className="py-2 px-3 text-center">
+                  <Circle className="w-4 h-4 text-slate-400 mx-auto" />
                 </td>
-                <td className="py-2.5 px-3">
+                <td className="py-2 px-3">
                   <form onSubmit={handleCreateCard} className="flex items-center gap-2">
                     <input
                       type="text"
@@ -378,15 +378,15 @@ export default function BoardTableView({
                       value={newCardTitle}
                       onChange={(e) => setNewCardTitle(e.target.value)}
                       placeholder="Nhập tiêu đề thẻ mới và nhấn Enter..."
-                      className="w-full text-xs font-semibold text-[#2b1572] bg-white border border-[#2b1572]/30 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#2b1572]/20"
+                      className="w-full text-xs font-medium text-slate-900 bg-white border border-slate-300 rounded-md px-2.5 py-1.5 focus:outline-none focus:border-slate-800"
                     />
                   </form>
                 </td>
-                <td className="py-2.5 px-3">
+                <td className="py-2 px-3">
                   <select
                     value={newCardListId}
                     onChange={(e) => setNewCardListId(e.target.value)}
-                    className="w-full text-xs font-semibold text-[#2b1572] bg-white border border-[#2b1572]/30 rounded-lg px-2 py-1.5"
+                    className="w-full text-xs font-medium text-slate-900 bg-white border border-slate-300 rounded-md px-2 py-1.5"
                   >
                     {board?.lists?.map((l: any) => (
                       <option key={l.id} value={l.id}>
@@ -395,19 +395,19 @@ export default function BoardTableView({
                     ))}
                   </select>
                 </td>
-                <td colSpan={4} className="py-2.5 px-3 text-right">
+                <td colSpan={4} className="py-2 px-3 text-right">
                   <div className="flex items-center justify-end gap-2">
                     <button
                       type="button"
                       onClick={() => setIsAddingCard(false)}
-                      className="px-2.5 py-1 rounded-lg text-xs font-semibold text-[#2b1572]/60 hover:text-[#2b1572] hover:bg-white/60 transition-colors cursor-pointer"
+                      className="px-2.5 py-1 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors cursor-pointer"
                     >
                       Hủy
                     </button>
                     <button
                       onClick={handleCreateCard}
                       disabled={!newCardTitle.trim() || isSubmittingCard}
-                      className="px-3 py-1 bg-[#2b1572] text-[#a6d1fd] rounded-lg text-xs font-semibold hover:bg-[#1e0f52] disabled:opacity-50 transition-colors cursor-pointer"
+                      className="px-3 py-1 bg-slate-900 text-white rounded-md text-xs font-semibold hover:bg-slate-800 disabled:opacity-50 transition-colors cursor-pointer"
                     >
                       {isSubmittingCard ? 'Đang thêm...' : 'Lưu thẻ'}
                     </button>
@@ -419,9 +419,9 @@ export default function BoardTableView({
             {/* Empty State */}
             {filteredCards.length === 0 && !isAddingCard && (
               <tr>
-                <td colSpan={8} className="py-12 text-center text-[#2b1572]/60">
-                  <p className="text-sm font-semibold">Không tìm thấy thẻ nào phù hợp</p>
-                  <p className="text-xs text-[#2b1572]/40 mt-1">
+                <td colSpan={8} className="py-12 text-center text-slate-500">
+                  <p className="text-sm font-semibold text-slate-700">Không tìm thấy thẻ nào phù hợp</p>
+                  <p className="text-xs text-slate-400 mt-1">
                     Hãy thử thay đổi bộ lọc hoặc thêm thẻ mới vào bảng
                   </p>
                 </td>
@@ -446,50 +446,50 @@ export default function BoardTableView({
                 <tr
                   key={card.id}
                   onClick={() => onOpenCardDetail(card.id)}
-                  className="group hover:bg-[#a6d1fd]/15 transition-colors cursor-pointer text-[#2b1572] select-none"
+                  className="group hover:bg-slate-50 transition-colors cursor-pointer text-slate-800 select-none"
                 >
                   {/* Completed Checkbox */}
-                  <td className="py-3 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                  <td className="py-2.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={(e) => handleToggleComplete(card, e)}
-                      className="text-[#2b1572]/40 hover:text-emerald-600 transition-colors cursor-pointer"
+                      className="text-slate-400 hover:text-emerald-600 transition-colors cursor-pointer"
                       title={card.is_due_date_completed ? 'Đánh dấu chưa hoàn thành' : 'Đánh dấu đã hoàn thành'}
                     >
                       {card.is_due_date_completed ? (
                         <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                       ) : (
-                        <Circle className="w-4 h-4 text-[#2b1572]/40" />
+                        <Circle className="w-4 h-4 text-slate-300" />
                       )}
                     </button>
                   </td>
 
                   {/* Card Title & Meta */}
-                  <td className="py-3 px-3">
+                  <td className="py-2.5 px-3">
                     <div className="flex items-center gap-2">
                       <span
-                        className={`font-semibold text-xs transition-colors ${
+                        className={`font-medium text-xs transition-colors ${
                           card.is_due_date_completed
-                            ? 'line-through text-[#2b1572]/50'
-                            : 'text-[#2b1572] group-hover:text-[#1e0f52]'
+                            ? 'line-through text-slate-400'
+                            : 'text-slate-900 group-hover:text-blue-600'
                         }`}
                       >
                         {card.title}
                       </span>
 
                       {/* Small badge counts */}
-                      <div className="flex items-center gap-1.5 text-[10px] text-[#2b1572]/50 ml-1">
+                      <div className="flex items-center gap-1.5 text-[10px] text-slate-400 ml-1">
                         {card.description && (
                           <span title="Có phần mô tả">📝</span>
                         )}
                         {(card.comments?.length > 0 || card._count?.comments > 0) && (
                           <span className="flex items-center gap-0.5">
-                            <MessageSquare className="w-3 h-3" />
+                            <MessageSquare className="w-3 h-3 text-slate-400" />
                             <span>{card.comments?.length || card._count?.comments}</span>
                           </span>
                         )}
                         {(card.attachments?.length > 0 || card._count?.attachments > 0) && (
                           <span className="flex items-center gap-0.5">
-                            <Paperclip className="w-3 h-3" />
+                            <Paperclip className="w-3 h-3 text-slate-400" />
                             <span>{card.attachments?.length || card._count?.attachments}</span>
                           </span>
                         )}
@@ -498,11 +498,11 @@ export default function BoardTableView({
                   </td>
 
                   {/* List Selector Dropdown */}
-                  <td className="py-3 px-3" onClick={(e) => e.stopPropagation()}>
+                  <td className="py-2.5 px-3" onClick={(e) => e.stopPropagation()}>
                     <select
                       value={card.listId}
                       onChange={(e) => handleChangeList(card.id, e.target.value, e)}
-                      className="px-2 py-1 rounded-lg text-xs font-semibold bg-white/70 hover:bg-white border border-[#2b1572]/20 text-[#2b1572] cursor-pointer focus:outline-none transition-colors"
+                      className="px-2 py-1 rounded-md text-xs font-medium bg-slate-50 hover:bg-white border border-slate-200 text-slate-700 cursor-pointer focus:outline-none transition-colors"
                     >
                       {board?.lists?.map((l: any) => (
                         <option key={l.id} value={l.id}>
@@ -513,13 +513,13 @@ export default function BoardTableView({
                   </td>
 
                   {/* Members / Assignees */}
-                  <td className="py-3 px-3">
+                  <td className="py-2.5 px-3">
                     {card.card_assignees?.length > 0 ? (
                       <div className="flex items-center -space-x-1.5">
                         {card.card_assignees.map((ca: any, idx: number) => (
                           <div
                             key={ca.id || idx}
-                            className="w-6 h-6 rounded-full bg-[#2b1572] text-[#a6d1fd] border-2 border-white flex items-center justify-center text-[9px] font-bold shadow-2xs"
+                            className="w-5 h-5 rounded-full bg-slate-800 text-white border-2 border-white flex items-center justify-center text-[9px] font-semibold"
                             title={ca.user?.name || 'Thành viên'}
                           >
                             {ca.user?.name?.charAt(0).toUpperCase() || 'U'}
@@ -527,44 +527,44 @@ export default function BoardTableView({
                         ))}
                       </div>
                     ) : (
-                      <span className="text-[#2b1572]/40 text-xs italic">Chưa gán</span>
+                      <span className="text-slate-400 text-xs italic">Chưa gán</span>
                     )}
                   </td>
 
                   {/* Due Date */}
-                  <td className="py-3 px-3">
+                  <td className="py-2.5 px-3">
                     {renderDueDateBadge(card)}
                   </td>
 
                   {/* Progress Checklist Bar */}
-                  <td className="py-3 px-3">
+                  <td className="py-2.5 px-3">
                     {totalItems > 0 ? (
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 h-1.5 bg-[#2b1572]/15 rounded-full overflow-hidden">
+                        <div className="flex-1 h-1.5 bg-slate-200 rounded-xs overflow-hidden">
                           <div
-                            className={`h-full rounded-full transition-all ${
-                              percent === 100 ? 'bg-emerald-600' : 'bg-[#4f91cf]'
+                            className={`h-full rounded-xs transition-all ${
+                              percent === 100 ? 'bg-emerald-600' : 'bg-slate-700'
                             }`}
                             style={{ width: `${percent}%` }}
                           />
                         </div>
-                        <span className="text-[10px] font-semibold text-[#2b1572]/70 shrink-0">
+                        <span className="text-[10px] font-semibold text-slate-500 shrink-0">
                           {completedItems}/{totalItems} ({percent}%)
                         </span>
                       </div>
                     ) : (
-                      <span className="text-[#2b1572]/40 text-xs italic">-</span>
+                      <span className="text-slate-400 text-xs italic">-</span>
                     )}
                   </td>
 
                   {/* Labels */}
-                  <td className="py-3 px-3">
+                  <td className="py-2.5 px-3">
                     {card.card_labels?.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
                         {card.card_labels.map((cl: any) => (
                           <span
                             key={cl.label?.id || Math.random()}
-                            className="px-2 py-0.5 rounded-md text-[10px] font-semibold text-white shadow-2xs"
+                            className="px-1.5 py-0.2 rounded-xs text-[10px] font-semibold text-white"
                             style={{ backgroundColor: cl.label?.color || '#3b82f6' }}
                           >
                             {cl.label?.name}
@@ -572,23 +572,23 @@ export default function BoardTableView({
                         ))}
                       </div>
                     ) : (
-                      <span className="text-[#2b1572]/40 text-xs italic">-</span>
+                      <span className="text-slate-400 text-xs italic">-</span>
                     )}
                   </td>
 
                   {/* Actions */}
-                  <td className="py-3 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                  <td className="py-2.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => onOpenCardDetail(card.id)}
-                        className="p-1 rounded-lg hover:bg-white/80 text-[#2b1572] transition-colors cursor-pointer"
+                        className="p-1 rounded-md hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
                         title="Xem chi tiết thẻ"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => onDeleteCard(card.id)}
-                        className="p-1 rounded-lg hover:bg-rose-50 text-rose-600 transition-colors cursor-pointer"
+                        className="p-1 rounded-md hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
                         title="Xóa thẻ"
                       >
                         <Trash2 className="w-3.5 h-3.5" />

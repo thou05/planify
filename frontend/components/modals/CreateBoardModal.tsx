@@ -80,40 +80,40 @@ export default function CreateBoardModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#2b1572]/20 backdrop-blur-sm">
-      <div className="w-full max-w-md glass-strong p-6 sm:p-8 border border-white/60 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-2xs">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-300 p-6 sm:p-7 relative">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-1.5 rounded-full hover:bg-white/40 text-[#2b1572]/60 hover:text-[#2b1572] transition-colors cursor-pointer"
+          className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
 
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-10 h-10 rounded-xl bg-[#2b1572] flex items-center justify-center text-[#a6d1fd] shadow-md">
-            <Kanban className="w-5 h-5" />
+          <div className="w-9 h-9 rounded-md bg-slate-900 flex items-center justify-center text-white shadow-2xs">
+            <Kanban className="w-4.5 h-4.5" />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-[#2b1572]">Tạo Board mới</h3>
-            <p className="text-xs text-[#2b1572]/60">Bảng Kanban quản lý công việc và tiến độ</p>
+            <h3 className="text-base font-bold text-slate-900">Tạo Board mới</h3>
+            <p className="text-xs text-slate-500">Bảng Kanban quản lý công việc và tiến độ</p>
           </div>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 rounded-xl bg-[#c40000]/10 border border-[#c40000]/20 text-[#c40000] text-xs font-medium">
+          <div className="mb-4 p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[#2b1572]/80 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               Chọn Workspace *
             </label>
             <select
               value={currentSelectedWsId}
               onChange={(e) => setTargetWsId(e.target.value)}
-              className="w-full px-3.5 py-2.5 text-sm glass-input font-medium"
+              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-md font-medium text-slate-900 focus:outline-none focus:border-slate-800"
             >
               {workspaces.map((ws) => (
                 <option key={ws.id} value={ws.id}>
@@ -124,7 +124,7 @@ export default function CreateBoardModal({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[#2b1572]/80 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               Tên Board *
             </label>
             <input
@@ -133,12 +133,12 @@ export default function CreateBoardModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="VD: Dự án Sprint 1"
-              className="w-full px-3.5 py-2.5 text-sm glass-input placeholder:text-[#2b1572]/30 font-medium"
+              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-md placeholder:text-slate-400 font-medium text-slate-900 focus:outline-none focus:border-slate-800"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[#2b1572]/80 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               Mô tả (tùy chọn)
             </label>
             <textarea
@@ -146,7 +146,7 @@ export default function CreateBoardModal({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Mô tả mục tiêu của board này..."
-              className="w-full px-3.5 py-2.5 text-sm glass-input placeholder:text-[#2b1572]/30 font-medium resize-none"
+              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-md placeholder:text-slate-400 font-medium text-slate-900 resize-none focus:outline-none focus:border-slate-800"
             />
           </div>
 
@@ -156,10 +156,10 @@ export default function CreateBoardModal({
               id="is_fav"
               checked={isFavorite}
               onChange={(e) => setIsFavorite(e.target.checked)}
-              className="w-4 h-4 rounded text-[#2b1572] focus:ring-[#a6d1fd]"
+              className="w-4 h-4 rounded text-slate-900 focus:ring-slate-900 border-slate-300"
             />
-            <label htmlFor="is_fav" className="text-xs font-semibold text-[#2b1572] flex items-center gap-1.5 cursor-pointer">
-              <Star className={`w-3.5 h-3.5 ${isFavorite ? 'text-amber-500 fill-amber-500' : 'text-[#2b1572]/50'}`} />
+            <label htmlFor="is_fav" className="text-xs font-semibold text-slate-700 flex items-center gap-1.5 cursor-pointer">
+              <Star className={`w-3.5 h-3.5 ${isFavorite ? 'text-amber-500 fill-amber-500' : 'text-slate-400'}`} />
               <span>Đánh dấu là Board yêu thích</span>
             </label>
           </div>
@@ -172,10 +172,10 @@ export default function CreateBoardModal({
                   onClose();
                   onOpenImport(currentSelectedWsId);
                 }}
-                className="px-3 py-2 btn-secondary text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                className="px-3.5 py-1.5 rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
                 title="Nhập Bảng từ tệp JSON hoặc Excel"
               >
-                <Upload className="w-3.5 h-3.5 text-[#2b1572]" />
+                <Upload className="w-3.5 h-3.5 text-slate-500" />
                 <span>Nhập từ tệp (Import)</span>
               </button>
             ) : (
@@ -186,14 +186,14 @@ export default function CreateBoardModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-xs font-semibold text-[#2b1572]/70 hover:text-[#2b1572] cursor-pointer"
+                className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 rounded-md hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 Hủy
               </button>
               <button
                 type="submit"
                 disabled={isLoading || !currentSelectedWsId}
-                className="px-5 py-2.5 btn-primary text-xs font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
               >
                 {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 <span>{isLoading ? 'Đang tạo...' : 'Tạo Board'}</span>

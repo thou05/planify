@@ -70,64 +70,63 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="max-w-6xl mx-auto space-y-8">
+      <div className="max-w-6xl mx-auto space-y-6">
         {/* Welcome Banner */}
-        <div className="glass-surface p-6 sm:p-8 relative overflow-hidden">
-          <div className="absolute -right-8 -bottom-8 w-64 h-64 rounded-full bg-[#a6d1fd]/25 blur-3xl pointer-events-none" />
-          <div className="absolute -right-4 -top-8 w-64 h-64 rounded-full bg-[#a000c8]/15 blur-3xl pointer-events-none" />
-
-          <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/60 border border-white/80 text-xs font-semibold text-[#2b1572] mb-3">
-              <Sparkles className="w-3.5 h-3.5 text-[#a000c8]" />
-              <span>Không gian làm việc Planify</span>
+        <div className="bg-white border border-slate-200 rounded-lg p-6 sm:p-7">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-xs bg-slate-100 border border-slate-200 text-[11px] font-semibold text-slate-700 mb-2.5">
+                <Kanban className="w-3 h-3 text-slate-500" />
+                <span>Không gian làm việc Planify</span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                Xin chào, {user?.name || 'bạn'} 👋
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-xl">
+                Tổng quan các không gian làm việc và bảng dự án Kanban của bạn.
+              </p>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#2b1572] tracking-tight">
-              Xin chào, {user?.name || 'bạn'}! 👋
-            </h1>
-            <p className="text-sm text-[#2b1572]/70 mt-1 max-w-xl">
-              Chào mừng bạn quay lại hệ thống quản lý công việc và dự án Kanban. Dưới đây là các không gian làm việc và bảng việc của bạn.
-            </p>
           </div>
         </div>
 
         {/* Favorite Boards Section */}
         {favoriteBoards.length > 0 && (
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
-              <h2 className="text-lg font-bold text-[#2b1572]">Bảng công việc yêu thích</h2>
+            <div className="flex items-center gap-2 mb-3">
+              <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+              <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Bảng công việc yêu thích</h2>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
               {favoriteBoards.map((board) => (
                 <Link
                   key={board.id}
                   href={`/boards/${board.id}`}
-                  className="kanban-card p-5 flex flex-col justify-between group"
+                  className="p-4 rounded-md border border-slate-200 hover:border-slate-400 bg-white transition-colors flex flex-col justify-between group"
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="text-[11px] font-semibold text-[#2b1572]/60 uppercase tracking-wider truncate">
+                      <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wider truncate">
                         {board.workspaceName}
                       </span>
-                      <Star className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />
+                      <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
                     </div>
-                    <h3 className="font-bold text-[#2b1572] text-base group-hover:text-[#4f91cf] transition-colors line-clamp-1">
+                    <h3 className="font-semibold text-slate-900 text-sm group-hover:text-slate-700 transition-colors line-clamp-1">
                       {board.name}
                     </h3>
                     {board.description && (
-                      <p className="text-xs text-[#2b1572]/70 mt-1 line-clamp-2">
+                      <p className="text-xs text-slate-500 mt-1 line-clamp-2">
                         {board.description}
                       </p>
                     )}
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-[#2b1572]/10 flex items-center justify-between text-xs text-[#2b1572]/60">
+                  <div className="mt-3.5 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
                     <span className="flex items-center gap-1.5">
-                      <Kanban className="w-3.5 h-3.5" />
+                      <Kanban className="w-3.5 h-3.5 text-slate-400" />
                       Kanban Board
                     </span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                   </div>
                 </Link>
               ))}
@@ -137,74 +136,74 @@ export default function DashboardPage() {
 
         {/* Workspaces List Section */}
         <div>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Layers className="w-5 h-5 text-[#2b1572]" />
-              <h2 className="text-lg font-bold text-[#2b1572]">Không gian làm việc (Workspaces)</h2>
+              <Layers className="w-4 h-4 text-slate-700" />
+              <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Không gian làm việc (Workspaces)</h2>
             </div>
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
               {[1, 2].map((i) => (
-                <div key={i} className="glass-weak h-40 animate-pulse rounded-2xl" />
+                <div key={i} className="bg-white border border-slate-200 h-36 animate-pulse rounded-lg" />
               ))}
             </div>
           ) : workspaces.length === 0 ? (
-            <div className="glass-surface p-8 text-center rounded-2xl border-dashed border-2 border-white/60">
-              <div className="w-12 h-12 rounded-2xl bg-[#2b1572]/10 flex items-center justify-center text-[#2b1572] mx-auto mb-3">
-                <Layers className="w-6 h-6" />
+            <div className="bg-white p-8 text-center rounded-lg border border-dashed border-slate-300">
+              <div className="w-10 h-10 rounded-md bg-slate-100 flex items-center justify-center text-slate-600 mx-auto mb-3">
+                <Layers className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-[#2b1572]">Chưa có Workspace nào</h3>
-              <p className="text-xs text-[#2b1572]/60 mt-1 max-w-sm mx-auto">
+              <h3 className="text-sm font-bold text-slate-900">Chưa có Workspace nào</h3>
+              <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
                 Hãy tạo Workspace đầu tiên để bắt đầu quản lý các bảng dự án và cộng tác cùng đồng đội.
               </p>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {workspaces.map((ws) => (
-                <div key={ws.id} className="glass-surface p-6 rounded-2xl">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#2b1572]/10">
+                <div key={ws.id} className="bg-white border border-slate-200 rounded-lg p-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-100">
                     <div>
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-[#2b1572] flex items-center justify-center text-[#a6d1fd] font-bold text-xs shadow-sm">
+                        <div className="w-7 h-7 rounded-md bg-slate-900 flex items-center justify-center text-white font-bold text-xs shrink-0">
                           {ws.name.charAt(0).toUpperCase()}
                         </div>
-                        <h3 className="text-lg font-bold text-[#2b1572]">{ws.name}</h3>
+                        <h3 className="text-base font-bold text-slate-900">{ws.name}</h3>
                         {ws.currentUserRole === 'OWNER' ? (
-                          <span className="badge-ai text-[10px] px-2 py-0.5 rounded-full font-bold">
+                          <span className="text-[10px] px-2 py-0.5 rounded-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
                             Owner
                           </span>
                         ) : ws.currentUserRole === 'ADMIN' ? (
-                          <span className="badge-info text-[10px] px-2 py-0.5 rounded-full font-bold">
+                          <span className="text-[10px] px-2 py-0.5 rounded-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
                             Admin
                           </span>
                         ) : ws.currentUserRole === 'GUEST' || ws.isGuest ? (
-                          <span className="badge-warning text-[10px] px-2 py-0.5 rounded-full font-bold">
-                            Khách (Thành viên Bảng)
+                          <span className="text-[10px] px-2 py-0.5 rounded-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                            Khách
                           </span>
                         ) : (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/70 text-[#2b1572]/70 font-semibold border border-white/80">
+                          <span className="text-[10px] px-2 py-0.5 rounded-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
                             Thành viên
                           </span>
                         )}
                       </div>
                       {ws.description && (
-                        <p className="text-xs text-[#2b1572]/70 mt-1 pl-10.5">
+                        <p className="text-xs text-slate-500 mt-1 pl-9.5">
                           {ws.description}
                         </p>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-3 self-end sm:self-auto">
-                      <span className="flex items-center gap-1 text-xs text-[#2b1572]/70 font-medium px-2.5 py-1 rounded-full bg-white/50 border border-white/60">
-                        <Users className="w-3.5 h-3.5" />
+                    <div className="flex items-center gap-2.5 self-end sm:self-auto">
+                      <span className="flex items-center gap-1 text-[11px] text-slate-600 font-medium px-2 py-1 rounded-xs bg-slate-50 border border-slate-200">
+                        <Users className="w-3 h-3 text-slate-500" />
                         <span>{ws.members?.length || 1} thành viên</span>
                       </span>
 
                       <Link
                         href={`/workspaces/${ws.id}`}
-                        className="px-3.5 py-1.5 btn-secondary text-xs font-semibold flex items-center gap-1.5"
+                        className="px-3 py-1.5 rounded-md bg-white hover:bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700 flex items-center gap-1.5 transition-colors"
                       >
                         <span>Quản lý</span>
                         <ArrowRight className="w-3.5 h-3.5" />
@@ -213,36 +212,36 @@ export default function DashboardPage() {
                   </div>
 
                   {/* Boards within this Workspace */}
-                  <div className="mt-4">
-                    <div className="text-xs font-bold uppercase tracking-wider text-[#2b1572]/60 mb-3">
-                      Các bảng Kanban trong Workspace ({ws.boards?.length || 0})
+                  <div className="mt-3.5">
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2.5">
+                      Bảng Kanban ({ws.boards?.length || 0})
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
                       {(ws.boards || []).map((b: any) => (
                         <Link
                           key={b.id}
                           href={`/boards/${b.id}`}
-                          className="p-3.5 rounded-xl bg-white/50 hover:bg-white/80 border border-white/60 transition-all flex items-center justify-between group shadow-xs"
+                          className="p-3 rounded-md bg-slate-50 hover:bg-slate-100 border border-slate-200 hover:border-slate-300 transition-colors flex items-center justify-between group"
                         >
-                          <div className="flex items-center gap-2.5 truncate">
-                            <Kanban className="w-4 h-4 text-[#2b1572]/60 group-hover:text-[#2b1572] shrink-0" />
-                            <span className="text-xs font-bold text-[#2b1572] truncate">
+                          <div className="flex items-center gap-2 truncate">
+                            <Kanban className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-800 shrink-0" />
+                            <span className="text-xs font-medium text-slate-800 truncate">
                               {b.name}
                             </span>
                           </div>
                           {b.is_favorite && (
-                            <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
+                            <Star className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />
                           )}
                         </Link>
                       ))}
 
                       <Link
                         href={`/workspaces/${ws.id}`}
-                        className="p-3.5 rounded-xl bg-[#a6d1fd]/20 hover:bg-[#a6d1fd]/40 border border-dashed border-[#a6d1fd] transition-all flex items-center justify-center gap-1.5 text-xs font-semibold text-[#2b1572] cursor-pointer"
+                        className="p-3 rounded-md bg-white hover:bg-slate-50 border border-dashed border-slate-300 transition-colors flex items-center justify-center gap-1.5 text-xs font-medium text-slate-600 cursor-pointer"
                       >
                         <Plus className="w-3.5 h-3.5" />
-                        <span>Thêm Board</span>
+                        <span>Thêm Bảng</span>
                       </Link>
                     </div>
                   </div>
