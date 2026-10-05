@@ -1206,7 +1206,10 @@ export default function BoardDetailPage({
 
   return (
     <>
-      <div className="h-full flex flex-col relative">
+      <div
+        className="h-full flex flex-col relative bg-dot-pattern"
+        style={board?.background ? { background: board.background } : undefined}
+      >
         {/* Archived Banner Warning */}
         {board?.is_archived && (
           <div className="bg-amber-500/15 border-b border-amber-500/30 px-6 py-2.5 flex items-center justify-between gap-4 z-20 text-amber-900 text-xs font-semibold">

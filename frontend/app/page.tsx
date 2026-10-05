@@ -37,7 +37,7 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f8fafc] bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:24px_24px]">
+    <div className="min-h-screen flex flex-col bg-grid-pattern">
       {/* Navigation */}
       <header className="w-full px-6 py-3 flex items-center justify-between border-b border-slate-200 bg-white sticky top-0 z-50">
         <div className="flex items-center gap-3">

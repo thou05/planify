@@ -46,36 +46,38 @@
 }
 
 /* ==================================================================== */
-/* 1. Body & Canvas Background (Technical Grid Pattern — Section 3.1)   */
+/* 1. Body & Canvas Background (Technical Grid & Dot Matrix Patterns)   */
 /* ==================================================================== */
 body {
   min-height: 100vh;
   color: var(--text-primary);
   background-color: #f8fafc;
   background-image: 
-    linear-gradient(to right, rgba(15, 23, 42, 0.045) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(15, 23, 42, 0.045) 1px, transparent 1px);
+    linear-gradient(to right, rgba(15, 23, 42, 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.055) 1px, transparent 1px);
   background-size: 24px 24px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", Helvetica, Arial, sans-serif;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Technical Grid Canvas Utility */
+/* Technical Grid Canvas Utility (Nền lưới cho tất cả các trang) */
+.bg-grid-pattern,
 .app-canvas,
 .grid-canvas {
   background-color: #f8fafc;
   background-image: 
-    linear-gradient(to right, rgba(15, 23, 42, 0.045) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(15, 23, 42, 0.045) 1px, transparent 1px);
+    linear-gradient(to right, rgba(15, 23, 42, 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.055) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
-/* Subtle Dot Matrix Pattern (Section 3.2) */
+/* Dot Matrix / Dot Grid Pattern (Nền chấm mặc định cho Board) */
+.bg-dot-pattern,
 .pattern-dots {
   background-color: #f8fafc;
-  background-image: radial-gradient(rgba(15, 23, 42, 0.12) 1px, transparent 1px);
-  background-size: 16px 16px;
+  background-image: radial-gradient(rgba(15, 23, 42, 0.15) 1.2px, transparent 1.2px);
+  background-size: 20px 20px;
 }
 
 /* ==================================================================== */

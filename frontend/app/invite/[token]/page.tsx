@@ -152,7 +152,7 @@ export default function AcceptInvitePage({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative bg-[#f8fafc] bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:24px_24px]">
+    <div className="min-h-screen flex items-center justify-center p-4 relative bg-grid-pattern">
       <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-300 p-8 sm:p-10 relative text-center">
         <div className="flex justify-center mb-5">
           <div className="w-12 h-12 rounded-md bg-slate-900 text-white flex items-center justify-center shadow-2xs">

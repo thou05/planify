@@ -15,6 +15,7 @@ import {
   Sparkles,
   History,
   LayoutTemplate,
+  PanelLeftClose,
 } from 'lucide-react';
 
 export interface WorkspaceItem {
@@ -30,6 +31,8 @@ interface SidebarProps {
   onSelectWorkspace?: (id: string) => void;
   onOpenCreateWorkspace: () => void;
   onOpenCreateBoard?: () => void;
+  isOpen?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export default function Sidebar({
@@ -38,6 +41,8 @@ export default function Sidebar({
   onSelectWorkspace,
   onOpenCreateWorkspace,
   onOpenCreateBoard,
+  isOpen = true,
+  onToggleCollapse,
 }: SidebarProps) {
   const pathname = usePathname();
   const [isWsDropdownOpen, setIsWsDropdownOpen] = useState(false);
@@ -138,6 +143,17 @@ export default function Sidebar({
     return () => window.removeEventListener('resize', handleResize);
   }, [pathname, currentWorkspace?.id, currentWorkspace?.boards, updateActiveRects]);
 
+  // Recalculate indicators and close dropdown when sidebar collapse state changes
+  useEffect(() => {
+    if (!isOpen) {
+      setIsWsDropdownOpen(false);
+    } else {
+      updateActiveRects();
+      const timer = setTimeout(updateActiveRects, 310);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, updateActiveRects]);
+
   // Click handlers to instantly trigger glide animation with 0ms delay
   const handleNavClick = (key: string) => {
     const el = navItemRefs.current[key];
@@ -168,30 +184,42 @@ export default function Sidebar({
 
   return (
     <>
-      <aside className="w-64 h-full flex flex-col bg-white border-r border-slate-200 p-3.5 shrink-0 select-none">
-        {/* Workspace Switcher */}
-        <div className="relative mb-5">
-          <button
-            onClick={() => setIsWsDropdownOpen(!isWsDropdownOpen)}
-            className="w-full flex items-center justify-between p-2 rounded-md bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors text-left group cursor-pointer"
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-7 h-7 rounded-md bg-slate-900 flex items-center justify-center text-white shrink-0 font-bold text-xs">
-                {currentWorkspace ? currentWorkspace.name.charAt(0).toUpperCase() : 'W'}
-              </div>
-              <div className="min-w-0">
-                <div className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Workspace</div>
-                <div className="text-xs font-bold text-slate-900 truncate">
-                  {currentWorkspace ? currentWorkspace.name : 'Chọn Workspace'}
+      <aside
+        className={`h-full flex flex-col shrink-0 select-none overflow-hidden transition-[width,opacity] duration-300 ease-[cubic-bezier(0.2,0,0,1)] ${
+          isOpen
+            ? 'w-64 opacity-100 border-r border-slate-200'
+            : 'w-0 opacity-0 border-r-0 pointer-events-none'
+        }`}
+      >
+        <div
+          className={`w-64 h-full flex flex-col bg-white p-3.5 shrink-0 transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)] ${
+            isOpen ? 'translate-x-0' : '-translate-x-12'
+          }`}
+        >
+          {/* Workspace Switcher + Collapse Button */}
+          <div className="flex items-center gap-1.5 mb-4">
+            <div className="relative flex-1 min-w-0">
+              <button
+                onClick={() => setIsWsDropdownOpen(!isWsDropdownOpen)}
+                className="w-full flex items-center justify-between p-2 rounded-md bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors text-left group cursor-pointer"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-md bg-slate-900 flex items-center justify-center text-white shrink-0 font-bold text-xs">
+                    {currentWorkspace ? currentWorkspace.name.charAt(0).toUpperCase() : 'W'}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Workspace</div>
+                    <div className="text-xs font-bold text-slate-900 truncate">
+                      {currentWorkspace ? currentWorkspace.name : 'Chọn Workspace'}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <ChevronDown
-              className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 shrink-0 transition-transform duration-200 ${
-                isWsDropdownOpen ? 'rotate-180' : ''
-              }`}
-            />
-          </button>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 shrink-0 transition-transform duration-200 ${
+                    isWsDropdownOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
 
           {/* Dropdown Menu - 100% Solid White */}
           {isWsDropdownOpen && (
@@ -232,6 +260,19 @@ export default function Sidebar({
             </div>
           )}
         </div>
+
+        {onToggleCollapse && (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            title="Thu gọn menu bên (Ctrl+B)"
+            className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-colors cursor-pointer shrink-0"
+            aria-label="Thu gọn menu bên"
+          >
+            <PanelLeftClose className="w-4 h-4" />
+          </button>
+        )}
+      </div>
 
         {/* Main Navigation */}
         <div
@@ -482,10 +523,11 @@ export default function Sidebar({
             <span>Phím tắt nhanh</span>
           </div>
           <p className="text-[11px] text-slate-500 leading-tight">
-            Nhấn <kbd className="px-1 py-0.2 rounded bg-white border border-slate-200 text-[10px] font-mono text-slate-700">Ctrl</kbd> + <kbd className="px-1 py-0.2 rounded bg-white border border-slate-200 text-[10px] font-mono text-slate-700">K</kbd> để tìm kiếm nhanh mọi lúc.
+            Nhấn <kbd className="px-1 py-0.2 rounded bg-white border border-slate-200 text-[10px] font-mono text-slate-700">Ctrl</kbd> + <kbd className="px-1 py-0.2 rounded bg-white border border-slate-200 text-[10px] font-mono text-slate-700">K</kbd> tìm kiếm, <kbd className="px-1 py-0.2 rounded bg-white border border-slate-200 text-[10px] font-mono text-slate-700">Ctrl</kbd> + <kbd className="px-1 py-0.2 rounded bg-white border border-slate-200 text-[10px] font-mono text-slate-700">B</kbd> đóng/mở menu.
           </p>
         </div>
-      </aside>
-    </>
+      </div>
+    </aside>
+  </>
   );
 }

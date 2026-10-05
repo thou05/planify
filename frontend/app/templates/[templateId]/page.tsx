@@ -205,10 +205,12 @@ export default function TemplateDetailPage({
 
               {/* Kanban Preview Frame */}
               <div
-                className="rounded-lg p-5 shadow-2xs overflow-x-auto min-h-[460px] border border-slate-300"
-                style={{
-                  background: template.background || '#0f172a',
-                }}
+                className="rounded-lg p-5 shadow-2xs overflow-x-auto min-h-[460px] border border-slate-300 bg-dot-pattern"
+                style={
+                  template.background
+                    ? { background: template.background }
+                    : undefined
+                }
               >
                 {/* Header in Preview */}
                 <div className="flex items-center justify-between mb-4 text-white">

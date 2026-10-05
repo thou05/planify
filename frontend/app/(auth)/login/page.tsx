@@ -141,7 +141,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative bg-[#f8fafc] bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:24px_24px]">
+    <div className="min-h-screen flex items-center justify-center p-4 relative bg-grid-pattern">
       <Suspense fallback={<div className="text-xs font-semibold text-slate-700">Đang tải...</div>}>
         <LoginForm />
       </Suspense>

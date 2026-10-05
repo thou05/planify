@@ -22,6 +22,8 @@ import {
   ArrowRight,
   Loader2,
   X,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import MyActivityModal from '@/components/modals/MyActivityModal';
 import NotificationPopover from '@/components/notifications/NotificationPopover';
@@ -31,11 +33,15 @@ import GlobalSearchModal from '@/components/modals/GlobalSearchModal';
 interface TopBarProps {
   onOpenCreateWorkspace?: () => void;
   onOpenCreateBoard?: () => void;
+  isSidebarOpen?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 export default function TopBar({
   onOpenCreateWorkspace,
   onOpenCreateBoard,
+  isSidebarOpen,
+  onToggleSidebar,
 }: TopBarProps) {
   const router = useRouter();
   const { user, logout } = useAuth();
@@ -193,8 +199,28 @@ export default function TopBar({
   return (
     <>
       <header className="h-14 px-6 flex items-center justify-between bg-white border-b border-slate-200 sticky top-0 z-40 shrink-0">
-        {/* Brand */}
-        <div className="flex items-center gap-6">
+        {/* Brand & Sidebar Toggle */}
+        <div className="flex items-center gap-3 sm:gap-4">
+          {onToggleSidebar && (
+            <button
+              type="button"
+              onClick={onToggleSidebar}
+              title={isSidebarOpen ? 'Thu gọn menu bên (Ctrl+B)' : 'Mở menu bên (Ctrl+B)'}
+              className={`p-1.5 rounded-md transition-all cursor-pointer border flex items-center justify-center ${
+                isSidebarOpen
+                  ? 'text-slate-500 hover:text-slate-900 hover:bg-slate-100 border-transparent hover:border-slate-200'
+                  : 'text-slate-900 bg-slate-100 hover:bg-slate-200 border-slate-300 shadow-2xs'
+              }`}
+              aria-label={isSidebarOpen ? 'Thu gọn menu bên' : 'Mở menu bên'}
+            >
+              {isSidebarOpen ? (
+                <PanelLeftClose className="w-4 h-4" />
+              ) : (
+                <PanelLeftOpen className="w-4 h-4 text-slate-900" />
+              )}
+            </button>
+          )}
+
           <Link href="/dashboard" className="flex items-center gap-2.5 group">
             <div className="w-8 h-8 rounded-md bg-slate-900 flex items-center justify-center text-white transition-colors">
               <LayoutGrid className="w-4 h-4" />
