@@ -171,37 +171,37 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 p-4 bg-[#2b1572]/30 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl bg-white/95 backdrop-blur-xl border border-white/60 rounded-3xl shadow-2xl shadow-[#2b1572]/20 overflow-hidden flex flex-col max-h-[80vh] animate-scale-up"
+        className="w-full max-w-2xl bg-white border border-slate-300 rounded-lg shadow-xl overflow-hidden flex flex-col max-h-[80vh] animate-scale-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search Input Bar */}
-        <div className="flex items-center px-4 py-3.5 border-b border-slate-100 gap-3 bg-white/50">
-          <Search className="w-5 h-5 text-[#2b1572]/50 shrink-0 ml-1" />
+        <div className="flex items-center px-4 py-3 border-b border-slate-200 gap-3 bg-white">
+          <Search className="w-4 h-4 text-slate-400 shrink-0 ml-1" />
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Tìm kiếm không gian, bảng, thẻ công việc... (gõ để tìm)"
-            className="flex-1 bg-transparent text-[#2b1572] placeholder:text-[#2b1572]/40 text-sm font-medium outline-none"
+            className="flex-1 bg-transparent text-slate-900 placeholder:text-slate-400 text-xs sm:text-sm font-medium outline-none"
           />
-          {isLoading && <Loader2 className="w-4 h-4 text-[#2b1572] animate-spin shrink-0" />}
+          {isLoading && <Loader2 className="w-4 h-4 text-slate-600 animate-spin shrink-0" />}
           {query && !isLoading && (
             <button
               onClick={() => {
                 setQuery('');
                 inputRef.current?.focus();
               }}
-              className="p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+              className="p-1 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </button>
           )}
-          <div className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 text-slate-500 text-[10px] font-semibold border border-slate-200">
+          <div className="hidden sm:flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-slate-100 text-slate-500 text-[10px] font-semibold border border-slate-200">
             <span>ESC</span>
           </div>
         </div>
@@ -211,24 +211,24 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
           {/* Initial State when query is empty */}
           {!query.trim() && (
             <div className="py-6 px-4 text-center">
-              <div className="w-12 h-12 mx-auto rounded-2xl bg-[#a6d1fd]/30 text-[#2b1572] flex items-center justify-center mb-3">
-                <Sparkles className="w-6 h-6" />
+              <div className="w-10 h-10 mx-auto rounded-md bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center mb-3">
+                <Sparkles className="w-5 h-5" />
               </div>
-              <h4 className="text-sm font-bold text-[#2b1572] mb-1">
+              <h4 className="text-sm font-bold text-slate-900 mb-1">
                 Tìm kiếm thông minh trên Planify
               </h4>
-              <p className="text-xs text-[#2b1572]/60 max-w-sm mx-auto mb-4">
+              <p className="text-xs text-slate-500 max-w-sm mx-auto mb-4">
                 Nhập từ khóa để tìm nhanh không gian làm việc, bảng công việc hoặc thẻ tác vụ của bạn.
               </p>
               <div className="inline-flex flex-wrap items-center justify-center gap-2 text-[11px] text-slate-500">
-                <span className="px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200">
-                  <strong className="text-[#2b1572]">Ctrl + K</strong> Mở tìm kiếm toàn cục
+                <span className="px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200">
+                  <strong className="text-slate-800">Ctrl + K</strong> Mở tìm kiếm toàn cục
                 </span>
-                <span className="px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200">
-                  <strong className="text-[#2b1572]">↑ / ↓</strong> Di chuyển
+                <span className="px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200">
+                  <strong className="text-slate-800">↑ / ↓</strong> Di chuyển
                 </span>
-                <span className="px-2.5 py-1 rounded-xl bg-slate-100 border border-slate-200">
-                  <strong className="text-[#2b1572]">Enter</strong> Chọn xem
+                <span className="px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200">
+                  <strong className="text-slate-800">Enter</strong> Chọn xem
                 </span>
               </div>
             </div>
@@ -237,10 +237,10 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
           {/* No results found */}
           {query.trim() && !isLoading && totalResults === 0 && (
             <div className="py-8 px-4 text-center">
-              <div className="w-12 h-12 mx-auto rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-3 border border-amber-200">
-                <FileQuestion className="w-6 h-6" />
+              <div className="w-10 h-10 mx-auto rounded-md bg-amber-50 text-amber-700 flex items-center justify-center mb-3 border border-amber-200">
+                <FileQuestion className="w-5 h-5" />
               </div>
-              <h4 className="text-sm font-bold text-slate-800 mb-1">
+              <h4 className="text-sm font-bold text-slate-900 mb-1">
                 Không tìm thấy kết quả nào cho &ldquo;{query}&rdquo;
               </h4>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
@@ -252,8 +252,8 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
           {/* Workspaces Group */}
           {results.workspaces.length > 0 && (
             <div>
-              <div className="flex items-center gap-2 px-3 py-1 text-[11px] font-bold text-[#2b1572]/60 uppercase tracking-wider">
-                <FolderKanban className="w-3.5 h-3.5 text-[#2b1572]" />
+              <div className="flex items-center gap-2 px-2 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                <FolderKanban className="w-3.5 h-3.5 text-slate-600" />
                 <span>Không gian làm việc ({results.workspaces.length})</span>
               </div>
               <div className="mt-1 space-y-1">
@@ -267,26 +267,26 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
                       key={workspace.id}
                       onClick={() => handleSelect(`/workspaces/${workspace.id}`)}
                       onMouseEnter={() => setSelectedIndex(itemIndex)}
-                      className={`group flex items-center justify-between p-3 rounded-2xl cursor-pointer transition-all ${
+                      className={`group flex items-center justify-between p-2.5 rounded-md cursor-pointer transition-all ${
                         isSelected
-                          ? 'bg-[#2b1572] text-white shadow-md'
+                          ? 'bg-slate-900 text-white shadow-xs'
                           : 'hover:bg-slate-100 text-slate-700'
                       }`}
                     >
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex items-center gap-2.5 min-w-0">
                         <div
-                          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                          className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
                             isSelected
-                              ? 'bg-white/20 text-[#a6d1fd]'
-                              : 'bg-[#a6d1fd]/30 text-[#2b1572]'
+                              ? 'bg-white/20 text-white'
+                              : 'bg-slate-100 text-slate-700 border border-slate-200'
                           }`}
                         >
                           <FolderKanban className="w-4 h-4" />
                         </div>
                         <div className="min-w-0">
                           <p
-                            className={`text-xs font-bold truncate ${
-                              isSelected ? 'text-white' : 'text-[#2b1572]'
+                            className={`text-xs font-semibold truncate ${
+                              isSelected ? 'text-white' : 'text-slate-900'
                             }`}
                           >
                             {workspace.name}
@@ -294,7 +294,7 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
                           {workspace.description && (
                             <p
                               className={`text-[11px] truncate ${
-                                isSelected ? 'text-white/70' : 'text-slate-500'
+                                isSelected ? 'text-slate-300' : 'text-slate-500'
                               }`}
                             >
                               {workspace.description}
@@ -303,7 +303,7 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
                         </div>
                       </div>
                       <ArrowRight
-                        className={`w-4 h-4 shrink-0 transition-transform ${
+                        className={`w-3.5 h-3.5 shrink-0 transition-transform ${
                           isSelected
                             ? 'text-white translate-x-1'
                             : 'text-slate-300 group-hover:text-slate-500'
@@ -319,8 +319,8 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
           {/* Boards Group */}
           {results.boards.length > 0 && (
             <div>
-              <div className="flex items-center gap-2 px-3 py-1 text-[11px] font-bold text-[#2b1572]/60 uppercase tracking-wider">
-                <LayoutGrid className="w-3.5 h-3.5 text-[#2b1572]" />
+              <div className="flex items-center gap-2 px-2 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                <LayoutGrid className="w-3.5 h-3.5 text-slate-600" />
                 <span>Bảng công việc ({results.boards.length})</span>
               </div>
               <div className="mt-1 space-y-1">
@@ -334,18 +334,18 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
                       key={board.id}
                       onClick={() => handleSelect(`/boards/${board.id}`)}
                       onMouseEnter={() => setSelectedIndex(itemIndex)}
-                      className={`group flex items-center justify-between p-3 rounded-2xl cursor-pointer transition-all ${
+                      className={`group flex items-center justify-between p-2.5 rounded-md cursor-pointer transition-all ${
                         isSelected
-                          ? 'bg-[#2b1572] text-white shadow-md'
+                          ? 'bg-slate-900 text-white shadow-xs'
                           : 'hover:bg-slate-100 text-slate-700'
                       }`}
                     >
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex items-center gap-2.5 min-w-0">
                         <div
-                          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                          className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
                             isSelected
-                              ? 'bg-white/20 text-[#a6d1fd]'
-                              : 'bg-emerald-100 text-emerald-700'
+                              ? 'bg-white/20 text-white'
+                              : 'bg-slate-100 text-slate-700 border border-slate-200'
                           }`}
                         >
                           <LayoutGrid className="w-4 h-4" />
@@ -353,18 +353,18 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <p
-                              className={`text-xs font-bold truncate ${
-                                isSelected ? 'text-white' : 'text-[#2b1572]'
+                              className={`text-xs font-semibold truncate ${
+                                isSelected ? 'text-white' : 'text-slate-900'
                               }`}
                             >
                               {board.name}
                             </p>
                             {board.workspace_name && (
                               <span
-                                className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
+                                className={`text-[9px] px-1.5 py-0.2 rounded-xs font-medium ${
                                   isSelected
                                     ? 'bg-white/20 text-white'
-                                    : 'bg-slate-100 text-slate-600'
+                                    : 'bg-slate-100 text-slate-600 border border-slate-200'
                                 }`}
                               >
                                 {board.workspace_name}
@@ -374,7 +374,7 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
                           {board.description && (
                             <p
                               className={`text-[11px] truncate ${
-                                isSelected ? 'text-white/70' : 'text-slate-500'
+                                isSelected ? 'text-slate-300' : 'text-slate-500'
                               }`}
                             >
                               {board.description}
@@ -383,7 +383,7 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
                         </div>
                       </div>
                       <ArrowRight
-                        className={`w-4 h-4 shrink-0 transition-transform ${
+                        className={`w-3.5 h-3.5 shrink-0 transition-transform ${
                           isSelected
                             ? 'text-white translate-x-1'
                             : 'text-slate-300 group-hover:text-slate-500'
@@ -399,8 +399,8 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
           {/* Cards Group */}
           {results.cards.length > 0 && (
             <div>
-              <div className="flex items-center gap-2 px-3 py-1 text-[11px] font-bold text-[#2b1572]/60 uppercase tracking-wider">
-                <CreditCard className="w-3.5 h-3.5 text-[#2b1572]" />
+              <div className="flex items-center gap-2 px-2 py-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                <CreditCard className="w-3.5 h-3.5 text-slate-600" />
                 <span>Thẻ công việc ({results.cards.length})</span>
               </div>
               <div className="mt-1 space-y-1">
@@ -416,37 +416,37 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
                         handleSelect(`/boards/${card.board_id}?cardId=${card.id}`)
                       }
                       onMouseEnter={() => setSelectedIndex(itemIndex)}
-                      className={`group flex items-center justify-between p-3 rounded-2xl cursor-pointer transition-all ${
+                      className={`group flex items-center justify-between p-2.5 rounded-md cursor-pointer transition-all ${
                         isSelected
-                          ? 'bg-[#2b1572] text-white shadow-md'
+                          ? 'bg-slate-900 text-white shadow-xs'
                           : 'hover:bg-slate-100 text-slate-700'
                       }`}
                     >
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex items-center gap-2.5 min-w-0">
                         <div
-                          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                          className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
                             isSelected
-                              ? 'bg-white/20 text-[#a6d1fd]'
-                              : 'bg-indigo-100 text-[#2b1572]'
+                              ? 'bg-white/20 text-white'
+                              : 'bg-slate-100 text-slate-700 border border-slate-200'
                           }`}
                         >
                           <CreditCard className="w-4 h-4" />
                         </div>
                         <div className="min-w-0">
                           <p
-                            className={`text-xs font-bold truncate ${
-                              isSelected ? 'text-white' : 'text-[#2b1572]'
+                            className={`text-xs font-semibold truncate ${
+                              isSelected ? 'text-white' : 'text-slate-900'
                             }`}
                           >
                             {card.title}
                           </p>
-                          <div className="flex items-center gap-2 mt-0.5">
+                          <div className="flex items-center gap-1.5 mt-0.5">
                             {card.board_name && (
                               <span
-                                className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium truncate ${
+                                className={`text-[10px] px-1.5 py-0.2 rounded-xs font-medium truncate ${
                                   isSelected
                                     ? 'bg-white/20 text-white'
-                                    : 'bg-[#a6d1fd]/30 text-[#2b1572]'
+                                    : 'bg-slate-100 text-slate-600 border border-slate-200'
                                 }`}
                               >
                                 Bảng: {card.board_name}
@@ -454,10 +454,10 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
                             )}
                             {card.list_name && (
                               <span
-                                className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium truncate ${
+                                className={`text-[10px] px-1.5 py-0.2 rounded-xs font-medium truncate ${
                                   isSelected
                                     ? 'bg-white/20 text-white'
-                                    : 'bg-slate-100 text-slate-600'
+                                    : 'bg-slate-100 text-slate-600 border border-slate-200'
                                 }`}
                               >
                                 Cột: {card.list_name}
@@ -473,7 +473,7 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
                           </span>
                         )}
                         <ArrowRight
-                          className={`w-4 h-4 transition-transform ${
+                          className={`w-3.5 h-3.5 transition-transform ${
                             isSelected
                               ? 'text-white translate-x-1'
                               : 'text-slate-300 group-hover:text-slate-500'
@@ -489,7 +489,7 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
         </div>
 
         {/* Modal Footer with hints */}
-        <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+        <div className="px-4 py-2 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-500">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
               <kbd className="px-1.5 py-0.5 bg-white border border-slate-200 rounded font-semibold text-[10px]">
@@ -511,7 +511,7 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
             </span>
           </div>
           {totalResults > 0 && (
-            <span className="font-semibold text-[#2b1572]">
+            <span className="font-semibold text-slate-800">
               Tìm thấy {totalResults} kết quả
             </span>
           )}

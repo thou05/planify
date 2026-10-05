@@ -96,46 +96,46 @@ export default function SaveAsTemplateModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#2b1572]/25 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-md glass-strong border border-white/80 rounded-3xl p-6 sm:p-8 relative shadow-2xl overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-300 p-6 relative overflow-hidden flex flex-col">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-full hover:bg-white/40 text-[#2b1572]/60 hover:text-[#2b1572] transition-colors cursor-pointer"
+          className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
 
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-11 h-11 rounded-2xl bg-[#2b1572] flex items-center justify-center text-[#a6d1fd] shadow-md shadow-[#2b1572]/20">
-            <LayoutTemplate className="w-5 h-5" />
+          <div className="w-9 h-9 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800">
+            <LayoutTemplate className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-[#2b1572]">Lưu thành Template</h2>
-            <p className="text-xs text-[#2b1572]/70">Tạo mẫu tái sử dụng từ Bảng hiện tại</p>
+            <h2 className="text-base font-bold text-slate-900">Lưu thành Template</h2>
+            <p className="text-xs text-slate-500">Tạo mẫu tái sử dụng từ Bảng hiện tại</p>
           </div>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 rounded-xl bg-[#c40000]/10 border border-[#c40000]/20 text-[#c40000] text-xs font-semibold">
+          <div className="mb-4 p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
             {error}
           </div>
         )}
 
         {success ? (
           <div className="py-8 text-center space-y-2 animate-fade-in">
-            <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500/15 text-emerald-700 flex items-center justify-center">
-              <Check className="w-6 h-6" />
+            <div className="w-10 h-10 mx-auto rounded-md bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center">
+              <Check className="w-5 h-5" />
             </div>
-            <h3 className="text-sm font-bold text-[#2b1572]">Đã lưu mẫu thành công!</h3>
-            <p className="text-xs text-[#2b1572]/70">
+            <h3 className="text-sm font-bold text-slate-900">Đã lưu mẫu thành công!</h3>
+            <p className="text-xs text-slate-500">
               Mẫu đã được bổ sung vào Thư viện Mẫu để bạn và nhóm có thể sử dụng lại bất cứ lúc nào.
             </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-[#2b1572] mb-1.5">
-                Tên Mẫu Template <span className="text-[#c40000]">*</span>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+                Tên Mẫu Template <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
@@ -143,18 +143,18 @@ export default function SaveAsTemplateModal({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="VD: Quy trình Sprint Chuẩn..."
-                className="w-full px-3.5 py-2.5 text-xs glass-input font-bold text-[#2b1572]"
+                className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 transition-all placeholder:text-slate-400"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-[#2b1572] mb-1.5">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
                 Danh mục phân loại
               </label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-xs glass-input font-semibold text-[#2b1572] cursor-pointer"
+                className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 cursor-pointer"
               >
                 {TEMPLATE_CATEGORIES.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -165,7 +165,7 @@ export default function SaveAsTemplateModal({
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-[#2b1572] mb-1.5">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
                 Mô tả & Hướng dẫn sử dụng mẫu
               </label>
               <textarea
@@ -173,27 +173,27 @@ export default function SaveAsTemplateModal({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Mô tả mục đích và quy trình luân chuyển công việc trong mẫu này..."
-                className="w-full px-3.5 py-2.5 text-xs glass-input text-[#2b1572] placeholder:text-[#2b1572]/30 resize-none"
+                className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 resize-none transition-all"
               />
             </div>
 
             <div className="pt-1">
-              <label className="flex items-center gap-2 text-xs font-semibold text-[#2b1572] cursor-pointer">
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-800 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={isPublic}
                   onChange={(e) => setIsPublic(e.target.checked)}
-                  className="rounded text-[#2b1572] focus:ring-[#2b1572]"
+                  className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
                 />
                 <span>Công khai mẫu này trong Thư viện chung cho mọi người cùng dùng</span>
               </label>
             </div>
 
-            <div className="pt-3 flex items-center justify-end gap-2.5">
+            <div className="pt-2 flex items-center justify-end gap-2.5">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-[#2b1572]/70 hover:bg-white/50 cursor-pointer"
+                className="px-4 py-2 rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer transition-colors"
               >
                 Hủy
               </button>
@@ -201,7 +201,7 @@ export default function SaveAsTemplateModal({
               <button
                 type="submit"
                 disabled={isLoading}
-                className="px-5 py-2 btn-primary text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs"
+                className="px-4 py-2 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-xs"
               >
                 {isLoading ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />

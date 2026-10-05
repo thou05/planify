@@ -313,40 +313,37 @@ export default function ProfilePage() {
     <>
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Profile Hero Card */}
-        <div className="glass-surface p-6 sm:p-8 relative overflow-hidden flex flex-col sm:flex-row items-center sm:items-start gap-6">
-          <div className="absolute -right-8 -bottom-8 w-64 h-64 rounded-full bg-[#a6d1fd]/30 blur-3xl pointer-events-none" />
-          <div className="absolute -left-8 -top-8 w-64 h-64 rounded-full bg-[#a000c8]/15 blur-3xl pointer-events-none" />
-
+        <div className="p-6 bg-white border border-slate-200 rounded-lg shadow-2xs flex flex-col sm:flex-row items-center sm:items-start gap-5">
           {/* Avatar */}
-          <div className="w-24 h-24 rounded-3xl bg-[#2b1572]/10 border-2 border-white overflow-hidden flex items-center justify-center shrink-0 shadow-lg relative">
+          <div className="w-16 h-16 rounded-md bg-slate-900 text-white border border-slate-200 overflow-hidden flex items-center justify-center shrink-0 shadow-2xs relative">
             {user.avatar ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
             ) : (
-              <span className="text-3xl font-extrabold text-[#2b1572]">
+              <span className="text-2xl font-bold text-white">
                 {user.name.charAt(0).toUpperCase()}
               </span>
             )}
           </div>
 
           {/* User Details */}
-          <div className="flex-1 text-center sm:text-left relative z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/60 border border-white/80 text-xs font-semibold text-[#2b1572] mb-2">
-              <Sparkles className="w-3.5 h-3.5 text-[#a000c8]" />
-              <span>Tài khoản Planify cá nhân</span>
+          <div className="flex-1 text-center sm:text-left">
+            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-xs bg-slate-100 border border-slate-200 text-[11px] font-semibold text-slate-700 mb-1.5">
+              <UserIcon className="w-3 h-3 text-slate-500" />
+              <span>Tài khoản cá nhân</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-[#2b1572] tracking-tight">
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
               {user.name}
             </h1>
-            <p className="text-xs text-[#2b1572]/70 mt-1 flex items-center justify-center sm:justify-start gap-2">
+            <p className="text-xs text-slate-500 mt-0.5 flex items-center justify-center sm:justify-start gap-2">
               <span>{user.email}</span>
               <span>•</span>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-800 font-bold text-[10px]">
+              <span className="px-1.5 py-0.2 rounded-xs bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold text-[10px]">
                 {user.status || 'ACTIVE'}
               </span>
             </p>
             {user.bio && (
-              <p className="text-xs text-[#2b1572]/80 mt-2 italic max-w-xl">
+              <p className="text-xs text-slate-600 mt-2 italic max-w-xl">
                 &ldquo;{user.bio}&rdquo;
               </p>
             )}
@@ -354,19 +351,19 @@ export default function ProfilePage() {
         </div>
 
         {/* Tab Selection */}
-        <div className="flex items-center gap-2 border-b border-[#2b1572]/10 pb-1">
+        <div className="flex items-center gap-1 border-b border-slate-200 pb-2">
           <button
             onClick={() => {
               setActiveTab('profile');
               setStatusMessage(null);
             }}
-            className={`px-4 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'profile'
-                ? 'bg-[#2b1572] text-[#a6d1fd] shadow-md'
-                : 'text-[#2b1572]/70 hover:bg-white/40'
+                ? 'bg-slate-900 text-white'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
-            <UserIcon className="w-4 h-4" />
+            <UserIcon className="w-3.5 h-3.5" />
             <span>Thông tin cá nhân</span>
           </button>
 
@@ -375,13 +372,13 @@ export default function ProfilePage() {
               setActiveTab('security');
               setStatusMessage(null);
             }}
-            className={`px-4 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'security'
-                ? 'bg-[#2b1572] text-[#a6d1fd] shadow-md'
-                : 'text-[#2b1572]/70 hover:bg-white/40'
+                ? 'bg-slate-900 text-white'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
-            <Shield className="w-4 h-4" />
+            <Shield className="w-3.5 h-3.5" />
             <span>Bảo mật & Mật khẩu</span>
           </button>
 
@@ -391,16 +388,16 @@ export default function ProfilePage() {
               setStatusMessage(null);
               fetchInvitations();
             }}
-            className={`px-4 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-2 relative ${
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer flex items-center gap-1.5 relative ${
               activeTab === 'invitations'
-                ? 'bg-[#2b1572] text-[#a6d1fd] shadow-md'
-                : 'text-[#2b1572]/70 hover:bg-white/40'
+                ? 'bg-slate-900 text-white'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
-            <Mail className="w-4 h-4" />
+            <Mail className="w-3.5 h-3.5" />
             <span>Lời mời</span>
             {totalInvites > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full bg-[#c40000] text-white text-[10px] font-black leading-none">
+              <span className="px-1.5 py-0.2 rounded-xs bg-rose-600 text-white text-[10px] font-bold leading-none">
                 {totalInvites}
               </span>
             )}
@@ -412,13 +409,13 @@ export default function ProfilePage() {
               setStatusMessage(null);
               fetchNotificationPreferences();
             }}
-            className={`px-4 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-2 ${
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'notifications'
-                ? 'bg-[#2b1572] text-[#a6d1fd] shadow-md'
-                : 'text-[#2b1572]/70 hover:bg-white/40'
+                ? 'bg-slate-900 text-white'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
-            <Bell className="w-4 h-4" />
+            <Bell className="w-3.5 h-3.5" />
             <span>Cài đặt Thông báo</span>
           </button>
         </div>
@@ -426,37 +423,37 @@ export default function ProfilePage() {
         {/* Status Notification */}
         {statusMessage && (
           <div
-            className={`p-4 rounded-2xl border text-xs font-semibold flex items-center gap-2 animate-fade-in ${
+            className={`p-3 rounded-md border text-xs font-medium flex items-center gap-2 ${
               statusMessage.type === 'success'
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-800'
-                : 'bg-[#c40000]/10 border-[#c40000]/30 text-[#c40000]'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                : 'bg-rose-50 border-rose-200 text-rose-800'
             }`}
           >
             {statusMessage.type === 'success' ? (
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             ) : (
-              <AlertCircle className="w-4 h-4 text-[#c40000] shrink-0" />
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             )}
             <span>{statusMessage.text}</span>
           </div>
         )}
 
         {/* Main Tab Panels */}
-        <div className="glass-surface p-6 sm:p-8">
+        <div className="p-6 bg-white border border-slate-200 rounded-lg shadow-2xs">
           {/* TAB 1: PROFILE */}
           {activeTab === 'profile' && (
-            <form onSubmit={handleSaveProfile} className="space-y-6">
+            <form onSubmit={handleSaveProfile} className="space-y-5">
               <div>
-                <label className="block text-xs font-bold text-[#2b1572] mb-2">
+                <label className="block text-xs font-semibold text-slate-700 mb-2">
                   Ảnh đại diện (Avatar)
                 </label>
                 <div className="flex flex-wrap items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-[#2b1572]/10 border-2 border-[#2b1572]/20 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
+                  <div className="w-14 h-14 rounded-md bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0 shadow-2xs">
                     {avatar ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={avatar} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-xl font-black text-[#2b1572]">
+                      <span className="text-lg font-bold text-slate-700">
                         {name ? name.charAt(0).toUpperCase() : 'U'}
                       </span>
                     )}
@@ -468,18 +465,18 @@ export default function ProfilePage() {
                       value={avatar}
                       onChange={(e) => setAvatar(e.target.value)}
                       placeholder="Dán link ảnh đại diện (URL)..."
-                      className="w-full px-3.5 py-2.5 text-xs glass-input placeholder:text-[#2b1572]/30 text-[#2b1572]"
+                      className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
                     />
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-[#2b1572]/60 font-medium">Chọn avatar mẫu:</span>
+                      <span className="text-[11px] text-slate-500 font-medium">Chọn avatar mẫu:</span>
                       <div className="flex items-center gap-1.5">
                         {PRESET_AVATARS.map((url, idx) => (
                           <button
                             key={idx}
                             type="button"
                             onClick={() => setAvatar(url)}
-                            className={`w-6 h-6 rounded-full overflow-hidden border-2 cursor-pointer hover:scale-110 transition-transform ${
-                              avatar === url ? 'border-[#2b1572] scale-110 ring-2 ring-[#a6d1fd]' : 'border-white/80'
+                            className={`w-6 h-6 rounded-md overflow-hidden border cursor-pointer hover:opacity-80 transition-opacity ${
+                              avatar === url ? 'border-slate-900 ring-1 ring-slate-900' : 'border-slate-200'
                             }`}
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -494,8 +491,8 @@ export default function ProfilePage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-[#2b1572] mb-1.5">
-                    Họ và tên <span className="text-[#c40000]">*</span>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                    Họ và tên <span className="text-rose-600">*</span>
                   </label>
                   <input
                     type="text"
@@ -503,25 +500,25 @@ export default function ProfilePage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Nhập tên của bạn"
-                    className="w-full px-3.5 py-2.5 text-xs glass-input text-[#2b1572] font-semibold"
+                    className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#2b1572] mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                     Email tài khoản
                   </label>
                   <input
                     type="email"
                     disabled
                     value={user.email}
-                    className="w-full px-3.5 py-2.5 text-xs glass-input bg-white/30 text-[#2b1572]/60 cursor-not-allowed font-medium"
+                    className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed font-normal"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#2b1572] mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                   Tiểu sử / Bio cá nhân
                 </label>
                 <textarea
@@ -529,14 +526,14 @@ export default function ProfilePage() {
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   placeholder="Chia sẻ đôi nét về vai trò, chuyên môn hoặc mục tiêu làm việc..."
-                  className="w-full px-3.5 py-2.5 text-xs glass-input text-[#2b1572] placeholder:text-[#2b1572]/30 resize-none"
+                  className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 resize-none"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-[#2b1572] mb-1.5 flex items-center gap-1">
-                    <Phone className="w-3.5 h-3.5 text-[#2b1572]/60" />
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1">
+                    <Phone className="w-3.5 h-3.5 text-slate-400" />
                     <span>Số điện thoại</span>
                   </label>
                   <input
@@ -544,19 +541,19 @@ export default function ProfilePage() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+84 987 654 321"
-                    className="w-full px-3.5 py-2.5 text-xs glass-input text-[#2b1572]"
+                    className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#2b1572] mb-1.5 flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5 text-[#2b1572]/60" />
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-slate-400" />
                     <span>Múi giờ</span>
                   </label>
                   <select
                     value={timezone}
                     onChange={(e) => setTimezone(e.target.value)}
-                    className="w-full px-3 py-2 text-xs glass-input text-[#2b1572] cursor-pointer"
+                    className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-800 cursor-pointer focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
                   >
                     <option value="Asia/Ho_Chi_Minh">GMT+7 (Hà Nội, TP.HCM)</option>
                     <option value="Asia/Bangkok">GMT+7 (Bangkok)</option>
@@ -567,14 +564,14 @@ export default function ProfilePage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#2b1572] mb-1.5 flex items-center gap-1">
-                    <Globe className="w-3.5 h-3.5 text-[#2b1572]/60" />
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1">
+                    <Globe className="w-3.5 h-3.5 text-slate-400" />
                     <span>Ngôn ngữ</span>
                   </label>
                   <select
                     value={language}
                     onChange={(e) => setLanguage(e.target.value)}
-                    className="w-full px-3 py-2 text-xs glass-input text-[#2b1572] cursor-pointer"
+                    className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-800 cursor-pointer focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
                   >
                     <option value="vi">Tiếng Việt (VI)</option>
                     <option value="en">English (EN)</option>
@@ -582,20 +579,20 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <div className="pt-4 flex justify-end">
+              <div className="pt-2 flex justify-end">
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="px-6 py-3 btn-primary text-xs font-bold flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-md"
+                  className="px-4 py-2 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
                 >
                   {isSaving ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       <span>Đang lưu thông tin...</span>
                     </>
                   ) : (
                     <>
-                      <Check className="w-4 h-4" />
+                      <Check className="w-3.5 h-3.5" />
                       <span>Lưu thay đổi</span>
                     </>
                   )}
@@ -607,31 +604,31 @@ export default function ProfilePage() {
           {/* TAB 2: SECURITY */}
           {activeTab === 'security' && (
             <div className="space-y-6">
-              <div className="p-4 rounded-2xl bg-white/50 border border-white/70 space-y-2">
+              <div className="p-3.5 rounded-md bg-slate-50 border border-slate-200 space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-[#2b1572]/70 font-semibold">Tình trạng tài khoản:</span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-800 font-bold text-[11px]">
+                  <span className="text-slate-500">Tình trạng tài khoản:</span>
+                  <span className="px-2 py-0.5 rounded-xs bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold text-[10px]">
                     ● Đang hoạt động (ACTIVE)
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-[#2b1572]/70 font-semibold">Thời gian khởi tạo:</span>
-                  <span className="text-[#2b1572] font-semibold flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5" />
+                  <span className="text-slate-500">Thời gian khởi tạo:</span>
+                  <span className="text-slate-700 font-medium flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
                     {user.created_at ? new Date(user.created_at).toLocaleDateString('vi-VN') : '2026'}
                   </span>
                 </div>
               </div>
 
               <form onSubmit={handleChangePassword} className="space-y-4">
-                <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#2b1572] flex items-center gap-1.5">
-                  <Key className="w-4 h-4" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                  <Key className="w-3.5 h-3.5 text-slate-500" />
                   <span>Thay đổi mật khẩu</span>
                 </h3>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#2b1572] mb-1.5">
-                    Mật khẩu hiện tại <span className="text-[#c40000]">*</span>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                    Mật khẩu hiện tại <span className="text-rose-600">*</span>
                   </label>
                   <input
                     type="password"
@@ -639,14 +636,14 @@ export default function ProfilePage() {
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     placeholder="Nhập mật khẩu đang dùng..."
-                    className="w-full px-3.5 py-2.5 text-xs glass-input text-[#2b1572]"
+                    className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-[#2b1572] mb-1.5">
-                      Mật khẩu mới <span className="text-[#c40000]">*</span>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                      Mật khẩu mới <span className="text-rose-600">*</span>
                     </label>
                     <input
                       type="password"
@@ -654,13 +651,13 @@ export default function ProfilePage() {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="Tối thiểu 6 ký tự..."
-                      className="w-full px-3.5 py-2.5 text-xs glass-input text-[#2b1572]"
+                      className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[#2b1572] mb-1.5">
-                      Xác nhận mật khẩu mới <span className="text-[#c40000]">*</span>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                      Xác nhận mật khẩu mới <span className="text-rose-600">*</span>
                     </label>
                     <input
                       type="password"
@@ -668,25 +665,25 @@ export default function ProfilePage() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Nhập lại mật khẩu mới..."
-                      className="w-full px-3.5 py-2.5 text-xs glass-input text-[#2b1572]"
+                      className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
                     />
                   </div>
                 </div>
 
-                <div className="pt-4 flex justify-end">
+                <div className="pt-2 flex justify-end">
                   <button
                     type="submit"
                     disabled={isChangingPass}
-                    className="px-6 py-3 btn-primary text-xs font-bold flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-md"
+                    className="px-4 py-2 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
                   >
                     {isChangingPass ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         <span>Đang cập nhật mật khẩu...</span>
                       </>
                     ) : (
                       <>
-                        <Key className="w-4 h-4" />
+                        <Key className="w-3.5 h-3.5" />
                         <span>Cập nhật mật khẩu</span>
                       </>
                     )}
@@ -698,13 +695,13 @@ export default function ProfilePage() {
 
           {/* TAB 3: INVITATIONS */}
           {activeTab === 'invitations' && (
-            <div className="space-y-5">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#2b1572]">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
                     Danh sách lời mời ({totalInvites})
                   </h3>
-                  <p className="text-[11px] text-[#2b1572]/70">
+                  <p className="text-[11px] text-slate-500">
                     Chấp nhận hoặc từ chối các lời mời tham gia dự án được gửi tới email của bạn
                   </p>
                 </div>
@@ -712,46 +709,46 @@ export default function ProfilePage() {
                   type="button"
                   onClick={fetchInvitations}
                   disabled={loadingInvites}
-                  className="text-xs font-bold text-[#2b1572] hover:underline cursor-pointer disabled:opacity-50"
+                  className="text-xs font-semibold text-slate-700 hover:text-slate-900 hover:underline cursor-pointer disabled:opacity-50"
                 >
                   Làm mới danh sách
                 </button>
               </div>
 
               {loadingInvites ? (
-                <div className="py-12 flex flex-col items-center justify-center gap-2 text-[#2b1572]/60">
-                  <Loader2 className="w-6 h-6 animate-spin text-[#2b1572]" />
+                <div className="py-12 flex flex-col items-center justify-center gap-2 text-slate-500">
+                  <Loader2 className="w-6 h-6 animate-spin text-slate-600" />
                   <span className="text-xs">Đang kiểm tra lời mời...</span>
                 </div>
               ) : totalInvites === 0 ? (
-                <div className="py-12 text-center rounded-2xl bg-white/30 border border-white/60 space-y-2">
-                  <Mail className="w-10 h-10 text-[#2b1572]/40 mx-auto" />
-                  <p className="text-xs font-bold text-[#2b1572]">Không có lời mời nào đang chờ</p>
-                  <p className="text-[11px] text-[#2b1572]/60 max-w-sm mx-auto">
+                <div className="py-12 text-center rounded-md border border-dashed border-slate-300 bg-slate-50/50 space-y-2">
+                  <Mail className="w-8 h-8 text-slate-400 mx-auto" />
+                  <p className="text-xs font-bold text-slate-800">Không có lời mời nào đang chờ</p>
+                  <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
                     Bạn hiện chưa nhận được lời mời tham gia Không gian làm việc hoặc Bảng nào mới.
                   </p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {invitations.workspaceInvites?.map((inv: any) => (
                     <div
                       key={inv.id}
-                      className="p-4 rounded-2xl glass-surface border border-white/80 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                      className="p-3.5 rounded-md bg-white border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-[#2b1572] text-[#a6d1fd] flex items-center justify-center shrink-0 shadow-sm">
-                          <Layers className="w-5 h-5" />
+                        <div className="w-8 h-8 rounded-md bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center shrink-0">
+                          <Layers className="w-4 h-4" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-extrabold text-[#2b1572]">
+                            <span className="text-xs font-bold text-slate-900">
                               {inv.workspace?.name || 'Không gian làm việc'}
                             </span>
-                            <span className="px-2 py-0.5 rounded-full bg-[#a6d1fd]/40 text-[#2b1572] font-bold text-[10px]">
+                            <span className="px-1.5 py-0.5 rounded-xs bg-slate-100 text-slate-700 border border-slate-200 font-semibold text-[10px]">
                               Workspace • {inv.role}
                             </span>
                           </div>
-                          <p className="text-[11px] text-[#2b1572]/60 mt-0.5">
+                          <p className="text-[11px] text-slate-500 mt-0.5">
                             Người mời: {inv.workspace?.owner?.name || 'Admin'} • Hết hạn:{' '}
                             {new Date(inv.expired_at).toLocaleDateString('vi-VN')}
                           </p>
@@ -763,7 +760,7 @@ export default function ProfilePage() {
                           type="button"
                           disabled={processingToken === inv.token}
                           onClick={() => handleRejectWorkspace(inv.token)}
-                          className="px-3 py-1.5 rounded-xl border border-[#c40000]/30 text-[#c40000] hover:bg-[#c40000]/10 text-xs font-bold cursor-pointer transition-colors"
+                          className="px-3 py-1.5 rounded-md border border-rose-300 text-rose-700 hover:bg-rose-50 text-xs font-semibold cursor-pointer transition-colors"
                         >
                           Từ chối
                         </button>
@@ -771,7 +768,7 @@ export default function ProfilePage() {
                           type="button"
                           disabled={processingToken === inv.token}
                           onClick={() => handleAcceptWorkspace(inv.token, inv.workspace?.id)}
-                          className="px-4 py-1.5 btn-primary text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                          className="px-3.5 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
                         >
                           {processingToken === inv.token ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -787,22 +784,22 @@ export default function ProfilePage() {
                   {invitations.boardInvites?.map((inv: any) => (
                     <div
                       key={inv.id}
-                      className="p-4 rounded-2xl glass-surface border border-white/80 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                      className="p-3.5 rounded-md bg-white border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-[#2b1572]/90 text-white flex items-center justify-center shrink-0 shadow-sm">
-                          <LayoutGrid className="w-5 h-5" />
+                        <div className="w-8 h-8 rounded-md bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center shrink-0">
+                          <LayoutGrid className="w-4 h-4" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-extrabold text-[#2b1572]">
+                            <span className="text-xs font-bold text-slate-900">
                               {inv.board?.name || 'Bảng công việc'}
                             </span>
-                            <span className="px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-900 font-bold text-[10px]">
+                            <span className="px-1.5 py-0.5 rounded-xs bg-slate-100 text-slate-700 border border-slate-200 font-semibold text-[10px]">
                               Board • {inv.role}
                             </span>
                           </div>
-                          <p className="text-[11px] text-[#2b1572]/60 mt-0.5">
+                          <p className="text-[11px] text-slate-500 mt-0.5">
                             {inv.board?.workspace?.name ? `Thuộc: ${inv.board.workspace.name} • ` : ''}
                             Người mời: {inv.inviter?.name || 'Thành viên'} • Hết hạn:{' '}
                             {new Date(inv.expired_at).toLocaleDateString('vi-VN')}
@@ -815,7 +812,7 @@ export default function ProfilePage() {
                           type="button"
                           disabled={processingToken === inv.token}
                           onClick={() => handleRejectBoard(inv.token)}
-                          className="px-3 py-1.5 rounded-xl border border-[#c40000]/30 text-[#c40000] hover:bg-[#c40000]/10 text-xs font-bold cursor-pointer transition-colors"
+                          className="px-3 py-1.5 rounded-md border border-rose-300 text-rose-700 hover:bg-rose-50 text-xs font-semibold cursor-pointer transition-colors"
                         >
                           Từ chối
                         </button>
@@ -823,7 +820,7 @@ export default function ProfilePage() {
                           type="button"
                           disabled={processingToken === inv.token}
                           onClick={() => handleAcceptBoard(inv.token, inv.board?.id)}
-                          className="px-4 py-1.5 btn-primary text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                          className="px-3.5 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
                         >
                           {processingToken === inv.token ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -842,14 +839,14 @@ export default function ProfilePage() {
 
           {/* TAB 4: NOTIFICATIONS PREFERENCES */}
           {activeTab === 'notifications' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between pb-2 border-b border-[#2b1572]/10">
+            <div className="space-y-5">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200">
                 <div>
-                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#2b1572] flex items-center gap-2">
-                    <Bell className="w-4 h-4 text-[#2b1572]" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                    <Bell className="w-3.5 h-3.5 text-slate-500" />
                     <span>Cài đặt thông báo & Tùy chọn nhắc nhở</span>
                   </h3>
-                  <p className="text-[11px] text-[#2b1572]/70 mt-0.5">
+                  <p className="text-[11px] text-slate-500 mt-0.5">
                     Tùy chỉnh các loại thông báo bạn muốn nhận trên hệ thống theo thời gian thực
                   </p>
                 </div>
@@ -857,24 +854,24 @@ export default function ProfilePage() {
                   type="button"
                   onClick={fetchNotificationPreferences}
                   disabled={loadingNotifPrefs}
-                  className="text-xs font-bold text-[#2b1572] hover:underline cursor-pointer disabled:opacity-50"
+                  className="text-xs font-semibold text-slate-700 hover:text-slate-900 hover:underline cursor-pointer disabled:opacity-50"
                 >
                   Làm mới
                 </button>
               </div>
 
               {loadingNotifPrefs ? (
-                <div className="py-12 flex flex-col items-center justify-center gap-2 text-[#2b1572]/60">
-                  <Loader2 className="w-6 h-6 animate-spin text-[#2b1572]" />
+                <div className="py-12 flex flex-col items-center justify-center gap-2 text-slate-500">
+                  <Loader2 className="w-6 h-6 animate-spin text-slate-600" />
                   <span className="text-xs">Đang tải tùy chọn thông báo...</span>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {/* Group 1: Lời mời & Thay đổi thành viên */}
-                  <div className="p-4 rounded-2xl glass-surface border border-white/80 shadow-xs space-y-3">
-                    <div className="flex items-center gap-2 pb-2 border-b border-[#2b1572]/10">
-                      <UserPlus className="w-4 h-4 text-[#2b1572]" />
-                      <span className="text-xs font-bold uppercase tracking-wider text-[#2b1572]">
+                  <div className="p-3.5 rounded-md bg-white border border-slate-200 shadow-2xs space-y-3">
+                    <div className="flex items-center gap-1.5 pb-2 border-b border-slate-100">
+                      <UserPlus className="w-3.5 h-3.5 text-slate-600" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
                         Lời mời & Quản trị thành viên
                       </span>
                     </div>
@@ -882,10 +879,10 @@ export default function ProfilePage() {
                     {/* Toggle: Lời mời tham gia */}
                     <div className="flex items-center justify-between gap-4 py-1">
                       <div className="space-y-0.5">
-                        <div className="text-xs font-bold text-[#2b1572]">
+                        <div className="text-xs font-semibold text-slate-900">
                           Lời mời tham gia Không gian / Bảng
                         </div>
-                        <div className="text-[11px] text-[#2b1572]/70">
+                        <div className="text-[11px] text-slate-500">
                           Nhận thông báo khi bạn được mời vào một Không gian làm việc hoặc Bảng mới.
                         </div>
                       </div>
@@ -901,17 +898,17 @@ export default function ProfilePage() {
                           }
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2b1572]"></div>
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-900"></div>
                       </label>
                     </div>
 
                     {/* Toggle: Bị xóa khỏi dự án */}
-                    <div className="flex items-center justify-between gap-4 py-1 border-t border-[#2b1572]/5 pt-2.5">
+                    <div className="flex items-center justify-between gap-4 py-1 border-t border-slate-100 pt-2.5">
                       <div className="space-y-0.5">
-                        <div className="text-xs font-bold text-[#2b1572]">
+                        <div className="text-xs font-semibold text-slate-900">
                           Thông báo xóa khỏi Không gian / Bảng
                         </div>
-                        <div className="text-[11px] text-[#2b1572]/70">
+                        <div className="text-[11px] text-slate-500">
                           Nhận thông báo nếu bạn bị quản trị viên xóa khỏi dự án hoặc bảng.
                         </div>
                       </div>
@@ -927,16 +924,16 @@ export default function ProfilePage() {
                           }
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2b1572]"></div>
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-900"></div>
                       </label>
                     </div>
                   </div>
 
                   {/* Group 2: Thẻ & Nhiệm vụ */}
-                  <div className="p-4 rounded-2xl glass-surface border border-white/80 shadow-xs space-y-3">
-                    <div className="flex items-center gap-2 pb-2 border-b border-[#2b1572]/10">
-                      <CheckCircle2 className="w-4 h-4 text-[#2b1572]" />
-                      <span className="text-xs font-bold uppercase tracking-wider text-[#2b1572]">
+                  <div className="p-3.5 rounded-md bg-white border border-slate-200 shadow-2xs space-y-3">
+                    <div className="flex items-center gap-1.5 pb-2 border-b border-slate-100">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-slate-600" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
                         Thẻ & Phân công công việc
                       </span>
                     </div>
@@ -944,10 +941,10 @@ export default function ProfilePage() {
                     {/* Toggle: Phân công thẻ */}
                     <div className="flex items-center justify-between gap-4 py-1">
                       <div className="space-y-0.5">
-                        <div className="text-xs font-bold text-[#2b1572]">
+                        <div className="text-xs font-semibold text-slate-900">
                           Phân công thẻ & Checklist
                         </div>
-                        <div className="text-[11px] text-[#2b1572]/70">
+                        <div className="text-[11px] text-slate-500">
                           Nhận thông báo khi bạn được gán phụ trách thẻ hoặc mục việc cụ thể.
                         </div>
                       </div>
@@ -963,17 +960,17 @@ export default function ProfilePage() {
                           }
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2b1572]"></div>
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-900"></div>
                       </label>
                     </div>
 
                     {/* Toggle: Nhắc tên @Mention */}
-                    <div className="flex items-center justify-between gap-4 py-1 border-t border-[#2b1572]/5 pt-2.5">
+                    <div className="flex items-center justify-between gap-4 py-1 border-t border-slate-100 pt-2.5">
                       <div className="space-y-0.5">
-                        <div className="text-xs font-bold text-[#2b1572]">
+                        <div className="text-xs font-semibold text-slate-900">
                           Nhắc tên (@Mention)
                         </div>
-                        <div className="text-[11px] text-[#2b1572]/70">
+                        <div className="text-[11px] text-slate-500">
                           Nhận thông báo khi có ai đó nhắc tên bạn (@tên) trong bình luận hoặc thẻ.
                         </div>
                       </div>
@@ -989,16 +986,16 @@ export default function ProfilePage() {
                           }
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2b1572]"></div>
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-900"></div>
                       </label>
                     </div>
                   </div>
 
                   {/* Group 3: Thời hạn & Thảo luận */}
-                  <div className="p-4 rounded-2xl glass-surface border border-white/80 shadow-xs space-y-3">
-                    <div className="flex items-center gap-2 pb-2 border-b border-[#2b1572]/10">
-                      <AlarmClock className="w-4 h-4 text-[#2b1572]" />
-                      <span className="text-xs font-bold uppercase tracking-wider text-[#2b1572]">
+                  <div className="p-3.5 rounded-md bg-white border border-slate-200 shadow-2xs space-y-3">
+                    <div className="flex items-center gap-1.5 pb-2 border-b border-slate-100">
+                      <AlarmClock className="w-3.5 h-3.5 text-slate-600" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
                         Thời hạn & Thảo luận
                       </span>
                     </div>
@@ -1006,10 +1003,10 @@ export default function ProfilePage() {
                     {/* Toggle: Hạn chót & Quá hạn */}
                     <div className="flex items-center justify-between gap-4 py-1">
                       <div className="space-y-0.5">
-                        <div className="text-xs font-bold text-[#2b1572]">
+                        <div className="text-xs font-semibold text-slate-900">
                           Nhắc nhở Hạn chót & Quá hạn
                         </div>
-                        <div className="text-[11px] text-[#2b1572]/70">
+                        <div className="text-[11px] text-slate-500">
                           Tự động nhắc khi công việc sắp đến hạn hoặc bị quá hạn.
                         </div>
                       </div>
@@ -1025,17 +1022,17 @@ export default function ProfilePage() {
                           }
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2b1572]"></div>
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-900"></div>
                       </label>
                     </div>
 
                     {/* Toggle: Bình luận */}
-                    <div className="flex items-center justify-between gap-4 py-1 border-t border-[#2b1572]/5 pt-2.5">
+                    <div className="flex items-center justify-between gap-4 py-1 border-t border-slate-100 pt-2.5">
                       <div className="space-y-0.5">
-                        <div className="text-xs font-bold text-[#2b1572]">
+                        <div className="text-xs font-semibold text-slate-900">
                           Bình luận mới trong thẻ
                         </div>
-                        <div className="text-[11px] text-[#2b1572]/70">
+                        <div className="text-[11px] text-slate-500">
                           Nhận thông báo khi có bình luận mới trong các thẻ bạn đang tham gia.
                         </div>
                       </div>
@@ -1051,7 +1048,7 @@ export default function ProfilePage() {
                           }
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2b1572]"></div>
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-900"></div>
                       </label>
                     </div>
                   </div>
@@ -1062,16 +1059,16 @@ export default function ProfilePage() {
                       type="button"
                       disabled={isSavingNotifPrefs}
                       onClick={handleSaveNotifPreferences}
-                      className="px-5 py-2.5 btn-primary text-xs font-bold flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
+                      className="px-4 py-2 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors disabled:opacity-50"
                     >
                       {isSavingNotifPrefs ? (
                         <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           <span>Đang lưu cài đặt...</span>
                         </>
                       ) : (
                         <>
-                          <Check className="w-4 h-4" />
+                          <Check className="w-3.5 h-3.5" />
                           <span>Lưu tùy chọn thông báo</span>
                         </>
                       )}

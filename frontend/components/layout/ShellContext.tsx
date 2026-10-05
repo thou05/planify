@@ -13,8 +13,12 @@ export interface ShellContextType {
   openCreateWorkspace: () => void;
   openCreateBoard: (workspaceId?: string) => void;
   openImportBoard: (workspaceId?: string) => void;
+  isSidebarOpen: boolean;
+  toggleSidebar: () => void;
+  setSidebarOpen: (open: boolean) => void;
 }
 
 export const ShellContext = createContext<ShellContextType | null>(null);
 
 export const useShell = () => useContext(ShellContext);
+

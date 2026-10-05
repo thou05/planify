@@ -1,253 +1,299 @@
 @import "tailwindcss";
 
 :root {
-  /* Brand colors */
-  --color-primary: #a6d1fd;
-  --color-primary-strong: #4f91cf;
-  --color-brand: #2b1572;
-  --color-danger: #c40000;
-  --color-ai: #a000c8;
-  --color-success: #358200;
-  --color-white: #ffffff;
+  /* Brand Solid Colors */
+  --color-brand: #0f172a;
+  --color-brand-hover: #1e293b;
+  --color-brand-navy: #0f172a;
+  --color-primary: #2563eb;
+  --color-primary-strong: #1d4ed8;
+  --color-danger: #dc2626;
+  --color-danger-hover: #b91c1c;
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-info: #0284c7;
 
-  /* Text colors */
-  --text-primary: rgba(43, 21, 114, 0.95);
-  --text-secondary: rgba(43, 21, 114, 0.65);
-  --text-muted: rgba(43, 21, 114, 0.45);
+  /* Surfaces (Solid Flat & Subtle Surfaces) */
+  --bg-canvas: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-subtle: #f1f5f9;
+  --bg-muted: #e2e8f0;
 
-  /* Glass levels */
-  --glass-xs: rgba(255, 255, 255, 0.32);
-  --glass-sm: rgba(255, 255, 255, 0.42);
-  --glass-md: rgba(255, 255, 255, 0.55);
-  --glass-lg: #ffffff;
+  /* Text Colors */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
 
-  /* Borders */
-  --border-glass: rgba(255, 255, 255, 0.35);
-  --border-glass-strong: rgba(43, 21, 114, 0.12);
-  --border-dark: rgba(43, 21, 114, 0.10);
+  /* Crisp 1px Borders */
+  --border-subtle: #e2e8f0;
+  --border-default: #cbd5e1;
+  --border-strong: #94a3b8;
+  --border-dark: #64748b;
 
-  /* Shadows */
-  --shadow-sm: 0 4px 16px rgba(43, 21, 114, 0.08);
-  --shadow-md: 0 8px 32px rgba(43, 21, 114, 0.10);
-  --shadow-lg: 0 18px 50px rgba(43, 21, 114, 0.15);
+  /* Corner Radius (Crisp Engineering-Grade: 4px - 8px) */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
 
-  /* Radii */
-  --radius-sm: 12px;
-  --radius-md: 16px;
-  --radius-lg: 20px;
-  --radius-xl: 24px;
-
-  /* Blurs */
-  --blur-sm: 12px;
-  --blur-md: 18px;
-  --blur-lg: 24px;
+  /* Zero Shadows Rule: Minimalistic crisp elevation */
+  --shadow-none: none;
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
 }
 
+/* ==================================================================== */
+/* 1. Body & Canvas Background (Technical Grid & Dot Matrix Patterns)   */
+/* ==================================================================== */
 body {
   min-height: 100vh;
   color: var(--text-primary);
-  background:
-    radial-gradient(circle at 15% 15%, rgba(166, 209, 253, 0.55), transparent 34%),
-    radial-gradient(circle at 80% 10%, rgba(160, 0, 200, 0.20), transparent 30%),
-    radial-gradient(circle at 75% 80%, rgba(43, 21, 114, 0.18), transparent 35%),
-    #f5f9ff;
-  background-attachment: fixed;
+  background-color: #f8fafc;
+  background-image: 
+    linear-gradient(to right, rgba(15, 23, 42, 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.055) 1px, transparent 1px);
+  background-size: 24px 24px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", Helvetica, Arial, sans-serif;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Glass Surfaces */
-.glass-surface {
-  background: var(--glass-md);
-  backdrop-filter: blur(var(--blur-md));
-  -webkit-backdrop-filter: blur(var(--blur-md));
-  border: 1px solid var(--border-glass);
-  box-shadow: var(--shadow-md);
+/* Technical Grid Canvas Utility (Nền lưới cho tất cả các trang) */
+.bg-grid-pattern,
+.app-canvas,
+.grid-canvas {
+  background-color: #f8fafc;
+  background-image: 
+    linear-gradient(to right, rgba(15, 23, 42, 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.055) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Dot Matrix / Dot Grid Pattern (Nền chấm mặc định cho Board) */
+.bg-dot-pattern,
+.pattern-dots {
+  background-color: #f8fafc;
+  background-image: radial-gradient(rgba(15, 23, 42, 0.15) 1.2px, transparent 1.2px);
+  background-size: 20px 20px;
+}
+
+/* ==================================================================== */
+/* 2. Structured Surfaces (Replacing fuzzy glass with clean flat panels)*/
+/* ==================================================================== */
+.glass-surface,
+.panel-surface {
+  background-color: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+
+.glass-weak,
+.panel-subtle {
+  background-color: #f8fafc;
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
 }
 
-.glass-weak {
-  background: var(--glass-xs);
-  backdrop-filter: blur(var(--blur-sm));
-  -webkit-backdrop-filter: blur(var(--blur-sm));
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  border-radius: var(--radius-md);
-}
-
-.glass-strong {
-  background: #ffffff;
-  border: 1px solid rgba(43, 21, 114, 0.12);
-  box-shadow: 0 16px 48px rgba(43, 21, 114, 0.16), 0 4px 12px rgba(43, 21, 114, 0.08);
-  border-radius: var(--radius-xl);
-}
-
-.glass-dark {
-  background: rgba(43, 21, 114, 0.65);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: #ffffff;
-  box-shadow: var(--shadow-lg);
-  border-radius: var(--radius-md);
-}
-
-/* Kanban specific glass styles (Section 15) */
-.kanban-list {
-  background: rgba(255, 255, 255, 0.34);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 18px;
+.glass-strong,
+.panel-elevated {
+  background-color: #ffffff;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
+}
+
+.glass-dark,
+.panel-dark {
+  background-color: #0f172a;
+  color: #ffffff;
+  border: 1px solid #1e293b;
+  border-radius: var(--radius-lg);
+}
+
+/* ==================================================================== */
+/* 3. Kanban Columns & Cards (Section 6.3)                               */
+/* ==================================================================== */
+.kanban-list {
+  background-color: #f1f5f9;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: none;
 }
 
 .kanban-card {
-  background: rgba(255, 255, 255, 0.62);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border: 1px solid rgba(255, 255, 255, 0.42);
-  border-radius: 16px;
-  box-shadow: var(--shadow-sm);
-  transition: all 0.18s ease;
+  background-color: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: none;
+  transition: border-color 150ms ease, background-color 150ms ease;
 }
 
 .kanban-card:hover {
-  background: rgba(255, 255, 255, 0.75);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  background-color: #ffffff;
+  border-color: var(--border-strong);
+  box-shadow: none;
 }
 
-/* Buttons (Section 13) */
+/* ==================================================================== */
+/* 4. Buttons (100% Solid, Zero Gradient — Section 6.1)                */
+/* ==================================================================== */
 .btn-primary {
-  background: var(--color-primary);
-  color: var(--color-brand);
+  background-color: var(--color-brand);
+  color: #ffffff;
   font-weight: 600;
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(255, 255, 255, 0.40);
-  box-shadow: var(--shadow-sm);
-  transition: all 0.16s ease;
+  border: 1px solid var(--color-brand-hover);
+  border-radius: var(--radius-md);
+  box-shadow: none;
+  transition: background-color 140ms ease, border-color 140ms ease;
 }
 
 .btn-primary:hover {
-  background: var(--color-primary-strong);
-  color: #ffffff;
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  background-color: var(--color-brand-hover);
+  border-color: #150a38;
 }
 
 .btn-primary-glass {
-  background: rgba(166, 209, 253, 0.50);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  color: var(--color-brand);
+  background-color: var(--color-brand);
+  color: #ffffff;
   font-weight: 600;
-  border: 1px solid rgba(255, 255, 255, 0.40);
-  border-radius: var(--radius-sm);
-  transition: all 0.16s ease;
+  border: 1px solid var(--color-brand-hover);
+  border-radius: var(--radius-md);
+  box-shadow: none;
+  transition: background-color 140ms ease;
 }
 
 .btn-primary-glass:hover {
-  background: rgba(166, 209, 253, 0.75);
-  transform: translateY(-1px);
+  background-color: var(--color-brand-hover);
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.50);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: var(--color-brand);
+  background-color: #ffffff;
+  color: #0f172a;
   font-weight: 500;
-  border: 1px solid rgba(255, 255, 255, 0.40);
-  border-radius: var(--radius-sm);
-  transition: all 0.16s ease;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: none;
+  transition: background-color 140ms ease, border-color 140ms ease;
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.80);
-  transform: translateY(-1px);
+  background-color: #f1f5f9;
+  border-color: var(--border-strong);
 }
 
 .btn-ai {
-  background: linear-gradient(135deg, rgba(160, 0, 200, 0.85), rgba(43, 21, 114, 0.85));
+  background-color: #0f172a;
   color: #ffffff;
   font-weight: 600;
-  border-radius: var(--radius-sm);
-  box-shadow: 0 4px 18px rgba(160, 0, 200, 0.35);
-  transition: all 0.16s ease;
+  border: 1px solid #1e293b;
+  border-radius: var(--radius-md);
+  box-shadow: none;
+  transition: background-color 140ms ease;
 }
 
 .btn-ai:hover {
-  box-shadow: 0 6px 24px rgba(160, 0, 200, 0.5);
-  transform: translateY(-1px);
+  background-color: #1e293b;
 }
 
 .btn-danger {
+  background-color: #ffffff;
   color: var(--color-danger);
-  border-radius: var(--radius-sm);
-  transition: all 0.16s ease;
+  border: 1px solid #fca5a5;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  box-shadow: none;
+  transition: background-color 140ms ease, color 140ms ease;
 }
 
 .btn-danger:hover {
-  background: rgba(196, 0, 0, 0.10);
+  background-color: #fef2f2;
+  border-color: #f87171;
+  color: #b91c1c;
 }
 
-/* Inputs (Section 20) */
-.glass-input {
-  background: rgba(255, 255, 255, 0.58);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border-dark);
-  border-radius: var(--radius-sm);
+/* ==================================================================== */
+/* 5. Flat Inputs (Section 6.2)                                         */
+/* ==================================================================== */
+.glass-input,
+.input-flat {
+  background-color: #ffffff;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
   color: var(--text-primary);
-  transition: all 0.18s ease;
+  box-shadow: none;
+  transition: border-color 140ms ease, outline 140ms ease;
 }
 
-.glass-input:focus {
-  background: rgba(255, 255, 255, 0.85);
+.glass-input:focus,
+.input-flat:focus {
+  background-color: #ffffff;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(166, 209, 253, 0.35);
-  outline: none;
+  outline: 1px solid var(--color-primary);
 }
 
-/* Badges (Section 14) */
+/* ==================================================================== */
+/* 6. Status Badges (Section 2.3)                                       */
+/* ==================================================================== */
 .badge-success {
-  background: rgba(53, 130, 0, 0.12);
-  color: var(--color-success);
+  background-color: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius-sm);
 }
 
-.badge-error {
-  background: rgba(196, 0, 0, 0.10);
-  color: var(--color-danger);
+.badge-error,
+.badge-danger {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-sm);
 }
 
 .badge-ai {
-  background: rgba(160, 0, 200, 0.10);
-  color: var(--color-ai);
+  background-color: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-sm);
 }
 
 .badge-info {
-  background: rgba(166, 209, 253, 0.20);
-  color: #2d6fa8;
+  background-color: #f0f9ff;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+  border-radius: var(--radius-sm);
 }
 
-/* Smooth scrollbar for Kanban board */
+.badge-warning {
+  background-color: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-sm);
+}
+
+/* ==================================================================== */
+/* 7. Scrollbar                                                         */
+/* ==================================================================== */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 9999px;
+  background: #f1f5f9;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(43, 21, 114, 0.15);
-  border-radius: 9999px;
+  background: #cbd5e1;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(43, 21, 114, 0.3);
+  background: #94a3b8;
 }
 
 /* Shake animation for full WIP limit lists */
@@ -256,13 +302,13 @@ body {
     transform: translateX(0);
   }
   20%, 60% {
-    transform: translateX(-5px);
+    transform: translateX(-4px);
   }
   40%, 80% {
-    transform: translateX(5px);
+    transform: translateX(4px);
   }
 }
 
 .animate-shake {
-  animation: shake-limit 0.45s ease-in-out;
+  animation: shake-limit 0.4s ease-in-out;
 }

@@ -1178,22 +1178,22 @@ export default function BoardDetailPage({
   if ((accessDenied || (!board && !isLoading))) {
     return (
       <div className="max-w-2xl mx-auto py-16 px-4 text-center">
-        <div className="glass-surface p-8 sm:p-10 rounded-3xl border border-white/80 shadow-xl space-y-6">
-          <div className="w-16 h-16 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center mx-auto text-[#c40000]">
-            <ShieldAlert className="w-8 h-8" />
+        <div className="bg-white p-8 sm:p-10 rounded-lg border border-slate-200 shadow-sm space-y-6">
+          <div className="w-14 h-14 rounded-lg bg-rose-50 border border-rose-200 flex items-center justify-center mx-auto text-rose-600">
+            <ShieldAlert className="w-7 h-7" />
           </div>
           <div className="space-y-2">
-            <h2 className="text-xl sm:text-2xl font-black text-[#2b1572]">
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
               Không thể truy cập Bảng làm việc
             </h2>
-            <p className="text-xs sm:text-sm text-[#2b1572]/70 max-w-md mx-auto leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
               {accessDenied || 'Bạn hiện không phải là thành viên hoặc đã bị xóa khỏi Bảng / Không gian làm việc này.'}
             </p>
           </div>
           <div className="pt-2 flex justify-center">
             <Link
               href="/dashboard"
-              className="px-6 py-3 btn-primary text-xs font-bold rounded-2xl flex items-center gap-2 shadow-md cursor-pointer hover:scale-105 transition-all"
+              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium rounded-md flex items-center gap-2 transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Quay về Bảng điều khiển (Dashboard)</span>
@@ -1206,7 +1206,10 @@ export default function BoardDetailPage({
 
   return (
     <>
-      <div className="h-full flex flex-col relative">
+      <div
+        className="h-full flex flex-col relative bg-dot-pattern"
+        style={board?.background ? { background: board.background } : undefined}
+      >
         {/* Archived Banner Warning */}
         {board?.is_archived && (
           <div className="bg-amber-500/15 border-b border-amber-500/30 px-6 py-2.5 flex items-center justify-between gap-4 z-20 text-amber-900 text-xs font-semibold">
@@ -1221,14 +1224,14 @@ export default function BoardDetailPage({
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={handleRestoreBoard}
-                  className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-xs cursor-pointer"
+                  className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-md text-xs font-medium transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>Khôi phục Bảng</span>
                 </button>
                 <button
                   onClick={handleDeleteBoard}
-                  className="px-3 py-1 bg-[#c40000] hover:bg-[#a00000] text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-xs cursor-pointer"
+                  className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-md text-xs font-medium transition-colors flex items-center gap-1 shadow-2xs cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Xóa vĩnh viễn</span>
@@ -1239,30 +1242,30 @@ export default function BoardDetailPage({
         )}
 
         {/* Board Top Navigation Bar */}
-        <div className="h-16 px-6 glass-surface !rounded-none !border-x-0 !border-t-0 border-b border-white/40 flex items-center justify-between shrink-0 select-none">
+        <div className="h-14 px-6 bg-white border-b border-slate-200 flex items-center justify-between shrink-0 select-none">
           {/* Left: Back button & Board Name & Badges */}
           <div className="flex items-center gap-3 min-w-0">
             <Link
               href={targetWorkspaceId ? `/workspaces/${targetWorkspaceId}` : '/dashboard'}
-              className="p-1.5 rounded-lg hover:bg-white/50 text-[#2b1572]/70 hover:text-[#2b1572] transition-colors cursor-pointer"
+              className="p-1.5 rounded-md hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
               title="Quay lại Workspace"
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
 
-            <div className="h-5 w-[1px] bg-[#2b1572]/15" />
+            <div className="h-4 w-[1px] bg-slate-200" />
 
-            <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
               <div className="relative group/boardTitle flex items-center min-w-0">
                 <h1
-                  className="text-base sm:text-lg font-bold text-[#2b1572] tracking-tight truncate max-w-[130px] sm:max-w-[180px] md:max-w-[220px] lg:max-w-[280px] cursor-default"
+                  className="text-sm sm:text-base font-bold text-slate-900 tracking-tight truncate max-w-[130px] sm:max-w-[180px] md:max-w-[220px] lg:max-w-[280px] cursor-default"
                 >
                   {board?.name || 'Đang tải Bảng...'}
                 </h1>
 
                 {/* Styled Tooltip on hover */}
                 {board?.name && (
-                  <div className="absolute left-0 top-full mt-2 z-60 px-3 py-1.5 bg-[#2b1572] text-white text-xs font-semibold rounded-xl shadow-xl border border-white/20 pointer-events-none opacity-0 group-hover/boardTitle:opacity-100 transition-all duration-200 translate-y-1 group-hover/boardTitle:translate-y-0 whitespace-normal min-w-max max-w-xs break-words backdrop-blur-md">
+                  <div className="absolute left-0 top-full mt-1.5 z-60 px-2.5 py-1 bg-slate-900 text-white text-xs font-medium rounded-md shadow-md pointer-events-none opacity-0 group-hover/boardTitle:opacity-100 transition-opacity duration-150 whitespace-normal min-w-max max-w-xs break-words">
                     {board.name}
                   </div>
                 )}
@@ -1271,28 +1274,28 @@ export default function BoardDetailPage({
               {/* Favorite Star Button */}
               <button
                 onClick={handleToggleFavorite}
-                className="p-1.5 rounded-lg hover:bg-white/50 transition-all cursor-pointer text-[#2b1572]/50 hover:text-amber-500"
+                className="p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer text-slate-400 hover:text-amber-500"
                 title={board?.is_favorite ? 'Bỏ gắn sao' : 'Gắn sao yêu thích'}
               >
                 <Star
-                  className={`w-4 h-4 transition-transform active:scale-125 ${board?.is_favorite ? 'text-amber-500 fill-amber-500' : ''
+                  className={`w-3.5 h-3.5 transition-transform active:scale-125 ${board?.is_favorite ? 'text-amber-500 fill-amber-500' : ''
                     }`}
                 />
               </button>
 
               {/* Visibility Badge */}
               {board?.visibility === 'PRIVATE' ? (
-                <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/60 text-[#2b1572] border border-white/80 shrink-0">
+                <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.2 rounded-xs bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
                   <Lock className="w-3 h-3" />
                   <span>Riêng tư</span>
                 </span>
               ) : board?.visibility === 'PUBLIC' ? (
-                <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/60 text-[#2b1572] border border-white/80 shrink-0">
+                <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.2 rounded-xs bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
                   <Globe className="w-3 h-3" />
                   <span>Công khai</span>
                 </span>
               ) : (
-                <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/60 text-[#2b1572] border border-white/80 shrink-0">
+                <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.2 rounded-xs bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
                   <Users className="w-3 h-3" />
                   <span>Workspace</span>
                 </span>
@@ -1300,7 +1303,7 @@ export default function BoardDetailPage({
             </div>
 
             {/* View Switcher Dropdown */}
-            <div className="hidden sm:block h-5 w-[1px] bg-[#2b1572]/15 shrink-0" />
+            <div className="hidden sm:block h-4 w-[1px] bg-slate-200 shrink-0" />
             <BoardViewSwitcher
               activeView={activeView}
               onViewChange={setActiveView}
@@ -1310,9 +1313,9 @@ export default function BoardDetailPage({
             <button
               type="button"
               onClick={() => setActiveView(activeView === 'analytics' ? 'kanban' : 'analytics')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer shadow-xs shrink-0 ${activeView === 'analytics'
-                ? 'bg-[#2b1572] text-white hover:bg-[#1e1050] border border-[#2b1572]'
-                : 'bg-white/80 text-[#2b1572] hover:bg-white hover:text-[#1e1050] border border-[#2b1572]/20'
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer shrink-0 ${activeView === 'analytics'
+                ? 'bg-slate-900 text-white border border-slate-900'
+                : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                 }`}
               title="Xem thống kê và phân tích bảng"
             >
@@ -1322,24 +1325,21 @@ export default function BoardDetailPage({
           </div>
 
           {/* Right Header Actions */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-            {/* Search Input */}
-
-
+          <div className="flex items-center gap-2 shrink-0">
             {/* Filter Button */}
             <button
               type="button"
               onClick={() => setIsFilterModalOpen(true)}
-              className={`h-7 px-2.5 sm:px-3 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${activeFilterCount > 0
-                ? 'bg-[#2b1572] text-white hover:bg-[#1e0f52]'
-                : 'glass-input text-[#2b1572] hover:bg-white/60'
+              className={`h-7 px-2.5 text-xs font-medium rounded-md flex items-center gap-1.5 transition-colors cursor-pointer border ${activeFilterCount > 0
+                ? 'bg-slate-900 text-white border-slate-900'
+                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                 }`}
               title="Mở bảng Lọc"
             >
               <Filter className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Lọc</span>
               {activeFilterCount > 0 && (
-                <span className="min-w-[16px] h-4 px-1 rounded-full bg-white text-[#2b1572] text-[10px] font-black flex items-center justify-center shadow-2xs">
+                <span className="min-w-[15px] h-3.5 px-1 rounded-full bg-white text-slate-900 text-[9px] font-bold flex items-center justify-center">
                   {activeFilterCount}
                 </span>
               )}
@@ -1347,12 +1347,12 @@ export default function BoardDetailPage({
 
             {/* Filter / Result count badge */}
             {activeFilterCount > 0 && (
-              <div className="hidden lg:flex items-center gap-1.5 px-2 py-0.5 rounded-xl bg-[#2b1572] text-white text-[11px] font-bold shadow-xs animate-in zoom-in-95">
+              <div className="hidden lg:flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-800 text-[11px] font-medium">
                 <span>{totalFilteredCards}/{totalAllCards} thẻ</span>
                 <button
                   type="button"
                   onClick={handleResetFilters}
-                  className="p-0.5 rounded-full hover:bg-white/20 text-white/80 hover:text-white transition-colors"
+                  className="p-0.5 rounded hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors"
                   title="Xóa tất cả bộ lọc"
                 >
                   <X className="w-3 h-3" />
@@ -1360,24 +1360,24 @@ export default function BoardDetailPage({
               </div>
             )}
 
-            <div className="hidden sm:block h-5 w-[1px] bg-[#2b1572]/15 shrink-0" />
+            <div className="hidden sm:block h-4 w-[1px] bg-slate-200 shrink-0" />
 
             {/* Member Avatar Stack */}
             <div
               onClick={() => setIsShareOpen(true)}
-              className="hidden md:flex items-center -space-x-2 hover:opacity-80 transition-opacity cursor-pointer mr-0.5"
+              className="hidden md:flex items-center -space-x-1.5 hover:opacity-80 transition-opacity cursor-pointer mr-0.5"
               title="Xem và quản lý thành viên"
             >
               {(board?.members || []).slice(0, 4).map((m: any, idx: number) => (
                 <div
                   key={m.id || idx}
-                  className="w-7 h-7 rounded-full bg-[#2b1572] text-[#a6d1fd] border-2 border-white flex items-center justify-center text-[10px] font-bold shadow-xs"
+                  className="w-6 h-6 rounded-full bg-slate-900 text-white border border-white flex items-center justify-center text-[9px] font-bold"
                 >
                   {m.user?.name?.charAt(0).toUpperCase() || 'U'}
                 </div>
               ))}
               {(board?.members?.length || 0) > 4 && (
-                <div className="w-7 h-7 rounded-full bg-white/90 text-[#2b1572] border-2 border-white flex items-center justify-center text-[10px] font-bold shadow-xs">
+                <div className="w-6 h-6 rounded-full bg-slate-200 text-slate-700 border border-white flex items-center justify-center text-[9px] font-bold">
                   +{board.members.length - 4}
                 </div>
               )}
@@ -1386,9 +1386,9 @@ export default function BoardDetailPage({
             {/* Share Button */}
             <button
               onClick={() => setIsShareOpen(true)}
-              className="px-2.5 sm:px-3 py-1.5 btn-secondary text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
+              className="px-2.5 py-1 btn-secondary text-xs font-medium flex items-center gap-1.5 cursor-pointer"
             >
-              <Share2 className="w-3.5 h-3.5 text-[#2b1572]" />
+              <Share2 className="w-3.5 h-3.5 text-slate-600" />
               <span className="hidden sm:inline">Chia sẻ</span>
             </button>
 
@@ -1396,22 +1396,22 @@ export default function BoardDetailPage({
             <div className="relative">
               <button
                 onClick={() => setIsBoardMenuOpen(!isBoardMenuOpen)}
-                className="p-2 rounded-xl hover:bg-white/60 text-[#2b1572]/70 hover:text-[#2b1572] transition-colors cursor-pointer border border-transparent hover:border-white/50"
+                className="p-1.5 rounded-md hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer border border-slate-200"
                 title="Tùy chọn Bảng"
               >
                 <MoreHorizontal className="w-4 h-4" />
               </button>
 
               {isBoardMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-56 p-1.5 bg-white rounded-2xl z-50 shadow-2xl border border-slate-200 space-y-1 text-xs select-none">
+                <div className="absolute right-0 top-full mt-1.5 w-56 p-1 bg-white rounded-lg shadow-md border border-slate-200 space-y-0.5 text-xs select-none z-50">
                   <button
                     onClick={() => {
                       setIsBoardMenuOpen(false);
                       setIsCopilotOpen(true);
                     }}
-                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
                   >
-                    <Bot className="w-3.5 h-3.5 text-indigo-600" />
+                    <Bot className="w-3.5 h-3.5 text-slate-500" />
                     <span>AI Copilot (Hỏi đáp)</span>
                   </button>
 
@@ -1420,9 +1420,9 @@ export default function BoardDetailPage({
                       setIsBoardMenuOpen(false);
                       setIsRiskScannerOpen(true);
                     }}
-                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
                   >
-                    <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
+                    <ShieldAlert className="w-3.5 h-3.5 text-slate-500" />
                     <span>AI Quét rủi ro & Điểm nghẽn</span>
                   </button>
 
@@ -1432,9 +1432,9 @@ export default function BoardDetailPage({
                       setIsAiStandupOpen(true);
                       if (!aiStandupData) handleGenerateDailyStandup();
                     }}
-                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                    <Sparkles className="w-3.5 h-3.5 text-slate-500" />
                     <span>AI Daily Standup</span>
                   </button>
 
@@ -1444,9 +1444,9 @@ export default function BoardDetailPage({
                       setIsBoardActivityOpen(true);
                       fetchBoardActivities();
                     }}
-                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
                   >
-                    <History className="w-3.5 h-3.5" />
+                    <History className="w-3.5 h-3.5 text-slate-500" />
                     <span>Lịch sử hoạt động Bảng</span>
                   </button>
 
@@ -1456,9 +1456,9 @@ export default function BoardDetailPage({
                         setIsBoardMenuOpen(false);
                         setIsEditOpen(true);
                       }}
-                      className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
+                      className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
                     >
-                      <Edit3 className="w-3.5 h-3.5" />
+                      <Edit3 className="w-3.5 h-3.5 text-slate-500" />
                       <span>Chỉnh sửa thông tin Bảng</span>
                     </button>
                   )}
@@ -1468,9 +1468,9 @@ export default function BoardDetailPage({
                       setIsBoardMenuOpen(false);
                       setIsCopyOpen(true);
                     }}
-                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
                   >
-                    <Copy className="w-3.5 h-3.5" />
+                    <Copy className="w-3.5 h-3.5 text-slate-500" />
                     <span>Nhân bản Bảng (Copy)</span>
                   </button>
 
@@ -1479,9 +1479,9 @@ export default function BoardDetailPage({
                       setIsBoardMenuOpen(false);
                       setIsSaveAsTemplateOpen(true);
                     }}
-                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
                   >
-                    <LayoutTemplate className="w-3.5 h-3.5 text-[#2b1572]" />
+                    <LayoutTemplate className="w-3.5 h-3.5 text-slate-500" />
                     <span>Lưu thành Mẫu (Template)</span>
                   </button>
 
@@ -1490,9 +1490,9 @@ export default function BoardDetailPage({
                       setIsBoardMenuOpen(false);
                       setIsImportModalOpen(true);
                     }}
-                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
                   >
-                    <Upload className="w-3.5 h-3.5 text-indigo-600" />
+                    <Upload className="w-3.5 h-3.5 text-slate-500" />
                     <span>Nhập dữ liệu (Import)</span>
                   </button>
 
@@ -1501,9 +1501,9 @@ export default function BoardDetailPage({
                       setIsBoardMenuOpen(false);
                       setIsExportModalOpen(true);
                     }}
-                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
                   >
-                    <Download className="w-3.5 h-3.5 text-emerald-600" />
+                    <Download className="w-3.5 h-3.5 text-slate-500" />
                     <span>Xuất dữ liệu (Export)</span>
                   </button>
 
@@ -1512,9 +1512,9 @@ export default function BoardDetailPage({
                       setIsBoardMenuOpen(false);
                       setIsShareOpen(true);
                     }}
-                    className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#2b1572] hover:bg-slate-100 flex items-center gap-2 cursor-pointer transition-colors"
+                    className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
                   >
-                    <Users className="w-3.5 h-3.5" />
+                    <Users className="w-3.5 h-3.5 text-slate-500" />
                     <span>Quản lý thành viên & Quyền</span>
                   </button>
 
@@ -1527,7 +1527,7 @@ export default function BoardDetailPage({
                             setIsBoardMenuOpen(false);
                             handleRestoreBoard();
                           }}
-                          className="w-full text-left px-3 py-2 rounded-lg font-semibold text-amber-700 hover:bg-amber-50 flex items-center gap-2 cursor-pointer transition-colors"
+                          className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-amber-700 hover:bg-amber-50 flex items-center gap-2 cursor-pointer transition-colors"
                         >
                           <RotateCcw className="w-3.5 h-3.5 text-amber-600" />
                           <span>Khôi phục Bảng</span>
@@ -1535,7 +1535,7 @@ export default function BoardDetailPage({
                       ) : (
                         <button
                           onClick={handleArchiveBoard}
-                          className="w-full text-left px-3 py-2 rounded-lg font-semibold text-amber-700 hover:bg-amber-50 flex items-center gap-2 cursor-pointer transition-colors"
+                          className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-amber-700 hover:bg-amber-50 flex items-center gap-2 cursor-pointer transition-colors"
                         >
                           <Archive className="w-3.5 h-3.5 text-amber-600" />
                           <span>Lưu trữ Bảng (Archive)</span>
@@ -1547,9 +1547,9 @@ export default function BoardDetailPage({
                           setIsBoardMenuOpen(false);
                           handleDeleteBoard();
                         }}
-                        className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#c40000] hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors"
+                        className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-[#dc2626] hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors"
                       >
-                        <Trash2 className="w-3.5 h-3.5 text-[#c40000]" />
+                        <Trash2 className="w-3.5 h-3.5 text-[#dc2626]" />
                         <span>Xóa Bảng vĩnh viễn</span>
                       </button>
                     </>
@@ -1563,9 +1563,9 @@ export default function BoardDetailPage({
                           setIsBoardMenuOpen(false);
                           handleLeaveBoard();
                         }}
-                        className="w-full text-left px-3 py-2 rounded-lg font-semibold text-[#c40000] hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors"
+                        className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-[#dc2626] hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors"
                       >
-                        <LogOut className="w-3.5 h-3.5 text-[#c40000]" />
+                        <LogOut className="w-3.5 h-3.5 text-[#dc2626]" />
                         <span>Rời khỏi Bảng</span>
                       </button>
                     </>
@@ -1622,7 +1622,7 @@ export default function BoardDetailPage({
                     {isAddingListInline ? (
                       <form
                         onSubmit={handleCreateInlineList}
-                        className="p-3.5 kanban-list bg-white/80 border border-white/60 shadow-md space-y-2.5 animate-in fade-in duration-100"
+                        className="p-3 bg-[#f1f5f9] border border-slate-200 rounded-lg space-y-2 animate-in fade-in duration-100"
                       >
                         <input
                           ref={addListInputRef}
@@ -1630,13 +1630,13 @@ export default function BoardDetailPage({
                           value={inlineListTitle}
                           onChange={(e) => setInlineListTitle(e.target.value)}
                           placeholder="Nhập tên danh sách mới..."
-                          className="w-full text-xs font-semibold text-[#2b1572] bg-white border border-[#2b1572]/30 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-[#2b1572]/20"
+                          className="w-full text-xs font-medium text-slate-900 bg-white border border-slate-300 rounded-md p-2 focus:outline-none focus:border-blue-600"
                         />
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <button
                             type="submit"
                             disabled={!inlineListTitle.trim() || isSubmittingList}
-                            className="px-3.5 py-1.5 bg-[#2b1572] hover:bg-[#1e0f52] disabled:opacity-50 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                            className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white rounded-md text-xs font-medium transition-colors cursor-pointer"
                           >
                             {isSubmittingList ? 'Đang thêm...' : 'Thêm danh sách'}
                           </button>
@@ -1646,17 +1646,17 @@ export default function BoardDetailPage({
                               setIsAddingListInline(false);
                               setInlineListTitle('');
                             }}
-                            className="p-1.5 text-[#2b1572]/60 hover:text-[#2b1572] hover:bg-white/60 rounded-lg transition-colors cursor-pointer"
+                            className="p-1 text-slate-500 hover:text-slate-800 hover:bg-slate-200 rounded-md transition-colors cursor-pointer"
                             title="Hủy"
                           >
-                            <X className="w-4 h-4" />
+                            <X className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </form>
                     ) : (
                       <button
                         onClick={() => setIsAddingListInline(true)}
-                        className="w-full p-4 kanban-list flex items-center justify-center gap-2 text-xs font-bold text-[#2b1572]/80 hover:text-[#2b1572] hover:bg-white/50 transition-all cursor-pointer border-dashed"
+                        className="w-full p-3 bg-white/70 hover:bg-white border border-dashed border-slate-300 hover:border-slate-400 rounded-lg flex items-center justify-center gap-2 text-xs font-semibold text-slate-700 transition-colors cursor-pointer"
                       >
                         <Plus className="w-4 h-4" />
                         <span>Thêm Danh sách khác</span>
@@ -1835,27 +1835,27 @@ export default function BoardDetailPage({
             onClick={() => setIsAiStandupOpen(false)}
           />
 
-          <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-purple-200/80 overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[88vh]">
+          <div className="relative w-full max-w-2xl bg-white rounded-lg shadow-lg border border-slate-300 overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[88vh]">
             {/* Header */}
-            <div className="p-5 border-b border-purple-100 flex items-center justify-between bg-gradient-to-r from-purple-50 via-indigo-50/60 to-white">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shadow-md">
-                  <Sparkles className="w-5 h-5 animate-pulse" />
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-md bg-white/10 text-white flex items-center justify-center">
+                  <Sparkles className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-[#2b1572] flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
                     <span>AI Daily Standup & Báo Cáo Tiến Độ</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-bold">Gemini 3.6 Flash</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-xs bg-white/10 text-slate-200 font-mono">Gemini 3.6 Flash</span>
                   </h3>
-                  <p className="text-xs text-slate-500">
-                    Bảng: <strong className="text-purple-900">{board?.name}</strong> • Tổng hợp từ trạng thái thẻ & lịch sử hoạt động
+                  <p className="text-xs text-white/70">
+                    Bảng: <strong className="text-white">{board?.name}</strong> • Tổng hợp từ trạng thái thẻ & hoạt động
                   </p>
                 </div>
               </div>
 
               <button
                 onClick={() => setIsAiStandupOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                className="p-1 text-white/70 hover:text-white rounded-md transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1863,17 +1863,17 @@ export default function BoardDetailPage({
 
             {/* Metrics Ribbon */}
             {aiStandupData && (
-              <div className="px-5 py-2.5 bg-slate-50/80 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="px-4 py-2 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-slate-400">Tổng số thẻ:</span>
-                    <span className="font-bold text-[#2b1572] bg-white px-2 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
+                    <span className="text-slate-500">Tổng số thẻ:</span>
+                    <span className="font-mono font-bold text-slate-900 bg-white px-1.5 py-0.2 rounded-xs border border-slate-200">
                       {aiStandupData.totalCards ?? 0}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-slate-400">Đã hoàn thành:</span>
-                    <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+                    <span className="text-slate-500">Đã hoàn thành:</span>
+                    <span className="font-mono font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded-xs border border-emerald-200">
                       {aiStandupData.completedCards ?? 0}
                     </span>
                   </div>
@@ -1886,7 +1886,7 @@ export default function BoardDetailPage({
                 <button
                   onClick={handleGenerateDailyStandup}
                   disabled={isLoadingAiStandup}
-                  className="text-xs font-semibold text-purple-700 hover:text-purple-900 hover:bg-purple-100/60 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
+                  className="text-xs font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-200/60 px-2 py-1 rounded-md flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
                   title="Tạo lại báo cáo mới nhất"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isLoadingAiStandup ? 'animate-spin' : ''}`} />
@@ -1896,23 +1896,19 @@ export default function BoardDetailPage({
             )}
 
             {/* Content Body */}
-            <div className="p-6 overflow-y-auto space-y-4 flex-1">
+            <div className="p-5 overflow-y-auto space-y-4 flex-1">
               {isLoadingAiStandup ? (
-                <div className="py-16 flex flex-col items-center justify-center text-center space-y-4">
-                  <div className="relative">
-                    <div className="w-14 h-14 rounded-3xl bg-gradient-to-tr from-purple-500 to-indigo-600 text-white flex items-center justify-center shadow-xl animate-bounce">
-                      <Sparkles className="w-7 h-7" />
-                    </div>
-                  </div>
+                <div className="py-14 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="w-10 h-10 rounded-full border-2 border-slate-200 border-t-slate-800 animate-spin" />
                   <div className="space-y-1">
-                    <h4 className="text-sm font-bold text-[#2b1572]">Gemini đang phân tích dữ liệu Bảng...</h4>
-                    <p className="text-xs text-slate-400 max-w-sm">
+                    <h4 className="text-xs font-bold text-slate-800">Gemini đang phân tích dữ liệu Bảng...</h4>
+                    <p className="text-[11px] text-slate-500 max-w-sm">
                       Đang đọc danh sách thẻ, tiến độ hoàn thành và lịch sử 25 hoạt động gần đây nhất để tạo báo cáo Daily Standup.
                     </p>
                   </div>
                 </div>
               ) : aiStandupError ? (
-                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs space-y-2">
+                <div className="p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs space-y-2">
                   <div className="flex items-center gap-2 font-bold">
                     <AlertCircle className="w-4 h-4" />
                     <span>Không thể tạo báo cáo AI</span>
@@ -1920,22 +1916,22 @@ export default function BoardDetailPage({
                   <p className="leading-relaxed">{aiStandupError}</p>
                   <button
                     onClick={handleGenerateDailyStandup}
-                    className="px-3 py-1.5 bg-rose-600 text-white rounded-xl font-bold hover:bg-rose-700 transition-colors cursor-pointer"
+                    className="px-3 py-1 bg-rose-600 text-white rounded-md font-medium hover:bg-rose-700 transition-colors cursor-pointer"
                   >
                     Thử lại
                   </button>
                 </div>
               ) : aiStandupData?.reportMarkdown ? (
-                <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200/80 shadow-2xs">
+                <div className="bg-white p-4 rounded-md border border-slate-200">
                   <MarkdownRenderer content={aiStandupData.reportMarkdown} />
                 </div>
               ) : (
-                <div className="py-12 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-3">
-                  <FileText className="w-10 h-10 text-slate-300" />
-                  <p>Bấm nút bên dưới để tạo báo cáo Daily Standup tự động bằng AI.</p>
+                <div className="py-10 text-center text-slate-500 text-xs flex flex-col items-center justify-center gap-3">
+                  <FileText className="w-8 h-8 text-slate-400" />
+                  <p>Bấm nút bên dưới để tạo báo cáo Daily Standup tự động.</p>
                   <button
                     onClick={handleGenerateDailyStandup}
-                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl shadow-sm hover:shadow transition-all cursor-pointer"
+                    className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-md transition-colors cursor-pointer"
                   >
                     Tạo báo cáo ngay
                   </button>
@@ -1944,17 +1940,18 @@ export default function BoardDetailPage({
             </div>
 
             {/* Footer */}
-            <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2.5">
+            <div className="p-3 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
               {aiStandupData?.reportMarkdown ? (
                 <div className="flex items-center gap-2 flex-wrap">
                   {/* Button 1: Copy for Zalo (Clean, formatted memo) */}
                   <button
                     onClick={handleCopyZalo}
-                    className={`px-3.5 py-2 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${copyMode === 'zalo'
-                      ? 'bg-emerald-600 text-white shadow-sm'
-                      : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white hover:shadow-md'
-                      }`}
-                    title="Sao chép báo cáo sạch đẹp (đã loại bỏ ký tự ## và **), phù hợp dán vào Zalo / Teams / Messenger"
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-md flex items-center gap-1.5 transition-colors cursor-pointer ${
+                      copyMode === 'zalo'
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-slate-900 hover:bg-slate-800 text-white'
+                    }`}
+                    title="Sao chép báo cáo sạch đẹp, phù hợp dán vào Zalo / Teams / Messenger"
                   >
                     {copyMode === 'zalo' ? (
                       <>
@@ -1972,10 +1969,11 @@ export default function BoardDetailPage({
                   {/* Button 2: Copy Markdown (Slack / Notion) */}
                   <button
                     onClick={handleCopyMarkdown}
-                    className={`px-3 py-2 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer border ${copyMode === 'markdown'
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                      }`}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md flex items-center gap-1.5 transition-colors cursor-pointer border ${
+                      copyMode === 'markdown'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                        : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                    }`}
                     title="Sao chép định dạng Markdown gốc cho Slack, Notion hoặc Discord"
                   >
                     {copyMode === 'markdown' ? (
@@ -1995,7 +1993,7 @@ export default function BoardDetailPage({
 
               <button
                 onClick={() => setIsAiStandupOpen(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
+                className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-200 rounded-md transition-colors cursor-pointer"
               >
                 Đóng
               </button>
@@ -2018,11 +2016,11 @@ export default function BoardDetailPage({
               {/* Drawer Header */}
               <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-[#2b1572] flex items-center justify-center text-[#a6d1fd] shadow-sm">
+                  <div className="w-8 h-8 rounded-md bg-slate-900 flex items-center justify-center text-white shadow-2xs">
                     <History className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-[#2b1572]">Hoạt động Bảng</h3>
+                    <h3 className="text-sm font-bold text-slate-900">Hoạt động Bảng</h3>
                     <p className="text-[11px] text-slate-400">
                       Lịch sử thao tác trên bảng và các thẻ
                     </p>
@@ -2033,14 +2031,14 @@ export default function BoardDetailPage({
                   <button
                     onClick={fetchBoardActivities}
                     disabled={isLoadingBoardActivities}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-[#2b1572] hover:bg-slate-100 transition-colors cursor-pointer"
+                    className="p-1.5 rounded-md text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
                     title="Làm mới"
                   >
-                    <RefreshCw className={`w-4 h-4 ${isLoadingBoardActivities ? 'animate-spin text-[#2b1572]' : ''}`} />
+                    <RefreshCw className={`w-4 h-4 ${isLoadingBoardActivities ? 'animate-spin text-slate-700' : ''}`} />
                   </button>
                   <button
                     onClick={() => setIsBoardActivityOpen(false)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                    className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -2051,8 +2049,8 @@ export default function BoardDetailPage({
               <div className="px-5 py-2.5 border-b border-slate-100 bg-slate-50/60 flex items-center gap-1.5 shrink-0">
                 <button
                   onClick={() => setBoardActivityFilter('all')}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${boardActivityFilter === 'all'
-                    ? 'bg-[#2b1572] text-white shadow-xs'
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors cursor-pointer ${boardActivityFilter === 'all'
+                    ? 'bg-slate-900 text-white shadow-2xs'
                     : 'text-slate-600 hover:bg-slate-200/70'
                     }`}
                 >
@@ -2060,8 +2058,8 @@ export default function BoardDetailPage({
                 </button>
                 <button
                   onClick={() => setBoardActivityFilter('card')}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${boardActivityFilter === 'card'
-                    ? 'bg-[#2b1572] text-white shadow-xs'
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors cursor-pointer ${boardActivityFilter === 'card'
+                    ? 'bg-slate-900 text-white shadow-2xs'
                     : 'text-slate-600 hover:bg-slate-200/70'
                     }`}
                 >
@@ -2069,8 +2067,8 @@ export default function BoardDetailPage({
                 </button>
                 <button
                   onClick={() => setBoardActivityFilter('board')}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${boardActivityFilter === 'board'
-                    ? 'bg-[#2b1572] text-white shadow-xs'
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors cursor-pointer ${boardActivityFilter === 'board'
+                    ? 'bg-slate-900 text-white shadow-2xs'
                     : 'text-slate-600 hover:bg-slate-200/70'
                     }`}
                 >
@@ -2082,7 +2080,7 @@ export default function BoardDetailPage({
               <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
                 {isLoadingBoardActivities ? (
                   <div className="py-12 flex flex-col items-center justify-center text-slate-400 gap-2">
-                    <RefreshCw className="w-6 h-6 animate-spin text-[#2b1572]" />
+                    <RefreshCw className="w-6 h-6 animate-spin text-slate-700" />
                     <span className="text-xs">Đang tải hoạt động...</span>
                   </div>
                 ) : (() => {
@@ -2094,7 +2092,7 @@ export default function BoardDetailPage({
 
                   if (filtered.length === 0) {
                     return (
-                      <div className="py-12 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-2 bg-slate-50/70 rounded-2xl border border-dashed border-slate-200 p-6">
+                      <div className="py-12 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-2 bg-slate-50/70 rounded-lg border border-dashed border-slate-200 p-6">
                         <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
                           <History className="w-5 h-5" />
                         </div>
@@ -2111,7 +2109,7 @@ export default function BoardDetailPage({
                     if (action.includes('đính kèm')) return <Paperclip className="w-3.5 h-3.5 text-amber-500 shrink-0" />;
                     if (action.includes('hoàn thành')) return <CheckSquare className="w-3.5 h-3.5 text-emerald-600 shrink-0" />;
                     if (action.includes('hạn chót') || action.includes('ngày')) return <Clock className="w-3.5 h-3.5 text-rose-500 shrink-0" />;
-                    return <History className="w-3.5 h-3.5 text-[#2b1572] shrink-0" />;
+                    return <History className="w-3.5 h-3.5 text-slate-500 shrink-0" />;
                   };
 
                   const formatTime = (ts: string) => {
@@ -2150,8 +2148,8 @@ export default function BoardDetailPage({
                             setIsBoardActivityOpen(false);
                           }
                         }}
-                        className={`p-3 rounded-2xl border transition-all ${cardId
-                          ? 'bg-white hover:bg-slate-50/90 border-slate-200 shadow-2xs hover:shadow-xs cursor-pointer hover:border-[#a6d1fd]'
+                        className={`p-3 rounded-md border transition-all ${cardId
+                          ? 'bg-white hover:bg-slate-50/90 border-slate-200 shadow-2xs hover:shadow-xs cursor-pointer hover:border-slate-300'
                           : 'bg-slate-50/80 border-slate-200/80'
                           }`}
                       >
@@ -2163,14 +2161,14 @@ export default function BoardDetailPage({
                               className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5 shadow-2xs"
                             />
                           ) : (
-                            <div className="w-7 h-7 rounded-full bg-[#2b1572] text-[#a6d1fd] flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 shadow-2xs">
+                            <div className="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 shadow-2xs">
                               {actorName.charAt(0).toUpperCase()}
                             </div>
                           )}
 
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-1 mb-1">
-                              <span className="text-xs font-bold text-[#2b1572] truncate">
+                              <span className="text-xs font-bold text-slate-900 truncate">
                                 {actorName}
                               </span>
                               <span className="text-[10px] text-slate-400 shrink-0" title={act.created_at}>
@@ -2184,7 +2182,7 @@ export default function BoardDetailPage({
                             </div>
 
                             {cardId && (
-                              <div className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-[#2b1572] bg-[#a6d1fd]/30 hover:bg-[#a6d1fd]/50 w-fit px-2 py-0.5 rounded-lg transition-colors">
+                              <div className="mt-2 flex items-center gap-1 text-[11px] font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 w-fit px-2 py-0.5 rounded-xs transition-colors">
                                 <span>Xem chi tiết thẻ</span>
                                 <ExternalLink className="w-3 h-3" />
                               </div>
@@ -2203,7 +2201,7 @@ export default function BoardDetailPage({
                           <button
                             onClick={handleLoadMoreBoardActivities}
                             disabled={isLoadingMoreBoardActivities}
-                            className="px-4 py-2 rounded-xl text-xs font-semibold text-[#2b1572] bg-white border border-slate-200 hover:bg-slate-50 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs"
+                            className="px-4 py-2 rounded-md text-xs font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs"
                           >
                             {isLoadingMoreBoardActivities && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                             <span>{isLoadingMoreBoardActivities ? 'Đang tải thêm...' : 'Tải thêm hoạt động cũ hơn'}</span>
@@ -2228,11 +2226,11 @@ export default function BoardDetailPage({
       {/* Floating AI Copilot Trigger */}
       <button
         onClick={() => setIsCopilotOpen(true)}
-        className="fixed bottom-6 right-6 z-40 px-4 py-2.5 rounded-full bg-gradient-to-r from-[#2b1572] via-purple-700 to-indigo-600 text-white shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer border-2 border-white/40 group backdrop-blur-md"
+        className="fixed bottom-6 right-6 z-40 px-3.5 py-2 rounded-md bg-slate-900 hover:bg-slate-800 text-white shadow-lg border border-slate-700 transition-colors flex items-center gap-2 cursor-pointer group"
         title="Mở Trợ lý AI Copilot"
       >
-        <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
-        <span className="text-xs font-bold tracking-wide">AI Copilot</span>
+        <Sparkles className="w-4 h-4 text-amber-300" />
+        <span className="text-xs font-semibold tracking-wide">AI Copilot</span>
       </button>
 
       {/* AI Risk Scanner Modal */}

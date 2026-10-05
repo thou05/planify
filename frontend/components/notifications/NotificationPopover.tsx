@@ -264,46 +264,46 @@ export default function NotificationPopover({
     switch (type) {
       case 'DUE_SOON':
         return (
-          <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 shadow-xs border border-amber-200/70">
-            <Clock className="w-4 h-4" />
+          <div className="w-7 h-7 rounded-md bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 border border-amber-200">
+            <Clock className="w-3.5 h-3.5" />
           </div>
         );
       case 'OVERDUE':
         return (
-          <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 shadow-xs border border-rose-200/70">
-            <AlertCircle className="w-4 h-4" />
+          <div className="w-7 h-7 rounded-md bg-rose-50 text-rose-700 flex items-center justify-center shrink-0 border border-rose-200">
+            <AlertCircle className="w-3.5 h-3.5" />
           </div>
         );
       case 'MENTION':
         return (
-          <div className="w-8 h-8 rounded-xl bg-blue-100 text-[#2b1572] flex items-center justify-center shrink-0 shadow-xs border border-blue-200/60">
-            <MessageSquare className="w-4 h-4" />
+          <div className="w-7 h-7 rounded-md bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 border border-blue-200">
+            <MessageSquare className="w-3.5 h-3.5" />
           </div>
         );
       case 'ASSIGN':
         return (
-          <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 shadow-xs border border-emerald-200/60">
-            <UserCheck className="w-4 h-4" />
+          <div className="w-7 h-7 rounded-md bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200">
+            <UserCheck className="w-3.5 h-3.5" />
           </div>
         );
       case 'BOARD_INVITE':
       case 'WORKSPACE_INVITE':
         return (
-          <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 shadow-xs border border-indigo-200/60">
-            <UserPlus className="w-4 h-4" />
+          <div className="w-7 h-7 rounded-md bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0 border border-indigo-200">
+            <UserPlus className="w-3.5 h-3.5" />
           </div>
         );
       case 'BOARD_REMOVED':
       case 'WORKSPACE_REMOVED':
         return (
-          <div className="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 shadow-xs border border-rose-200/70">
-            <UserX className="w-4 h-4" />
+          <div className="w-7 h-7 rounded-md bg-rose-50 text-rose-700 flex items-center justify-center shrink-0 border border-rose-200">
+            <UserX className="w-3.5 h-3.5" />
           </div>
         );
       default:
         return (
-          <div className="w-8 h-8 rounded-xl bg-[#2b1572]/10 text-[#2b1572] flex items-center justify-center shrink-0 shadow-xs border border-[#2b1572]/20">
-            <Bell className="w-4 h-4" />
+          <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-700 flex items-center justify-center shrink-0 border border-slate-200">
+            <Bell className="w-3.5 h-3.5" />
           </div>
         );
     }
@@ -314,32 +314,32 @@ export default function NotificationPopover({
   return (
     <div
       ref={popoverRef}
-      className="absolute right-0 top-full mt-2.5 z-50 w-[360px] sm:w-[420px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[560px] overflow-hidden animate-in fade-in-50 zoom-in-95 duration-150 origin-top-right"
+      className="absolute right-0 top-full mt-2 z-50 w-[360px] sm:w-[420px] bg-white rounded-lg shadow-xl border border-slate-300 flex flex-col max-h-[560px] overflow-hidden animate-fade-in origin-top-right"
     >
       {/* Header */}
-      <div className="px-4 py-3 border-b border-slate-100 bg-white flex items-center justify-between shrink-0">
+      <div className="px-4 py-3 border-b border-slate-200 bg-white flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-[#2b1572]/10 text-[#2b1572] flex items-center justify-center">
-            <Bell className="w-4 h-4" />
+          <div className="w-6 h-6 rounded-md bg-slate-100 text-slate-800 flex items-center justify-center border border-slate-200">
+            <Bell className="w-3.5 h-3.5" />
           </div>
-          <span className="text-sm font-bold text-[#2b1572]">Thông báo</span>
+          <span className="text-sm font-semibold text-slate-900">Thông báo</span>
           {unreadCount > 0 && (
-            <span className="px-2 py-0.5 text-[10px] font-bold bg-[#c40000] text-white rounded-full shadow-2xs">
+            <span className="px-1.5 py-0.2 text-[10px] font-semibold bg-rose-600 text-white rounded-xs">
               {unreadCount > 99 ? '99+' : unreadCount} mới
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           {unreadCount > 0 && (
             <button
               type="button"
               onClick={handleMarkAllAsRead}
               disabled={isPerformingAction}
-              className="p-1.5 text-xs text-slate-500 hover:text-[#2b1572] hover:bg-slate-100 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+              className="px-2 py-1 text-xs text-slate-700 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-md transition-colors cursor-pointer flex items-center gap-1 disabled:opacity-50"
               title="Đánh dấu tất cả đã đọc"
             >
-              <CheckCheck className="w-4 h-4 text-[#2b1572]" />
+              <CheckCheck className="w-3.5 h-3.5 text-slate-600" />
               <span className="text-[11px] font-medium hidden sm:inline">Đọc tất cả</span>
             </button>
           )}
@@ -349,7 +349,7 @@ export default function NotificationPopover({
               type="button"
               onClick={handleClearRead}
               disabled={isPerformingAction}
-              className="p-1.5 text-xs text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+              className="p-1.5 text-xs text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer border border-transparent hover:border-rose-200 disabled:opacity-50"
               title="Xoá thông báo đã đọc"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -359,7 +359,7 @@ export default function NotificationPopover({
           <button
             type="button"
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer ml-1"
+            className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors cursor-pointer ml-0.5"
             title="Đóng"
           >
             <X className="w-4 h-4" />
@@ -368,15 +368,15 @@ export default function NotificationPopover({
       </div>
 
       {/* Tabs Filter */}
-      <div className="px-3.5 py-1.5 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between text-xs font-semibold shrink-0">
+      <div className="px-3.5 py-1.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs font-medium shrink-0">
         <div className="flex items-center gap-1">
           <button
             type="button"
             onClick={() => setFilter('all')}
-            className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+            className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer text-xs ${
               filter === 'all'
-                ? 'bg-[#2b1572] text-white shadow-2xs'
-                : 'text-slate-600 hover:bg-slate-200/60'
+                ? 'bg-slate-900 text-white font-semibold'
+                : 'text-slate-600 hover:bg-slate-200/70'
             }`}
           >
             Tất cả ({notifications.length})
@@ -384,58 +384,58 @@ export default function NotificationPopover({
           <button
             type="button"
             onClick={() => setFilter('unread')}
-            className={`px-3 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+            className={`px-2.5 py-1 rounded-md transition-colors cursor-pointer flex items-center gap-1.5 text-xs ${
               filter === 'unread'
-                ? 'bg-[#2b1572] text-white shadow-2xs'
-                : 'text-slate-600 hover:bg-slate-200/60'
+                ? 'bg-slate-900 text-white font-semibold'
+                : 'text-slate-600 hover:bg-slate-200/70'
             }`}
           >
             <span>Chưa đọc</span>
             {unreadCount > 0 && (
               <span
                 className={`w-1.5 h-1.5 rounded-full ${
-                  filter === 'unread' ? 'bg-amber-300' : 'bg-[#c40000]'
+                  filter === 'unread' ? 'bg-amber-400' : 'bg-rose-500'
                 }`}
               />
             )}
           </button>
         </div>
 
-        <span className="text-[10px] text-slate-400 font-normal">
-          {notifications.length > 0 ? 'Cập nhật trực tiếp' : ''}
+        <span className="text-[10px] text-slate-400 font-mono">
+          {notifications.length > 0 ? 'REALTIME' : ''}
         </span>
       </div>
 
       {/* List Feed */}
       <div className="flex-1 overflow-y-auto min-h-0 divide-y divide-slate-100">
         {isLoading && notifications.length === 0 ? (
-          <div className="p-8 space-y-3">
+          <div className="p-6 space-y-3">
             {[1, 2, 3].map((i) => (
               <div key={i} className="flex gap-3 animate-pulse items-center">
-                <div className="w-8 h-8 rounded-xl bg-slate-200 shrink-0" />
+                <div className="w-7 h-7 rounded-md bg-slate-200 shrink-0" />
                 <div className="flex-1 space-y-1.5">
-                  <div className="h-3.5 bg-slate-200 rounded w-3/4" />
-                  <div className="h-3 bg-slate-100 rounded w-1/2" />
+                  <div className="h-3 bg-slate-200 rounded w-3/4" />
+                  <div className="h-2.5 bg-slate-100 rounded w-1/2" />
                 </div>
               </div>
             ))}
           </div>
         ) : filteredNotifications.length === 0 ? (
-          <div className="p-10 flex flex-col items-center justify-center text-center">
-            <div className="w-12 h-12 rounded-2xl bg-[#a6d1fd]/20 text-[#2b1572] flex items-center justify-center mb-3 shadow-xs">
+          <div className="p-8 flex flex-col items-center justify-center text-center">
+            <div className="w-10 h-10 rounded-md bg-slate-100 border border-slate-200 text-slate-500 flex items-center justify-center mb-3">
               {filter === 'unread' ? (
-                <Check className="w-6 h-6 text-emerald-600" />
+                <Check className="w-5 h-5 text-emerald-600" />
               ) : (
-                <Inbox className="w-6 h-6 text-[#2b1572]" />
+                <Inbox className="w-5 h-5 text-slate-600" />
               )}
             </div>
-            <p className="text-sm font-bold text-slate-700">
-              {filter === 'unread' ? 'Tuyệt vời, không có tin chưa đọc!' : 'Chưa có thông báo nào'}
+            <p className="text-xs font-semibold text-slate-800">
+              {filter === 'unread' ? 'Không có thông báo chưa đọc' : 'Chưa có thông báo nào'}
             </p>
-            <p className="text-xs text-slate-400 mt-1 max-w-[240px]">
+            <p className="text-[11px] text-slate-500 mt-1 max-w-[240px]">
               {filter === 'unread'
-                ? 'Bạn đã đọc tất cả thông báo công việc.'
-                : 'Mọi hoạt động phân công thẻ, hạn chót và nhắc tên sẽ hiển thị tại đây.'}
+                ? 'Bạn đã xem tất cả thông báo công việc.'
+                : 'Mọi hoạt động phân công, hạn chót và nhắc tên sẽ hiển thị tại đây.'}
             </p>
           </div>
         ) : (
@@ -448,9 +448,9 @@ export default function NotificationPopover({
               <div
                 key={n.id}
                 onClick={() => handleNotificationClick(n)}
-                className={`group p-3.5 flex items-start gap-3 transition-all cursor-pointer relative ${
+                className={`group p-3 flex items-start gap-3 transition-colors cursor-pointer relative ${
                   !n.is_read
-                    ? 'bg-[#a6d1fd]/12 hover:bg-[#a6d1fd]/22'
+                    ? 'bg-slate-50/80 hover:bg-slate-100/90'
                     : 'bg-white hover:bg-slate-50'
                 }`}
               >
@@ -461,8 +461,8 @@ export default function NotificationPopover({
                 <div className="flex-1 min-w-0 pr-6">
                   <div className="flex items-start justify-between gap-1 mb-0.5">
                     <p
-                      className={`text-xs font-bold leading-tight truncate ${
-                        !n.is_read ? 'text-[#2b1572]' : 'text-slate-800'
+                      className={`text-xs leading-tight truncate ${
+                        !n.is_read ? 'font-semibold text-slate-900' : 'font-medium text-slate-700'
                       }`}
                     >
                       {n.title}
@@ -472,16 +472,16 @@ export default function NotificationPopover({
                     {displayMessage}
                   </p>
                   <div className="flex items-center gap-2 mt-1.5 text-[10px] text-slate-400">
-                    <Clock className="w-3 h-3" />
+                    <Clock className="w-3 h-3 text-slate-400" />
                     <span>{formatRelativeTime(n.created_at)}</span>
                     {!n.is_read && (
-                      <span className="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-semibold bg-[#2b1572]/10 text-[#2b1572]">
+                      <span className="inline-flex items-center px-1 py-0.2 rounded-xs text-[9px] font-semibold bg-slate-900 text-white">
                         Mới
                       </span>
                     )}
                     {targetUrl && (
-                      <span className="inline-flex items-center gap-0.5 text-[#2b1572] text-[10px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span>Xem chi tiết</span>
+                      <span className="inline-flex items-center gap-0.5 text-slate-700 text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span>Chi tiết</span>
                         <ExternalLink className="w-2.5 h-2.5" />
                       </span>
                     )}
@@ -490,11 +490,11 @@ export default function NotificationPopover({
 
                 {/* Unread indicator dot */}
                 {!n.is_read && (
-                  <span className="w-2 h-2 rounded-full bg-[#2b1572] absolute top-4 right-3.5 shadow-2xs" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600 absolute top-3.5 right-3" />
                 )}
 
                 {/* Hover Quick Actions */}
-                <div className="absolute top-2.5 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-white p-1 rounded-lg shadow-md border border-slate-200">
+                <div className="absolute top-2.5 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5 bg-white p-0.5 rounded-md shadow-xs border border-slate-200">
                   {!n.is_read ? (
                     <button
                       type="button"
@@ -502,7 +502,7 @@ export default function NotificationPopover({
                       className="p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors cursor-pointer"
                       title="Đánh dấu đã đọc"
                     >
-                      <Check className="w-3.5 h-3.5" />
+                      <Check className="w-3 h-3" />
                     </button>
                   ) : null}
                   <button
@@ -511,7 +511,7 @@ export default function NotificationPopover({
                     className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
                     title="Xoá thông báo"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-3 h-3" />
                   </button>
                 </div>
               </div>
@@ -521,12 +521,11 @@ export default function NotificationPopover({
       </div>
 
       {/* Footer */}
-      <div className="p-2.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 shrink-0">
-        <span className="flex items-center gap-1">
-          <Sparkles className="w-3 h-3 text-[#2b1572]" />
+      <div className="p-2.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-500 shrink-0">
+        <span className="flex items-center gap-1 font-mono text-[10px] uppercase text-slate-400">
           <span>Planify Notifications</span>
         </span>
-        <span>Lưu trữ 30 ngày</span>
+        <span className="text-[10px] text-slate-400">Lưu trữ 30 ngày</span>
       </div>
     </div>
   );

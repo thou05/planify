@@ -101,28 +101,28 @@ export default function UseTemplateModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#2b1572]/25 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-lg glass-strong border border-white/80 rounded-3xl p-6 sm:p-8 relative shadow-2xl overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
+      <div className="w-full max-w-lg bg-white rounded-lg shadow-xl border border-slate-300 p-6 sm:p-7 relative overflow-hidden flex flex-col">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-full hover:bg-white/40 text-[#2b1572]/60 hover:text-[#2b1572] transition-colors cursor-pointer"
+          className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
 
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-[#2b1572] flex items-center justify-center text-[#a6d1fd] shadow-md shadow-[#2b1572]/20 shrink-0">
-            <Sparkles className="w-6 h-6 text-[#a6d1fd]" />
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-9 h-9 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800 shrink-0">
+            <Sparkles className="w-4 h-4 text-slate-800" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-[#2b1572]">Tạo Bảng từ Mẫu</h2>
-            <p className="text-xs text-[#2b1572]/70 truncate max-w-xs">{template.title}</p>
+            <h2 className="text-base font-bold text-slate-900">Tạo Bảng từ Mẫu</h2>
+            <p className="text-xs text-slate-500 truncate max-w-xs">{template.title}</p>
           </div>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 rounded-xl bg-[#c40000]/10 border border-[#c40000]/20 text-[#c40000] text-xs font-semibold">
+          <div className="mb-4 p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
             {error}
           </div>
         )}
@@ -130,24 +130,24 @@ export default function UseTemplateModal({
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Target Workspace */}
           <div>
-            <label className="block text-xs font-bold text-[#2b1572] mb-1.5 flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-[#2b1572]/70" />
-              <span>Không gian làm việc (Workspace) <span className="text-[#c40000]">*</span></span>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-slate-500" />
+              <span>Không gian làm việc (Workspace) <span className="text-rose-500">*</span></span>
             </label>
             {isLoadingWorkspaces ? (
-              <div className="py-2 flex items-center gap-2 text-xs text-[#2b1572]/60">
+              <div className="py-2 flex items-center gap-2 text-xs text-slate-500">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span>Đang tải danh sách Workspace...</span>
               </div>
             ) : workspaces.length === 0 ? (
-              <div className="p-3 text-xs text-[#c40000] bg-[#c40000]/10 rounded-xl">
+              <div className="p-3 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-md">
                 Bạn chưa có Không gian làm việc nào. Vui lòng tạo Workspace trước.
               </div>
             ) : (
               <select
                 value={selectedWorkspaceId}
                 onChange={(e) => setSelectedWorkspaceId(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-xs glass-input font-semibold text-[#2b1572] cursor-pointer"
+                className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 cursor-pointer"
               >
                 {workspaces.map((ws) => (
                   <option key={ws.id} value={ws.id}>
@@ -160,9 +160,9 @@ export default function UseTemplateModal({
 
           {/* Board Name */}
           <div>
-            <label className="block text-xs font-bold text-[#2b1572] mb-1.5 flex items-center gap-1.5">
-              <Kanban className="w-3.5 h-3.5 text-[#2b1572]/70" />
-              <span>Tên Bảng mới <span className="text-[#c40000]">*</span></span>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1.5">
+              <Kanban className="w-3.5 h-3.5 text-slate-500" />
+              <span>Tên Bảng mới <span className="text-rose-500">*</span></span>
             </label>
             <input
               type="text"
@@ -170,80 +170,80 @@ export default function UseTemplateModal({
               value={boardName}
               onChange={(e) => setBoardName(e.target.value)}
               placeholder="Nhập tên Bảng của bạn..."
-              className="w-full px-3.5 py-2.5 text-xs glass-input font-bold text-[#2b1572]"
+              className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 transition-all placeholder:text-slate-400"
             />
           </div>
 
           {/* Visibility Selection */}
           <div>
-            <label className="block text-xs font-bold text-[#2b1572] mb-1.5">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
               Quyền hiển thị Bảng
             </label>
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => setVisibility('WORKSPACE')}
-                className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer ${
+                className={`p-2.5 rounded-md text-left border transition-all cursor-pointer ${
                   visibility === 'WORKSPACE'
-                    ? 'bg-white/80 border-[#2b1572] shadow-sm'
-                    : 'bg-white/40 border-white/60 hover:bg-white/60'
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                 }`}
               >
-                <div className="flex items-center gap-1 text-xs font-bold text-[#2b1572]">
+                <div className="flex items-center gap-1 text-xs font-bold">
                   <Users className="w-3.5 h-3.5" />
                   <span>Không gian</span>
                 </div>
-                <div className="text-[10px] text-[#2b1572]/60 mt-0.5">Mọi thành viên</div>
+                <div className={`text-[10px] mt-0.5 ${visibility === 'WORKSPACE' ? 'text-slate-300' : 'text-slate-500'}`}>Mọi thành viên</div>
               </button>
 
               <button
                 type="button"
                 onClick={() => setVisibility('PRIVATE')}
-                className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer ${
+                className={`p-2.5 rounded-md text-left border transition-all cursor-pointer ${
                   visibility === 'PRIVATE'
-                    ? 'bg-white/80 border-[#2b1572] shadow-sm'
-                    : 'bg-white/40 border-white/60 hover:bg-white/60'
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                 }`}
               >
-                <div className="flex items-center gap-1 text-xs font-bold text-[#2b1572]">
+                <div className="flex items-center gap-1 text-xs font-bold">
                   <Lock className="w-3.5 h-3.5" />
                   <span>Riêng tư</span>
                 </div>
-                <div className="text-[10px] text-[#2b1572]/60 mt-0.5">Chỉ thành viên</div>
+                <div className={`text-[10px] mt-0.5 ${visibility === 'PRIVATE' ? 'text-slate-300' : 'text-slate-500'}`}>Chỉ thành viên</div>
               </button>
 
               <button
                 type="button"
                 onClick={() => setVisibility('PUBLIC')}
-                className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer ${
+                className={`p-2.5 rounded-md text-left border transition-all cursor-pointer ${
                   visibility === 'PUBLIC'
-                    ? 'bg-white/80 border-[#2b1572] shadow-sm'
-                    : 'bg-white/40 border-white/60 hover:bg-white/60'
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                 }`}
               >
-                <div className="flex items-center gap-1 text-xs font-bold text-[#2b1572]">
+                <div className="flex items-center gap-1 text-xs font-bold">
                   <Globe className="w-3.5 h-3.5" />
                   <span>Công khai</span>
                 </div>
-                <div className="text-[10px] text-[#2b1572]/60 mt-0.5">Có liên kết</div>
+                <div className={`text-[10px] mt-0.5 ${visibility === 'PUBLIC' ? 'text-slate-300' : 'text-slate-500'}`}>Có liên kết</div>
               </button>
             </div>
           </div>
 
           {/* Keep Cards Option */}
-          <div className="pt-2">
-            <label className="flex items-start gap-2.5 p-3 rounded-xl bg-white/40 border border-white/60 cursor-pointer hover:bg-white/60 transition-colors">
+          <div className="pt-1">
+            <label className="flex items-start gap-2.5 p-3 rounded-md bg-slate-50 border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
               <input
                 type="checkbox"
                 checked={keepCards}
                 onChange={(e) => setKeepCards(e.target.checked)}
-                className="mt-0.5 rounded text-[#2b1572] focus:ring-[#2b1572] cursor-pointer"
+                className="mt-0.5 rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
               />
               <div className="text-xs">
-                <span className="font-bold text-[#2b1572] block">
+                <span className="font-semibold text-slate-900 block">
                   Giữ lại các Thẻ công việc & Checklist mẫu
                 </span>
-                <span className="text-[11px] text-[#2b1572]/70 leading-tight block mt-0.5">
+                <span className="text-[11px] text-slate-500 leading-tight block mt-0.5">
                   Bao gồm các thẻ hướng dẫn, thẻ mẫu quy trình và các mục checklist ban đầu.
                 </span>
               </div>
@@ -251,11 +251,11 @@ export default function UseTemplateModal({
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-4 flex items-center justify-end gap-3">
+          <div className="pt-3 flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl text-xs font-semibold text-[#2b1572]/70 hover:bg-white/50 cursor-pointer transition-colors"
+              className="px-4 py-2 rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer transition-colors"
             >
               Hủy
             </button>
@@ -263,16 +263,16 @@ export default function UseTemplateModal({
             <button
               type="submit"
               disabled={isSubmitting || workspaces.length === 0}
-              className="px-6 py-2.5 btn-primary text-xs font-bold flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-md"
+              className="px-4 py-2 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-xs"
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   <span>Đang khởi tạo Board...</span>
                 </>
               ) : (
                 <>
-                  <Check className="w-4 h-4" />
+                  <Check className="w-3.5 h-3.5" />
                   <span>Tạo Bảng từ Mẫu</span>
                 </>
               )}

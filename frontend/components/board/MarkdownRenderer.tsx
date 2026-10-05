@@ -58,7 +58,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
             key={`card-${cardId}-${index}`}
             type="button"
             onClick={() => onOpenCard?.(cardId)}
-            className="inline-flex items-center gap-1 px-2 py-0.5 my-0.5 mx-0.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-[#2b1572] border border-indigo-200 text-xs font-bold transition-all shadow-2xs cursor-pointer group"
+            className="inline-flex items-center gap-1 px-1.5 py-0.5 my-0.5 mx-0.5 rounded-xs bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 text-xs font-semibold transition-colors cursor-pointer group"
             title="Mở chi tiết thẻ này"
           >
             <span>🏷️ {title}</span>
@@ -84,7 +84,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         return (
           <code
             key={index}
-            className="px-1.5 py-0.5 mx-0.5 rounded-md bg-slate-100 text-indigo-700 font-mono text-[11px] border border-slate-200"
+            className="px-1.5 py-0.5 mx-0.5 rounded-xs bg-slate-100 text-slate-800 font-mono text-[11px] border border-slate-200"
           >
             {part.slice(1, -1)}
           </code>
@@ -118,7 +118,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
       elements.push(
         <h1
           key={`h1-${idx}`}
-          className="text-base sm:text-lg font-bold text-[#2b1572] mt-4 mb-2 pb-1 border-b border-purple-100 flex items-center gap-2"
+          className="text-base sm:text-lg font-bold text-slate-900 mt-4 mb-2 pb-1 border-b border-slate-200 flex items-center gap-2"
         >
           {renderInline(line.replace('# ', ''))}
         </h1>
@@ -132,7 +132,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
       elements.push(
         <h2
           key={`h2-${idx}`}
-          className="text-sm sm:text-base font-bold text-[#2b1572] mt-3.5 mb-1.5 flex items-center gap-1.5"
+          className="text-sm sm:text-base font-bold text-slate-900 mt-3.5 mb-1.5 flex items-center gap-1.5"
         >
           {renderInline(line.replace('## ', ''))}
         </h2>
@@ -146,7 +146,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
       elements.push(
         <div
           key={`h3-${idx}`}
-          className="mt-3.5 mb-2 px-3 py-1.5 rounded-xl bg-purple-50/80 border border-purple-100 text-xs sm:text-[13px] font-bold text-[#2b1572] flex items-center gap-2"
+          className="mt-3.5 mb-2 px-2.5 py-1 rounded-sm bg-slate-100 border border-slate-200 text-xs sm:text-[13px] font-bold text-slate-900 flex items-center gap-2"
         >
           {renderInline(line.replace('### ', ''))}
         </div>
@@ -161,7 +161,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
       const text = line.substring(2);
       currentListItems.push(
         <li key={`li-${idx}`} className="flex items-start gap-2 text-xs sm:text-[13px] text-slate-700 leading-relaxed">
-          <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0 mt-2" />
+          <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0 mt-2" />
           <span className="flex-1">{renderInline(text)}</span>
         </li>
       );
@@ -177,7 +177,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
       const text = numberedMatch[2];
       currentListItems.push(
         <li key={`nli-${idx}`} className="flex items-start gap-2 text-xs sm:text-[13px] text-slate-700 leading-relaxed">
-          <span className="w-4 h-4 rounded-md bg-purple-100 text-purple-800 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+          <span className="w-4 h-4 rounded-xs bg-slate-100 text-slate-700 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5 border border-slate-200">
             {num}
           </span>
           <span className="flex-1">{renderInline(text)}</span>

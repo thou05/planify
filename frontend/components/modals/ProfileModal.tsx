@@ -331,41 +331,41 @@ export default function ProfileModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#2b1572]/25 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-2xl glass-strong border border-white/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
+      <div className="w-full max-w-2xl bg-white border border-slate-300 rounded-lg shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-[#2b1572]/10 flex items-center justify-between bg-white/40">
+        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-white">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#2b1572] flex items-center justify-center text-[#a6d1fd] shadow-md shadow-[#2b1572]/20">
-              <UserIcon className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800">
+              <UserIcon className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-[#2b1572]">Cài đặt tài khoản & Hồ sơ</h2>
-              <p className="text-xs text-[#2b1572]/70">Quản lý thông tin cá nhân, bảo mật và lời mời</p>
+              <h2 className="text-base font-bold text-slate-900">Cài đặt tài khoản & Hồ sơ</h2>
+              <p className="text-xs text-slate-500">Quản lý thông tin cá nhân, bảo mật và lời mời</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-white/60 text-[#2b1572]/60 hover:text-[#2b1572] transition-colors cursor-pointer"
+            className="p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex px-6 pt-3 border-b border-[#2b1572]/10 bg-white/20 gap-2">
+        <div className="flex px-6 pt-2 border-b border-slate-200 bg-slate-50 gap-1.5">
           <button
             onClick={() => {
               setActiveTab('profile');
               setStatusMessage(null);
             }}
-            className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition-all cursor-pointer flex items-center gap-2 border-b-2 ${
+            className={`px-3.5 py-2 text-xs font-semibold rounded-t-md transition-all cursor-pointer flex items-center gap-1.5 border-b-2 ${
               activeTab === 'profile'
-                ? 'border-[#2b1572] text-[#2b1572] bg-white/60 shadow-xs'
-                : 'border-transparent text-[#2b1572]/60 hover:text-[#2b1572] hover:bg-white/30'
+                ? 'border-slate-900 text-slate-900 bg-white font-bold'
+                : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100'
             }`}
           >
-            <UserIcon className="w-4 h-4" />
+            <UserIcon className="w-3.5 h-3.5" />
             <span>Thông tin cá nhân</span>
           </button>
 
@@ -374,13 +374,13 @@ export default function ProfileModal({
               setActiveTab('security');
               setStatusMessage(null);
             }}
-            className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition-all cursor-pointer flex items-center gap-2 border-b-2 ${
+            className={`px-3.5 py-2 text-xs font-semibold rounded-t-md transition-all cursor-pointer flex items-center gap-1.5 border-b-2 ${
               activeTab === 'security'
-                ? 'border-[#2b1572] text-[#2b1572] bg-white/60 shadow-xs'
-                : 'border-transparent text-[#2b1572]/60 hover:text-[#2b1572] hover:bg-white/30'
+                ? 'border-slate-900 text-slate-900 bg-white font-bold'
+                : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100'
             }`}
           >
-            <Shield className="w-4 h-4" />
+            <Shield className="w-3.5 h-3.5" />
             <span>Bảo mật & Mật khẩu</span>
           </button>
 
@@ -390,16 +390,16 @@ export default function ProfileModal({
               setStatusMessage(null);
               fetchInvitations();
             }}
-            className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition-all cursor-pointer flex items-center gap-2 border-b-2 relative ${
+            className={`px-3.5 py-2 text-xs font-semibold rounded-t-md transition-all cursor-pointer flex items-center gap-1.5 border-b-2 relative ${
               activeTab === 'invitations'
-                ? 'border-[#2b1572] text-[#2b1572] bg-white/60 shadow-xs'
-                : 'border-transparent text-[#2b1572]/60 hover:text-[#2b1572] hover:bg-white/30'
+                ? 'border-slate-900 text-slate-900 bg-white font-bold'
+                : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100'
             }`}
           >
-            <Mail className="w-4 h-4" />
+            <Mail className="w-3.5 h-3.5" />
             <span>Lời mời</span>
             {totalInvites > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full bg-[#c40000] text-white text-[10px] font-black leading-none">
+              <span className="px-1.5 py-0.2 rounded-xs bg-rose-600 text-white text-[10px] font-bold leading-none">
                 {totalInvites}
               </span>
             )}
@@ -411,13 +411,13 @@ export default function ProfileModal({
               setStatusMessage(null);
               fetchNotificationPreferences();
             }}
-            className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition-all cursor-pointer flex items-center gap-2 border-b-2 relative ${
+            className={`px-3.5 py-2 text-xs font-semibold rounded-t-md transition-all cursor-pointer flex items-center gap-1.5 border-b-2 relative ${
               activeTab === 'notifications'
-                ? 'border-[#2b1572] text-[#2b1572] bg-white/60 shadow-xs'
-                : 'border-transparent text-[#2b1572]/60 hover:text-[#2b1572] hover:bg-white/30'
+                ? 'border-slate-900 text-slate-900 bg-white font-bold'
+                : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100'
             }`}
           >
-            <Bell className="w-4 h-4" />
+            <Bell className="w-3.5 h-3.5" />
             <span>Cài đặt Thông báo</span>
           </button>
         </div>
@@ -426,16 +426,16 @@ export default function ProfileModal({
         <div className="p-6 overflow-y-auto space-y-5 flex-1">
           {statusMessage && (
             <div
-              className={`p-3.5 rounded-xl border text-xs font-semibold flex items-center gap-2 animate-fade-in ${
+              className={`p-3 rounded-md border text-xs font-medium flex items-center gap-2 animate-fade-in ${
                 statusMessage.type === 'success'
-                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-800'
-                  : 'bg-[#c40000]/10 border-[#c40000]/30 text-[#c40000]'
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                  : 'bg-rose-50 border-rose-200 text-rose-700'
               }`}
             >
               {statusMessage.type === 'success' ? (
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               ) : (
-                <AlertCircle className="w-4 h-4 text-[#c40000] shrink-0" />
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
               )}
               <span>{statusMessage.text}</span>
             </div>
@@ -446,16 +446,16 @@ export default function ProfileModal({
             <form onSubmit={handleSaveProfile} className="space-y-4">
               {/* Avatar Selector */}
               <div>
-                <label className="block text-xs font-bold text-[#2b1572] mb-2">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-2">
                   Ảnh đại diện (Avatar)
                 </label>
                 <div className="flex flex-wrap items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-[#2b1572]/10 border-2 border-[#2b1572]/20 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
+                  <div className="w-14 h-14 rounded-md bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
                     {avatar ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={avatar} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-xl font-black text-[#2b1572]">
+                      <span className="text-lg font-bold text-slate-700">
                         {name ? name.charAt(0).toUpperCase() : 'U'}
                       </span>
                     )}
@@ -467,18 +467,18 @@ export default function ProfileModal({
                       value={avatar}
                       onChange={(e) => setAvatar(e.target.value)}
                       placeholder="Dán link ảnh đại diện (URL)..."
-                      className="w-full px-3 py-2 text-xs glass-input placeholder:text-[#2b1572]/30 text-[#2b1572]"
+                      className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800"
                     />
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-[#2b1572]/60 font-medium">Gợi ý mẫu:</span>
+                      <span className="text-[11px] text-slate-500 font-medium">Gợi ý mẫu:</span>
                       <div className="flex items-center gap-1.5">
                         {PRESET_AVATARS.map((url, idx) => (
                           <button
                             key={idx}
                             type="button"
                             onClick={() => setAvatar(url)}
-                            className={`w-6 h-6 rounded-full overflow-hidden border-2 cursor-pointer hover:scale-110 transition-transform ${
-                              avatar === url ? 'border-[#2b1572] scale-110 ring-2 ring-[#a6d1fd]' : 'border-white/80'
+                            className={`w-6 h-6 rounded-full overflow-hidden border cursor-pointer hover:scale-105 transition-transform ${
+                              avatar === url ? 'border-slate-900 ring-2 ring-slate-400' : 'border-slate-300'
                             }`}
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -494,8 +494,8 @@ export default function ProfileModal({
               {/* Name & Email */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-[#2b1572] mb-1.5">
-                    Họ và tên <span className="text-[#c40000]">*</span>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+                    Họ và tên <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -503,12 +503,12 @@ export default function ProfileModal({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Nhập tên của bạn"
-                    className="w-full px-3.5 py-2.5 text-xs glass-input text-[#2b1572] font-semibold"
+                    className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#2b1572] mb-1.5">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
                     Email tài khoản
                   </label>
                   <div className="relative">
@@ -516,9 +516,9 @@ export default function ProfileModal({
                       type="email"
                       disabled
                       value={user.email}
-                      className="w-full px-3.5 py-2.5 text-xs glass-input bg-white/30 text-[#2b1572]/60 cursor-not-allowed font-medium"
+                      className="w-full px-3 py-2 text-xs rounded-md border border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed font-medium"
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700">
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-semibold px-1.5 py-0.2 rounded-xs bg-emerald-50 border border-emerald-200 text-emerald-700">
                       Đã xác thực
                     </span>
                   </div>
@@ -527,7 +527,7 @@ export default function ProfileModal({
 
               {/* Bio */}
               <div>
-                <label className="block text-xs font-bold text-[#2b1572] mb-1.5">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
                   Tiểu sử / Giới thiệu bản thân
                 </label>
                 <textarea
@@ -535,15 +535,15 @@ export default function ProfileModal({
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   placeholder="Chia sẻ đôi nét về vai trò, chuyên môn hoặc sở thích..."
-                  className="w-full px-3.5 py-2.5 text-xs glass-input text-[#2b1572] placeholder:text-[#2b1572]/30 resize-none"
+                  className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 resize-none font-medium"
                 />
               </div>
 
               {/* Phone, Timezone & Language */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-[#2b1572] mb-1.5 flex items-center gap-1">
-                    <Phone className="w-3.5 h-3.5 text-[#2b1572]/60" />
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1">
+                    <Phone className="w-3.5 h-3.5 text-slate-500" />
                     <span>Số điện thoại</span>
                   </label>
                   <input
@@ -551,19 +551,19 @@ export default function ProfileModal({
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+84 987 654 321"
-                    className="w-full px-3.5 py-2.5 text-xs glass-input text-[#2b1572]"
+                    className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#2b1572] mb-1.5 flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5 text-[#2b1572]/60" />
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-slate-500" />
                     <span>Múi giờ</span>
                   </label>
                   <select
                     value={timezone}
                     onChange={(e) => setTimezone(e.target.value)}
-                    className="w-full px-3 py-2 text-xs glass-input text-[#2b1572] cursor-pointer"
+                    className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 cursor-pointer"
                   >
                     <option value="Asia/Ho_Chi_Minh">GMT+7 (Hà Nội, TP.HCM)</option>
                     <option value="Asia/Bangkok">GMT+7 (Bangkok)</option>
@@ -574,14 +574,14 @@ export default function ProfileModal({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#2b1572] mb-1.5 flex items-center gap-1">
-                    <Globe className="w-3.5 h-3.5 text-[#2b1572]/60" />
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5 flex items-center gap-1">
+                    <Globe className="w-3.5 h-3.5 text-slate-500" />
                     <span>Ngôn ngữ</span>
                   </label>
                   <select
                     value={language}
                     onChange={(e) => setLanguage(e.target.value)}
-                    className="w-full px-3 py-2 text-xs glass-input text-[#2b1572] cursor-pointer"
+                    className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 cursor-pointer"
                   >
                     <option value="vi">Tiếng Việt (VI)</option>
                     <option value="en">English (EN)</option>
@@ -594,16 +594,16 @@ export default function ProfileModal({
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="px-6 py-2.5 btn-primary text-xs font-bold flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-md"
+                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-xs"
                 >
                   {isSaving ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       <span>Đang lưu...</span>
                     </>
                   ) : (
                     <>
-                      <Check className="w-4 h-4" />
+                      <Check className="w-3.5 h-3.5" />
                       <span>Lưu thông tin hồ sơ</span>
                     </>
                   )}
@@ -614,19 +614,19 @@ export default function ProfileModal({
 
           {/* TAB 2: SECURITY */}
           {activeTab === 'security' && (
-            <div className="space-y-6">
+            <div className="space-y-5">
               {/* Account Overview Box */}
-              <div className="p-4 rounded-2xl bg-white/50 border border-white/70 space-y-2">
+              <div className="p-3.5 rounded-md bg-slate-50 border border-slate-200 space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-[#2b1572]/70 font-semibold">Trạng thái tài khoản:</span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-800 font-bold text-[11px]">
+                  <span className="text-slate-600 font-medium">Trạng thái tài khoản:</span>
+                  <span className="px-2 py-0.5 rounded-xs bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold text-[11px]">
                     ● Đang hoạt động (ACTIVE)
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-[#2b1572]/70 font-semibold">Ngày đăng ký tham gia:</span>
-                  <span className="text-[#2b1572] font-semibold flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5" />
+                  <span className="text-slate-600 font-medium">Ngày đăng ký tham gia:</span>
+                  <span className="text-slate-800 font-semibold flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-slate-500" />
                     {user.created_at ? new Date(user.created_at).toLocaleDateString('vi-VN') : '2026'}
                   </span>
                 </div>
@@ -634,14 +634,14 @@ export default function ProfileModal({
 
               {/* Change Password Form */}
               <form onSubmit={handleChangePassword} className="space-y-4">
-                <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#2b1572] flex items-center gap-1.5">
-                  <Key className="w-4 h-4" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                  <Key className="w-3.5 h-3.5 text-slate-600" />
                   <span>Đổi mật khẩu tài khoản</span>
                 </h3>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#2b1572] mb-1.5">
-                    Mật khẩu hiện tại <span className="text-[#c40000]">*</span>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+                    Mật khẩu hiện tại <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="password"
@@ -649,14 +649,14 @@ export default function ProfileModal({
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     placeholder="Nhập mật khẩu hiện tại..."
-                    className="w-full px-3.5 py-2.5 text-xs glass-input text-[#2b1572]"
+                    className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-[#2b1572] mb-1.5">
-                      Mật khẩu mới <span className="text-[#c40000]">*</span>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+                      Mật khẩu mới <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="password"
@@ -664,13 +664,13 @@ export default function ProfileModal({
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="Tối thiểu 6 ký tự..."
-                      className="w-full px-3.5 py-2.5 text-xs glass-input text-[#2b1572]"
+                      className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-[#2b1572] mb-1.5">
-                      Xác nhận mật khẩu mới <span className="text-[#c40000]">*</span>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+                      Xác nhận mật khẩu mới <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="password"
@@ -678,7 +678,7 @@ export default function ProfileModal({
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Nhập lại mật khẩu mới..."
-                      className="w-full px-3.5 py-2.5 text-xs glass-input text-[#2b1572]"
+                      className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800"
                     />
                   </div>
                 </div>
@@ -687,16 +687,16 @@ export default function ProfileModal({
                   <button
                     type="submit"
                     disabled={isChangingPass}
-                    className="px-6 py-2.5 btn-primary text-xs font-bold flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-md"
+                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-xs"
                   >
                     {isChangingPass ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         <span>Đang xử lý...</span>
                       </>
                     ) : (
                       <>
-                        <Key className="w-4 h-4" />
+                        <Key className="w-3.5 h-3.5" />
                         <span>Cập nhật mật khẩu</span>
                       </>
                     )}
@@ -708,13 +708,13 @@ export default function ProfileModal({
 
           {/* TAB 3: INVITATIONS */}
           {activeTab === 'invitations' && (
-            <div className="space-y-5">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#2b1572]">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
                     Lời mời đang chờ ({totalInvites})
                   </h3>
-                  <p className="text-[11px] text-[#2b1572]/70">
+                  <p className="text-[11px] text-slate-500">
                     Các lời mời tham gia Không gian làm việc và Bảng Kanban gửi tới email của bạn
                   </p>
                 </div>
@@ -722,47 +722,47 @@ export default function ProfileModal({
                   type="button"
                   onClick={fetchInvitations}
                   disabled={loadingInvites}
-                  className="text-xs font-bold text-[#2b1572] hover:underline cursor-pointer disabled:opacity-50"
+                  className="text-xs font-semibold text-slate-700 hover:text-slate-900 hover:underline cursor-pointer disabled:opacity-50"
                 >
                   Làm mới
                 </button>
               </div>
 
               {loadingInvites ? (
-                <div className="py-8 flex flex-col items-center justify-center gap-2 text-[#2b1572]/60">
-                  <Loader2 className="w-6 h-6 animate-spin text-[#2b1572]" />
+                <div className="py-8 flex flex-col items-center justify-center gap-2 text-slate-500">
+                  <Loader2 className="w-5 h-5 animate-spin text-slate-700" />
                   <span className="text-xs">Đang kiểm tra lời mời...</span>
                 </div>
               ) : totalInvites === 0 ? (
-                <div className="py-10 text-center rounded-2xl bg-white/30 border border-white/60 space-y-2">
-                  <Mail className="w-8 h-8 text-[#2b1572]/40 mx-auto" />
-                  <p className="text-xs font-bold text-[#2b1572]">Không có lời mời nào đang chờ</p>
-                  <p className="text-[11px] text-[#2b1572]/60 max-w-xs mx-auto">
+                <div className="py-10 text-center rounded-md bg-slate-50 border border-slate-200 space-y-2">
+                  <Mail className="w-7 h-7 text-slate-400 mx-auto" />
+                  <p className="text-xs font-bold text-slate-800">Không có lời mời nào đang chờ</p>
+                  <p className="text-[11px] text-slate-500 max-w-xs mx-auto">
                     Khi đồng nghiệp mời bạn vào Không gian làm việc hoặc Bảng, lời mời sẽ xuất hiện ở đây.
                   </p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {/* Workspace Invites */}
                   {invitations.workspaceInvites?.map((inv: any) => (
                     <div
                       key={inv.id}
-                      className="p-4 rounded-2xl glass-surface border border-white/80 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                      className="p-3.5 rounded-md border border-slate-200 bg-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-[#2b1572] text-[#a6d1fd] flex items-center justify-center shrink-0 shadow-sm">
-                          <Layers className="w-5 h-5" />
+                        <div className="w-9 h-9 rounded-md bg-slate-100 border border-slate-200 text-slate-800 flex items-center justify-center shrink-0">
+                          <Layers className="w-4 h-4" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-extrabold text-[#2b1572]">
+                            <span className="text-xs font-bold text-slate-900">
                               {inv.workspace?.name || 'Không gian làm việc'}
                             </span>
-                            <span className="px-2 py-0.5 rounded-full bg-[#a6d1fd]/40 text-[#2b1572] font-bold text-[10px]">
+                            <span className="px-1.5 py-0.2 rounded-xs bg-slate-100 border border-slate-200 text-slate-700 font-semibold text-[10px]">
                               Workspace • {inv.role}
                             </span>
                           </div>
-                          <p className="text-[11px] text-[#2b1572]/60 mt-0.5">
+                          <p className="text-[11px] text-slate-500 mt-0.5">
                             Người mời: {inv.workspace?.owner?.name || 'Admin'} • Hết hạn:{' '}
                             {new Date(inv.expired_at).toLocaleDateString('vi-VN')}
                           </p>
@@ -774,7 +774,7 @@ export default function ProfileModal({
                           type="button"
                           disabled={processingToken === inv.token}
                           onClick={() => handleRejectWorkspace(inv.token)}
-                          className="px-3 py-1.5 rounded-xl border border-[#c40000]/30 text-[#c40000] hover:bg-[#c40000]/10 text-xs font-bold cursor-pointer transition-colors"
+                          className="px-3 py-1.5 rounded-md border border-rose-200 text-rose-700 hover:bg-rose-50 text-xs font-semibold cursor-pointer transition-colors"
                         >
                           Từ chối
                         </button>
@@ -782,7 +782,7 @@ export default function ProfileModal({
                           type="button"
                           disabled={processingToken === inv.token}
                           onClick={() => handleAcceptWorkspace(inv.token, inv.workspace?.id)}
-                          className="px-4 py-1.5 btn-primary text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                          className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
                         >
                           {processingToken === inv.token ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -799,22 +799,22 @@ export default function ProfileModal({
                   {invitations.boardInvites?.map((inv: any) => (
                     <div
                       key={inv.id}
-                      className="p-4 rounded-2xl glass-surface border border-white/80 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                      className="p-3.5 rounded-md border border-slate-200 bg-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-[#2b1572]/90 text-white flex items-center justify-center shrink-0 shadow-sm">
-                          <LayoutGrid className="w-5 h-5" />
+                        <div className="w-9 h-9 rounded-md bg-slate-100 border border-slate-200 text-slate-800 flex items-center justify-center shrink-0">
+                          <LayoutGrid className="w-4 h-4" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-extrabold text-[#2b1572]">
+                            <span className="text-xs font-bold text-slate-900">
                               {inv.board?.name || 'Bảng công việc'}
                             </span>
-                            <span className="px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-900 font-bold text-[10px]">
+                            <span className="px-1.5 py-0.2 rounded-xs bg-slate-100 border border-slate-200 text-slate-700 font-semibold text-[10px]">
                               Board • {inv.role}
                             </span>
                           </div>
-                          <p className="text-[11px] text-[#2b1572]/60 mt-0.5">
+                          <p className="text-[11px] text-slate-500 mt-0.5">
                             {inv.board?.workspace?.name ? `Thuộc: ${inv.board.workspace.name} • ` : ''}
                             Người mời: {inv.inviter?.name || 'Thành viên'} • Hết hạn:{' '}
                             {new Date(inv.expired_at).toLocaleDateString('vi-VN')}
@@ -827,7 +827,7 @@ export default function ProfileModal({
                           type="button"
                           disabled={processingToken === inv.token}
                           onClick={() => handleRejectBoard(inv.token)}
-                          className="px-3 py-1.5 rounded-xl border border-[#c40000]/30 text-[#c40000] hover:bg-[#c40000]/10 text-xs font-bold cursor-pointer transition-colors"
+                          className="px-3 py-1.5 rounded-md border border-rose-200 text-rose-700 hover:bg-rose-50 text-xs font-semibold cursor-pointer transition-colors"
                         >
                           Từ chối
                         </button>
@@ -835,7 +835,7 @@ export default function ProfileModal({
                           type="button"
                           disabled={processingToken === inv.token}
                           onClick={() => handleAcceptBoard(inv.token, inv.board?.id)}
-                          className="px-4 py-1.5 btn-primary text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                          className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
                         >
                           {processingToken === inv.token ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -854,12 +854,12 @@ export default function ProfileModal({
 
           {/* TAB 4: CÀI ĐẶT THÔNG BÁO (NOTIFICATION SETTINGS) */}
           {activeTab === 'notifications' && (
-            <div className="space-y-6 animate-fade-in">
+            <div className="space-y-5 animate-fade-in">
               {/* Introduction header */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-[#2b1572]">Tùy chọn nhận Thông báo</h3>
-                  <p className="text-xs text-[#2b1572]/70 mt-0.5">
+                  <h3 className="text-sm font-bold text-slate-900">Tùy chọn nhận Thông báo</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
                     Tùy chỉnh các sự kiện bạn muốn nhận thông báo qua chuông và thời gian thực.
                   </p>
                 </div>
@@ -867,7 +867,7 @@ export default function ProfileModal({
                   type="button"
                   onClick={fetchNotificationPreferences}
                   disabled={loadingNotifPrefs}
-                  className="px-3 py-1.5 btn-secondary text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="px-3 py-1.5 rounded-md border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors"
                   title="Tải lại cài đặt"
                 >
                   <Clock className={`w-3.5 h-3.5 ${loadingNotifPrefs ? 'animate-spin' : ''}`} />
@@ -876,17 +876,17 @@ export default function ProfileModal({
               </div>
 
               {loadingNotifPrefs ? (
-                <div className="py-12 flex flex-col items-center justify-center gap-2 text-[#2b1572]/60">
-                  <Loader2 className="w-6 h-6 animate-spin text-[#2b1572]" />
+                <div className="py-12 flex flex-col items-center justify-center gap-2 text-slate-500">
+                  <Loader2 className="w-6 h-6 animate-spin text-slate-700" />
                   <span className="text-xs font-semibold">Đang tải cài đặt thông báo...</span>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {/* Group 1: Lời mời & Thành viên */}
-                  <div className="p-4 rounded-2xl glass-surface border border-white/80 shadow-xs space-y-3">
-                    <div className="flex items-center gap-2 pb-2 border-b border-[#2b1572]/10">
-                      <UserPlus className="w-4 h-4 text-[#2b1572]" />
-                      <span className="text-xs font-bold uppercase tracking-wider text-[#2b1572]">
+                  <div className="p-4 rounded-md bg-slate-50/60 border border-slate-200 space-y-3">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+                      <UserPlus className="w-4 h-4 text-slate-700" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
                         Lời mời & Thành viên nhóm
                       </span>
                     </div>
@@ -894,10 +894,10 @@ export default function ProfileModal({
                     {/* Toggle: Lời mời tham gia */}
                     <div className="flex items-center justify-between gap-4 py-1">
                       <div className="space-y-0.5">
-                        <div className="text-xs font-bold text-[#2b1572]">
+                        <div className="text-xs font-bold text-slate-900">
                           Lời mời tham gia Workspace & Bảng
                         </div>
-                        <div className="text-[11px] text-[#2b1572]/70">
+                        <div className="text-[11px] text-slate-500">
                           Nhận thông báo khi quản trị viên hoặc thành viên mời bạn vào Workspace/Board mới.
                         </div>
                       </div>
@@ -913,17 +913,17 @@ export default function ProfileModal({
                           }
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2b1572]"></div>
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
                       </label>
                     </div>
 
                     {/* Toggle: Bị xóa khỏi Workspace / Board */}
-                    <div className="flex items-center justify-between gap-4 py-1 border-t border-[#2b1572]/5 pt-2.5">
+                    <div className="flex items-center justify-between gap-4 py-1 border-t border-slate-200/60 pt-2.5">
                       <div className="space-y-0.5">
-                        <div className="text-xs font-bold text-[#2b1572]">
+                        <div className="text-xs font-bold text-slate-900">
                           Thông báo xóa thành viên
                         </div>
-                        <div className="text-[11px] text-[#2b1572]/70">
+                        <div className="text-[11px] text-slate-500">
                           Nhận thông báo khi bạn bị quản trị viên xóa khỏi Không gian làm việc hoặc Bảng.
                         </div>
                       </div>
@@ -939,16 +939,16 @@ export default function ProfileModal({
                           }
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2b1572]"></div>
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
                       </label>
                     </div>
                   </div>
 
                   {/* Group 2: Thẻ & Nhiệm vụ */}
-                  <div className="p-4 rounded-2xl glass-surface border border-white/80 shadow-xs space-y-3">
-                    <div className="flex items-center gap-2 pb-2 border-b border-[#2b1572]/10">
-                      <CheckCircle2 className="w-4 h-4 text-[#2b1572]" />
-                      <span className="text-xs font-bold uppercase tracking-wider text-[#2b1572]">
+                  <div className="p-4 rounded-md bg-slate-50/60 border border-slate-200 space-y-3">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+                      <CheckCircle2 className="w-4 h-4 text-slate-700" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
                         Thẻ & Phân công công việc
                       </span>
                     </div>
@@ -956,10 +956,10 @@ export default function ProfileModal({
                     {/* Toggle: Phân công thẻ */}
                     <div className="flex items-center justify-between gap-4 py-1">
                       <div className="space-y-0.5">
-                        <div className="text-xs font-bold text-[#2b1572]">
+                        <div className="text-xs font-bold text-slate-900">
                           Phân công thẻ & Checklist
                         </div>
-                        <div className="text-[11px] text-[#2b1572]/70">
+                        <div className="text-[11px] text-slate-500">
                           Nhận thông báo khi bạn được gán phụ trách thẻ hoặc mục việc cụ thể.
                         </div>
                       </div>
@@ -975,17 +975,17 @@ export default function ProfileModal({
                           }
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2b1572]"></div>
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
                       </label>
                     </div>
 
                     {/* Toggle: Nhắc tên @Mention */}
-                    <div className="flex items-center justify-between gap-4 py-1 border-t border-[#2b1572]/5 pt-2.5">
+                    <div className="flex items-center justify-between gap-4 py-1 border-t border-slate-200/60 pt-2.5">
                       <div className="space-y-0.5">
-                        <div className="text-xs font-bold text-[#2b1572]">
+                        <div className="text-xs font-bold text-slate-900">
                           Nhắc tên (@Mention)
                         </div>
-                        <div className="text-[11px] text-[#2b1572]/70">
+                        <div className="text-[11px] text-slate-500">
                           Nhận thông báo khi có ai đó nhắc tên bạn (@tên) trong bình luận hoặc thẻ.
                         </div>
                       </div>
@@ -1001,16 +1001,16 @@ export default function ProfileModal({
                           }
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2b1572]"></div>
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
                       </label>
                     </div>
                   </div>
 
                   {/* Group 3: Thời hạn & Thảo luận */}
-                  <div className="p-4 rounded-2xl glass-surface border border-white/80 shadow-xs space-y-3">
-                    <div className="flex items-center gap-2 pb-2 border-b border-[#2b1572]/10">
-                      <AlarmClock className="w-4 h-4 text-[#2b1572]" />
-                      <span className="text-xs font-bold uppercase tracking-wider text-[#2b1572]">
+                  <div className="p-4 rounded-md bg-slate-50/60 border border-slate-200 space-y-3">
+                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+                      <AlarmClock className="w-4 h-4 text-slate-700" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
                         Thời hạn & Thảo luận
                       </span>
                     </div>
@@ -1018,10 +1018,10 @@ export default function ProfileModal({
                     {/* Toggle: Hạn chót & Quá hạn */}
                     <div className="flex items-center justify-between gap-4 py-1">
                       <div className="space-y-0.5">
-                        <div className="text-xs font-bold text-[#2b1572]">
+                        <div className="text-xs font-bold text-slate-900">
                           Nhắc nhở Hạn chót & Quá hạn
                         </div>
-                        <div className="text-[11px] text-[#2b1572]/70">
+                        <div className="text-[11px] text-slate-500">
                           Tự động nhắc khi công việc sắp đến hạn hoặc bị quá hạn.
                         </div>
                       </div>
@@ -1037,17 +1037,17 @@ export default function ProfileModal({
                           }
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2b1572]"></div>
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
                       </label>
                     </div>
 
                     {/* Toggle: Bình luận */}
-                    <div className="flex items-center justify-between gap-4 py-1 border-t border-[#2b1572]/5 pt-2.5">
+                    <div className="flex items-center justify-between gap-4 py-1 border-t border-slate-200/60 pt-2.5">
                       <div className="space-y-0.5">
-                        <div className="text-xs font-bold text-[#2b1572]">
+                        <div className="text-xs font-bold text-slate-900">
                           Bình luận mới trong thẻ
                         </div>
-                        <div className="text-[11px] text-[#2b1572]/70">
+                        <div className="text-[11px] text-slate-500">
                           Nhận thông báo khi có bình luận mới trong các thẻ bạn đang tham gia.
                         </div>
                       </div>
@@ -1063,7 +1063,7 @@ export default function ProfileModal({
                           }
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2b1572]"></div>
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
                       </label>
                     </div>
                   </div>
@@ -1074,16 +1074,16 @@ export default function ProfileModal({
                       type="button"
                       disabled={isSavingNotifPrefs}
                       onClick={handleSaveNotifPreferences}
-                      className="px-5 py-2.5 btn-primary text-xs font-bold flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
+                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-md flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50 transition-colors"
                     >
                       {isSavingNotifPrefs ? (
                         <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           <span>Đang lưu cài đặt...</span>
                         </>
                       ) : (
                         <>
-                          <Check className="w-4 h-4" />
+                          <Check className="w-3.5 h-3.5" />
                           <span>Lưu cài đặt thông báo</span>
                         </>
                       )}

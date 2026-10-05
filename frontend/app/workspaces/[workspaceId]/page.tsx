@@ -476,25 +476,25 @@ export default function WorkspaceDetailPage({
   if ((accessDenied || (!workspace && !isLoading))) {
     return (
       <div className="max-w-2xl mx-auto py-16 px-4 text-center">
-        <div className="glass-surface p-8 sm:p-10 rounded-3xl border border-white/80 shadow-xl space-y-6">
-          <div className="w-16 h-16 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center mx-auto text-[#c40000]">
-            <ShieldAlert className="w-8 h-8" />
+        <div className="bg-white p-8 sm:p-10 rounded-lg border border-slate-200 shadow-sm space-y-5">
+          <div className="w-12 h-12 rounded-md bg-rose-50 border border-rose-200 flex items-center justify-center mx-auto text-rose-600">
+            <ShieldAlert className="w-6 h-6" />
           </div>
-          <div className="space-y-2">
-            <h2 className="text-xl sm:text-2xl font-black text-[#2b1572]">
+          <div className="space-y-1.5">
+            <h2 className="text-xl font-bold text-slate-900">
               Không thể truy cập Không gian làm việc
             </h2>
-            <p className="text-xs sm:text-sm text-[#2b1572]/70 max-w-md mx-auto leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
               {accessDenied || 'Bạn hiện không phải là thành viên hoặc đã bị xóa khỏi Không gian làm việc này.'}
             </p>
           </div>
           <div className="pt-2 flex justify-center">
             <Link
               href="/dashboard"
-              className="px-6 py-3 btn-primary text-xs font-bold rounded-2xl flex items-center gap-2 shadow-md cursor-pointer hover:scale-105 transition-all"
+              className="px-4 py-2 bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-semibold rounded-md flex items-center gap-2 transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Quay về Bảng điều khiển (Dashboard)</span>
+              <span>Quay về Bảng điều khiển</span>
             </Link>
           </div>
         </div>
@@ -504,61 +504,57 @@ export default function WorkspaceDetailPage({
 
   return (
     <>
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-5">
         {/* Navigation Breadcrumb */}
-        <div className="flex items-center gap-2 text-xs font-semibold text-[#2b1572]/60">
-          <Link href="/dashboard" className="hover:text-[#2b1572] flex items-center gap-1">
+        <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
+          <Link href="/dashboard" className="hover:text-slate-800 flex items-center gap-1 transition-colors">
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Dashboard</span>
           </Link>
           <span>/</span>
-          <span className="text-[#2b1572] font-bold">{workspace?.name || 'Workspace'}</span>
+          <span className="text-slate-900 font-semibold">{workspace?.name || 'Workspace'}</span>
         </div>
 
         {/* Workspace Hero Header */}
         {isLoading ? (
-          <div className="glass-surface h-40 animate-pulse rounded-2xl" />
+          <div className="bg-white border border-slate-200 h-36 animate-pulse rounded-lg" />
         ) : workspace ? (
-          <div className="glass-surface p-6 sm:p-8 relative overflow-hidden rounded-2xl border border-white/60">
-            {/* Background ambient orbs */}
-            <div className="absolute -right-8 -bottom-8 w-64 h-64 rounded-full bg-[#a6d1fd]/25 blur-3xl pointer-events-none" />
-            <div className="absolute -right-4 -top-8 w-64 h-64 rounded-full bg-[#a000c8]/15 blur-3xl pointer-events-none" />
-
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
+          <div className="bg-white p-6 sm:p-7 rounded-lg border border-slate-200">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
               <div className="flex items-start gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-[#2b1572] flex items-center justify-center text-[#a6d1fd] font-bold text-2xl shadow-lg shadow-[#2b1572]/20 shrink-0">
+                <div className="w-12 h-12 rounded-md bg-slate-900 flex items-center justify-center text-white font-bold text-xl shrink-0">
                   {workspace.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <div className="flex items-center gap-3">
-                    <h1 className="text-2xl sm:text-3xl font-extrabold text-[#2b1572] tracking-tight">
+                  <div className="flex items-center gap-2.5">
+                    <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
                       {workspace.name}
                     </h1>
                     {workspace.isOwner ? (
-                      <span className="badge-ai text-xs px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1">
-                        <Crown className="w-3.5 h-3.5" />
+                      <span className="text-[10px] px-2 py-0.5 rounded-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">
+                        <Crown className="w-3 h-3" />
                         Owner
                       </span>
                     ) : workspace.isAdmin ? (
-                      <span className="badge-info text-xs px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1">
-                        <Shield className="w-3.5 h-3.5" />
+                      <span className="text-[10px] px-2 py-0.5 rounded-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
+                        <Shield className="w-3 h-3" />
                         Admin
                       </span>
                     ) : (
-                      <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/70 text-[#2b1572]/70 font-semibold border border-white/80">
+                      <span className="text-[10px] px-2 py-0.5 rounded-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
                         Thành viên
                       </span>
                     )}
                   </div>
 
                   {workspace.description && (
-                    <p className="text-xs sm:text-sm text-[#2b1572]/75 mt-1.5 max-w-2xl leading-relaxed">
+                    <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed">
                       {workspace.description}
                     </p>
                   )}
 
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-[#2b1572]/65 mt-3 font-medium">
-                    <span>Chủ sở hữu: <strong>{workspace.owner?.name}</strong></span>
+                  <div className="flex flex-wrap items-center gap-2.5 text-xs text-slate-500 mt-2.5 font-normal">
+                    <span>Chủ sở hữu: <strong className="text-slate-700">{workspace.owner?.name}</strong></span>
                     <span>•</span>
                     <span>{workspace.members?.length || 1} thành viên</span>
                     <span>•</span>
@@ -573,16 +569,16 @@ export default function WorkspaceDetailPage({
                   <>
                     <button
                       onClick={() => setIsInviteOpen(true)}
-                      className="px-3.5 py-2 btn-secondary text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm"
+                      className="px-3 py-1.5 rounded-md bg-white hover:bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700 flex items-center gap-1.5 cursor-pointer transition-colors"
                     >
-                      <UserPlus className="w-4 h-4 text-[#2b1572]" />
+                      <UserPlus className="w-3.5 h-3.5 text-slate-600" />
                       <span>Mời thành viên</span>
                     </button>
                     <button
                       onClick={() => setIsEditWsOpen(true)}
-                      className="px-3.5 py-2 btn-secondary text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm"
+                      className="px-3 py-1.5 rounded-md bg-white hover:bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700 flex items-center gap-1.5 cursor-pointer transition-colors"
                     >
-                      <Edit3 className="w-3.5 h-3.5 text-[#2b1572]" />
+                      <Edit3 className="w-3.5 h-3.5 text-slate-600" />
                       <span>Chỉnh sửa</span>
                     </button>
                   </>
@@ -590,7 +586,7 @@ export default function WorkspaceDetailPage({
 
                 <button
                   onClick={() => setIsCreateBoardOpen(true)}
-                  className="px-4 py-2 btn-primary text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  className="px-3.5 py-1.5 rounded-md bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Tạo Board mới</span>
@@ -599,34 +595,34 @@ export default function WorkspaceDetailPage({
             </div>
           </div>
         ) : (
-          <div className="glass-surface p-10 text-center rounded-2xl">
-            <h3 className="text-base font-bold text-[#c40000]">Không tìm thấy Không gian làm việc</h3>
+          <div className="bg-white p-8 text-center rounded-lg border border-slate-200">
+            <h3 className="text-sm font-semibold text-rose-600">Không tìm thấy Không gian làm việc</h3>
           </div>
         )}
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-2 border-b border-[#2b1572]/15 pb-2">
+        <div className="flex items-center gap-1.5 border-b border-slate-200 pb-2">
           <button
             onClick={() => setActiveTab('boards')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer border ${
               activeTab === 'boards'
-                ? 'bg-[#2b1572] text-[#a6d1fd] shadow-md shadow-[#2b1572]/20'
-                : 'text-[#2b1572]/70 hover:bg-white/40 hover:text-[#2b1572]'
+                ? 'bg-[#0f172a] text-white border-[#0f172a]'
+                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
             }`}
           >
-            <Kanban className="w-4 h-4" />
+            <Kanban className="w-3.5 h-3.5" />
             <span>Bảng công việc ({workspace?.boards?.length || 0})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('members')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer border ${
               activeTab === 'members'
-                ? 'bg-[#2b1572] text-[#a6d1fd] shadow-md shadow-[#2b1572]/20'
-                : 'text-[#2b1572]/70 hover:bg-white/40 hover:text-[#2b1572]'
+                ? 'bg-[#0f172a] text-white border-[#0f172a]'
+                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
             }`}
           >
-            <Users className="w-4 h-4" />
+            <Users className="w-3.5 h-3.5" />
             <span>
               Thành viên & Khách ({(workspace?.members?.length || 0) + (workspace?.guestCount || 0)})
             </span>
@@ -634,25 +630,25 @@ export default function WorkspaceDetailPage({
 
           <button
             onClick={() => setActiveTab('settings')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer border ${
               activeTab === 'settings'
-                ? 'bg-[#2b1572] text-[#a6d1fd] shadow-md shadow-[#2b1572]/20'
-                : 'text-[#2b1572]/70 hover:bg-white/40 hover:text-[#2b1572]'
+                ? 'bg-[#0f172a] text-white border-[#0f172a]'
+                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
             }`}
           >
-            <Settings className="w-4 h-4" />
+            <Settings className="w-3.5 h-3.5" />
             <span>Cài đặt Không gian</span>
           </button>
 
           <button
             onClick={() => setActiveTab('activities')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer border ${
               activeTab === 'activities'
-                ? 'bg-[#2b1572] text-[#a6d1fd] shadow-md shadow-[#2b1572]/20'
-                : 'text-[#2b1572]/70 hover:bg-white/40 hover:text-[#2b1572]'
+                ? 'bg-[#0f172a] text-white border-[#0f172a]'
+                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
             }`}
           >
-            <History className="w-4 h-4" />
+            <History className="w-3.5 h-3.5" />
             <span>Lịch sử hoạt động ({activities.length})</span>
           </button>
         </div>
@@ -661,48 +657,48 @@ export default function WorkspaceDetailPage({
         {/* TAB 1: BOARDS */}
         {/* ==================================================================== */}
         {activeTab === 'boards' && (
-          <div className="space-y-4">
+          <div className="space-y-3.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#2b1572]/70">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
                 Các Bảng Kanban đang hoạt động ({workspace?.boards?.length || 0})
               </span>
               <button
                 onClick={() => setIsArchivedBoardsOpen(true)}
-                className="px-3 py-1.5 btn-secondary text-xs font-semibold flex items-center gap-1.5 cursor-pointer text-amber-800"
+                className="px-2.5 py-1.5 rounded-md bg-white hover:bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700 flex items-center gap-1.5 cursor-pointer transition-colors"
               >
                 <Archive className="w-3.5 h-3.5 text-amber-600" />
                 <span>Bảng đã lưu trữ</span>
               </button>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
               {workspace?.boards?.map((board: any) => (
                 <Link
                   key={board.id}
                   href={`/boards/${board.id}`}
-                  className="kanban-card p-5 flex flex-col justify-between group min-h-[140px]"
+                  className="p-4 rounded-md border border-slate-200 hover:border-slate-400 bg-white transition-colors flex flex-col justify-between group min-h-[130px]"
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="badge-info text-[10px] px-2 py-0.5 rounded-full font-semibold">
+                      <span className="text-[10px] px-1.5 py-0.2 rounded-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
                         Kanban Board
                       </span>
                       {board.is_favorite && (
-                        <Star className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />
+                        <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
                       )}
                     </div>
-                    <h3 className="font-bold text-[#2b1572] text-base group-hover:text-[#4f91cf] transition-colors line-clamp-1">
+                    <h3 className="font-semibold text-slate-900 text-sm group-hover:text-slate-700 transition-colors line-clamp-1">
                       {board.name}
                     </h3>
                     {board.description && (
-                      <p className="text-xs text-[#2b1572]/70 mt-1 line-clamp-2">
+                      <p className="text-xs text-slate-500 mt-1 line-clamp-2">
                         {board.description}
                       </p>
                     )}
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-[#2b1572]/10 flex items-center justify-between text-xs text-[#2b1572]/60">
+                  <div className="mt-3.5 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
                     <span>{board._count?.lists || 0} danh sách</span>
-                    <span className="font-semibold text-[#2b1572] group-hover:translate-x-1 transition-transform">
+                    <span className="font-medium text-slate-700 group-hover:translate-x-0.5 transition-transform">
                       Mở Bảng →
                     </span>
                   </div>
@@ -711,12 +707,12 @@ export default function WorkspaceDetailPage({
 
               <button
                 onClick={() => setIsCreateBoardOpen(true)}
-                className="p-6 rounded-2xl bg-white/30 hover:bg-white/60 border-2 border-dashed border-[#a6d1fd] transition-all flex flex-col items-center justify-center gap-2 text-[#2b1572] cursor-pointer min-h-[140px]"
+                className="p-5 rounded-md bg-white hover:bg-slate-50 border border-dashed border-slate-300 transition-colors flex flex-col items-center justify-center gap-2 text-slate-600 cursor-pointer min-h-[130px]"
               >
-                <div className="w-10 h-10 rounded-xl bg-[#a6d1fd]/30 flex items-center justify-center text-[#2b1572]">
-                  <Plus className="w-5 h-5" />
+                <div className="w-8 h-8 rounded-md bg-slate-100 flex items-center justify-center text-slate-600">
+                  <Plus className="w-4 h-4" />
                 </div>
-                <span className="text-xs font-bold">Tạo Board mới</span>
+                <span className="text-xs font-medium">Tạo Board mới</span>
               </button>
             </div>
           </div>
@@ -728,13 +724,13 @@ export default function WorkspaceDetailPage({
         {activeTab === 'members' && (
           <div className="space-y-6">
             {/* Sub-tab navigation */}
-            <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-2xl glass-surface border border-white/70">
+            <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-md bg-slate-100 border border-slate-200">
               <button
                 onClick={() => setMemberSubTab('members')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer border ${
                   memberSubTab === 'members'
-                    ? 'bg-[#2b1572] text-[#a6d1fd] shadow-sm'
-                    : 'text-[#2b1572]/70 hover:bg-white/50 hover:text-[#2b1572]'
+                    ? 'bg-white text-slate-900 border-slate-300 font-semibold'
+                    : 'text-slate-600 hover:text-slate-900 border-transparent hover:bg-slate-200/50'
                 }`}
               >
                 <Users className="w-3.5 h-3.5" />
@@ -743,22 +739,22 @@ export default function WorkspaceDetailPage({
 
               <button
                 onClick={() => setMemberSubTab('single_guests')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer border ${
                   memberSubTab === 'single_guests'
-                    ? 'bg-amber-600 text-white shadow-sm'
-                    : 'text-amber-800/80 hover:bg-amber-500/10 hover:text-amber-900'
+                    ? 'bg-white text-amber-900 border-amber-300 font-semibold'
+                    : 'text-slate-600 hover:text-slate-900 border-transparent hover:bg-slate-200/50'
                 }`}
               >
                 <Kanban className="w-3.5 h-3.5" />
-                <span>Khách một bảng ({workspace?.singleBoardGuestsCount || 0})</span>
+                <span>Khách 1 bảng ({workspace?.singleBoardGuestsCount || 0})</span>
               </button>
 
               <button
                 onClick={() => setMemberSubTab('multi_guests')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer border ${
                   memberSubTab === 'multi_guests'
-                    ? 'bg-purple-700 text-white shadow-sm'
-                    : 'text-purple-900/80 hover:bg-purple-500/10 hover:text-purple-950'
+                    ? 'bg-white text-purple-900 border-purple-300 font-semibold'
+                    : 'text-slate-600 hover:text-slate-900 border-transparent hover:bg-slate-200/50'
                 }`}
               >
                 <Layers className="w-3.5 h-3.5" />
@@ -768,14 +764,14 @@ export default function WorkspaceDetailPage({
               {workspace?.isAdmin && (
                 <button
                   onClick={() => setMemberSubTab('invites')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer border ${
                     memberSubTab === 'invites'
-                      ? 'bg-[#2b1572] text-[#a6d1fd] shadow-sm'
-                      : 'text-[#2b1572]/70 hover:bg-white/50 hover:text-[#2b1572]'
+                      ? 'bg-white text-slate-900 border-slate-300 font-semibold'
+                      : 'text-slate-600 hover:text-slate-900 border-transparent hover:bg-slate-200/50'
                   }`}
                 >
                   <Mail className="w-3.5 h-3.5" />
-                  <span>Lời mời đang chờ ({pendingInvites.length})</span>
+                  <span>Lời mời chờ ({pendingInvites.length})</span>
                 </button>
               )}
             </div>
@@ -784,11 +780,11 @@ export default function WorkspaceDetailPage({
             {/* SUB-TAB 1: WORKSPACE MEMBERS */}
             {/* ------------------------------------------------------------------ */}
             {memberSubTab === 'members' && (
-              <div className="glass-surface p-6 sm:p-8 rounded-2xl border border-white/60">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#2b1572]/10">
+              <div className="bg-white p-5 sm:p-6 rounded-lg border border-slate-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                   <div>
-                    <h3 className="text-base font-bold text-[#2b1572]">Danh sách thành viên chính thức</h3>
-                    <p className="text-xs text-[#2b1572]/65 mt-0.5">
+                    <h3 className="text-sm font-bold text-slate-900">Danh sách thành viên chính thức</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
                       Thành viên có quyền xem và truy cập tất cả các Bảng thuộc Không gian làm việc này
                     </p>
                   </div>
@@ -798,7 +794,7 @@ export default function WorkspaceDetailPage({
                       {workspace?.isOwner && (
                         <button
                           onClick={() => setIsTransferOpen(true)}
-                          className="px-3 py-1.5 btn-secondary text-xs font-semibold flex items-center gap-1.5 text-amber-800"
+                          className="px-3 py-1.5 rounded-md bg-white hover:bg-slate-50 border border-slate-200 text-xs font-medium text-amber-800 flex items-center gap-1.5 transition-colors cursor-pointer"
                         >
                           <Crown className="w-3.5 h-3.5 text-amber-600" />
                           <span>Chuyển quyền Owner</span>
@@ -806,7 +802,7 @@ export default function WorkspaceDetailPage({
                       )}
                       <button
                         onClick={() => setIsInviteOpen(true)}
-                        className="px-3.5 py-1.5 btn-primary text-xs font-semibold flex items-center gap-1.5"
+                        className="px-3 py-1.5 rounded-md bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
                       >
                         <UserPlus className="w-3.5 h-3.5" />
                         <span>Mời thành viên</span>
@@ -816,7 +812,7 @@ export default function WorkspaceDetailPage({
                 </div>
 
                 {/* Members Table */}
-                <div className="divide-y divide-[#2b1572]/10 mt-2">
+                <div className="divide-y divide-slate-100 mt-1">
                   {workspace?.members?.map((m: any) => {
                     const isCurrent = user?.id === m.user_id;
                     const isItemOwner = m.role === 'OWNER' || m.user_id === workspace.owner_id;
@@ -824,34 +820,34 @@ export default function WorkspaceDetailPage({
                       workspace.isOwner || (workspace.isAdmin && !isItemOwner && m.role !== 'ADMIN');
 
                     return (
-                      <div key={m.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="flex items-center gap-3.5">
-                          <div className="w-10 h-10 rounded-full bg-[#2b1572]/10 border border-white/80 flex items-center justify-center text-[#2b1572] font-bold text-sm shadow-sm shrink-0">
+                      <div key={m.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 font-bold text-xs shrink-0">
                             {m.user?.name?.charAt(0).toUpperCase() || 'U'}
                           </div>
                           <div>
-                            <div className="text-sm font-bold text-[#2b1572] flex items-center gap-2">
+                            <div className="text-xs font-semibold text-slate-900 flex items-center gap-2">
                               <span>{m.user?.name}</span>
                               {isCurrent && (
-                                <span className="text-[10px] text-[#2b1572]/60 font-semibold">(Bạn)</span>
+                                <span className="text-[10px] text-slate-400 font-normal">(Bạn)</span>
                               )}
                               {isItemOwner ? (
-                                <span className="badge-ai text-[10px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                                <span className="text-[10px] px-1.5 py-0.2 rounded-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">
                                   <Crown className="w-3 h-3" />
                                   Chủ sở hữu
                                 </span>
                               ) : m.role === 'ADMIN' ? (
-                                <span className="badge-info text-[10px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                                <span className="text-[10px] px-1.5 py-0.2 rounded-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
                                   <Shield className="w-3 h-3" />
                                   Quản trị viên
                                 </span>
                               ) : (
-                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/60 text-[#2b1572]/70 font-semibold border border-white/80">
+                                <span className="text-[10px] px-1.5 py-0.2 rounded-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
                                   Thành viên
                                 </span>
                               )}
                             </div>
-                            <div className="text-xs text-[#2b1572]/60 flex items-center gap-2 mt-0.5">
+                            <div className="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
                               <span>{m.user?.email}</span>
                               {m.joined_at && (
                                 <>
@@ -864,13 +860,13 @@ export default function WorkspaceDetailPage({
                         </div>
 
                         {/* Role selection & actions */}
-                        <div className="flex items-center gap-2.5 self-end sm:self-center">
+                        <div className="flex items-center gap-2 self-end sm:self-center">
                           {canManageThisUser && !isCurrent && !isItemOwner ? (
                             <>
                               <select
                                 value={m.role}
                                 onChange={(e) => handleUpdateRole(m.user_id, e.target.value as any)}
-                                className="px-2.5 py-1 text-xs glass-input font-semibold text-[#2b1572] cursor-pointer"
+                                className="px-2 py-1 text-xs rounded-md border border-slate-200 bg-white font-medium text-slate-700 cursor-pointer focus:outline-none focus:border-slate-400"
                               >
                                 <option value="MEMBER">Thành viên</option>
                                 <option value="ADMIN">Quản trị viên</option>
@@ -878,7 +874,7 @@ export default function WorkspaceDetailPage({
 
                               <button
                                 onClick={() => handleRemoveMember(m.user_id, m.user?.name)}
-                                className="p-1.5 text-[#2b1572]/40 hover:text-[#c40000] hover:bg-[#c40000]/10 rounded-lg transition-colors cursor-pointer"
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
                                 title="Xóa khỏi Workspace"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -898,17 +894,17 @@ export default function WorkspaceDetailPage({
             {/* ------------------------------------------------------------------ */}
             {memberSubTab === 'single_guests' && (
               <div className="space-y-4">
-                <div className="glass-surface p-6 sm:p-8 rounded-2xl border border-white/60 space-y-5">
-                  <div className="pb-4 border-b border-[#2b1572]/10">
+                <div className="bg-white p-5 sm:p-6 rounded-lg border border-slate-200 space-y-4">
+                  <div className="pb-3.5 border-b border-slate-100">
                     <div className="flex items-center gap-2">
-                      <span className="p-1.5 rounded-lg bg-amber-500/20 text-amber-800">
-                        <Kanban className="w-4 h-4" />
+                      <span className="p-1 rounded-xs bg-amber-50 text-amber-700 border border-amber-200">
+                        <Kanban className="w-3.5 h-3.5" />
                       </span>
-                      <h3 className="text-base font-bold text-[#2b1572]">
-                        Danh sách Khách một bảng ({workspace?.singleBoardGuestsCount || 0})
+                      <h3 className="text-sm font-bold text-slate-900">
+                        Khách một bảng ({workspace?.singleBoardGuestsCount || 0})
                       </h3>
                     </div>
-                    <p className="text-xs text-[#2b1572]/65 mt-1">
+                    <p className="text-xs text-slate-500 mt-1">
                       Người dùng bên ngoài chỉ tham gia vào duy nhất đúng 1 Bảng trong Không gian làm việc này
                     </p>
                   </div>
@@ -919,55 +915,55 @@ export default function WorkspaceDetailPage({
 
                     if (singleGuests.length === 0) {
                       return (
-                        <div className="py-10 text-center text-xs text-[#2b1572]/60 space-y-1">
-                          <p className="font-bold text-sm text-[#2b1572]">Không có khách một bảng nào</p>
+                        <div className="py-8 text-center text-xs text-slate-500 space-y-1">
+                          <p className="font-semibold text-sm text-slate-800">Không có khách một bảng nào</p>
                           <p>Hiện tại không có người dùng bên ngoài nào chỉ tham gia 1 bảng trong Không gian này.</p>
                         </div>
                       );
                     }
 
                     return (
-                      <div className="divide-y divide-[#2b1572]/10 mt-2">
+                      <div className="divide-y divide-slate-100">
                         {singleGuests.map((g: any) => {
                           const isProcessing = actionGuestId === g.user_id;
 
                           return (
                             <div
                               key={g.id}
-                              className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4"
+                              className="py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3"
                             >
-                              <div className="flex items-start gap-3.5 min-w-0">
-                                <div className="w-10 h-10 rounded-full bg-amber-500/15 border border-white/80 flex items-center justify-center text-amber-900 font-bold text-sm shadow-sm shrink-0">
+                              <div className="flex items-start gap-3 min-w-0">
+                                <div className="w-8 h-8 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-800 font-bold text-xs shrink-0">
                                   {g.user?.name?.charAt(0).toUpperCase() || 'K'}
                                 </div>
                                 <div className="space-y-1 min-w-0">
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <span className="text-sm font-bold text-[#2b1572] truncate">
+                                    <span className="text-xs font-semibold text-slate-900 truncate">
                                       {g.user?.name}
                                     </span>
-                                    <span className="badge-warning text-[10px] px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1">
+                                    <span className="text-[10px] px-1.5 py-0.2 rounded-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
                                       <Kanban className="w-3 h-3" />
                                       Khách 1 bảng
                                     </span>
                                   </div>
 
-                                  <div className="text-xs text-[#2b1572]/60">
+                                  <div className="text-[11px] text-slate-500">
                                     {g.user?.email}
                                   </div>
 
                                   {/* List of boards guest is in */}
                                   <div className="pt-1 flex flex-wrap items-center gap-1.5">
-                                    <span className="text-[11px] text-[#2b1572]/50 font-medium">Bảng tham gia:</span>
+                                    <span className="text-[11px] text-slate-400 font-medium">Bảng tham gia:</span>
                                     {g.boards?.map((b: any) => (
                                       <Link
                                         key={b.id}
                                         href={`/boards/${b.id}`}
-                                        className="px-2.5 py-1 rounded-lg bg-white/70 hover:bg-white text-[11px] font-semibold text-[#2b1572] border border-[#2b1572]/15 flex items-center gap-1.5 hover:scale-105 transition-all shadow-2xs"
+                                        className="px-2 py-0.5 rounded-xs bg-slate-50 hover:bg-slate-100 text-[11px] font-medium text-slate-700 border border-slate-200 flex items-center gap-1 transition-colors"
                                         title="Mở bảng"
                                       >
-                                        <Kanban className="w-3.5 h-3.5 text-[#2b1572]/60" />
+                                        <Kanban className="w-3 h-3 text-slate-500" />
                                         <span>{b.name}</span>
-                                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#2b1572]/10 text-[#2b1572]/70 font-bold">
+                                        <span className="text-[9px] px-1 py-0.2 rounded-xs bg-slate-200 text-slate-700 font-semibold">
                                           {b.role === 'ADMIN' ? 'Admin' : b.role === 'VIEWER' ? 'Chỉ xem' : 'Thành viên'}
                                         </span>
                                       </Link>
@@ -985,7 +981,7 @@ export default function WorkspaceDetailPage({
                                       value={g.boards[0]?.role === 'MEMBER' ? 'EDITOR' : g.boards[0]?.role || 'EDITOR'}
                                       disabled={isProcessing}
                                       onChange={(e) => handleUpdateBoardGuestRole(g.boards[0]?.id, g.user_id, e.target.value)}
-                                      className="px-2.5 py-1 text-xs glass-input font-semibold text-[#2b1572] cursor-pointer"
+                                      className="px-2 py-1 text-xs rounded-md border border-slate-200 bg-white font-medium text-slate-700 cursor-pointer focus:outline-none focus:border-slate-400"
                                       title="Thay đổi quyền của khách trong Bảng"
                                     >
                                       <option value="EDITOR">Thành viên (Chỉnh sửa)</option>
@@ -997,13 +993,13 @@ export default function WorkspaceDetailPage({
                                   <button
                                     onClick={() => handleConvertGuest(g.user_id, 'MEMBER')}
                                     disabled={isProcessing}
-                                    className="px-3 py-1.5 btn-secondary text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                                    className="px-2.5 py-1 rounded-md bg-white hover:bg-slate-50 border border-slate-200 text-xs font-medium text-emerald-700 flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors"
                                     title="Nâng cấp khách thành Thành viên chính thức của Workspace"
                                   >
                                     {isProcessing ? (
                                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                     ) : (
-                                      <UserCheck className="w-3.5 h-3.5 text-[#358200]" />
+                                      <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
                                     )}
                                     <span>Thêm vào Workspace</span>
                                   </button>
@@ -1011,7 +1007,7 @@ export default function WorkspaceDetailPage({
                                   <button
                                     onClick={() => handleRemoveGuest(g.user_id, g.user?.name)}
                                     disabled={isProcessing}
-                                    className="p-1.5 text-[#2b1572]/40 hover:text-[#c40000] hover:bg-[#c40000]/10 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer disabled:opacity-50"
                                     title="Xóa khách khỏi Bảng trong Không gian làm việc"
                                   >
                                     <Trash2 className="w-4 h-4" />
@@ -1033,17 +1029,17 @@ export default function WorkspaceDetailPage({
             {/* ------------------------------------------------------------------ */}
             {memberSubTab === 'multi_guests' && (
               <div className="space-y-4">
-                <div className="glass-surface p-6 sm:p-8 rounded-2xl border border-white/60 space-y-5">
-                  <div className="pb-4 border-b border-[#2b1572]/10">
+                <div className="bg-white p-5 sm:p-6 rounded-lg border border-slate-200 space-y-4">
+                  <div className="pb-3.5 border-b border-slate-100">
                     <div className="flex items-center gap-2">
-                      <span className="p-1.5 rounded-lg bg-purple-500/20 text-purple-800">
-                        <Layers className="w-4 h-4" />
+                      <span className="p-1 rounded-xs bg-purple-50 text-purple-700 border border-purple-200">
+                        <Layers className="w-3.5 h-3.5" />
                       </span>
-                      <h3 className="text-base font-bold text-[#2b1572]">
-                        Danh sách Khách đa bảng ({workspace?.multiBoardGuestsCount || 0})
+                      <h3 className="text-sm font-bold text-slate-900">
+                        Khách đa bảng ({workspace?.multiBoardGuestsCount || 0})
                       </h3>
                     </div>
-                    <p className="text-xs text-[#2b1572]/65 mt-1">
+                    <p className="text-xs text-slate-500 mt-1">
                       Người dùng bên ngoài được mời tham gia vào từ 2 Bảng trở lên trong Không gian làm việc này
                     </p>
                   </div>
@@ -1054,56 +1050,56 @@ export default function WorkspaceDetailPage({
 
                     if (multiGuests.length === 0) {
                       return (
-                        <div className="py-10 text-center text-xs text-[#2b1572]/60 space-y-1">
-                          <p className="font-bold text-sm text-[#2b1572]">Không có khách đa bảng nào</p>
+                        <div className="py-8 text-center text-xs text-slate-500 space-y-1">
+                          <p className="font-semibold text-sm text-slate-800">Không có khách đa bảng nào</p>
                           <p>Hiện tại không có người dùng bên ngoài nào tham gia từ 2 bảng trở lên trong Không gian này.</p>
                         </div>
                       );
                     }
 
                     return (
-                      <div className="divide-y divide-[#2b1572]/10 mt-2">
+                      <div className="divide-y divide-slate-100">
                         {multiGuests.map((g: any) => {
                           const isProcessing = actionGuestId === g.user_id;
 
                           return (
                             <div
                               key={g.id}
-                              className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4"
+                              className="py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3"
                             >
-                              <div className="flex items-start gap-3.5 min-w-0">
-                                <div className="w-10 h-10 rounded-full bg-purple-500/15 border border-white/80 flex items-center justify-center text-purple-900 font-bold text-sm shadow-sm shrink-0">
+                              <div className="flex items-start gap-3 min-w-0">
+                                <div className="w-8 h-8 rounded-full bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-800 font-bold text-xs shrink-0">
                                   {g.user?.name?.charAt(0).toUpperCase() || 'K'}
                                 </div>
                                 <div className="space-y-1 min-w-0">
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <span className="text-sm font-bold text-[#2b1572] truncate">
+                                    <span className="text-xs font-semibold text-slate-900 truncate">
                                       {g.user?.name}
                                     </span>
-                                    <span className="badge-ai text-[10px] px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1">
+                                    <span className="text-[10px] px-1.5 py-0.2 rounded-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">
                                       <Layers className="w-3 h-3" />
                                       Khách đa bảng ({g.boardCount} bảng)
                                     </span>
                                   </div>
 
-                                  <div className="text-xs text-[#2b1572]/60">
+                                  <div className="text-[11px] text-slate-500">
                                     {g.user?.email}
                                   </div>
 
                                   {/* List of boards guest is in with role changer */}
                                   <div className="pt-1 flex flex-wrap items-center gap-2">
-                                    <span className="text-[11px] text-[#2b1572]/50 font-medium">Bảng tham gia:</span>
+                                    <span className="text-[11px] text-slate-400 font-medium">Bảng tham gia:</span>
                                     {g.boards?.map((b: any) => (
                                       <div
                                         key={b.id}
-                                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/70 hover:bg-white border border-[#2b1572]/15 shadow-2xs transition-all"
+                                        className="flex items-center gap-1.5 px-2 py-0.5 rounded-xs bg-slate-50 border border-slate-200 transition-colors"
                                       >
                                         <Link
                                           href={`/boards/${b.id}`}
-                                          className="text-[11px] font-semibold text-[#2b1572] hover:text-[#0051a8] flex items-center gap-1"
+                                          className="text-[11px] font-medium text-slate-700 hover:text-slate-900 flex items-center gap-1"
                                           title="Mở bảng"
                                         >
-                                          <Kanban className="w-3 h-3 text-[#2b1572]/60" />
+                                          <Kanban className="w-3 h-3 text-slate-400" />
                                           <span>{b.name}</span>
                                         </Link>
 
@@ -1112,7 +1108,7 @@ export default function WorkspaceDetailPage({
                                             value={b.role === 'MEMBER' ? 'EDITOR' : b.role || 'EDITOR'}
                                             disabled={isProcessing}
                                             onChange={(e) => handleUpdateBoardGuestRole(b.id, g.user_id, e.target.value)}
-                                            className="text-[10px] px-1.5 py-0.5 rounded bg-[#2b1572]/10 text-[#2b1572] font-bold border-0 cursor-pointer hover:bg-[#2b1572]/20"
+                                            className="text-[10px] font-medium bg-white border border-slate-200 rounded px-1 py-0.5 cursor-pointer text-slate-700"
                                             title="Thay đổi quyền trong Bảng này"
                                           >
                                             <option value="EDITOR">Thành viên</option>
@@ -1120,7 +1116,7 @@ export default function WorkspaceDetailPage({
                                             <option value="VIEWER">Chỉ xem</option>
                                           </select>
                                         ) : (
-                                          <span className="text-[9px] px-1 py-0.2 rounded bg-[#2b1572]/10 text-[#2b1572]/70 font-bold">
+                                          <span className="text-[9px] px-1 py-0.2 rounded-xs bg-slate-200 text-slate-700 font-semibold">
                                             {b.role === 'ADMIN' ? 'Admin' : b.role === 'VIEWER' ? 'Chỉ xem' : 'Thành viên'}
                                           </span>
                                         )}
@@ -1136,13 +1132,13 @@ export default function WorkspaceDetailPage({
                                   <button
                                     onClick={() => handleConvertGuest(g.user_id, 'MEMBER')}
                                     disabled={isProcessing}
-                                    className="px-3 py-1.5 btn-secondary text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                                    className="px-2.5 py-1 rounded-md bg-white hover:bg-slate-50 border border-slate-200 text-xs font-medium text-emerald-700 flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors"
                                     title="Nâng cấp khách thành Thành viên chính thức của Workspace"
                                   >
                                     {isProcessing ? (
                                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                     ) : (
-                                      <UserCheck className="w-3.5 h-3.5 text-[#358200]" />
+                                      <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
                                     )}
                                     <span>Thêm vào Workspace</span>
                                   </button>
@@ -1150,7 +1146,7 @@ export default function WorkspaceDetailPage({
                                   <button
                                     onClick={() => handleRemoveGuest(g.user_id, g.user?.name)}
                                     disabled={isProcessing}
-                                    className="p-1.5 text-[#2b1572]/40 hover:text-[#c40000] hover:bg-[#c40000]/10 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer disabled:opacity-50"
                                     title="Xóa khách khỏi toàn bộ các Bảng trong Không gian làm việc"
                                   >
                                     <Trash2 className="w-4 h-4" />
@@ -1171,36 +1167,36 @@ export default function WorkspaceDetailPage({
             {/* SUB-TAB 4: PENDING INVITATIONS */}
             {/* ------------------------------------------------------------------ */}
             {memberSubTab === 'invites' && workspace?.isAdmin && (
-              <div className="glass-surface p-6 sm:p-8 rounded-2xl border border-white/60">
-                <div className="pb-4 border-b border-[#2b1572]/10 flex items-center justify-between">
+              <div className="bg-white p-5 sm:p-6 rounded-lg border border-slate-200">
+                <div className="pb-3.5 border-b border-slate-100 flex items-center justify-between">
                   <div>
-                    <h3 className="text-base font-bold text-[#2b1572]">Lời mời đang chờ ({pendingInvites.length})</h3>
-                    <p className="text-xs text-[#2b1572]/65 mt-0.5">
+                    <h3 className="text-sm font-bold text-slate-900">Lời mời đang chờ ({pendingInvites.length})</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
                       Các liên kết mời đã gửi nhưng người nhận chưa kích hoạt
                     </p>
                   </div>
                 </div>
 
                 {pendingInvites.length === 0 ? (
-                  <div className="py-8 text-center text-xs text-[#2b1572]/60">
+                  <div className="py-8 text-center text-xs text-slate-500">
                     Không có lời mời nào đang chờ xử lý.
                   </div>
                 ) : (
-                  <div className="divide-y divide-[#2b1572]/10 mt-2">
+                  <div className="divide-y divide-slate-100 mt-1">
                     {pendingInvites.map((inv) => (
                       <div key={inv.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+                          <div className="w-8 h-8 rounded-md bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center shrink-0">
                             <Mail className="w-4 h-4" />
                           </div>
                           <div>
-                            <div className="text-xs font-bold text-[#2b1572] flex items-center gap-2">
+                            <div className="text-xs font-semibold text-slate-900 flex items-center gap-2">
                               <span>{inv.email}</span>
-                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/70 font-semibold border border-white/80">
+                              <span className="text-[10px] px-1.5 py-0.2 rounded-xs bg-slate-100 font-medium text-slate-600 border border-slate-200">
                                 Dự kiến: {inv.role}
                               </span>
                             </div>
-                            <div className="text-[11px] text-[#2b1572]/50 flex items-center gap-1.5 mt-0.5">
+                            <div className="text-[11px] text-slate-400 flex items-center gap-1.5 mt-0.5">
                               <Calendar className="w-3 h-3" />
                               <span>Hết hạn: {new Date(inv.expired_at).toLocaleDateString('vi-VN')}</span>
                             </div>
@@ -1210,12 +1206,12 @@ export default function WorkspaceDetailPage({
                         <div className="flex items-center gap-2 self-end sm:self-center">
                           <button
                             onClick={() => handleCopyInviteLink(inv.token)}
-                            className="px-2.5 py-1 btn-secondary text-xs font-semibold flex items-center gap-1 cursor-pointer"
+                            className="px-2.5 py-1 rounded-md bg-white hover:bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700 flex items-center gap-1 cursor-pointer transition-colors"
                           >
                             {copiedToken === inv.token ? (
                               <>
-                                <Check className="w-3 h-3 text-[#358200]" />
-                                <span className="text-[#358200]">Đã chép</span>
+                                <Check className="w-3 h-3 text-emerald-600" />
+                                <span className="text-emerald-700">Đã chép</span>
                               </>
                             ) : (
                               <>
@@ -1227,7 +1223,7 @@ export default function WorkspaceDetailPage({
 
                           <button
                             onClick={() => handleRevokeInvite(inv.id)}
-                            className="p-1.5 text-[#2b1572]/40 hover:text-[#c40000] hover:bg-[#c40000]/10 rounded-lg transition-colors cursor-pointer"
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
                             title="Thu hồi lời mời"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -1246,31 +1242,31 @@ export default function WorkspaceDetailPage({
         {/* TAB 3: SETTINGS */}
         {/* ==================================================================== */}
         {activeTab === 'settings' && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* General Settings */}
-            <div className="glass-surface p-6 sm:p-8 rounded-2xl border border-white/60">
-              <div className="pb-4 border-b border-[#2b1572]/10 mb-6">
-                <h3 className="text-base font-bold text-[#2b1572]">Thông tin Không gian làm việc</h3>
-                <p className="text-xs text-[#2b1572]/65 mt-0.5">
+            <div className="bg-white p-5 sm:p-6 rounded-lg border border-slate-200">
+              <div className="pb-3.5 border-b border-slate-100 mb-5">
+                <h3 className="text-sm font-bold text-slate-900">Thông tin Không gian làm việc</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
                   Cập nhật tên gọi và mô tả chi tiết của Workspace
                 </p>
               </div>
 
               {settingsMessage && (
-                <div className="mb-4 p-3 rounded-xl bg-[#358200]/10 border border-[#358200]/20 text-[#358200] text-xs font-semibold">
+                <div className="mb-4 p-3 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium">
                   {settingsMessage}
                 </div>
               )}
 
               {actionError && (
-                <div className="mb-4 p-3 rounded-xl bg-[#c40000]/10 border border-[#c40000]/20 text-[#c40000] text-xs font-medium">
+                <div className="mb-4 p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
                   {actionError}
                 </div>
               )}
 
-              <form onSubmit={handleSaveSettings} className="space-y-4 max-w-xl">
+              <form onSubmit={handleSaveSettings} className="space-y-3.5 max-w-xl">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-[#2b1572]/80 mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Tên Workspace
                   </label>
                   <input
@@ -1279,12 +1275,12 @@ export default function WorkspaceDetailPage({
                     disabled={!workspace?.isAdmin}
                     value={settingsName}
                     onChange={(e) => setSettingsName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs glass-input font-bold text-[#2b1572]"
+                    className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-md font-semibold text-slate-900 focus:outline-none focus:border-slate-400"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-[#2b1572]/80 mb-1.5">
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Mô tả Workspace
                   </label>
                   <textarea
@@ -1292,7 +1288,7 @@ export default function WorkspaceDetailPage({
                     disabled={!workspace?.isAdmin}
                     value={settingsDescription}
                     onChange={(e) => setSettingsDescription(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs glass-input font-medium text-[#2b1572] resize-none"
+                    className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-md font-normal text-slate-800 resize-none focus:outline-none focus:border-slate-400"
                   />
                 </div>
 
@@ -1300,7 +1296,7 @@ export default function WorkspaceDetailPage({
                   <button
                     type="submit"
                     disabled={isSavingSettings}
-                    className="px-5 py-2.5 btn-primary text-xs font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-sm"
+                    className="px-4 py-2 bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-semibold rounded-md flex items-center gap-2 cursor-pointer disabled:opacity-50 transition-colors"
                   >
                     {isSavingSettings ? (
                       <>
@@ -1316,14 +1312,14 @@ export default function WorkspaceDetailPage({
             </div>
 
             {/* Leave Workspace Option */}
-            <div className="glass-surface p-6 sm:p-8 rounded-2xl border border-white/60">
+            <div className="bg-white p-5 sm:p-6 rounded-lg border border-slate-200">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-base font-bold text-[#2b1572] flex items-center gap-2">
-                    <LogOut className="w-4 h-4 text-[#2b1572]" />
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <LogOut className="w-4 h-4 text-slate-600" />
                     <span>Rời khỏi Không gian làm việc</span>
                   </h3>
-                  <p className="text-xs text-[#2b1572]/70 mt-1 max-w-xl leading-relaxed">
+                  <p className="text-xs text-slate-500 mt-1 max-w-xl leading-relaxed">
                     Bạn sẽ mất quyền truy cập vào các Bảng và Thẻ trong Không gian làm việc này. Nếu bạn là Chủ sở hữu, hãy chuyển giao quyền cho thành viên khác trước khi rời đi.
                   </p>
                 </div>
@@ -1332,7 +1328,7 @@ export default function WorkspaceDetailPage({
                   type="button"
                   onClick={handleLeaveWorkspace}
                   disabled={isLeaving}
-                  className="px-4 py-2.5 rounded-xl border border-[#c40000]/40 text-[#c40000] hover:bg-[#c40000]/10 text-xs font-bold transition-all cursor-pointer shrink-0"
+                  className="px-3.5 py-1.5 rounded-md border border-rose-300 text-rose-700 hover:bg-rose-50 text-xs font-medium transition-colors cursor-pointer shrink-0"
                 >
                   {isLeaving ? 'Đang rời...' : 'Rời Workspace'}
                 </button>
@@ -1341,18 +1337,18 @@ export default function WorkspaceDetailPage({
 
             {/* Danger Zone: Delete Workspace (Owner Only) */}
             {workspace?.isOwner && (
-              <div className="p-6 sm:p-8 rounded-2xl bg-[#c40000]/5 border border-[#c40000]/30 space-y-4">
-                <div className="flex items-center gap-2 text-[#c40000]">
-                  <AlertTriangle className="w-5 h-5 shrink-0" />
-                  <h3 className="text-base font-bold">Vùng nguy hiểm: Xóa Không gian làm việc</h3>
+              <div className="p-5 sm:p-6 rounded-lg bg-rose-50/50 border border-rose-200 space-y-3.5">
+                <div className="flex items-center gap-2 text-rose-700">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <h3 className="text-sm font-bold">Vùng nguy hiểm: Xóa Không gian làm việc</h3>
                 </div>
 
-                <p className="text-xs text-[#c40000]/80 leading-relaxed max-w-2xl">
+                <p className="text-xs text-rose-700 leading-relaxed max-w-2xl">
                   Hành động này sẽ <strong>xóa vĩnh viễn</strong> Không gian làm việc <strong>{workspace.name}</strong> cùng toàn bộ các Bảng Kanban, Cột danh sách, Thẻ công việc, tệp đính kèm và lịch sử hoạt động. Không thể hoàn tác sau khi đã xóa.
                 </p>
 
-                <form onSubmit={handleDeleteWorkspace} className="space-y-3 max-w-md pt-2">
-                  <label className="block text-xs font-semibold text-[#c40000]">
+                <form onSubmit={handleDeleteWorkspace} className="space-y-3 max-w-md pt-1">
+                  <label className="block text-xs font-medium text-rose-800">
                     Nhập chính xác tên Workspace (<span className="font-mono font-bold select-all">{workspace.name}</span>) để xác nhận:
                   </label>
                   <input
@@ -1361,13 +1357,13 @@ export default function WorkspaceDetailPage({
                     value={deleteConfirmText}
                     onChange={(e) => setDeleteConfirmText(e.target.value)}
                     placeholder={workspace.name}
-                    className="w-full px-3.5 py-2.5 text-xs glass-input border-[#c40000]/40 text-[#c40000] font-semibold"
+                    className="w-full px-3 py-2 text-xs bg-white border border-rose-300 rounded-md text-rose-900 font-medium focus:outline-none focus:border-rose-500"
                   />
 
                   <button
                     type="submit"
                     disabled={isDeleting || deleteConfirmText.trim() !== workspace.name}
-                    className="px-5 py-2.5 bg-[#c40000] hover:bg-[#a00000] text-white rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-40 shadow-sm flex items-center gap-2"
+                    className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-md text-xs font-semibold transition-colors cursor-pointer disabled:opacity-40 flex items-center gap-2"
                   >
                     {isDeleting ? (
                       <>
@@ -1391,17 +1387,17 @@ export default function WorkspaceDetailPage({
         {/* TAB 4: ACTIVITIES */}
         {/* ==================================================================== */}
         {activeTab === 'activities' && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Header / Filter Toolbar Card */}
-            <div className="glass-surface p-6 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="bg-white p-5 rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-[#2b1572] flex items-center justify-center text-[#a6d1fd] shadow-sm">
-                    <History className="w-4 h-4" />
+                  <div className="w-7 h-7 rounded-md bg-[#0f172a] flex items-center justify-center text-white">
+                    <History className="w-3.5 h-3.5" />
                   </div>
-                  <h3 className="text-base font-bold text-[#2b1572]">Lịch sử hoạt động</h3>
+                  <h3 className="text-sm font-bold text-slate-900">Lịch sử hoạt động</h3>
                 </div>
-                <p className="text-xs text-[#2b1572]/70 mt-1">
+                <p className="text-xs text-slate-500 mt-1">
                   Toàn bộ diễn biến thao tác trong Không gian làm việc, bao gồm Bảng Kanban và Thẻ công việc
                 </p>
               </div>
@@ -1411,9 +1407,9 @@ export default function WorkspaceDetailPage({
                   type="button"
                   onClick={fetchWorkspaceActivities}
                   disabled={isLoadingActivities}
-                  className="px-3 py-1.5 rounded-xl border border-white/60 bg-white/40 hover:bg-white/70 text-[#2b1572] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                  className="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingActivities ? 'animate-spin text-[#2b1572]' : ''}`} />
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingActivities ? 'animate-spin text-slate-900' : ''}`} />
                   <span>Làm mới</span>
                 </button>
               </div>
@@ -1424,10 +1420,10 @@ export default function WorkspaceDetailPage({
               <button
                 type="button"
                 onClick={() => setActivityFilter('all')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer border ${
                   activityFilter === 'all'
-                    ? 'bg-[#2b1572] text-white shadow-xs'
-                    : 'glass-surface text-[#2b1572]/80 hover:bg-white/60'
+                    ? 'bg-[#0f172a] text-white border-[#0f172a]'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                 }`}
               >
                 Tất cả ({activities.length})
@@ -1435,10 +1431,10 @@ export default function WorkspaceDetailPage({
               <button
                 type="button"
                 onClick={() => setActivityFilter('board')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer border ${
                   activityFilter === 'board'
-                    ? 'bg-[#2b1572] text-white shadow-xs'
-                    : 'glass-surface text-[#2b1572]/80 hover:bg-white/60'
+                    ? 'bg-[#0f172a] text-white border-[#0f172a]'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                 }`}
               >
                 Bảng & Cột ({activities.filter((a) => a.target_type.startsWith('board:') || a.action.includes('bảng') || a.action.includes('danh sách')).length})
@@ -1446,10 +1442,10 @@ export default function WorkspaceDetailPage({
               <button
                 type="button"
                 onClick={() => setActivityFilter('card')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer border ${
                   activityFilter === 'card'
-                    ? 'bg-[#2b1572] text-white shadow-xs'
-                    : 'glass-surface text-[#2b1572]/80 hover:bg-white/60'
+                    ? 'bg-[#0f172a] text-white border-[#0f172a]'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                 }`}
               >
                 Thẻ công việc ({activities.filter((a) => a.target_type.startsWith('card:')).length})
@@ -1457,10 +1453,10 @@ export default function WorkspaceDetailPage({
               <button
                 type="button"
                 onClick={() => setActivityFilter('workspace')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer border ${
                   activityFilter === 'workspace'
-                    ? 'bg-[#2b1572] text-white shadow-xs'
-                    : 'glass-surface text-[#2b1572]/80 hover:bg-white/60'
+                    ? 'bg-[#0f172a] text-white border-[#0f172a]'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                 }`}
               >
                 Thành viên & Cài đặt ({activities.filter((a) => a.target_type.startsWith('workspace:') || a.action.includes('thành viên') || a.action.includes('vai trò')).length})
@@ -1469,9 +1465,9 @@ export default function WorkspaceDetailPage({
 
             {/* Timeline Activities List */}
             {isLoadingActivities ? (
-              <div className="glass-surface p-12 text-center rounded-2xl flex flex-col items-center justify-center gap-3">
-                <RefreshCw className="w-6 h-6 animate-spin text-[#2b1572]" />
-                <span className="text-xs text-[#2b1572]/70 font-medium">Đang tải dòng thời gian hoạt động...</span>
+              <div className="bg-white p-12 text-center rounded-lg border border-slate-200 flex flex-col items-center justify-center gap-3">
+                <RefreshCw className="w-5 h-5 animate-spin text-slate-700" />
+                <span className="text-xs text-slate-500 font-medium">Đang tải dòng thời gian hoạt động...</span>
               </div>
             ) : (() => {
               const filtered = activities.filter((act) => {
@@ -1489,13 +1485,13 @@ export default function WorkspaceDetailPage({
 
               if (filtered.length === 0) {
                 return (
-                  <div className="glass-surface p-12 text-center rounded-2xl flex flex-col items-center justify-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-white/50 flex items-center justify-center text-[#2b1572]/50 shadow-inner">
-                      <History className="w-6 h-6" />
+                  <div className="bg-white p-12 text-center rounded-lg border border-slate-200 flex flex-col items-center justify-center gap-2.5">
+                    <div className="w-10 h-10 rounded-md bg-slate-100 flex items-center justify-center text-slate-500">
+                      <History className="w-5 h-5" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-[#2b1572]">Chưa có hoạt động nào</h4>
-                      <p className="text-xs text-[#2b1572]/60 mt-1 max-w-sm">
+                      <h4 className="text-sm font-semibold text-slate-900">Chưa có hoạt động nào</h4>
+                      <p className="text-xs text-slate-500 mt-1 max-w-sm">
                         Mọi diễn biến tạo bảng, giao việc thẻ hay thay đổi vai trò thành viên sẽ được ghi nhận tại đây.
                       </p>
                     </div>
@@ -1508,9 +1504,9 @@ export default function WorkspaceDetailPage({
                 if (action.includes('đính kèm')) return <Paperclip className="w-3.5 h-3.5 text-amber-500 shrink-0" />;
                 if (action.includes('hoàn thành')) return <CheckSquare className="w-3.5 h-3.5 text-emerald-600 shrink-0" />;
                 if (action.includes('hạn chót') || action.includes('ngày')) return <Clock className="w-3.5 h-3.5 text-rose-500 shrink-0" />;
-                if (targetType.startsWith('board:') || action.includes('bảng')) return <Kanban className="w-3.5 h-3.5 text-[#2b1572] shrink-0" />;
-                if (targetType.startsWith('workspace:') || action.includes('thành viên')) return <Users className="w-3.5 h-3.5 text-indigo-600 shrink-0" />;
-                return <Sparkles className="w-3.5 h-3.5 text-[#2b1572] shrink-0" />;
+                if (targetType.startsWith('board:') || action.includes('bảng')) return <Kanban className="w-3.5 h-3.5 text-slate-700 shrink-0" />;
+                if (targetType.startsWith('workspace:') || action.includes('thành viên')) return <Users className="w-3.5 h-3.5 text-slate-700 shrink-0" />;
+                return <Sparkles className="w-3.5 h-3.5 text-slate-700 shrink-0" />;
               };
 
               const formatTime = (ts: string) => {
@@ -1555,7 +1551,7 @@ export default function WorkspaceDetailPage({
               };
 
               return (
-                <div className="space-y-2.5">
+                <div className="space-y-2">
                   {filtered.map((act) => {
                     const actorName = act.user?.name || 'Người dùng';
                     const actorAvatar = act.user?.avatar;
@@ -1568,16 +1564,16 @@ export default function WorkspaceDetailPage({
                       <div
                         key={act.id}
                         onClick={() => handleActivityClick(act)}
-                        className="glass-surface p-3.5 sm:p-4 rounded-2xl flex items-start gap-3.5 hover:bg-white/80 hover:border-[#2b1572]/20 hover:shadow-xs transition-all border border-white/60 shadow-2xs group cursor-pointer"
+                        className="bg-white p-3.5 rounded-md border border-slate-200 hover:border-slate-300 flex items-start gap-3 transition-colors group cursor-pointer"
                       >
                         {actorAvatar ? (
                           <img
                             src={actorAvatar}
                             alt={actorName}
-                            className="w-8 h-8 rounded-full object-cover shrink-0 mt-0.5 shadow-xs ring-1 ring-white"
+                            className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5 border border-slate-200"
                           />
                         ) : (
-                          <div className="w-8 h-8 rounded-full bg-[#2b1572] text-[#a6d1fd] flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 shadow-xs">
+                          <div className="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
                             {actorName.charAt(0).toUpperCase()}
                           </div>
                         )}
@@ -1585,51 +1581,51 @@ export default function WorkspaceDetailPage({
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2 mb-1">
                             <div className="flex items-center gap-2 flex-wrap min-w-0">
-                              <span className="text-xs font-bold text-[#2b1572] truncate">
+                              <span className="text-xs font-semibold text-slate-900 truncate">
                                 {actorName}
                               </span>
                               {isBoard && (
-                                <span className="text-[10px] font-semibold px-2 py-0.2 rounded-md bg-[#2b1572]/10 text-[#2b1572]">
+                                <span className="text-[10px] font-medium px-1.5 py-0.2 rounded-xs bg-slate-100 text-slate-700 border border-slate-200">
                                   Bảng{act.target_meta?.board_name ? `: ${act.target_meta.board_name}` : ''}
                                 </span>
                               )}
                               {isCard && (
-                                <span className="text-[10px] font-semibold px-2 py-0.2 rounded-md bg-blue-50 text-blue-700">
+                                <span className="text-[10px] font-medium px-1.5 py-0.2 rounded-xs bg-blue-50 text-blue-700 border border-blue-200">
                                   Thẻ{act.target_meta?.board_name ? ` • ${act.target_meta.board_name}` : ''}
                                 </span>
                               )}
                               {act.target_type.startsWith('workspace:') && (
-                                <span className="text-[10px] font-semibold px-2 py-0.2 rounded-md bg-purple-50 text-purple-700">
+                                <span className="text-[10px] font-medium px-1.5 py-0.2 rounded-xs bg-purple-50 text-purple-700 border border-purple-200">
                                   Workspace
                                 </span>
                               )}
                             </div>
 
-                            <span className="text-[11px] text-[#2b1572]/50 shrink-0" title={act.created_at}>
+                            <span className="text-[11px] text-slate-400 shrink-0" title={act.created_at}>
                               {formatTime(act.created_at)}
                             </span>
                           </div>
 
-                          <div className="text-xs text-[#2b1572]/85 flex items-start gap-1.5 leading-relaxed break-words">
+                          <div className="text-xs text-slate-700 flex items-start gap-1.5 leading-relaxed break-words">
                             <span className="mt-0.5 shrink-0">{getActivityIcon(act.action, act.target_type)}</span>
                             <span>{act.action}</span>
                           </div>
 
                           <div className="mt-2 flex items-center gap-2">
                             {isCard && boardId && (
-                              <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#2b1572] bg-[#a6d1fd]/30 group-hover:bg-[#a6d1fd]/60 px-2 py-0.5 rounded-lg transition-colors">
+                              <div className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded-xs transition-colors border border-slate-200">
                                 <span>Xem chi tiết thẻ</span>
                                 <ExternalLink className="w-3 h-3" />
                               </div>
                             )}
                             {isBoard && boardId && (
-                              <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#2b1572] bg-[#a6d1fd]/30 group-hover:bg-[#a6d1fd]/60 px-2 py-0.5 rounded-lg transition-colors">
+                              <div className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded-xs transition-colors border border-slate-200">
                                 <span>Đi đến Bảng</span>
                                 <ExternalLink className="w-3 h-3" />
                               </div>
                             )}
                             {act.target_type.startsWith('workspace:') && (
-                              <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-700 bg-purple-50 group-hover:bg-purple-100 px-2 py-0.5 rounded-lg transition-colors">
+                              <div className="inline-flex items-center gap-1 text-[11px] font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded-xs transition-colors border border-purple-200">
                                 <span>Xem chi tiết</span>
                                 <ExternalLink className="w-3 h-3" />
                               </div>
@@ -1645,7 +1641,7 @@ export default function WorkspaceDetailPage({
                       <button
                         onClick={handleLoadMoreActivities}
                         disabled={isLoadingMoreActivities}
-                        className="px-4 py-2 rounded-xl text-xs font-semibold text-[#2b1572] bg-white/70 hover:bg-white border border-[#2b1572]/15 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs"
+                        className="px-3.5 py-1.5 rounded-md text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                       >
                         {isLoadingMoreActivities && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                         <span>{isLoadingMoreActivities ? 'Đang tải thêm...' : 'Tải thêm hoạt động cũ hơn'}</span>
@@ -1654,7 +1650,7 @@ export default function WorkspaceDetailPage({
                   )}
 
                   {!hasMoreActivities && activities.length > 0 && (
-                    <div className="py-2 text-center text-[11px] text-[#2b1572]/50 font-medium">
+                    <div className="py-2 text-center text-[11px] text-slate-400 font-medium">
                       Đã hiển thị tất cả hoạt động
                     </div>
                   )}

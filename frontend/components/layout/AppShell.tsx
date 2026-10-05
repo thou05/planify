@@ -53,6 +53,57 @@ export default function AppShell({
   const [isCreateBoardOpen, setIsCreateBoardOpen] = useState(false);
   const [isImportBoardOpen, setIsImportBoardOpen] = useState(false);
 
+  // Sidebar collapse/expand state with localStorage persistence
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('planify:sidebar-open');
+      if (saved !== null) {
+        setIsSidebarOpen(saved === 'true');
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleToggleSidebar = useCallback(() => {
+    setIsSidebarOpen((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('planify:sidebar-open', String(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  }, []);
+
+  const handleSetSidebarOpen = useCallback((open: boolean) => {
+    setIsSidebarOpen(open);
+    try {
+      localStorage.setItem('planify:sidebar-open', String(open));
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // Global shortcut Ctrl+B / Cmd+B to toggle sidebar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable) {
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        handleToggleSidebar();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleToggleSidebar]);
+
   // Subscribed refresh handlers from child pages
   const refreshHandlersRef = useRef<Set<() => void>>(new Set());
 
@@ -220,12 +271,15 @@ export default function AppShell({
       setImportTargetWsId(wsId || selectedWorkspaceId);
       setIsImportBoardOpen(true);
     },
+    isSidebarOpen,
+    toggleSidebar: handleToggleSidebar,
+    setSidebarOpen: handleSetSidebarOpen,
   };
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-10 h-10 rounded-full border-3 border-[#2b1572]/20 border-t-[#2b1572] animate-spin" />
+        <div className="w-8 h-8 rounded-full border-2 border-slate-200 border-t-slate-800 animate-spin" />
       </div>
     );
   }
@@ -234,11 +288,13 @@ export default function AppShell({
 
   return (
     <ShellContext.Provider value={shellContextValue}>
-      <div className="min-h-screen flex flex-col h-screen overflow-hidden">
+      <div className={`min-h-screen flex flex-col h-screen overflow-hidden ${isBoardRoute ? 'bg-dot-pattern' : 'bg-grid-pattern'}`}>
         {/* TopBar */}
         <TopBar
           onOpenCreateWorkspace={() => setIsCreateWsOpen(true)}
           onOpenCreateBoard={() => setIsCreateBoardOpen(true)}
+          isSidebarOpen={isSidebarOpen}
+          onToggleSidebar={handleToggleSidebar}
         />
 
         {/* Main Area */}
@@ -250,14 +306,16 @@ export default function AppShell({
             onSelectWorkspace={handleSelectWorkspace}
             onOpenCreateWorkspace={() => setIsCreateWsOpen(true)}
             onOpenCreateBoard={() => setIsCreateBoardOpen(true)}
+            isOpen={isSidebarOpen}
+            onToggleCollapse={handleToggleSidebar}
           />
 
           {/* Dynamic Page Content */}
           <main
             className={`flex-1 min-h-0 relative ${
               isBoardRoute
-                ? 'overflow-hidden flex flex-col p-0'
-                : 'overflow-y-auto p-6'
+                ? 'overflow-hidden flex flex-col p-0 bg-dot-pattern'
+                : 'overflow-y-auto p-6 bg-grid-pattern'
             }`}
           >
             {children}

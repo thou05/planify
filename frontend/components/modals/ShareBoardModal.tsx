@@ -228,35 +228,35 @@ export default function ShareBoardModal({
   const availableWsMembers = workspaceMembers.filter((m: any) => !existingBoardUserIds.has(m.user_id));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#2b1572]/25 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-xl glass-strong border border-white/80 rounded-3xl p-6 sm:p-8 relative shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
+      <div className="w-full max-w-xl bg-white border border-slate-300 rounded-lg p-6 sm:p-7 relative shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-full hover:bg-white/40 text-[#2b1572]/60 hover:text-[#2b1572] transition-colors cursor-pointer"
+          className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
 
         {/* Header */}
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-10 h-10 rounded-2xl bg-[#2b1572] flex items-center justify-center text-[#a6d1fd] shadow-md shadow-[#2b1572]/20">
-            <Share2 className="w-5 h-5" />
+          <div className="w-9 h-9 rounded-md bg-slate-900 flex items-center justify-center text-white shadow-2xs">
+            <Share2 className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-[#2b1572]">Chia sẻ & Quyền truy cập</h2>
-            <p className="text-xs text-[#2b1572]/70">Bảng: {board.name}</p>
+            <h2 className="text-base font-bold text-slate-900">Chia sẻ & Quyền truy cập</h2>
+            <p className="text-xs text-slate-500">Bảng: {board.name}</p>
           </div>
         </div>
 
         {/* Tab Buttons */}
-        <div className="flex gap-2 border-b border-[#2b1572]/10 pb-2 mb-4">
+        <div className="flex gap-2 border-b border-slate-200 pb-2 mb-4">
           <button
             type="button"
             onClick={() => setActiveTab('members')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'members'
-                ? 'bg-[#2b1572] text-[#a6d1fd] shadow-xs'
-                : 'text-[#2b1572]/70 hover:bg-white/40'
+                ? 'bg-[#0f172a] text-white'
+                : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             <Users className="w-3.5 h-3.5" />
@@ -269,16 +269,16 @@ export default function ShareBoardModal({
               setActiveTab('invites');
               fetchPendingInvites();
             }}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 relative ${
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 relative ${
               activeTab === 'invites'
-                ? 'bg-[#2b1572] text-[#a6d1fd] shadow-xs'
-                : 'text-[#2b1572]/70 hover:bg-white/40'
+                ? 'bg-[#0f172a] text-white'
+                : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             <Mail className="w-3.5 h-3.5" />
             <span>Mời qua Email / Liên kết</span>
             {pendingInvites.length > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full bg-[#c40000] text-white text-[9px] font-black leading-none">
+              <span className="px-1.5 py-0.5 rounded-xs bg-red-600 text-white text-[10px] font-mono leading-none">
                 {pendingInvites.length}
               </span>
             )}
@@ -286,14 +286,14 @@ export default function ShareBoardModal({
         </div>
 
         {error && (
-          <div className="mb-4 p-3 rounded-xl bg-[#c40000]/10 border border-[#c40000]/20 text-[#c40000] text-xs font-medium flex items-center gap-2">
+          <div className="mb-4 p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-xs font-medium flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {successMsg && (
-          <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 text-xs font-medium flex items-center gap-2">
+          <div className="mb-4 p-3 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
             <span>{successMsg}</span>
           </div>
@@ -305,18 +305,18 @@ export default function ShareBoardModal({
           {activeTab === 'members' && (
             <>
               {/* Copy Direct Board URL */}
-              <div className="p-3.5 rounded-2xl bg-white/50 border border-white/70 space-y-2">
-                <span className="text-[11px] font-bold text-[#2b1572]">Liên kết trực tiếp tới Board</span>
+              <div className="p-3.5 rounded-md bg-slate-50 border border-slate-200 space-y-2">
+                <span className="text-xs font-semibold text-slate-800">Liên kết trực tiếp tới Board</span>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     readOnly
                     value={boardUrl}
-                    className="flex-1 px-3 py-1.5 text-xs glass-input select-all font-mono text-[#2b1572]/80 bg-white/40"
+                    className="flex-1 px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md select-all font-mono text-slate-800 focus:outline-none"
                   />
                   <button
                     onClick={handleCopyBoardUrl}
-                    className="px-3 py-1.5 btn-primary text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0"
+                    className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer shrink-0 transition-colors shadow-2xs"
                   >
                     {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{copied ? 'Đã chép' : 'Sao chép'}</span>
@@ -326,7 +326,7 @@ export default function ShareBoardModal({
 
               {/* Visibility Setting */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-[#2b1572]/70 mb-2">
+                <label className="block text-xs font-semibold text-slate-700 mb-2">
                   Quyền hiển thị (Visibility)
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -334,17 +334,17 @@ export default function ShareBoardModal({
                     type="button"
                     disabled={isUpdatingVisibility || !board.canManageMembers}
                     onClick={() => handleVisibilityChange('WORKSPACE')}
-                    className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer ${
+                    className={`p-2.5 rounded-md text-left border transition-all cursor-pointer ${
                       board.visibility === 'WORKSPACE'
-                        ? 'bg-white/80 border-[#2b1572] shadow-sm'
-                        : 'bg-white/40 border-white/60 hover:bg-white/60'
+                        ? 'bg-slate-100 border-slate-900 text-slate-900'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
                     }`}
                   >
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-[#2b1572] mb-0.5">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold mb-0.5">
                       <Users className="w-3.5 h-3.5" />
                       <span>Không gian</span>
                     </div>
-                    <div className="text-[10px] text-[#2b1572]/65 leading-tight">
+                    <div className="text-[10px] text-slate-500 leading-tight">
                       Mọi thành viên Workspace
                     </div>
                   </button>
@@ -353,17 +353,17 @@ export default function ShareBoardModal({
                     type="button"
                     disabled={isUpdatingVisibility || !board.canManageMembers}
                     onClick={() => handleVisibilityChange('PRIVATE')}
-                    className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer ${
+                    className={`p-2.5 rounded-md text-left border transition-all cursor-pointer ${
                       board.visibility === 'PRIVATE'
-                        ? 'bg-white/80 border-[#2b1572] shadow-sm'
-                        : 'bg-white/40 border-white/60 hover:bg-white/60'
+                        ? 'bg-slate-100 border-slate-900 text-slate-900'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
                     }`}
                   >
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-[#2b1572] mb-0.5">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold mb-0.5">
                       <Lock className="w-3.5 h-3.5" />
                       <span>Riêng tư</span>
                     </div>
-                    <div className="text-[10px] text-[#2b1572]/65 leading-tight">
+                    <div className="text-[10px] text-slate-500 leading-tight">
                       Chỉ thành viên Board
                     </div>
                   </button>
@@ -372,17 +372,17 @@ export default function ShareBoardModal({
                     type="button"
                     disabled={isUpdatingVisibility || !board.canManageMembers}
                     onClick={() => handleVisibilityChange('PUBLIC')}
-                    className={`p-2.5 rounded-xl text-left border transition-all cursor-pointer ${
+                    className={`p-2.5 rounded-md text-left border transition-all cursor-pointer ${
                       board.visibility === 'PUBLIC'
-                        ? 'bg-white/80 border-[#2b1572] shadow-sm'
-                        : 'bg-white/40 border-white/60 hover:bg-white/60'
+                        ? 'bg-slate-100 border-slate-900 text-slate-900'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
                     }`}
                   >
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-[#2b1572] mb-0.5">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold mb-0.5">
                       <Globe className="w-3.5 h-3.5" />
                       <span>Công khai</span>
                     </div>
-                    <div className="text-[10px] text-[#2b1572]/65 leading-tight">
+                    <div className="text-[10px] text-slate-500 leading-tight">
                       Bất kỳ ai có liên kết
                     </div>
                   </button>
@@ -391,16 +391,16 @@ export default function ShareBoardModal({
 
               {/* Add Member from Workspace */}
               {board.canManageMembers && availableWsMembers.length > 0 && (
-                <form onSubmit={handleAddMember} className="p-3 rounded-2xl bg-white/40 border border-white/60 space-y-2">
-                  <span className="text-[11px] font-bold text-[#2b1572] flex items-center gap-1.5">
-                    <UserPlus className="w-3.5 h-3.5 text-[#2b1572]" />
+                <form onSubmit={handleAddMember} className="p-3.5 rounded-md bg-slate-50 border border-slate-200 space-y-2">
+                  <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                    <UserPlus className="w-3.5 h-3.5 text-slate-600" />
                     Thêm trực tiếp thành viên từ Không gian làm việc
                   </span>
                   <div className="flex gap-2">
                     <select
                       value={selectedWsUserId}
                       onChange={(e) => setSelectedWsUserId(e.target.value)}
-                      className="flex-1 px-3 py-1.5 text-xs glass-input font-medium"
+                      className="flex-1 px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md font-medium text-slate-800 focus:outline-none"
                     >
                       <option value="">-- Chọn thành viên Workspace --</option>
                       {availableWsMembers.map((m: any) => (
@@ -413,7 +413,7 @@ export default function ShareBoardModal({
                     <select
                       value={selectedRole}
                       onChange={(e) => setSelectedRole(e.target.value as any)}
-                      className="w-28 px-2.5 py-1.5 text-xs glass-input font-semibold"
+                      className="w-28 px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-md font-semibold text-slate-800 focus:outline-none"
                     >
                       <option value="EDITOR">Biên tập</option>
                       <option value="VIEWER">Chỉ xem</option>
@@ -423,7 +423,7 @@ export default function ShareBoardModal({
                     <button
                       type="submit"
                       disabled={isAdding || !selectedWsUserId}
-                      className="px-3.5 py-1.5 btn-primary text-xs font-semibold shrink-0 cursor-pointer disabled:opacity-50 shadow-sm"
+                      className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold shrink-0 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
                     >
                       {isAdding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Thêm'}
                     </button>
@@ -433,11 +433,11 @@ export default function ShareBoardModal({
 
               {/* Members List in Board */}
               <div>
-                <div className="text-xs font-bold uppercase tracking-wider text-[#2b1572]/70 mb-2">
+                <div className="text-xs font-semibold text-slate-700 mb-2">
                   Thành viên trong Board ({board.members?.length || 0})
                 </div>
 
-                <div className="max-h-56 overflow-y-auto divide-y divide-[#2b1572]/10 pr-1">
+                <div className="max-h-56 overflow-y-auto divide-y divide-slate-100 pr-1">
                   {board.members?.map((m: any) => {
                     const isSelf = m.user_id === currentUserId;
                     const canEditRole = board.canManageMembers && !isSelf;
@@ -445,7 +445,7 @@ export default function ShareBoardModal({
                     return (
                       <div key={m.id} className="py-2.5 flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-[#2b1572]/10 border border-white/80 overflow-hidden flex items-center justify-center text-[#2b1572] font-bold text-xs shadow-xs">
+                          <div className="w-8 h-8 rounded-md bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center text-slate-700 font-bold text-xs">
                             {m.user?.avatar ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img src={m.user.avatar} alt="avatar" className="w-full h-full object-cover" />
@@ -454,11 +454,11 @@ export default function ShareBoardModal({
                             )}
                           </div>
                           <div>
-                            <div className="text-xs font-bold text-[#2b1572] flex items-center gap-1.5">
+                            <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                               <span>{m.user?.name}</span>
-                              {isSelf && <span className="text-[10px] text-[#2b1572]/50 font-normal">(Bạn)</span>}
+                              {isSelf && <span className="text-[10px] text-slate-400 font-normal">(Bạn)</span>}
                             </div>
-                            <div className="text-[11px] text-[#2b1572]/60">{m.user?.email}</div>
+                            <div className="text-[11px] text-slate-500">{m.user?.email}</div>
                           </div>
                         </div>
 
@@ -467,14 +467,14 @@ export default function ShareBoardModal({
                             <select
                               value={m.role}
                               onChange={(e) => handleUpdateRole(m.user_id, e.target.value as any)}
-                              className="px-2 py-1 text-[11px] glass-input font-semibold text-[#2b1572]"
+                              className="px-2 py-1 text-[11px] bg-white border border-slate-300 rounded-md font-semibold text-slate-800 focus:outline-none"
                             >
                               <option value="ADMIN">Quản trị viên</option>
                               <option value="EDITOR">Biên tập viên</option>
                               <option value="VIEWER">Chỉ xem</option>
                             </select>
                           ) : (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/70 text-[#2b1572] font-bold border border-white/80">
+                            <span className="text-[10px] px-2 py-0.5 rounded-xs bg-slate-100 text-slate-700 font-semibold border border-slate-200">
                               {m.role === 'ADMIN' ? 'Admin' : m.role === 'EDITOR' ? 'Biên tập' : 'Chỉ xem'}
                             </span>
                           )}
@@ -482,7 +482,7 @@ export default function ShareBoardModal({
                           {canEditRole && (
                             <button
                               onClick={() => handleRemoveMember(m.user_id)}
-                              className="p-1 text-[#2b1572]/40 hover:text-[#c40000] hover:bg-[#c40000]/10 rounded-lg transition-colors cursor-pointer"
+                              className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
                               title="Xóa khỏi Board"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -502,9 +502,9 @@ export default function ShareBoardModal({
             <div className="space-y-5">
               {/* Send Invite Form */}
               {board.canManageMembers && (
-                <form onSubmit={handleSendInvite} className="p-4 rounded-2xl bg-white/50 border border-white/80 space-y-3">
-                  <span className="text-xs font-bold text-[#2b1572] flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5 text-[#2b1572]" />
+                <form onSubmit={handleSendInvite} className="p-4 rounded-md bg-slate-50 border border-slate-200 space-y-3">
+                  <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5 text-slate-600" />
                     <span>Gửi lời mời tham gia Bảng qua email</span>
                   </span>
 
@@ -515,13 +515,13 @@ export default function ShareBoardModal({
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
                       placeholder="Nhập email đồng nghiệp..."
-                      className="flex-1 px-3.5 py-2 text-xs glass-input placeholder:text-[#2b1572]/30 text-[#2b1572]"
+                      className="flex-1 px-3 py-2 text-xs bg-white border border-slate-300 rounded-md placeholder:text-slate-400 text-slate-900 focus:outline-none"
                     />
 
                     <select
                       value={inviteRole}
                       onChange={(e) => setInviteRole(e.target.value as any)}
-                      className="w-full sm:w-36 px-3 py-2 text-xs glass-input font-semibold text-[#2b1572]"
+                      className="w-full sm:w-36 px-3 py-2 text-xs bg-white border border-slate-300 rounded-md font-semibold text-slate-800 focus:outline-none"
                     >
                       <option value="EDITOR">Biên tập viên</option>
                       <option value="VIEWER">Chỉ xem</option>
@@ -531,7 +531,7 @@ export default function ShareBoardModal({
                     <button
                       type="submit"
                       disabled={isSendingInvite || !inviteEmail.trim()}
-                      className="px-4 py-2 btn-primary text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0 shadow-xs"
+                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0 transition-colors shadow-2xs"
                     >
                       {isSendingInvite ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -546,9 +546,9 @@ export default function ShareBoardModal({
 
               {/* Display Generated Invite Link */}
               {latestInviteLink && (
-                <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/20 space-y-2 animate-fade-in">
-                  <span className="text-[11px] font-bold text-purple-900 flex items-center gap-1">
-                    <LinkIcon className="w-3.5 h-3.5" />
+                <div className="p-3.5 rounded-md bg-slate-50 border border-slate-200 space-y-2 animate-fade-in">
+                  <span className="text-xs font-semibold text-slate-800 flex items-center gap-1">
+                    <LinkIcon className="w-3.5 h-3.5 text-slate-600" />
                     <span>Liên kết mời tham gia Board vừa tạo (có hiệu lực 7 ngày):</span>
                   </span>
                   <div className="flex gap-2">
@@ -556,12 +556,13 @@ export default function ShareBoardModal({
                       type="text"
                       readOnly
                       value={latestInviteLink}
-                      className="flex-1 px-3 py-1.5 text-xs glass-input font-mono select-all text-[#2b1572] bg-white/60"
-                    />
+                      className="flex-1 px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md font-mono select-all text-slate-800 focus:outline-none"
+                    >
+                    </input>
                     <button
                       type="button"
                       onClick={handleCopyInviteLink}
-                      className="px-3 py-1.5 btn-primary text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0"
+                      className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer shrink-0 transition-colors shadow-2xs"
                     >
                       {copiedInviteLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>{copiedInviteLink ? 'Đã chép' : 'Sao chép'}</span>
@@ -572,31 +573,31 @@ export default function ShareBoardModal({
 
               {/* Pending Invites List */}
               <div>
-                <div className="text-xs font-bold uppercase tracking-wider text-[#2b1572]/70 mb-2">
+                <div className="text-xs font-semibold text-slate-700 mb-2">
                   Lời mời đang chờ ({pendingInvites.length})
                 </div>
 
                 {loadingInvites ? (
-                  <div className="py-6 flex items-center justify-center gap-2 text-xs text-[#2b1572]/60">
-                    <Loader2 className="w-4 h-4 animate-spin text-[#2b1572]" />
+                  <div className="py-6 flex items-center justify-center gap-2 text-xs text-slate-500">
+                    <Loader2 className="w-4 h-4 animate-spin text-slate-700" />
                     <span>Đang tải danh sách lời mời...</span>
                   </div>
                 ) : pendingInvites.length === 0 ? (
-                  <div className="py-8 text-center text-xs text-[#2b1572]/60 rounded-xl bg-white/30 border border-white/60">
+                  <div className="py-8 text-center text-xs text-slate-500 rounded-md bg-slate-50 border border-slate-200">
                     Chưa có lời mời đang chờ nào cho Bảng này.
                   </div>
                 ) : (
-                  <div className="max-h-56 overflow-y-auto divide-y divide-[#2b1572]/10 pr-1">
+                  <div className="max-h-56 overflow-y-auto divide-y divide-slate-100 pr-1">
                     {pendingInvites.map((inv: any) => (
                       <div key={inv.id} className="py-2.5 flex items-center justify-between gap-3">
                         <div>
-                          <div className="text-xs font-bold text-[#2b1572] flex items-center gap-2">
+                          <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
                             <span>{inv.email}</span>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-900 font-bold">
+                            <span className="text-[10px] px-2 py-0.5 rounded-xs bg-slate-100 border border-slate-200 text-slate-800 font-semibold font-mono">
                               {inv.role}
                             </span>
                           </div>
-                          <div className="text-[11px] text-[#2b1572]/60 flex items-center gap-2 mt-0.5">
+                          <div className="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
                             <span>Mời bởi: {inv.inviter?.name || 'Admin'}</span>
                             <span>•</span>
                             <span className="flex items-center gap-1">
@@ -614,7 +615,7 @@ export default function ShareBoardModal({
                               navigator.clipboard.writeText(link);
                               alert('Đã sao chép liên kết mời!');
                             }}
-                            className="p-1.5 text-[#2b1572]/60 hover:text-[#2b1572] hover:bg-white/60 rounded-lg transition-colors cursor-pointer"
+                            className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
                             title="Sao chép liên kết"
                           >
                             <Copy className="w-3.5 h-3.5" />
@@ -624,7 +625,7 @@ export default function ShareBoardModal({
                             <button
                               type="button"
                               onClick={() => handleRevokeInvite(inv.id)}
-                              className="px-2.5 py-1 rounded-lg border border-[#c40000]/30 text-[#c40000] hover:bg-[#c40000]/10 text-xs font-semibold cursor-pointer transition-colors"
+                              className="px-2.5 py-1 rounded-md border border-red-300 text-red-600 hover:bg-red-50 text-xs font-semibold cursor-pointer transition-colors"
                             >
                               Thu hồi
                             </button>
