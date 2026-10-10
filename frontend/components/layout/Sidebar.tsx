@@ -204,11 +204,11 @@ export default function Sidebar({
                 className="w-full flex items-center justify-between p-2 rounded-md bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors text-left group cursor-pointer"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-7 h-7 rounded-md bg-slate-900 flex items-center justify-center text-white shrink-0 font-bold text-xs">
+                  <div className="w-7 h-7 rounded-md bg-[#f28d8d] flex items-center justify-center text-white shrink-0 font-bold text-xs shadow-2xs">
                     {currentWorkspace ? currentWorkspace.name.charAt(0).toUpperCase() : 'W'}
                   </div>
                   <div className="min-w-0">
-                    <div className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Workspace</div>
+                    <div className="text-[10px] text-[#d86969] font-semibold uppercase tracking-wider">Workspace</div>
                     <div className="text-xs font-bold text-slate-900 truncate">
                       {currentWorkspace ? currentWorkspace.name : 'Chọn Workspace'}
                     </div>
@@ -221,43 +221,43 @@ export default function Sidebar({
                 />
               </button>
 
-          {/* Dropdown Menu - 100% Solid White */}
-          {isWsDropdownOpen && (
-            <div className="absolute top-full left-0 right-0 mt-1.5 p-1.5 bg-white rounded-lg shadow-md border border-slate-200 z-50 animate-in fade-in zoom-in-95 duration-100">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1">
-                Danh sách Không gian làm việc
-              </div>
-              <div className="max-h-48 overflow-y-auto space-y-0.5 my-1">
-                {workspaces.map((ws) => (
-                  <button
-                    key={ws.id}
-                    onClick={() => {
-                      onSelectWorkspace?.(ws.id);
-                      setIsWsDropdownOpen(false);
-                    }}
-                    className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
-                      ws.id === currentWorkspace?.id
-                        ? 'bg-slate-100 text-slate-900 font-bold'
-                        : 'hover:bg-slate-100 text-slate-700'
-                    }`}
-                  >
-                    <Layers className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate">{ws.name}</span>
-                  </button>
-                ))}
-              </div>
+              {/* Dropdown Menu - 100% Solid White */}
+              {isWsDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1.5 p-1.5 bg-white rounded-lg shadow-md border border-slate-200 z-50 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1">
+                    Danh sách Không gian làm việc
+                  </div>
+                  <div className="max-h-48 overflow-y-auto space-y-0.5 my-1">
+                    {workspaces.map((ws) => (
+                      <button
+                        key={ws.id}
+                        onClick={() => {
+                          onSelectWorkspace?.(ws.id);
+                          setIsWsDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
+                          ws.id === currentWorkspace?.id
+                            ? 'bg-[#ffc0cb]/30 text-slate-900 font-bold border border-[#ffc0cb]/80'
+                            : 'hover:bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        <Layers className={`w-3.5 h-3.5 shrink-0 ${ws.id === currentWorkspace?.id ? 'text-[#f28d8d]' : 'text-slate-500'}`} />
+                        <span className="truncate">{ws.name}</span>
+                      </button>
+                    ))}
+                  </div>
 
-              <button
-                onClick={() => {
-                  setIsWsDropdownOpen(false);
-                  onOpenCreateWorkspace();
-                }}
-                className="w-full mt-1 pt-1.5 border-t border-slate-100 flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-slate-900 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5 text-slate-900" />
-                <span>Tạo Workspace mới</span>
-              </button>
-            </div>
+                  <button
+                    onClick={() => {
+                      setIsWsDropdownOpen(false);
+                      onOpenCreateWorkspace();
+                    }}
+                    className="w-full mt-1 pt-1.5 border-t border-slate-100 flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold text-[#f28d8d] hover:bg-[#ffc0cb]/25 rounded-md transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-[#f28d8d]" />
+                    <span>Tạo Workspace mới</span>
+                  </button>
+                </div>
           )}
         </div>
 
@@ -281,7 +281,7 @@ export default function Sidebar({
         >
           {/* 1. Thanh màu Active di chuyển mượt mà (Gliding Active Bar & Pill) */}
           <div
-            className={`absolute left-0 right-0 rounded-md pointer-events-none z-0 bg-slate-100 border border-slate-200/80 ${
+            className={`absolute left-0 right-0 rounded-md pointer-events-none z-0 bg-[#ffc0cb]/25 border border-[#ffc0cb]/60 ${
               hasMounted ? 'transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)]' : ''
             }`}
             style={{
@@ -290,8 +290,8 @@ export default function Sidebar({
               opacity: activeNavStyle.opacity,
             }}
           >
-            {/* Vạch màu active trượt theo */}
-            <span className="absolute left-1 top-2 bottom-2 w-1 rounded-sm bg-slate-900" />
+            {/* Vạch màu active trượt theo (Sky Blue accent) */}
+            <span className="absolute left-1 top-2 bottom-2 w-1 rounded-sm bg-[#87ceeb]" />
           </div>
 
           {/* 2. Vệt sáng Hover lướt theo con trỏ chuột */}
@@ -329,7 +329,7 @@ export default function Sidebar({
                 : 'text-slate-600 hover:text-slate-900 font-medium'
             }`}
           >
-            <LayoutDashboard className="w-4 h-4 shrink-0" />
+            <LayoutDashboard className={`w-4 h-4 shrink-0 ${activeNavKey === 'dashboard' ? 'text-[#f28d8d]' : 'text-slate-500 group-hover:text-slate-700'}`} />
             <span>Tổng quan</span>
           </Link>
 
@@ -359,7 +359,7 @@ export default function Sidebar({
                   : 'text-slate-600 hover:text-slate-900 font-medium'
               }`}
             >
-              <Users className="w-4 h-4 shrink-0" />
+              <Users className={`w-4 h-4 shrink-0 ${activeNavKey === 'workspace' ? 'text-[#f28d8d]' : 'text-slate-500 group-hover:text-slate-700'}`} />
               <span>Thành viên & Cài đặt</span>
             </Link>
           )}
@@ -389,7 +389,7 @@ export default function Sidebar({
                 : 'text-slate-600 hover:text-slate-900 font-medium'
             }`}
           >
-            <LayoutTemplate className="w-4 h-4 shrink-0" />
+            <LayoutTemplate className={`w-4 h-4 shrink-0 ${activeNavKey === 'templates' ? 'text-[#f28d8d]' : 'text-slate-500 group-hover:text-slate-700'}`} />
             <span>Thư viện Mẫu</span>
           </Link>
 
@@ -418,7 +418,7 @@ export default function Sidebar({
                 : 'text-slate-600 hover:text-slate-900 font-medium'
             }`}
           >
-            <History className="w-4 h-4 shrink-0" />
+            <History className={`w-4 h-4 shrink-0 ${activeNavKey === 'my-activities' ? 'text-[#f28d8d]' : 'text-slate-500 group-hover:text-slate-700'}`} />
             <span>Hoạt động của tôi</span>
           </Link>
         </div>
@@ -432,7 +432,7 @@ export default function Sidebar({
             {onOpenCreateBoard && (
               <button
                 onClick={onOpenCreateBoard}
-                className="p-1 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                className="p-1 hover:bg-[#ffc0cb]/30 rounded text-[#f28d8d] hover:text-[#d86969] transition-colors cursor-pointer"
                 title="Tạo Board mới"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -446,7 +446,7 @@ export default function Sidebar({
           >
             {/* 1. Thanh màu Active di chuyển mượt mà giữa các Bảng (Gliding Active Bar & Pill) */}
             <div
-              className={`absolute left-0 right-0 rounded-md pointer-events-none z-0 bg-slate-100 border border-slate-200/80 ${
+              className={`absolute left-0 right-0 rounded-md pointer-events-none z-0 bg-[#ffc0cb]/25 border border-[#ffc0cb]/60 ${
                 hasMounted ? 'transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)]' : ''
               }`}
               style={{
@@ -455,8 +455,8 @@ export default function Sidebar({
                 opacity: activeBoardStyle.opacity,
               }}
             >
-              {/* Vạch màu active trượt theo Bảng được chọn */}
-              <span className="absolute left-1 top-2 bottom-2 w-1 rounded-sm bg-slate-900" />
+              {/* Vạch màu active trượt theo Bảng được chọn (Sky Blue) */}
+              <span className="absolute left-1 top-2 bottom-2 w-1 rounded-sm bg-[#87ceeb]" />
             </div>
 
             {/* 2. Vệt sáng Hover lướt theo con trỏ chuột */}
@@ -499,7 +499,7 @@ export default function Sidebar({
                     }`}
                   >
                     <div className="flex items-center gap-2 truncate pl-1">
-                      <Kanban className="w-3.5 h-3.5 shrink-0 opacity-70 group-hover:opacity-100" />
+                      <Kanban className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-[#f28d8d]' : 'opacity-70 group-hover:opacity-100'}`} />
                       <span className="truncate">{board.name}</span>
                     </div>
                     {board.is_favorite && (
@@ -517,13 +517,13 @@ export default function Sidebar({
         </div>
 
         {/* Bottom Shortcut Helper Card */}
-        <div className="mt-3 p-2.5 rounded-md bg-slate-50 border border-slate-200 text-xs">
-          <div className="flex items-center gap-1.5 font-semibold text-slate-800 mb-1">
-            <Sparkles className="w-3.5 h-3.5 text-slate-500" />
+        <div className="mt-3 p-2.5 rounded-md bg-[#ffc0cb]/20 border border-[#ffc0cb]/60 text-xs">
+          <div className="flex items-center gap-1.5 font-semibold text-slate-900 mb-1">
+            <Sparkles className="w-3.5 h-3.5 text-[#f28d8d]" />
             <span>Phím tắt nhanh</span>
           </div>
-          <p className="text-[11px] text-slate-500 leading-tight">
-            Nhấn <kbd className="px-1 py-0.2 rounded bg-white border border-slate-200 text-[10px] font-mono text-slate-700">Ctrl</kbd> + <kbd className="px-1 py-0.2 rounded bg-white border border-slate-200 text-[10px] font-mono text-slate-700">K</kbd> tìm kiếm, <kbd className="px-1 py-0.2 rounded bg-white border border-slate-200 text-[10px] font-mono text-slate-700">Ctrl</kbd> + <kbd className="px-1 py-0.2 rounded bg-white border border-slate-200 text-[10px] font-mono text-slate-700">B</kbd> đóng/mở menu.
+          <p className="text-[11px] text-slate-600 leading-tight">
+            Nhấn <kbd className="px-1 py-0.2 rounded bg-white border border-[#87ceeb] text-[10px] font-mono text-slate-700 shadow-2xs">Ctrl</kbd> + <kbd className="px-1 py-0.2 rounded bg-white border border-[#87ceeb] text-[10px] font-mono text-slate-700 shadow-2xs">K</kbd> tìm kiếm, <kbd className="px-1 py-0.2 rounded bg-white border border-[#87ceeb] text-[10px] font-mono text-slate-700 shadow-2xs">Ctrl</kbd> + <kbd className="px-1 py-0.2 rounded bg-white border border-[#87ceeb] text-[10px] font-mono text-slate-700 shadow-2xs">B</kbd> đóng/mở menu.
           </p>
         </div>
       </div>

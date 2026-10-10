@@ -130,7 +130,7 @@ export default function ArchivedBoardsModal({
                   <button
                     onClick={() => handleRestore(b.id)}
                     disabled={actionLoadingId === b.id}
-                    className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
+                    className="px-3 py-1.5 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
                   >
                     {actionLoadingId === b.id ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />

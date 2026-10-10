@@ -1193,7 +1193,7 @@ export default function BoardDetailPage({
           <div className="pt-2 flex justify-center">
             <Link
               href="/dashboard"
-              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium rounded-md flex items-center gap-2 transition-colors cursor-pointer"
+              className="px-4 py-2 bg-[#f28d8d] hover:bg-[#e57a7a] text-white text-xs font-semibold rounded-md flex items-center gap-2 transition-colors cursor-pointer shadow-2xs"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Quay về Bảng điều khiển (Dashboard)</span>
@@ -1313,8 +1313,8 @@ export default function BoardDetailPage({
             <button
               type="button"
               onClick={() => setActiveView(activeView === 'analytics' ? 'kanban' : 'analytics')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer shrink-0 ${activeView === 'analytics'
-                ? 'bg-slate-900 text-white border border-slate-900'
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer shrink-0 ${activeView === 'analytics'
+                ? 'bg-[#87ceeb] text-slate-900 border border-[#72bde0] shadow-2xs'
                 : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
                 }`}
               title="Xem thống kê và phân tích bảng"
@@ -1330,8 +1330,8 @@ export default function BoardDetailPage({
             <button
               type="button"
               onClick={() => setIsFilterModalOpen(true)}
-              className={`h-7 px-2.5 text-xs font-medium rounded-md flex items-center gap-1.5 transition-colors cursor-pointer border ${activeFilterCount > 0
-                ? 'bg-slate-900 text-white border-slate-900'
+              className={`h-7 px-2.5 text-xs font-semibold rounded-md flex items-center gap-1.5 transition-colors cursor-pointer border ${activeFilterCount > 0
+                ? 'bg-[#87ceeb] text-slate-900 border-[#72bde0] shadow-2xs'
                 : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                 }`}
               title="Mở bảng Lọc"
@@ -1371,13 +1371,13 @@ export default function BoardDetailPage({
               {(board?.members || []).slice(0, 4).map((m: any, idx: number) => (
                 <div
                   key={m.id || idx}
-                  className="w-6 h-6 rounded-full bg-slate-900 text-white border border-white flex items-center justify-center text-[9px] font-bold"
+                  className="w-6 h-6 rounded-full bg-[#f28d8d] text-white border border-white flex items-center justify-center text-[9px] font-bold shadow-2xs"
                 >
                   {m.user?.name?.charAt(0).toUpperCase() || 'U'}
                 </div>
               ))}
               {(board?.members?.length || 0) > 4 && (
-                <div className="w-6 h-6 rounded-full bg-slate-200 text-slate-700 border border-white flex items-center justify-center text-[9px] font-bold">
+                <div className="w-6 h-6 rounded-full bg-[#ffc0cb]/60 text-slate-900 border border-white flex items-center justify-center text-[9px] font-bold">
                   +{board.members.length - 4}
                 </div>
               )}
@@ -1630,13 +1630,13 @@ export default function BoardDetailPage({
                           value={inlineListTitle}
                           onChange={(e) => setInlineListTitle(e.target.value)}
                           placeholder="Nhập tên danh sách mới..."
-                          className="w-full text-xs font-medium text-slate-900 bg-white border border-slate-300 rounded-md p-2 focus:outline-none focus:border-blue-600"
+                          className="w-full text-xs font-medium text-slate-900 bg-white border border-slate-300 rounded-md p-2 focus:outline-none focus:border-[#87ceeb]"
                         />
                         <div className="flex items-center gap-1.5">
                           <button
                             type="submit"
                             disabled={!inlineListTitle.trim() || isSubmittingList}
-                            className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white rounded-md text-xs font-medium transition-colors cursor-pointer"
+                            className="px-2.5 py-1 bg-[#f28d8d] hover:bg-[#e57a7a] disabled:opacity-50 text-white rounded-md text-xs font-semibold transition-colors cursor-pointer shadow-2xs"
                           >
                             {isSubmittingList ? 'Đang thêm...' : 'Thêm danh sách'}
                           </button>
@@ -1837,25 +1837,25 @@ export default function BoardDetailPage({
 
           <div className="relative w-full max-w-2xl bg-white rounded-lg shadow-lg border border-slate-300 overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[88vh]">
             {/* Header */}
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-white text-slate-900">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-md bg-white/10 text-white flex items-center justify-center">
-                  <Sparkles className="w-3.5 h-3.5" />
+                <div className="w-8 h-8 rounded-md bg-[#f28d8d] text-white flex items-center justify-center shadow-2xs">
+                  <Sparkles className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                     <span>AI Daily Standup & Báo Cáo Tiến Độ</span>
-                    <span className="text-[10px] px-1.5 py-0.2 rounded-xs bg-white/10 text-slate-200 font-mono">Gemini 3.6 Flash</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded-xs bg-[#ffc0cb]/30 text-[#d86969] border border-[#ffc0cb]/80 font-mono">Gemini 3.6 Flash</span>
                   </h3>
-                  <p className="text-xs text-white/70">
-                    Bảng: <strong className="text-white">{board?.name}</strong> • Tổng hợp từ trạng thái thẻ & hoạt động
+                  <p className="text-xs text-slate-500">
+                    Bảng: <strong className="text-slate-800">{board?.name}</strong> • Tổng hợp từ trạng thái thẻ & hoạt động
                   </p>
                 </div>
               </div>
 
               <button
                 onClick={() => setIsAiStandupOpen(false)}
-                className="p-1 text-white/70 hover:text-white rounded-md transition-colors cursor-pointer"
+                className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1899,7 +1899,7 @@ export default function BoardDetailPage({
             <div className="p-5 overflow-y-auto space-y-4 flex-1">
               {isLoadingAiStandup ? (
                 <div className="py-14 flex flex-col items-center justify-center text-center space-y-3">
-                  <div className="w-10 h-10 rounded-full border-2 border-slate-200 border-t-slate-800 animate-spin" />
+                  <div className="w-10 h-10 rounded-full border-2 border-slate-200 border-t-[#f28d8d] animate-spin" />
                   <div className="space-y-1">
                     <h4 className="text-xs font-bold text-slate-800">Gemini đang phân tích dữ liệu Bảng...</h4>
                     <p className="text-[11px] text-slate-500 max-w-sm">
@@ -1931,7 +1931,7 @@ export default function BoardDetailPage({
                   <p>Bấm nút bên dưới để tạo báo cáo Daily Standup tự động.</p>
                   <button
                     onClick={handleGenerateDailyStandup}
-                    className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-md transition-colors cursor-pointer"
+                    className="px-3.5 py-1.5 bg-[#f28d8d] hover:bg-[#e57a7a] text-white font-semibold rounded-md transition-colors cursor-pointer shadow-2xs"
                   >
                     Tạo báo cáo ngay
                   </button>
@@ -1949,7 +1949,7 @@ export default function BoardDetailPage({
                     className={`px-3 py-1.5 text-xs font-semibold rounded-md flex items-center gap-1.5 transition-colors cursor-pointer ${
                       copyMode === 'zalo'
                         ? 'bg-emerald-600 text-white'
-                        : 'bg-slate-900 hover:bg-slate-800 text-white'
+                        : 'bg-[#f28d8d] hover:bg-[#e57a7a] text-white shadow-2xs'
                     }`}
                     title="Sao chép báo cáo sạch đẹp, phù hợp dán vào Zalo / Teams / Messenger"
                   >
@@ -2016,7 +2016,7 @@ export default function BoardDetailPage({
               {/* Drawer Header */}
               <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-md bg-slate-900 flex items-center justify-center text-white shadow-2xs">
+                  <div className="w-8 h-8 rounded-md bg-[#87ceeb] flex items-center justify-center text-slate-900 shadow-2xs">
                     <History className="w-4 h-4" />
                   </div>
                   <div>
@@ -2034,7 +2034,7 @@ export default function BoardDetailPage({
                     className="p-1.5 rounded-md text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
                     title="Làm mới"
                   >
-                    <RefreshCw className={`w-4 h-4 ${isLoadingBoardActivities ? 'animate-spin text-slate-700' : ''}`} />
+                    <RefreshCw className={`w-4 h-4 ${isLoadingBoardActivities ? 'animate-spin text-[#f28d8d]' : ''}`} />
                   </button>
                   <button
                     onClick={() => setIsBoardActivityOpen(false)}
@@ -2050,7 +2050,7 @@ export default function BoardDetailPage({
                 <button
                   onClick={() => setBoardActivityFilter('all')}
                   className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors cursor-pointer ${boardActivityFilter === 'all'
-                    ? 'bg-slate-900 text-white shadow-2xs'
+                    ? 'bg-[#87ceeb] text-slate-900 border border-[#72bde0] shadow-2xs'
                     : 'text-slate-600 hover:bg-slate-200/70'
                     }`}
                 >
@@ -2059,7 +2059,7 @@ export default function BoardDetailPage({
                 <button
                   onClick={() => setBoardActivityFilter('card')}
                   className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors cursor-pointer ${boardActivityFilter === 'card'
-                    ? 'bg-slate-900 text-white shadow-2xs'
+                    ? 'bg-[#87ceeb] text-slate-900 border border-[#72bde0] shadow-2xs'
                     : 'text-slate-600 hover:bg-slate-200/70'
                     }`}
                 >
@@ -2068,7 +2068,7 @@ export default function BoardDetailPage({
                 <button
                   onClick={() => setBoardActivityFilter('board')}
                   className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors cursor-pointer ${boardActivityFilter === 'board'
-                    ? 'bg-slate-900 text-white shadow-2xs'
+                    ? 'bg-[#87ceeb] text-slate-900 border border-[#72bde0] shadow-2xs'
                     : 'text-slate-600 hover:bg-slate-200/70'
                     }`}
                 >
@@ -2161,7 +2161,7 @@ export default function BoardDetailPage({
                               className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5 shadow-2xs"
                             />
                           ) : (
-                            <div className="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 shadow-2xs">
+                            <div className="w-7 h-7 rounded-full bg-[#f28d8d] text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 shadow-2xs">
                               {actorName.charAt(0).toUpperCase()}
                             </div>
                           )}
@@ -2226,7 +2226,7 @@ export default function BoardDetailPage({
       {/* Floating AI Copilot Trigger */}
       <button
         onClick={() => setIsCopilotOpen(true)}
-        className="fixed bottom-6 right-6 z-40 px-3.5 py-2 rounded-md bg-slate-900 hover:bg-slate-800 text-white shadow-lg border border-slate-700 transition-colors flex items-center gap-2 cursor-pointer group"
+        className="fixed bottom-6 right-6 z-40 px-3.5 py-2 rounded-md bg-[#f28d8d] hover:bg-[#e57a7a] text-white shadow-lg shadow-[#f28d8d]/25 border border-[#d86969] transition-colors flex items-center gap-2 cursor-pointer group"
         title="Mở Trợ lý AI Copilot"
       >
         <Sparkles className="w-4 h-4 text-amber-300" />

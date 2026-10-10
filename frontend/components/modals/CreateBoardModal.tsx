@@ -80,7 +80,7 @@ export default function CreateBoardModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-2xs">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-2xs animate-fade-in">
       <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-300 p-6 sm:p-7 relative">
         <button
           onClick={onClose}
@@ -90,7 +90,7 @@ export default function CreateBoardModal({
         </button>
 
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-9 h-9 rounded-md bg-slate-900 flex items-center justify-center text-white shadow-2xs">
+          <div className="w-9 h-9 rounded-md bg-[#f28d8d] flex items-center justify-center text-white shadow-2xs">
             <Kanban className="w-4.5 h-4.5" />
           </div>
           <div>
@@ -113,7 +113,7 @@ export default function CreateBoardModal({
             <select
               value={currentSelectedWsId}
               onChange={(e) => setTargetWsId(e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-md font-medium text-slate-900 focus:outline-none focus:border-slate-800"
+              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-md font-medium text-slate-900 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
             >
               {workspaces.map((ws) => (
                 <option key={ws.id} value={ws.id}>
@@ -133,7 +133,7 @@ export default function CreateBoardModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="VD: Dự án Sprint 1"
-              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-md placeholder:text-slate-400 font-medium text-slate-900 focus:outline-none focus:border-slate-800"
+              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-md placeholder:text-slate-400 font-medium text-slate-900 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
             />
           </div>
 
@@ -146,7 +146,7 @@ export default function CreateBoardModal({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Mô tả mục tiêu của board này..."
-              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-md placeholder:text-slate-400 font-medium text-slate-900 resize-none focus:outline-none focus:border-slate-800"
+              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-md placeholder:text-slate-400 font-medium text-slate-900 resize-none focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
             />
           </div>
 
@@ -156,7 +156,7 @@ export default function CreateBoardModal({
               id="is_fav"
               checked={isFavorite}
               onChange={(e) => setIsFavorite(e.target.checked)}
-              className="w-4 h-4 rounded text-slate-900 focus:ring-slate-900 border-slate-300"
+              className="w-4 h-4 rounded text-[#f28d8d] focus:ring-[#87ceeb] border-slate-300 accent-[#f28d8d]"
             />
             <label htmlFor="is_fav" className="text-xs font-semibold text-slate-700 flex items-center gap-1.5 cursor-pointer">
               <Star className={`w-3.5 h-3.5 ${isFavorite ? 'text-amber-500 fill-amber-500' : 'text-slate-400'}`} />
@@ -193,7 +193,7 @@ export default function CreateBoardModal({
               <button
                 type="submit"
                 disabled={isLoading || !currentSelectedWsId}
-                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
+                className="px-4 py-2 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
               >
                 {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                 <span>{isLoading ? 'Đang tạo...' : 'Tạo Board'}</span>

@@ -257,7 +257,7 @@ export default function KanbanCard({
     <div className="relative">
       {/* Top drop insertion indicator line */}
       {dropPosition === 'top' && (
-        <div className="absolute -top-1 left-0 right-0 h-0.5 bg-[#2563eb] rounded-xs z-20" />
+        <div className="absolute -top-1 left-0 right-0 h-0.5 bg-[#87ceeb] rounded-xs z-20" />
       )}
 
       <div
@@ -281,7 +281,7 @@ export default function KanbanCard({
           if (!isEditingTitle && !isMenuOpen) onOpenDetail(card.id);
         }}
         className={`kanban-card group relative p-3 bg-white rounded-md border border-slate-200 hover:border-slate-400 transition-colors duration-150 cursor-pointer select-none active:cursor-grabbing ${
-          dropPosition ? 'ring-1 ring-blue-500' : ''
+          dropPosition ? 'ring-1 ring-[#87ceeb]' : ''
         } ${isMenuOpen ? '!z-30 ring-1 ring-slate-400' : ''}`}
       >
         {/* Labels preview */}
@@ -310,10 +310,10 @@ export default function KanbanCard({
               onBlur={handleSaveTitle}
               onKeyDown={handleKeyDown}
               onClick={(e) => e.stopPropagation()}
-              className="w-full text-xs font-semibold text-slate-900 bg-white border border-blue-500 rounded-md px-2 py-1 focus:outline-none"
+              className="w-full text-xs font-semibold text-slate-900 bg-white border border-[#87ceeb] rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#87ceeb]/40"
             />
           ) : (
-            <h4 className="text-xs font-semibold text-slate-900 leading-snug break-words flex-1 group-hover:text-blue-700 transition-colors">
+            <h4 className="text-xs font-semibold text-slate-900 leading-snug break-words flex-1 group-hover:text-[#d86969] transition-colors">
               {card.title}
             </h4>
           )}
@@ -424,7 +424,7 @@ export default function KanbanCard({
                 ) : (
                   <div
                     key={ca.id || Math.random()}
-                    className="w-5 h-5 rounded-full bg-slate-900 border border-white text-white flex items-center justify-center text-[9px] font-bold shrink-0"
+                    className="w-5 h-5 rounded-full bg-[#f28d8d] border border-white text-white flex items-center justify-center text-[9px] font-bold shrink-0"
                     title={uName}
                   >
                     {firstLetter}
@@ -446,8 +446,8 @@ export default function KanbanCard({
 
         {/* Copy link feedback toast overlay */}
         {copySuccess && (
-          <div className="absolute inset-0 bg-[#0f172a]/95 rounded-md flex items-center justify-center gap-1.5 text-white text-xs font-semibold z-20 animate-in fade-in duration-150">
-            <Check className="w-4 h-4 text-emerald-400" />
+          <div className="absolute inset-0 bg-[#f28d8d] rounded-md flex items-center justify-center gap-1.5 text-white text-xs font-semibold z-20 animate-in fade-in duration-150 shadow-md">
+            <Check className="w-4 h-4 text-white" />
             <span>Đã sao chép liên kết thẻ!</span>
           </div>
         )}
@@ -455,7 +455,7 @@ export default function KanbanCard({
 
       {/* Bottom drop insertion indicator line */}
       {dropPosition === 'bottom' && (
-        <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-[#2563eb] rounded-xs z-20" />
+        <div className="absolute -bottom-1 left-0 right-0 h-0.5 bg-[#87ceeb] rounded-xs z-20" />
       )}
 
       {/* PORTAL FLOATING MENU: Perfectly aligned whether popping above or below */}

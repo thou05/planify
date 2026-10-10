@@ -475,7 +475,7 @@ export default function ImportBoardModal({
 
         {/* Header */}
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-9 h-9 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800">
+          <div className="w-9 h-9 rounded-md bg-[#f28d8d] flex items-center justify-center text-white shadow-2xs">
             <Upload className="w-4 h-4" />
           </div>
           <div>
@@ -498,7 +498,7 @@ export default function ImportBoardModal({
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className="border border-dashed border-slate-300 hover:border-slate-800 rounded-lg p-7 flex flex-col items-center justify-center text-center cursor-pointer bg-slate-50/60 hover:bg-slate-50 transition-colors group"
+              className="border border-dashed border-slate-300 hover:border-[#87ceeb] rounded-lg p-7 flex flex-col items-center justify-center text-center cursor-pointer bg-slate-50/60 hover:bg-slate-50 transition-colors group"
             >
               <input
                 ref={fileInputRef}
@@ -656,7 +656,7 @@ export default function ImportBoardModal({
                     onClick={() => setDestination('new')}
                     className={`p-3 rounded-md border transition-all cursor-pointer ${
                       destination === 'new'
-                        ? 'bg-white border-slate-800 ring-1 ring-slate-800'
+                        ? 'bg-[#ffc0cb]/20 border-[#f28d8d] ring-1 ring-[#f28d8d]'
                         : 'bg-slate-50/60 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
@@ -666,7 +666,7 @@ export default function ImportBoardModal({
                         name="destination"
                         checked={destination === 'new'}
                         onChange={() => setDestination('new')}
-                        className="text-slate-900 focus:ring-slate-900"
+                        className="text-[#f28d8d] focus:ring-[#87ceeb] accent-[#f28d8d]"
                       />
                       <div className="flex-1">
                         <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
@@ -674,7 +674,7 @@ export default function ImportBoardModal({
                           <span>Tạo Bảng mới (New Board)</span>
                         </div>
                         <div className="text-[10px] text-slate-500">
-                          Tạo bảng riêng biệt chứa toàn bộ dữ liệu tệp nhập
+                           Tạo bảng riêng biệt chứa toàn bộ dữ liệu tệp nhập
                         </div>
                       </div>
                     </div>
@@ -689,7 +689,7 @@ export default function ImportBoardModal({
                           value={newBoardTitle}
                           onChange={(e) => setNewBoardTitle(e.target.value)}
                           placeholder="Nhập tên bảng..."
-                          className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800"
+                          className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white font-medium text-slate-900 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
                         />
                       </div>
                     )}
@@ -701,7 +701,7 @@ export default function ImportBoardModal({
                       onClick={() => setDestination('existing')}
                       className={`p-3 rounded-md border transition-all cursor-pointer ${
                         destination === 'existing'
-                          ? 'bg-white border-slate-800 ring-1 ring-slate-800'
+                          ? 'bg-[#ffc0cb]/20 border-[#f28d8d] ring-1 ring-[#f28d8d]'
                           : 'bg-slate-50/60 border-slate-200 hover:bg-slate-50'
                       }`}
                     >
@@ -711,7 +711,7 @@ export default function ImportBoardModal({
                           name="destination"
                           checked={destination === 'existing'}
                           onChange={() => setDestination('existing')}
-                          className="text-slate-900 focus:ring-slate-900"
+                          className="text-[#f28d8d] focus:ring-[#87ceeb] accent-[#f28d8d]"
                         />
                         <div className="flex-1">
                           <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
@@ -737,7 +737,7 @@ export default function ImportBoardModal({
                                 value="skip"
                                 checked={duplicateStrategy === 'skip'}
                                 onChange={() => setDuplicateStrategy('skip')}
-                                className="text-slate-900 focus:ring-slate-900"
+                                className="text-[#f28d8d] focus:ring-[#87ceeb] accent-[#f28d8d]"
                               />
                               <span>Bỏ qua thẻ trùng lặp (Skip)</span>
                             </label>
@@ -789,7 +789,7 @@ export default function ImportBoardModal({
               type="button"
               onClick={handleExecuteImport}
               disabled={isImporting || !isFileValid}
-              className="px-4 py-2 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-xs"
+              className="px-4 py-2 rounded-md bg-[#f28d8d] hover:bg-[#e57a7a] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-xs"
             >
               {isImporting ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />

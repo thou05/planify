@@ -74,7 +74,7 @@ export default function EditWorkspaceModal({
         </button>
 
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-9 h-9 rounded-md bg-slate-900 flex items-center justify-center text-white shadow-2xs">
+          <div className="w-9 h-9 rounded-md bg-[#f28d8d] flex items-center justify-center text-white shadow-2xs">
             <Edit3 className="w-4 h-4" />
           </div>
           <div>
@@ -100,7 +100,7 @@ export default function EditWorkspaceModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="VD: Dự án Planify Team..."
-              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-md placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-slate-800"
+              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-md placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
             />
           </div>
 
@@ -113,7 +113,7 @@ export default function EditWorkspaceModal({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Mô tả mục tiêu, dự án hoặc phòng ban của Workspace này..."
-              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-md placeholder:text-slate-400 text-slate-900 font-medium resize-none focus:outline-none focus:border-slate-800"
+              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-md placeholder:text-slate-400 text-slate-900 font-medium resize-none focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
             />
           </div>
 
@@ -129,7 +129,7 @@ export default function EditWorkspaceModal({
             <button
               type="submit"
               disabled={isLoading || !name.trim()}
-              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
+              className="px-4 py-2 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
             >
               {isLoading ? (
                 <>

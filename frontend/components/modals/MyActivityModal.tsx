@@ -210,7 +210,7 @@ export default function MyActivityModal({
         {/* Header */}
         <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-white shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800">
+            <div className="w-8 h-8 rounded-md bg-[#f28d8d] flex items-center justify-center text-white shadow-2xs">
               <History className="w-4 h-4" />
             </div>
             <div>
@@ -245,7 +245,7 @@ export default function MyActivityModal({
             onClick={() => setFilter('all')}
             className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
               filter === 'all'
-                ? 'bg-slate-900 text-white shadow-xs'
+                ? 'bg-[#87ceeb] text-slate-900 border border-[#72bde0] shadow-xs'
                 : 'text-slate-600 hover:bg-slate-200/70'
             }`}
           >
@@ -255,7 +255,7 @@ export default function MyActivityModal({
             onClick={() => setFilter('card')}
             className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
               filter === 'card'
-                ? 'bg-slate-900 text-white shadow-xs'
+                ? 'bg-[#87ceeb] text-slate-900 border border-[#72bde0] shadow-xs'
                 : 'text-slate-600 hover:bg-slate-200/70'
             }`}
           >
@@ -265,7 +265,7 @@ export default function MyActivityModal({
             onClick={() => setFilter('board')}
             className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
               filter === 'board'
-                ? 'bg-slate-900 text-white shadow-xs'
+                ? 'bg-[#87ceeb] text-slate-900 border border-[#72bde0] shadow-xs'
                 : 'text-slate-600 hover:bg-slate-200/70'
             }`}
           >
@@ -275,7 +275,7 @@ export default function MyActivityModal({
             onClick={() => setFilter('workspace')}
             className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
               filter === 'workspace'
-                ? 'bg-slate-900 text-white shadow-xs'
+                ? 'bg-[#87ceeb] text-slate-900 border border-[#72bde0] shadow-xs'
                 : 'text-slate-600 hover:bg-slate-200/70'
             }`}
           >

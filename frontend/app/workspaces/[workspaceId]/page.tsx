@@ -491,7 +491,7 @@ export default function WorkspaceDetailPage({
           <div className="pt-2 flex justify-center">
             <Link
               href="/dashboard"
-              className="px-4 py-2 bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-semibold rounded-md flex items-center gap-2 transition-colors cursor-pointer"
+              className="px-4 py-2 bg-[#f28d8d] hover:bg-[#e57a7a] text-white text-xs font-semibold rounded-md flex items-center gap-2 transition-colors cursor-pointer shadow-2xs"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Quay về Bảng điều khiển</span>
@@ -517,12 +517,12 @@ export default function WorkspaceDetailPage({
 
         {/* Workspace Hero Header */}
         {isLoading ? (
-          <div className="bg-white border border-slate-200 h-36 animate-pulse rounded-lg" />
+          <div className="bg-white border border-slate-200 h-36 animate-pulse rounded-xl shadow-xs" />
         ) : workspace ? (
-          <div className="bg-white p-6 sm:p-7 rounded-lg border border-slate-200">
+          <div className="bg-white p-6 sm:p-7 rounded-xl border border-slate-200/90 shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-md bg-slate-900 flex items-center justify-center text-white font-bold text-xl shrink-0">
+                <div className="w-12 h-12 rounded-md bg-[#f28d8d] flex items-center justify-center text-white font-bold text-xl shrink-0 shadow-xs">
                   {workspace.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
@@ -531,13 +531,13 @@ export default function WorkspaceDetailPage({
                       {workspace.name}
                     </h1>
                     {workspace.isOwner ? (
-                      <span className="text-[10px] px-2 py-0.5 rounded-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">
-                        <Crown className="w-3 h-3" />
+                      <span className="text-[10px] px-2 py-0.5 rounded-xs font-semibold bg-[#ffc0cb]/30 text-[#d86969] border border-[#ffc0cb]/70 flex items-center gap-1">
+                        <Crown className="w-3 h-3 text-amber-500" />
                         Owner
                       </span>
                     ) : workspace.isAdmin ? (
-                      <span className="text-[10px] px-2 py-0.5 rounded-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
-                        <Shield className="w-3 h-3" />
+                      <span className="text-[10px] px-2 py-0.5 rounded-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200 flex items-center gap-1">
+                        <Shield className="w-3 h-3 text-sky-600" />
                         Admin
                       </span>
                     ) : (
@@ -586,7 +586,7 @@ export default function WorkspaceDetailPage({
 
                 <button
                   onClick={() => setIsCreateBoardOpen(true)}
-                  className="px-3.5 py-1.5 rounded-md bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors"
+                  className="px-3.5 py-1.5 rounded-md bg-[#f28d8d] hover:bg-[#e57a7a] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Tạo Board mới</span>
@@ -606,7 +606,7 @@ export default function WorkspaceDetailPage({
             onClick={() => setActiveTab('boards')}
             className={`px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer border ${
               activeTab === 'boards'
-                ? 'bg-[#0f172a] text-white border-[#0f172a]'
+                ? 'bg-[#f28d8d] text-white border-[#d86969] shadow-2xs font-semibold'
                 : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
             }`}
           >
@@ -618,7 +618,7 @@ export default function WorkspaceDetailPage({
             onClick={() => setActiveTab('members')}
             className={`px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer border ${
               activeTab === 'members'
-                ? 'bg-[#0f172a] text-white border-[#0f172a]'
+                ? 'bg-[#f28d8d] text-white border-[#d86969] shadow-2xs font-semibold'
                 : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
             }`}
           >
@@ -632,7 +632,7 @@ export default function WorkspaceDetailPage({
             onClick={() => setActiveTab('settings')}
             className={`px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer border ${
               activeTab === 'settings'
-                ? 'bg-[#0f172a] text-white border-[#0f172a]'
+                ? 'bg-[#f28d8d] text-white border-[#d86969] shadow-2xs font-semibold'
                 : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
             }`}
           >
@@ -644,7 +644,7 @@ export default function WorkspaceDetailPage({
             onClick={() => setActiveTab('activities')}
             className={`px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer border ${
               activeTab === 'activities'
-                ? 'bg-[#0f172a] text-white border-[#0f172a]'
+                ? 'bg-[#f28d8d] text-white border-[#d86969] shadow-2xs font-semibold'
                 : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
             }`}
           >
@@ -675,18 +675,18 @@ export default function WorkspaceDetailPage({
                 <Link
                   key={board.id}
                   href={`/boards/${board.id}`}
-                  className="p-4 rounded-md border border-slate-200 hover:border-slate-400 bg-white transition-colors flex flex-col justify-between group min-h-[130px]"
+                  className="p-4.5 rounded-xl border border-slate-200/90 hover:border-[#f28d8d] bg-white shadow-xs hover:shadow-md transition-all duration-150 flex flex-col justify-between group min-h-[130px] hover:-translate-y-0.5 cursor-pointer"
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="text-[10px] px-1.5 py-0.2 rounded-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                      <span className="text-[10px] px-1.5 py-0.2 rounded-xs font-semibold bg-[#ffc0cb]/30 text-[#d86969] border border-[#ffc0cb]/70">
                         Kanban Board
                       </span>
                       {board.is_favorite && (
                         <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
                       )}
                     </div>
-                    <h3 className="font-semibold text-slate-900 text-sm group-hover:text-slate-700 transition-colors line-clamp-1">
+                    <h3 className="font-semibold text-slate-900 text-sm group-hover:text-[#f28d8d] transition-colors line-clamp-1">
                       {board.name}
                     </h3>
                     {board.description && (
@@ -698,7 +698,7 @@ export default function WorkspaceDetailPage({
 
                   <div className="mt-3.5 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
                     <span>{board._count?.lists || 0} danh sách</span>
-                    <span className="font-medium text-slate-700 group-hover:translate-x-0.5 transition-transform">
+                    <span className="font-semibold text-slate-700 group-hover:text-[#f28d8d] group-hover:translate-x-0.5 transition-transform">
                       Mở Bảng →
                     </span>
                   </div>
@@ -707,12 +707,12 @@ export default function WorkspaceDetailPage({
 
               <button
                 onClick={() => setIsCreateBoardOpen(true)}
-                className="p-5 rounded-md bg-white hover:bg-slate-50 border border-dashed border-slate-300 transition-colors flex flex-col items-center justify-center gap-2 text-slate-600 cursor-pointer min-h-[130px]"
+                className="p-5 rounded-xl bg-white hover:bg-[#ffc0cb]/20 border border-dashed border-slate-300 hover:border-[#f28d8d] transition-colors flex flex-col items-center justify-center gap-2 text-slate-600 hover:text-[#d86969] cursor-pointer min-h-[130px] shadow-2xs group"
               >
-                <div className="w-8 h-8 rounded-md bg-slate-100 flex items-center justify-center text-slate-600">
+                <div className="w-8 h-8 rounded-md bg-[#ffc0cb]/30 flex items-center justify-center text-[#f28d8d] group-hover:scale-105 transition-transform">
                   <Plus className="w-4 h-4" />
                 </div>
-                <span className="text-xs font-medium">Tạo Board mới</span>
+                <span className="text-xs font-semibold">Tạo Board mới</span>
               </button>
             </div>
           </div>
@@ -802,7 +802,7 @@ export default function WorkspaceDetailPage({
                       )}
                       <button
                         onClick={() => setIsInviteOpen(true)}
-                        className="px-3 py-1.5 rounded-md bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+                        className="px-3 py-1.5 rounded-md bg-[#f28d8d] hover:bg-[#e57a7a] text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
                       >
                         <UserPlus className="w-3.5 h-3.5" />
                         <span>Mời thành viên</span>
@@ -1296,7 +1296,7 @@ export default function WorkspaceDetailPage({
                   <button
                     type="submit"
                     disabled={isSavingSettings}
-                    className="px-4 py-2 bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-semibold rounded-md flex items-center gap-2 cursor-pointer disabled:opacity-50 transition-colors"
+                    className="px-4 py-2 bg-[#f28d8d] hover:bg-[#e57a7a] text-white text-xs font-semibold rounded-md flex items-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
                   >
                     {isSavingSettings ? (
                       <>
@@ -1392,7 +1392,7 @@ export default function WorkspaceDetailPage({
             <div className="bg-white p-5 rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-md bg-[#0f172a] flex items-center justify-center text-white">
+                  <div className="w-7 h-7 rounded-md bg-[#87ceeb] flex items-center justify-center text-slate-900 shadow-2xs">
                     <History className="w-3.5 h-3.5" />
                   </div>
                   <h3 className="text-sm font-bold text-slate-900">Lịch sử hoạt động</h3>
@@ -1409,7 +1409,7 @@ export default function WorkspaceDetailPage({
                   disabled={isLoadingActivities}
                   className="px-3 py-1.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingActivities ? 'animate-spin text-slate-900' : ''}`} />
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingActivities ? 'animate-spin text-[#f28d8d]' : ''}`} />
                   <span>Làm mới</span>
                 </button>
               </div>
@@ -1422,7 +1422,7 @@ export default function WorkspaceDetailPage({
                 onClick={() => setActivityFilter('all')}
                 className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer border ${
                   activityFilter === 'all'
-                    ? 'bg-[#0f172a] text-white border-[#0f172a]'
+                    ? 'bg-[#87ceeb] text-slate-900 border-[#72bde0] shadow-2xs font-semibold'
                     : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                 }`}
               >
@@ -1433,7 +1433,7 @@ export default function WorkspaceDetailPage({
                 onClick={() => setActivityFilter('board')}
                 className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer border ${
                   activityFilter === 'board'
-                    ? 'bg-[#0f172a] text-white border-[#0f172a]'
+                    ? 'bg-[#87ceeb] text-slate-900 border-[#72bde0] shadow-2xs font-semibold'
                     : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                 }`}
               >
@@ -1444,7 +1444,7 @@ export default function WorkspaceDetailPage({
                 onClick={() => setActivityFilter('card')}
                 className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer border ${
                   activityFilter === 'card'
-                    ? 'bg-[#0f172a] text-white border-[#0f172a]'
+                    ? 'bg-[#87ceeb] text-slate-900 border-[#72bde0] shadow-2xs font-semibold'
                     : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                 }`}
               >
@@ -1455,7 +1455,7 @@ export default function WorkspaceDetailPage({
                 onClick={() => setActivityFilter('workspace')}
                 className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer border ${
                   activityFilter === 'workspace'
-                    ? 'bg-[#0f172a] text-white border-[#0f172a]'
+                    ? 'bg-[#87ceeb] text-slate-900 border-[#72bde0] shadow-2xs font-semibold'
                     : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                 }`}
               >

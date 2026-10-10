@@ -211,7 +211,7 @@ export default function ListColumn({
         isShakeError
           ? '!border-rose-500 !ring-1 !ring-rose-500 !bg-rose-50/50 animate-shake'
           : isDragOverList
-          ? 'ring-1 ring-blue-600 bg-blue-50/30'
+          ? 'ring-1 ring-[#87ceeb] bg-[#87ceeb]/10'
           : ''
       }`}
     >
@@ -234,7 +234,7 @@ export default function ListColumn({
               onChange={(e) => setTitleValue(e.target.value)}
               onBlur={handleSaveTitle}
               onKeyDown={handleTitleKeyDown}
-              className="w-full text-xs font-bold text-slate-900 bg-white border border-blue-500 rounded-md px-2 py-0.5 focus:outline-none"
+              className="w-full text-xs font-bold text-slate-900 bg-white border border-[#87ceeb] rounded-md px-2 py-0.5 focus:outline-none"
             />
           ) : (
             <h3
@@ -455,14 +455,14 @@ export default function ListColumn({
                 onChange={(e) => setNewCardTitle(e.target.value)}
                 onKeyDown={handleCardKeyDown}
                 placeholder="Nhập tiêu đề cho thẻ này..."
-                className="w-full text-xs text-slate-900 bg-white border border-slate-300 rounded-md p-2 focus:outline-none focus:border-blue-600 resize-none"
+                className="w-full text-xs text-slate-900 bg-white border border-slate-300 rounded-md p-2 focus:outline-none focus:border-[#87ceeb] resize-none"
               />
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => handleCreateCard()}
                   disabled={!newCardTitle.trim() || isSubmittingCard}
-                  className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center gap-1"
+                  className="px-2.5 py-1 bg-[#f28d8d] hover:bg-[#e57a7a] disabled:opacity-50 text-white rounded-md text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>{isSubmittingCard ? 'Đang thêm...' : 'Thêm thẻ'}</span>
@@ -483,9 +483,9 @@ export default function ListColumn({
           ) : (
             <button
               onClick={() => setIsAddingCard(true)}
-              className="w-full py-1.5 px-2 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="w-full py-1.5 px-2 rounded-md text-xs font-medium text-slate-600 hover:text-[#d86969] hover:bg-[#ffc0cb]/25 flex items-center gap-1.5 transition-colors cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-3.5 h-3.5 text-[#f28d8d]" />
               <span>Thêm thẻ</span>
             </button>
           )}

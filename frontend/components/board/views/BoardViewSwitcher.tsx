@@ -87,7 +87,7 @@ export default function BoardViewSwitcher({
           onClick={() => setIsOpen(!isOpen)}
           className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer border ${
             isOpen || isDropdownActive
-              ? 'bg-slate-900 text-white border-slate-900 hover:bg-slate-800 shadow-2xs'
+              ? 'bg-[#f28d8d] text-white border-[#d86969] hover:bg-[#e57a7a] shadow-2xs'
               : 'bg-white text-slate-700 hover:bg-slate-50 border-slate-300 shadow-2xs'
           }`}
           title="Thay đổi chế độ xem bảng"
@@ -134,15 +134,15 @@ export default function BoardViewSwitcher({
                     }}
                     className={`w-full flex items-center justify-between p-2 rounded-md text-left transition-colors cursor-pointer ${
                       isSelected
-                        ? 'bg-slate-900 text-white font-medium'
-                        : 'hover:bg-slate-100 text-slate-800'
+                        ? 'bg-[#f28d8d] text-white font-medium'
+                        : 'hover:bg-[#ffc0cb]/20 text-slate-800'
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
                       <div
                         className={`p-1.5 rounded-md shrink-0 ${
                           isSelected
-                            ? 'bg-slate-800 text-white border border-slate-700'
+                            ? 'bg-[#e57a7a] text-white border border-[#d86969]'
                             : 'bg-slate-100 text-slate-700 border border-slate-200'
                         }`}
                       >
@@ -154,7 +154,7 @@ export default function BoardViewSwitcher({
                         </div>
                         <div
                           className={`text-[11px] leading-snug mt-0.5 line-clamp-1 ${
-                            isSelected ? 'text-slate-300' : 'text-slate-500'
+                            isSelected ? 'text-rose-50' : 'text-slate-500'
                           }`}
                         >
                           {item.description}

@@ -52,7 +52,7 @@ export default function CopyListModal({
       <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-md overflow-hidden">
         <div className="p-4 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800">
+            <div className="w-8 h-8 rounded-md bg-[#87ceeb] flex items-center justify-center text-slate-900 shadow-2xs">
               <Copy className="w-4 h-4" />
             </div>
             <h3 className="font-bold text-sm text-slate-900">Sao chép danh sách</h3>
@@ -76,7 +76,7 @@ export default function CopyListModal({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Nhập tên danh sách..."
               autoFocus
-              className="w-full text-xs text-slate-900 bg-white border border-slate-300 focus:border-slate-800 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-900/10 transition-all font-medium"
+              className="w-full text-xs text-slate-900 bg-white border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-all font-medium"
             />
           </div>
 
@@ -97,7 +97,7 @@ export default function CopyListModal({
             <button
               type="submit"
               disabled={!title.trim() || isLoading}
-              className="px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-50 rounded-md shadow-xs transition-colors cursor-pointer"
+              className="px-4 py-2 text-xs font-semibold text-white bg-[#f28d8d] hover:bg-[#e57a7a] disabled:opacity-50 rounded-md shadow-xs transition-colors cursor-pointer"
             >
               {isLoading ? 'Đang sao chép...' : 'Tạo bản sao'}
             </button>

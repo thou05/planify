@@ -263,7 +263,7 @@ export default function BoardFilterModal({
         {/* Header */}
         <div className="relative px-4 py-3 border-b border-slate-200 flex items-center justify-between shrink-0 bg-white">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-md bg-slate-100 border border-slate-200 text-slate-800">
+            <div className="p-1.5 rounded-md bg-[#f28d8d] text-white shadow-2xs">
               <Filter className="w-3.5 h-3.5" />
             </div>
             <div>
@@ -333,7 +333,7 @@ export default function BoardFilterModal({
                   })
                 }
                 placeholder="Nhập từ khóa tìm kiếm..."
-                className="w-full px-3 py-1.5 pr-8 text-xs border border-slate-300 rounded-md placeholder:text-slate-400 focus:outline-none focus:border-slate-800 transition-colors font-medium"
+                className="w-full px-3 py-1.5 pr-8 text-xs border border-slate-300 rounded-md placeholder:text-slate-400 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-colors font-medium"
               />
               {filters.keyword && (
                 <button
@@ -368,7 +368,7 @@ export default function BoardFilterModal({
                   type="checkbox"
                   checked={filters.members.includes('no_members')}
                   onChange={() => toggleArrayItem('members', 'no_members')}
-                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-[#f28d8d] focus:ring-[#87ceeb] cursor-pointer"
                 />
                 <div className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 shrink-0">
                   <User className="w-3 h-3" />
@@ -387,7 +387,7 @@ export default function BoardFilterModal({
                   type="checkbox"
                   checked={filters.members.includes('assigned_to_me')}
                   onChange={() => toggleArrayItem('members', 'assigned_to_me')}
-                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-[#f28d8d] focus:ring-[#87ceeb] cursor-pointer"
                 />
                 {currentUser?.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -397,7 +397,7 @@ export default function BoardFilterModal({
                     className="w-5 h-5 rounded-full object-cover border border-slate-200 shrink-0"
                   />
                 ) : (
-                  <div className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[9px] font-bold shrink-0">
+                  <div className="w-5 h-5 rounded-full bg-[#f28d8d] text-white flex items-center justify-center text-[9px] font-bold shrink-0">
                     {currentInitial}
                   </div>
                 )}
@@ -426,7 +426,7 @@ export default function BoardFilterModal({
                           type="checkbox"
                           checked={filters.members.includes(u.id)}
                           onChange={() => toggleArrayItem('members', u.id)}
-                          className="w-3.5 h-3.5 rounded-xs border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                          className="w-3.5 h-3.5 rounded-xs border-slate-300 text-[#f28d8d] focus:ring-[#87ceeb] cursor-pointer"
                         />
                         {u.avatar ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -472,10 +472,10 @@ export default function BoardFilterModal({
                   type="checkbox"
                   checked={(filters.labels || []).includes('no_labels')}
                   onChange={() => toggleArrayItem('labels', 'no_labels')}
-                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-[#f28d8d] focus:ring-[#87ceeb] cursor-pointer"
                 />
                 <div className="w-5 h-5 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
-                  <Tag className="w-3 h-3" />
+                  <Tag className="w-3.5 h-3.5" />
                 </div>
                 <span className="font-medium text-slate-700 group-hover:text-slate-900">
                   Không có nhãn dán
@@ -497,7 +497,7 @@ export default function BoardFilterModal({
                       type="checkbox"
                       checked={isSelected}
                       onChange={() => toggleArrayItem('labels', label.id)}
-                      className="w-3.5 h-3.5 rounded-xs border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                      className="w-3.5 h-3.5 rounded-xs border-slate-300 text-[#f28d8d] focus:ring-[#87ceeb] cursor-pointer"
                     />
                     <div
                       className="flex-1 min-w-0 px-2 py-1 rounded-xs text-[11px] font-semibold text-white truncate flex items-center justify-between"
@@ -530,10 +530,10 @@ export default function BoardFilterModal({
                   type="checkbox"
                   checked={filters.cardStatus.includes('completed')}
                   onChange={() => toggleArrayItem('cardStatus', 'completed')}
-                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-[#f28d8d] focus:ring-[#87ceeb] cursor-pointer"
                 />
                 <div className="w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="w-3 h-3" />
+                  <CheckCircle2 className="w-3.5 h-3.5" />
                 </div>
                 <span className="font-medium text-slate-700 group-hover:text-slate-900">
                   Đã hoàn thành
@@ -548,7 +548,7 @@ export default function BoardFilterModal({
                   type="checkbox"
                   checked={filters.cardStatus.includes('not_completed')}
                   onChange={() => toggleArrayItem('cardStatus', 'not_completed')}
-                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-[#f28d8d] focus:ring-[#87ceeb] cursor-pointer"
                 />
                 <div className="w-5 h-5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 flex items-center justify-center shrink-0">
                   <Clock className="w-3 h-3" />
@@ -580,7 +580,7 @@ export default function BoardFilterModal({
                   type="checkbox"
                   checked={filters.dueDates.includes('no_date')}
                   onChange={() => toggleArrayItem('dueDates', 'no_date')}
-                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-[#f28d8d] focus:ring-[#87ceeb] cursor-pointer"
                 />
                 <div className="w-5 h-5 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 shrink-0">
                   <Calendar className="w-3 h-3" />
@@ -599,7 +599,7 @@ export default function BoardFilterModal({
                   type="checkbox"
                   checked={filters.dueDates.includes('overdue')}
                   onChange={() => toggleArrayItem('dueDates', 'overdue')}
-                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-[#f28d8d] focus:ring-[#87ceeb] cursor-pointer"
                 />
                 <div className="w-5 h-5 rounded-full bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center shrink-0">
                   <Clock className="w-3 h-3" />
@@ -618,7 +618,7 @@ export default function BoardFilterModal({
                   type="checkbox"
                   checked={filters.dueDates.includes('due_tomorrow')}
                   onChange={() => toggleArrayItem('dueDates', 'due_tomorrow')}
-                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-[#f28d8d] focus:ring-[#87ceeb] cursor-pointer"
                 />
                 <div className="w-5 h-5 rounded-full bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center shrink-0">
                   <Clock className="w-3 h-3" />
@@ -637,7 +637,7 @@ export default function BoardFilterModal({
                   type="checkbox"
                   checked={filters.dueDates.includes('due_next_week')}
                   onChange={() => toggleArrayItem('dueDates', 'due_next_week')}
-                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-[#f28d8d] focus:ring-[#87ceeb] cursor-pointer"
                 />
                 <div className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 text-slate-500 flex items-center justify-center shrink-0">
                   <Clock className="w-3 h-3" />
@@ -656,7 +656,7 @@ export default function BoardFilterModal({
                   type="checkbox"
                   checked={filters.dueDates.includes('due_next_month')}
                   onChange={() => toggleArrayItem('dueDates', 'due_next_month')}
-                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-[#f28d8d] focus:ring-[#87ceeb] cursor-pointer"
                 />
                 <div className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 text-slate-500 flex items-center justify-center shrink-0">
                   <Clock className="w-3 h-3" />
@@ -687,7 +687,7 @@ export default function BoardFilterModal({
                   type="checkbox"
                   checked={filters.activities.includes('past_week')}
                   onChange={() => toggleArrayItem('activities', 'past_week')}
-                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-[#f28d8d] focus:ring-[#87ceeb] cursor-pointer"
                 />
                 <span className="font-medium text-slate-700 group-hover:text-slate-900">
                   Hoạt động trong tuần qua
@@ -699,7 +699,7 @@ export default function BoardFilterModal({
                   type="checkbox"
                   checked={filters.activities.includes('past_2_weeks')}
                   onChange={() => toggleArrayItem('activities', 'past_2_weeks')}
-                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-[#f28d8d] focus:ring-[#87ceeb] cursor-pointer"
                 />
                 <span className="font-medium text-slate-700 group-hover:text-slate-900">
                   Hoạt động trong hai tuần qua
@@ -711,7 +711,7 @@ export default function BoardFilterModal({
                   type="checkbox"
                   checked={filters.activities.includes('past_4_weeks')}
                   onChange={() => toggleArrayItem('activities', 'past_4_weeks')}
-                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-[#f28d8d] focus:ring-[#87ceeb] cursor-pointer"
                 />
                 <span className="font-medium text-slate-700 group-hover:text-slate-900">
                   Hoạt động trong bốn tuần qua
@@ -723,7 +723,7 @@ export default function BoardFilterModal({
                   type="checkbox"
                   checked={filters.activities.includes('no_activity_4_weeks')}
                   onChange={() => toggleArrayItem('activities', 'no_activity_4_weeks')}
-                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                  className="w-3.5 h-3.5 rounded-xs border-slate-300 text-[#f28d8d] focus:ring-[#87ceeb] cursor-pointer"
                 />
                 <span className="font-medium text-slate-700 group-hover:text-slate-900">
                   Không có hoạt động trong 4 tuần qua
@@ -759,12 +759,12 @@ export default function BoardFilterModal({
                   }}
                   className={`p-2.5 cursor-pointer transition-colors ${
                     filters.matchMode === 'any'
-                      ? 'bg-slate-900 text-white'
+                      ? 'bg-[#f28d8d] text-white'
                       : 'hover:bg-slate-100 text-slate-800'
                   }`}
                 >
                   <p className="font-semibold text-xs">Khớp bất kỳ (Match Any)</p>
-                  <p className={`text-[11px] mt-0.5 ${filters.matchMode === 'any' ? 'text-slate-300' : 'text-slate-500'}`}>
+                  <p className={`text-[11px] mt-0.5 ${filters.matchMode === 'any' ? 'text-white/80' : 'text-slate-500'}`}>
                     Thỏa mãn bất kỳ thành viên hoặc điều kiện nào được chọn
                   </p>
                 </div>
@@ -777,12 +777,12 @@ export default function BoardFilterModal({
                   }}
                   className={`p-2.5 cursor-pointer transition-colors ${
                     filters.matchMode === 'all'
-                      ? 'bg-slate-900 text-white'
+                      ? 'bg-[#f28d8d] text-white'
                       : 'hover:bg-slate-100 text-slate-800'
                   }`}
                 >
                   <p className="font-semibold text-xs">Khớp hoàn toàn (Match All)</p>
-                  <p className={`text-[11px] mt-0.5 ${filters.matchMode === 'all' ? 'text-slate-300' : 'text-slate-500'}`}>
+                  <p className={`text-[11px] mt-0.5 ${filters.matchMode === 'all' ? 'text-white/80' : 'text-slate-500'}`}>
                     Bắt buộc phải thỏa mãn tất cả thành viên và điều kiện được chọn
                   </p>
                 </div>
