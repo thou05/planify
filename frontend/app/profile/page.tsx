@@ -315,7 +315,7 @@ export default function ProfilePage() {
         {/* Profile Hero Card */}
         <div className="p-6 bg-white border border-slate-200 rounded-lg shadow-2xs flex flex-col sm:flex-row items-center sm:items-start gap-5">
           {/* Avatar */}
-          <div className="w-16 h-16 rounded-md bg-slate-900 text-white border border-slate-200 overflow-hidden flex items-center justify-center shrink-0 shadow-2xs relative">
+          <div className="w-16 h-16 rounded-md bg-[#f28d8d] text-white border-none overflow-hidden flex items-center justify-center shrink-0 shadow-2xs relative">
             {user.avatar ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
@@ -328,8 +328,8 @@ export default function ProfilePage() {
 
           {/* User Details */}
           <div className="flex-1 text-center sm:text-left">
-            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-xs bg-slate-100 border border-slate-200 text-[11px] font-semibold text-slate-700 mb-1.5">
-              <UserIcon className="w-3 h-3 text-slate-500" />
+            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-xs bg-[#ffc0cb]/30 border border-[#f28d8d]/30 text-[11px] font-semibold text-[#d86969] mb-1.5">
+              <UserIcon className="w-3 h-3 text-[#d86969]" />
               <span>Tài khoản cá nhân</span>
             </div>
             <h1 className="text-xl font-bold text-slate-900 tracking-tight">
@@ -359,7 +359,7 @@ export default function ProfilePage() {
             }}
             className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'profile'
-                ? 'bg-slate-900 text-white'
+                ? 'bg-[#f28d8d] text-white shadow-2xs'
                 : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
@@ -374,7 +374,7 @@ export default function ProfilePage() {
             }}
             className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'security'
-                ? 'bg-slate-900 text-white'
+                ? 'bg-[#f28d8d] text-white shadow-2xs'
                 : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
@@ -390,7 +390,7 @@ export default function ProfilePage() {
             }}
             className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer flex items-center gap-1.5 relative ${
               activeTab === 'invitations'
-                ? 'bg-slate-900 text-white'
+                ? 'bg-[#f28d8d] text-white shadow-2xs'
                 : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
@@ -411,7 +411,7 @@ export default function ProfilePage() {
             }}
             className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'notifications'
-                ? 'bg-slate-900 text-white'
+                ? 'bg-[#f28d8d] text-white shadow-2xs'
                 : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
             }`}
           >
@@ -465,7 +465,7 @@ export default function ProfilePage() {
                       value={avatar}
                       onChange={(e) => setAvatar(e.target.value)}
                       placeholder="Dán link ảnh đại diện (URL)..."
-                      className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                      className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
                     />
                     <div className="flex items-center gap-2">
                       <span className="text-[11px] text-slate-500 font-medium">Chọn avatar mẫu:</span>
@@ -476,7 +476,7 @@ export default function ProfilePage() {
                             type="button"
                             onClick={() => setAvatar(url)}
                             className={`w-6 h-6 rounded-md overflow-hidden border cursor-pointer hover:opacity-80 transition-opacity ${
-                              avatar === url ? 'border-slate-900 ring-1 ring-slate-900' : 'border-slate-200'
+                              avatar === url ? 'border-[#f28d8d] ring-2 ring-[#f28d8d]' : 'border-slate-200'
                             }`}
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -500,7 +500,7 @@ export default function ProfilePage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Nhập tên của bạn"
-                    className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                    className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
                   />
                 </div>
 
@@ -526,7 +526,7 @@ export default function ProfilePage() {
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   placeholder="Chia sẻ đôi nét về vai trò, chuyên môn hoặc mục tiêu làm việc..."
-                  className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 resize-none"
+                  className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 resize-none"
                 />
               </div>
 
@@ -541,7 +541,7 @@ export default function ProfilePage() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+84 987 654 321"
-                    className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                    className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
                   />
                 </div>
 
@@ -553,7 +553,7 @@ export default function ProfilePage() {
                   <select
                     value={timezone}
                     onChange={(e) => setTimezone(e.target.value)}
-                    className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-800 cursor-pointer focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                    className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-800 cursor-pointer focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
                   >
                     <option value="Asia/Ho_Chi_Minh">GMT+7 (Hà Nội, TP.HCM)</option>
                     <option value="Asia/Bangkok">GMT+7 (Bangkok)</option>
@@ -571,7 +571,7 @@ export default function ProfilePage() {
                   <select
                     value={language}
                     onChange={(e) => setLanguage(e.target.value)}
-                    className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-800 cursor-pointer focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                    className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-800 cursor-pointer focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
                   >
                     <option value="vi">Tiếng Việt (VI)</option>
                     <option value="en">English (EN)</option>
@@ -583,7 +583,7 @@ export default function ProfilePage() {
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="px-4 py-2 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
+                  className="px-4 py-2 rounded-md bg-[#f28d8d] hover:bg-[#e57a7a] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
                 >
                   {isSaving ? (
                     <>
@@ -636,7 +636,7 @@ export default function ProfilePage() {
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     placeholder="Nhập mật khẩu đang dùng..."
-                    className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                    className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
                   />
                 </div>
 
@@ -651,7 +651,7 @@ export default function ProfilePage() {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="Tối thiểu 6 ký tự..."
-                      className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                      className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
                     />
                   </div>
 
@@ -665,7 +665,7 @@ export default function ProfilePage() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Nhập lại mật khẩu mới..."
-                      className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                      className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
                     />
                   </div>
                 </div>
@@ -674,7 +674,7 @@ export default function ProfilePage() {
                   <button
                     type="submit"
                     disabled={isChangingPass}
-                    className="px-4 py-2 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
+                    className="px-4 py-2 rounded-md bg-[#f28d8d] hover:bg-[#e57a7a] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
                   >
                     {isChangingPass ? (
                       <>
@@ -768,7 +768,7 @@ export default function ProfilePage() {
                           type="button"
                           disabled={processingToken === inv.token}
                           onClick={() => handleAcceptWorkspace(inv.token, inv.workspace?.id)}
-                          className="px-3.5 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
+                          className="px-3.5 py-1.5 rounded-md bg-[#f28d8d] hover:bg-[#e57a7a] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
                         >
                           {processingToken === inv.token ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -820,7 +820,7 @@ export default function ProfilePage() {
                           type="button"
                           disabled={processingToken === inv.token}
                           onClick={() => handleAcceptBoard(inv.token, inv.board?.id)}
-                          className="px-3.5 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
+                          className="px-3.5 py-1.5 rounded-md bg-[#f28d8d] hover:bg-[#e57a7a] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
                         >
                           {processingToken === inv.token ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -898,7 +898,7 @@ export default function ProfilePage() {
                           }
                           className="sr-only peer"
                         />
-                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-900"></div>
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#f28d8d]"></div>
                       </label>
                     </div>
 
@@ -924,7 +924,7 @@ export default function ProfilePage() {
                           }
                           className="sr-only peer"
                         />
-                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-900"></div>
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#f28d8d]"></div>
                       </label>
                     </div>
                   </div>
@@ -960,7 +960,7 @@ export default function ProfilePage() {
                           }
                           className="sr-only peer"
                         />
-                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-900"></div>
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#f28d8d]"></div>
                       </label>
                     </div>
 
@@ -986,7 +986,7 @@ export default function ProfilePage() {
                           }
                           className="sr-only peer"
                         />
-                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-900"></div>
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#f28d8d]"></div>
                       </label>
                     </div>
                   </div>
@@ -1022,7 +1022,7 @@ export default function ProfilePage() {
                           }
                           className="sr-only peer"
                         />
-                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-900"></div>
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#f28d8d]"></div>
                       </label>
                     </div>
 
@@ -1048,7 +1048,7 @@ export default function ProfilePage() {
                           }
                           className="sr-only peer"
                         />
-                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-900"></div>
+                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#f28d8d]"></div>
                       </label>
                     </div>
                   </div>
@@ -1059,7 +1059,7 @@ export default function ProfilePage() {
                       type="button"
                       disabled={isSavingNotifPrefs}
                       onClick={handleSaveNotifPreferences}
-                      className="px-4 py-2 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors disabled:opacity-50"
+                      className="px-4 py-2 rounded-md bg-[#f28d8d] hover:bg-[#e57a7a] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors disabled:opacity-50"
                     >
                       {isSavingNotifPrefs ? (
                         <>

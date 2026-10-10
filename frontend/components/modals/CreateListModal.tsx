@@ -82,7 +82,7 @@ export default function CreateListModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="VD: Kiểm thử (Testing)"
-              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-md font-medium text-slate-900 focus:outline-none focus:border-slate-800"
+              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-md font-medium text-slate-900 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
             />
           </div>
 
@@ -96,7 +96,7 @@ export default function CreateListModal({
               value={limit}
               onChange={(e) => setLimit(e.target.value)}
               placeholder="Để trống nếu không giới hạn"
-              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-md font-medium text-slate-900 focus:outline-none focus:border-slate-800"
+              className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-md font-medium text-slate-900 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
             />
           </div>
 
@@ -111,7 +111,7 @@ export default function CreateListModal({
             <button
               type="submit"
               disabled={isLoading}
-              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
+              className="px-4 py-2 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
             >
               {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               <span>{isLoading ? 'Đang tạo...' : 'Thêm Danh sách'}</span>

@@ -336,7 +336,7 @@ export default function ProfileModal({
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-white">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800">
+            <div className="w-9 h-9 rounded-md bg-[#f28d8d] flex items-center justify-center text-white shadow-2xs">
               <UserIcon className="w-4 h-4" />
             </div>
             <div>
@@ -361,7 +361,7 @@ export default function ProfileModal({
             }}
             className={`px-3.5 py-2 text-xs font-semibold rounded-t-md transition-all cursor-pointer flex items-center gap-1.5 border-b-2 ${
               activeTab === 'profile'
-                ? 'border-slate-900 text-slate-900 bg-white font-bold'
+                ? 'border-[#f28d8d] text-[#d86969] bg-white font-bold'
                 : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100'
             }`}
           >
@@ -376,7 +376,7 @@ export default function ProfileModal({
             }}
             className={`px-3.5 py-2 text-xs font-semibold rounded-t-md transition-all cursor-pointer flex items-center gap-1.5 border-b-2 ${
               activeTab === 'security'
-                ? 'border-slate-900 text-slate-900 bg-white font-bold'
+                ? 'border-[#f28d8d] text-[#d86969] bg-white font-bold'
                 : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100'
             }`}
           >
@@ -392,7 +392,7 @@ export default function ProfileModal({
             }}
             className={`px-3.5 py-2 text-xs font-semibold rounded-t-md transition-all cursor-pointer flex items-center gap-1.5 border-b-2 relative ${
               activeTab === 'invitations'
-                ? 'border-slate-900 text-slate-900 bg-white font-bold'
+                ? 'border-[#f28d8d] text-[#d86969] bg-white font-bold'
                 : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100'
             }`}
           >
@@ -413,7 +413,7 @@ export default function ProfileModal({
             }}
             className={`px-3.5 py-2 text-xs font-semibold rounded-t-md transition-all cursor-pointer flex items-center gap-1.5 border-b-2 relative ${
               activeTab === 'notifications'
-                ? 'border-slate-900 text-slate-900 bg-white font-bold'
+                ? 'border-[#f28d8d] text-[#d86969] bg-white font-bold'
                 : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100'
             }`}
           >
@@ -467,7 +467,7 @@ export default function ProfileModal({
                       value={avatar}
                       onChange={(e) => setAvatar(e.target.value)}
                       placeholder="Dán link ảnh đại diện (URL)..."
-                      className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800"
+                      className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
                     />
                     <div className="flex items-center gap-2">
                       <span className="text-[11px] text-slate-500 font-medium">Gợi ý mẫu:</span>
@@ -478,7 +478,7 @@ export default function ProfileModal({
                             type="button"
                             onClick={() => setAvatar(url)}
                             className={`w-6 h-6 rounded-full overflow-hidden border cursor-pointer hover:scale-105 transition-transform ${
-                              avatar === url ? 'border-slate-900 ring-2 ring-slate-400' : 'border-slate-300'
+                              avatar === url ? 'border-[#f28d8d] ring-2 ring-[#f28d8d]/40' : 'border-slate-300'
                             }`}
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -503,7 +503,7 @@ export default function ProfileModal({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Nhập tên của bạn"
-                    className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800"
+                    className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
                   />
                 </div>
 
@@ -535,7 +535,7 @@ export default function ProfileModal({
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   placeholder="Chia sẻ đôi nét về vai trò, chuyên môn hoặc sở thích..."
-                  className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 resize-none font-medium"
+                  className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 resize-none font-medium"
                 />
               </div>
 
@@ -551,7 +551,7 @@ export default function ProfileModal({
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+84 987 654 321"
-                    className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800"
+                    className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
                   />
                 </div>
 
@@ -563,7 +563,7 @@ export default function ProfileModal({
                   <select
                     value={timezone}
                     onChange={(e) => setTimezone(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 cursor-pointer"
+                    className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 cursor-pointer"
                   >
                     <option value="Asia/Ho_Chi_Minh">GMT+7 (Hà Nội, TP.HCM)</option>
                     <option value="Asia/Bangkok">GMT+7 (Bangkok)</option>
@@ -581,7 +581,7 @@ export default function ProfileModal({
                   <select
                     value={language}
                     onChange={(e) => setLanguage(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 cursor-pointer"
+                    className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 cursor-pointer"
                   >
                     <option value="vi">Tiếng Việt (VI)</option>
                     <option value="en">English (EN)</option>
@@ -594,7 +594,7 @@ export default function ProfileModal({
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-xs"
+                  className="px-4 py-2 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-xs"
                 >
                   {isSaving ? (
                     <>
@@ -649,7 +649,7 @@ export default function ProfileModal({
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     placeholder="Nhập mật khẩu hiện tại..."
-                    className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800"
+                    className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
                   />
                 </div>
 
@@ -664,7 +664,7 @@ export default function ProfileModal({
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="Tối thiểu 6 ký tự..."
-                      className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800"
+                      className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
                     />
                   </div>
 
@@ -678,7 +678,7 @@ export default function ProfileModal({
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Nhập lại mật khẩu mới..."
-                      className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800"
+                      className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
                     />
                   </div>
                 </div>
@@ -687,7 +687,7 @@ export default function ProfileModal({
                   <button
                     type="submit"
                     disabled={isChangingPass}
-                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-xs"
+                    className="px-4 py-2 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-xs"
                   >
                     {isChangingPass ? (
                       <>
@@ -782,7 +782,7 @@ export default function ProfileModal({
                           type="button"
                           disabled={processingToken === inv.token}
                           onClick={() => handleAcceptWorkspace(inv.token, inv.workspace?.id)}
-                          className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                          className="px-4 py-1.5 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
                         >
                           {processingToken === inv.token ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -835,7 +835,7 @@ export default function ProfileModal({
                           type="button"
                           disabled={processingToken === inv.token}
                           onClick={() => handleAcceptBoard(inv.token, inv.board?.id)}
-                          className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                          className="px-4 py-1.5 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
                         >
                           {processingToken === inv.token ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -913,7 +913,7 @@ export default function ProfileModal({
                           }
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#f28d8d]"></div>
                       </label>
                     </div>
 
@@ -939,7 +939,7 @@ export default function ProfileModal({
                           }
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#f28d8d]"></div>
                       </label>
                     </div>
                   </div>
@@ -975,7 +975,7 @@ export default function ProfileModal({
                           }
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#f28d8d]"></div>
                       </label>
                     </div>
 
@@ -1001,7 +1001,7 @@ export default function ProfileModal({
                           }
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#f28d8d]"></div>
                       </label>
                     </div>
                   </div>
@@ -1037,7 +1037,7 @@ export default function ProfileModal({
                           }
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#f28d8d]"></div>
                       </label>
                     </div>
 
@@ -1063,7 +1063,7 @@ export default function ProfileModal({
                           }
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900"></div>
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#f28d8d]"></div>
                       </label>
                     </div>
                   </div>
@@ -1074,7 +1074,7 @@ export default function ProfileModal({
                       type="button"
                       disabled={isSavingNotifPrefs}
                       onClick={handleSaveNotifPreferences}
-                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-md flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50 transition-colors"
+                      className="px-4 py-2 bg-[#f28d8d] hover:bg-[#e57a7a] text-white text-xs font-semibold rounded-md flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50 transition-colors"
                     >
                       {isSavingNotifPrefs ? (
                         <>

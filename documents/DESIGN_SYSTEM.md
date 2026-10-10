@@ -19,13 +19,19 @@ Mục tiêu thiết kế:
 
 Toàn bộ hệ màu sử dụng màu phẳng (Solid Colors), tuyệt đối **không dùng linear-gradient hay radial-gradient** trên bất kỳ thành phần nào.
 
-### 2.1 Màu chủ đạo (Brand / Primary)
+### 2.1 Bộ ba màu chủ đạo (Brand Trio)
+
+Bộ ba màu chủ đạo phẳng (Solid Triad) được phân định vai trò công năng rõ ràng:
 
 ```text
-Brand Navy:       #1e1050  (Chính - Header, text nhấn, primary button)
-Brand Deep:       #2b1572  (Đậm - Nền thanh bên, trạng thái active)
-Brand Accent:     #2563eb  (Action Blue - Link, tab active, focus ring)
+1. Coral Rose (Primary Action):   #f28d8d  (Nút hành động chính, active tab, logo Planify, CTA chính, nút submit)
+   - Hover / Active:               #e57a7a / #d86969
+2. Soft Pink (Secondary Tint):    #ffc0cb  (Nền tint dịu nhẹ, viền badge, hàng đang chọn, điểm nhấn mềm mại)
+3. Sky Blue (Tertiary Accent):     #87ceeb  (Chỉ báo active indicator, focus ring, công cụ lọc & tìm kiếm, toggle)
+   - Hover:                        #72bde0
 ```
+
+> **Quy tắc về màu Status & Label:** Giữ nguyên 100% chuẩn màu status quốc tế (Success `#16a34a`, Warning `#d97706`, Danger `#dc2626`, Info `#0284c7`) và các nhãn phân loại thẻ (Card Labels) nhằm đảm bảo tính nhận diện nghiệp vụ chính xác.
 
 ### 2.2 Màu trung tính (Neutrals - Slate Scale)
 
@@ -128,18 +134,19 @@ Loại bỏ hoàn toàn các bán kính bo tròn lớn kiểu điện thoại/bo
 ### 6.1 Nút bấm (Buttons) — 100% Solid, Không Gradient
 
 ```css
-/* 1. Primary Button */
+/* 1. Primary Button (Coral Rose) */
 .btn-primary {
-  background-color: #2b1572;
+  background-color: #f28d8d;
   color: #ffffff;
-  border: 1px solid #1e1050;
+  border: 1px solid #d86969;
   border-radius: 6px;
   font-weight: 600;
-  box-shadow: none;
-  transition: background-color 150ms ease;
+  box-shadow: 0 1px 2px 0 rgba(242, 141, 141, 0.35);
+  transition: all 150ms ease;
 }
 .btn-primary:hover {
-  background-color: #1e1050;
+  background-color: #e57a7a;
+  border-color: #d86969;
 }
 
 /* 2. Secondary / Outline Button */

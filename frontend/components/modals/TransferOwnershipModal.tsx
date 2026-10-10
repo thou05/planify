@@ -119,7 +119,7 @@ export default function TransferOwnershipModal({
               <select
                 value={selectedUserId}
                 onChange={(e) => setSelectedUserId(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 transition-all"
+                className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-all"
               >
                 {eligibleMembers.map((m) => (
                   <option key={m.user_id} value={m.user_id}>
@@ -139,7 +139,7 @@ export default function TransferOwnershipModal({
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
                 placeholder="chuyen quyen"
-                className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 transition-all placeholder:text-slate-400"
+                className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-mono focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-all placeholder:text-slate-400"
               />
             </div>
 

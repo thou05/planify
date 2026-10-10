@@ -239,7 +239,7 @@ export default function ShareBoardModal({
 
         {/* Header */}
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-9 h-9 rounded-md bg-slate-900 flex items-center justify-center text-white shadow-2xs">
+          <div className="w-9 h-9 rounded-md bg-[#f28d8d] flex items-center justify-center text-white shadow-2xs">
             <Share2 className="w-4 h-4" />
           </div>
           <div>
@@ -255,7 +255,7 @@ export default function ShareBoardModal({
             onClick={() => setActiveTab('members')}
             className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'members'
-                ? 'bg-[#0f172a] text-white'
+                ? 'bg-[#f28d8d] text-white shadow-2xs'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
@@ -271,7 +271,7 @@ export default function ShareBoardModal({
             }}
             className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 relative ${
               activeTab === 'invites'
-                ? 'bg-[#0f172a] text-white'
+                ? 'bg-[#f28d8d] text-white shadow-2xs'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
@@ -312,11 +312,11 @@ export default function ShareBoardModal({
                     type="text"
                     readOnly
                     value={boardUrl}
-                    className="flex-1 px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md select-all font-mono text-slate-800 focus:outline-none"
+                    className="flex-1 px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md select-all font-mono text-slate-800 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
                   />
                   <button
                     onClick={handleCopyBoardUrl}
-                    className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer shrink-0 transition-colors shadow-2xs"
+                    className="px-3 py-1.5 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer shrink-0 transition-colors shadow-2xs"
                   >
                     {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{copied ? 'Đã chép' : 'Sao chép'}</span>
@@ -336,7 +336,7 @@ export default function ShareBoardModal({
                     onClick={() => handleVisibilityChange('WORKSPACE')}
                     className={`p-2.5 rounded-md text-left border transition-all cursor-pointer ${
                       board.visibility === 'WORKSPACE'
-                        ? 'bg-slate-100 border-slate-900 text-slate-900'
+                        ? 'bg-[#ffc0cb]/20 border-[#f28d8d] text-[#d86969] ring-1 ring-[#f28d8d]/30'
                         : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
                     }`}
                   >
@@ -355,7 +355,7 @@ export default function ShareBoardModal({
                     onClick={() => handleVisibilityChange('PRIVATE')}
                     className={`p-2.5 rounded-md text-left border transition-all cursor-pointer ${
                       board.visibility === 'PRIVATE'
-                        ? 'bg-slate-100 border-slate-900 text-slate-900'
+                        ? 'bg-[#ffc0cb]/20 border-[#f28d8d] text-[#d86969] ring-1 ring-[#f28d8d]/30'
                         : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
                     }`}
                   >
@@ -374,7 +374,7 @@ export default function ShareBoardModal({
                     onClick={() => handleVisibilityChange('PUBLIC')}
                     className={`p-2.5 rounded-md text-left border transition-all cursor-pointer ${
                       board.visibility === 'PUBLIC'
-                        ? 'bg-slate-100 border-slate-900 text-slate-900'
+                        ? 'bg-[#ffc0cb]/20 border-[#f28d8d] text-[#d86969] ring-1 ring-[#f28d8d]/30'
                         : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
                     }`}
                   >
@@ -400,7 +400,7 @@ export default function ShareBoardModal({
                     <select
                       value={selectedWsUserId}
                       onChange={(e) => setSelectedWsUserId(e.target.value)}
-                      className="flex-1 px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md font-medium text-slate-800 focus:outline-none"
+                      className="flex-1 px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md font-medium text-slate-800 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
                     >
                       <option value="">-- Chọn thành viên Workspace --</option>
                       {availableWsMembers.map((m: any) => (
@@ -413,7 +413,7 @@ export default function ShareBoardModal({
                     <select
                       value={selectedRole}
                       onChange={(e) => setSelectedRole(e.target.value as any)}
-                      className="w-28 px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-md font-semibold text-slate-800 focus:outline-none"
+                      className="w-28 px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-md font-semibold text-slate-800 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
                     >
                       <option value="EDITOR">Biên tập</option>
                       <option value="VIEWER">Chỉ xem</option>
@@ -423,7 +423,7 @@ export default function ShareBoardModal({
                     <button
                       type="submit"
                       disabled={isAdding || !selectedWsUserId}
-                      className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold shrink-0 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
+                      className="px-3.5 py-1.5 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold shrink-0 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
                     >
                       {isAdding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Thêm'}
                     </button>
@@ -515,13 +515,13 @@ export default function ShareBoardModal({
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
                       placeholder="Nhập email đồng nghiệp..."
-                      className="flex-1 px-3 py-2 text-xs bg-white border border-slate-300 rounded-md placeholder:text-slate-400 text-slate-900 focus:outline-none"
+                      className="flex-1 px-3 py-2 text-xs bg-white border border-slate-300 rounded-md placeholder:text-slate-400 text-slate-900 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
                     />
 
                     <select
                       value={inviteRole}
                       onChange={(e) => setInviteRole(e.target.value as any)}
-                      className="w-full sm:w-36 px-3 py-2 text-xs bg-white border border-slate-300 rounded-md font-semibold text-slate-800 focus:outline-none"
+                      className="w-full sm:w-36 px-3 py-2 text-xs bg-white border border-slate-300 rounded-md font-semibold text-slate-800 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
                     >
                       <option value="EDITOR">Biên tập viên</option>
                       <option value="VIEWER">Chỉ xem</option>
@@ -531,7 +531,7 @@ export default function ShareBoardModal({
                     <button
                       type="submit"
                       disabled={isSendingInvite || !inviteEmail.trim()}
-                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0 transition-colors shadow-2xs"
+                      className="px-4 py-2 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0 transition-colors shadow-2xs"
                     >
                       {isSendingInvite ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -556,13 +556,13 @@ export default function ShareBoardModal({
                       type="text"
                       readOnly
                       value={latestInviteLink}
-                      className="flex-1 px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md font-mono select-all text-slate-800 focus:outline-none"
+                      className="flex-1 px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md font-mono select-all text-slate-800 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
                     >
                     </input>
                     <button
                       type="button"
                       onClick={handleCopyInviteLink}
-                      className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer shrink-0 transition-colors shadow-2xs"
+                      className="px-3.5 py-1.5 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer shrink-0 transition-colors shadow-2xs"
                     >
                       {copiedInviteLink ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       <span>{copiedInviteLink ? 'Đã chép' : 'Sao chép'}</span>

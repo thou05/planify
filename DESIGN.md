@@ -12,3 +12,8 @@ Tài liệu thiết kế giao diện chính thức của Planify được lưu t
 - **Zero Shadows:** Không dùng box-shadow lớn, dùng viền nét mảnh `1px solid #e2e8f0` để chia khối.
 - **Bo góc nhỏ:** Giảm bo góc về `4px – 8px` (thay vì 16px – 24px), tạo cảm giác sắc cạnh, hiện đại.
 - **Zero Gradients:** 100% màu nền phẳng (Solid colors).
+- **Bộ ba màu chủ đạo (Brand Trio):**
+  - **Coral Rose (`#f28d8d`):** Primary action, nút bấm chính, active tab, logo Planify.
+  - **Soft Pink (`#ffc0cb`):** Secondary tint, nền badge nhẹ, hàng đang chọn.
+  - **Sky Blue (`#87ceeb`):** Tertiary accent, chỉ báo active indicator, focus ring, filter/search.
+- **Màu Status & Label:** Giữ nguyên 100% chuẩn màu status (Success, Warning, Danger, Info).

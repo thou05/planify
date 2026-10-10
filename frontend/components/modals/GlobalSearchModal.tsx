@@ -269,7 +269,7 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
                       onMouseEnter={() => setSelectedIndex(itemIndex)}
                       className={`group flex items-center justify-between p-2.5 rounded-md cursor-pointer transition-all ${
                         isSelected
-                          ? 'bg-slate-900 text-white shadow-xs'
+                          ? 'bg-[#f28d8d] text-white shadow-xs'
                           : 'hover:bg-slate-100 text-slate-700'
                       }`}
                     >
@@ -294,7 +294,7 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
                           {workspace.description && (
                             <p
                               className={`text-[11px] truncate ${
-                                isSelected ? 'text-slate-300' : 'text-slate-500'
+                                isSelected ? 'text-white/80' : 'text-slate-500'
                               }`}
                             >
                               {workspace.description}
@@ -336,7 +336,7 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
                       onMouseEnter={() => setSelectedIndex(itemIndex)}
                       className={`group flex items-center justify-between p-2.5 rounded-md cursor-pointer transition-all ${
                         isSelected
-                          ? 'bg-slate-900 text-white shadow-xs'
+                          ? 'bg-[#f28d8d] text-white shadow-xs'
                           : 'hover:bg-slate-100 text-slate-700'
                       }`}
                     >
@@ -374,7 +374,7 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
                           {board.description && (
                             <p
                               className={`text-[11px] truncate ${
-                                isSelected ? 'text-slate-300' : 'text-slate-500'
+                                isSelected ? 'text-white/80' : 'text-slate-500'
                               }`}
                             >
                               {board.description}
@@ -418,7 +418,7 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
                       onMouseEnter={() => setSelectedIndex(itemIndex)}
                       className={`group flex items-center justify-between p-2.5 rounded-md cursor-pointer transition-all ${
                         isSelected
-                          ? 'bg-slate-900 text-white shadow-xs'
+                          ? 'bg-[#f28d8d] text-white shadow-xs'
                           : 'hover:bg-slate-100 text-slate-700'
                       }`}
                     >

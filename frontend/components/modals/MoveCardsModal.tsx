@@ -51,7 +51,7 @@ export default function MoveCardsModal({
       <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-md overflow-hidden">
         <div className="p-4 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800">
+            <div className="w-8 h-8 rounded-md bg-[#87ceeb] text-slate-900 flex items-center justify-center shadow-2xs">
               <Layers className="w-4 h-4" />
             </div>
             <h3 className="font-bold text-sm text-slate-900">
@@ -74,7 +74,7 @@ export default function MoveCardsModal({
             <select
               value={targetListId}
               onChange={(e) => setTargetListId(e.target.value)}
-              className="w-full text-xs text-slate-900 bg-white border border-slate-300 focus:border-slate-800 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-900/10 transition-all font-medium"
+              className="w-full text-xs text-slate-900 bg-white border border-slate-300 focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 rounded-md px-3 py-2 focus:outline-none transition-all font-medium cursor-pointer"
             >
               <option value="">-- Chọn danh sách đích --</option>
               {availableLists.map((l) => (
@@ -96,7 +96,7 @@ export default function MoveCardsModal({
             <button
               type="submit"
               disabled={!targetListId || isLoading}
-              className="px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-50 rounded-md shadow-xs transition-colors cursor-pointer"
+              className="px-4 py-2 text-xs font-semibold text-white bg-[#f28d8d] hover:bg-[#e57a7a] disabled:opacity-50 rounded-md shadow-2xs transition-colors cursor-pointer"
             >
               {isLoading ? 'Đang chuyển...' : 'Chuyển toàn bộ'}
             </button>

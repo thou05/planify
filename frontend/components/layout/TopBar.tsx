@@ -222,13 +222,13 @@ export default function TopBar({
           )}
 
           <Link href="/dashboard" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-md bg-slate-900 flex items-center justify-center text-white transition-colors">
+            <div className="w-8 h-8 rounded-lg bg-[#f28d8d] group-hover:bg-[#e57a7a] flex items-center justify-center text-white transition-all shadow-xs">
               <LayoutGrid className="w-4 h-4" />
             </div>
-            <span className="text-lg font-bold tracking-tight text-[#0f172a]">
+            <span className="text-lg font-bold tracking-tight text-slate-900">
               Planify
             </span>
-            <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-sm bg-slate-100 text-slate-600 border border-slate-200">
+            <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-sm bg-[#ffc0cb]/30 text-[#d86969] border border-[#ffc0cb]/80">
               v1.0
             </span>
           </Link>
@@ -258,7 +258,7 @@ export default function TopBar({
                 }
               }}
               placeholder="Tìm kiếm không gian, bảng, thẻ..."
-              className="w-full pl-9 pr-24 py-1.5 text-xs bg-white border border-slate-200 focus:border-blue-600 rounded-md placeholder:text-slate-400 text-slate-900 font-normal outline-none transition-colors"
+              className="w-full pl-9 pr-24 py-1.5 text-xs bg-white border border-slate-200 focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 rounded-md placeholder:text-slate-400 text-slate-900 font-normal outline-none transition-colors"
             />
 
             {/* Clear Button */}
@@ -281,11 +281,11 @@ export default function TopBar({
             {/* Dedicated Search Button */}
             <button
               type="submit"
-              className="absolute right-1 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="absolute right-1 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-[#87ceeb] hover:bg-[#72bde0] text-slate-900 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
               title="Tìm kiếm"
             >
               {isSearching ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-900" />
               ) : (
                 <Search className="w-3.5 h-3.5" />
               )}
@@ -508,7 +508,7 @@ export default function TopBar({
                 onClick={() => setIsUserMenuOpen((prev) => !prev)}
                 className="flex items-center gap-2 p-1 rounded-md hover:bg-slate-100 transition-colors cursor-pointer"
               >
-                <div className="w-7 h-7 rounded-full bg-slate-900 text-white overflow-hidden flex items-center justify-center font-bold text-xs relative">
+                <div className="w-7 h-7 rounded-full bg-[#f28d8d] text-white overflow-hidden flex items-center justify-center font-bold text-xs relative shadow-2xs">
                   {user.avatar ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />

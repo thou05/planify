@@ -112,8 +112,8 @@ export default function UseTemplateModal({
 
         {/* Header */}
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-9 h-9 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800 shrink-0">
-            <Sparkles className="w-4 h-4 text-slate-800" />
+          <div className="w-9 h-9 rounded-md bg-[#f28d8d] flex items-center justify-center text-white shrink-0 shadow-2xs">
+            <Sparkles className="w-4 h-4 text-white" />
           </div>
           <div>
             <h2 className="text-base font-bold text-slate-900">Tạo Bảng từ Mẫu</h2>
@@ -147,7 +147,7 @@ export default function UseTemplateModal({
               <select
                 value={selectedWorkspaceId}
                 onChange={(e) => setSelectedWorkspaceId(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 cursor-pointer"
+                className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white font-medium text-slate-900 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 cursor-pointer"
               >
                 {workspaces.map((ws) => (
                   <option key={ws.id} value={ws.id}>
@@ -170,7 +170,7 @@ export default function UseTemplateModal({
               value={boardName}
               onChange={(e) => setBoardName(e.target.value)}
               placeholder="Nhập tên Bảng của bạn..."
-              className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 transition-all placeholder:text-slate-400"
+              className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white font-medium text-slate-900 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-all placeholder:text-slate-400"
             />
           </div>
 
@@ -185,7 +185,7 @@ export default function UseTemplateModal({
                 onClick={() => setVisibility('WORKSPACE')}
                 className={`p-2.5 rounded-md text-left border transition-all cursor-pointer ${
                   visibility === 'WORKSPACE'
-                    ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                    ? 'bg-[#ffc0cb]/25 text-[#d86969] border-[#f28d8d] ring-1 ring-[#f28d8d]/30 shadow-xs'
                     : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                 }`}
               >
@@ -193,7 +193,7 @@ export default function UseTemplateModal({
                   <Users className="w-3.5 h-3.5" />
                   <span>Không gian</span>
                 </div>
-                <div className={`text-[10px] mt-0.5 ${visibility === 'WORKSPACE' ? 'text-slate-300' : 'text-slate-500'}`}>Mọi thành viên</div>
+                <div className={`text-[10px] mt-0.5 ${visibility === 'WORKSPACE' ? 'text-slate-600' : 'text-slate-500'}`}>Mọi thành viên</div>
               </button>
 
               <button
@@ -201,7 +201,7 @@ export default function UseTemplateModal({
                 onClick={() => setVisibility('PRIVATE')}
                 className={`p-2.5 rounded-md text-left border transition-all cursor-pointer ${
                   visibility === 'PRIVATE'
-                    ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                    ? 'bg-[#ffc0cb]/25 text-[#d86969] border-[#f28d8d] ring-1 ring-[#f28d8d]/30 shadow-xs'
                     : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                 }`}
               >
@@ -209,7 +209,7 @@ export default function UseTemplateModal({
                   <Lock className="w-3.5 h-3.5" />
                   <span>Riêng tư</span>
                 </div>
-                <div className={`text-[10px] mt-0.5 ${visibility === 'PRIVATE' ? 'text-slate-300' : 'text-slate-500'}`}>Chỉ thành viên</div>
+                <div className={`text-[10px] mt-0.5 ${visibility === 'PRIVATE' ? 'text-slate-600' : 'text-slate-500'}`}>Chỉ thành viên</div>
               </button>
 
               <button
@@ -217,7 +217,7 @@ export default function UseTemplateModal({
                 onClick={() => setVisibility('PUBLIC')}
                 className={`p-2.5 rounded-md text-left border transition-all cursor-pointer ${
                   visibility === 'PUBLIC'
-                    ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                    ? 'bg-[#ffc0cb]/25 text-[#d86969] border-[#f28d8d] ring-1 ring-[#f28d8d]/30 shadow-xs'
                     : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                 }`}
               >
@@ -225,7 +225,7 @@ export default function UseTemplateModal({
                   <Globe className="w-3.5 h-3.5" />
                   <span>Công khai</span>
                 </div>
-                <div className={`text-[10px] mt-0.5 ${visibility === 'PUBLIC' ? 'text-slate-300' : 'text-slate-500'}`}>Có liên kết</div>
+                <div className={`text-[10px] mt-0.5 ${visibility === 'PUBLIC' ? 'text-slate-600' : 'text-slate-500'}`}>Có liên kết</div>
               </button>
             </div>
           </div>
@@ -237,7 +237,7 @@ export default function UseTemplateModal({
                 type="checkbox"
                 checked={keepCards}
                 onChange={(e) => setKeepCards(e.target.checked)}
-                className="mt-0.5 rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                className="mt-0.5 rounded border-slate-300 text-[#f28d8d] focus:ring-[#87ceeb] accent-[#f28d8d] cursor-pointer"
               />
               <div className="text-xs">
                 <span className="font-semibold text-slate-900 block">
@@ -263,7 +263,7 @@ export default function UseTemplateModal({
             <button
               type="submit"
               disabled={isSubmitting || workspaces.length === 0}
-              className="px-4 py-2 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-xs"
+              className="px-4 py-2 rounded-md bg-[#f28d8d] hover:bg-[#e57a7a] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-xs"
             >
               {isSubmitting ? (
                 <>

@@ -64,7 +64,7 @@ export default function MoveCardModal({
       <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-md overflow-hidden">
         <div className="p-4 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="p-1.5 bg-slate-900 text-white rounded-md">
+            <div className="p-1.5 bg-[#87ceeb] text-slate-900 rounded-md shadow-2xs">
               <ArrowRightLeft className="w-4 h-4" />
             </div>
             <h3 className="font-bold text-sm text-slate-900">Di chuyển thẻ</h3>
@@ -95,7 +95,7 @@ export default function MoveCardModal({
                 setTargetListId(e.target.value);
                 setPosition(0);
               }}
-              className="w-full text-xs text-slate-900 bg-white border border-slate-300 rounded-md p-2.5 focus:outline-none focus:border-slate-800 font-medium"
+              className="w-full text-xs text-slate-900 bg-white border border-slate-300 rounded-md p-2.5 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 font-medium cursor-pointer"
             >
               {(boardLists || []).map((l) => (
                 <option key={l.id} value={l.id}>
@@ -118,7 +118,7 @@ export default function MoveCardModal({
               value={position}
               onChange={(e) => setPosition(Number(e.target.value))}
               disabled={!isSameList && selectedList?.limit && cardCountInSelectedList >= selectedList.limit}
-              className="w-full text-xs text-slate-900 bg-white border border-slate-300 rounded-md p-2.5 focus:outline-none focus:border-slate-800 disabled:opacity-50 font-medium"
+              className="w-full text-xs text-slate-900 bg-white border border-slate-300 rounded-md p-2.5 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 disabled:opacity-50 font-medium cursor-pointer"
             >
               {Array.from({ length: Math.max(1, maxPosition + 1) }).map((_, idx) => (
                 <option key={idx} value={idx}>
@@ -139,7 +139,7 @@ export default function MoveCardModal({
             <button
               type="submit"
               disabled={isLoading || (!isSameList && Boolean(selectedList?.limit && cardCountInSelectedList >= selectedList.limit))}
-              className="px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-50 rounded-md transition-colors cursor-pointer"
+              className="px-4 py-2 text-xs font-semibold text-white bg-[#f28d8d] hover:bg-[#e57a7a] disabled:opacity-50 rounded-md transition-colors cursor-pointer shadow-2xs"
             >
               {isLoading ? 'Đang di chuyển...' : 'Di chuyển'}
             </button>

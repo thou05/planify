@@ -74,7 +74,7 @@ export default function CopyBoardModal({
         </button>
 
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-9 h-9 rounded-md bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800">
+          <div className="w-9 h-9 rounded-md bg-[#87ceeb] flex items-center justify-center text-slate-900 shadow-2xs">
             <Copy className="w-4 h-4" />
           </div>
           <div>
@@ -100,7 +100,7 @@ export default function CopyBoardModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="VD: Bản sao - Sprint 1..."
-              className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 transition-all placeholder:text-slate-400"
+              className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-semibold focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-all placeholder:text-slate-400"
             />
           </div>
 
@@ -111,7 +111,7 @@ export default function CopyBoardModal({
             <select
               value={targetWorkspaceId}
               onChange={(e) => setTargetWorkspaceId(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-800 transition-all"
+              className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-800 font-semibold focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-all cursor-pointer"
             >
               {workspaces.map((ws) => (
                 <option key={ws.id} value={ws.id}>
@@ -127,7 +127,7 @@ export default function CopyBoardModal({
                 type="checkbox"
                 checked={includeCards}
                 onChange={(e) => setIncludeCards(e.target.checked)}
-                className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                className="w-4 h-4 rounded border-slate-300 text-[#f28d8d] focus:ring-[#87ceeb] accent-[#f28d8d] cursor-pointer"
               />
               <span>Sao chép cả các Thẻ công việc (Cards), Checklists và Nhãn</span>
             </label>
@@ -148,7 +148,7 @@ export default function CopyBoardModal({
             <button
               type="submit"
               disabled={isLoading || !name.trim()}
-              className="px-4 py-2 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-sm"
+              className="px-4 py-2 rounded-md bg-[#f28d8d] hover:bg-[#e57a7a] text-white text-xs font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-sm"
             >
               {isLoading ? (
                 <>

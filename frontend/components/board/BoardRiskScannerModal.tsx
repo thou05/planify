@@ -155,19 +155,19 @@ export const BoardRiskScannerModal: React.FC<BoardRiskScannerModalProps> = ({
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 backdrop-blur-2xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
       <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-98 duration-150">
         {/* Header */}
-        <div className="px-5 py-3.5 bg-[#0f172a] text-white flex items-center justify-between shrink-0 border-b border-slate-800">
+        <div className="px-5 py-3.5 bg-white text-slate-900 flex items-center justify-between shrink-0 border-b border-slate-200">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-md bg-white/10 border border-white/15 flex items-center justify-center">
-              <ShieldAlert className="w-4.5 h-4.5 text-amber-300" />
+            <div className="w-8 h-8 rounded-md bg-[#f28d8d] flex items-center justify-center text-white shadow-2xs">
+              <ShieldAlert className="w-4.5 h-4.5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-sm sm:text-base font-semibold tracking-tight text-white">AI Quét Rủi Ro & Điểm Nghẽn</h2>
-                <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase rounded-xs bg-amber-400/20 text-amber-300 border border-amber-300/30">
+                <h2 className="text-sm sm:text-base font-semibold tracking-tight text-slate-900">AI Quét Rủi Ro & Điểm Nghẽn</h2>
+                <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase rounded-xs bg-[#ffc0cb]/40 text-[#d86969] border border-[#ffc0cb]/80">
                   Auditor
                 </span>
               </div>
-              <p className="text-xs text-slate-300 line-clamp-1">
+              <p className="text-xs text-slate-500 line-clamp-1">
                 Phân tích tiến độ, nút thắt công việc và phân bổ tải nhóm trên {boardTitle ? `"${boardTitle}"` : 'Bảng'}
               </p>
             </div>
@@ -177,7 +177,7 @@ export const BoardRiskScannerModal: React.FC<BoardRiskScannerModalProps> = ({
             <button
               onClick={handleScan}
               disabled={isLoading}
-              className="px-2.5 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-white text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer border border-white/15 disabled:opacity-50"
+              className="px-2.5 py-1.5 rounded-md bg-[#ffc0cb]/25 hover:bg-[#ffc0cb]/40 text-[#d86969] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-[#ffc0cb]/80 disabled:opacity-50"
               title="Quét lại toàn bộ bảng"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
@@ -185,7 +185,7 @@ export const BoardRiskScannerModal: React.FC<BoardRiskScannerModalProps> = ({
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-md text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
             >
               <X className="w-4.5 h-4.5" />
             </button>
@@ -196,7 +196,7 @@ export const BoardRiskScannerModal: React.FC<BoardRiskScannerModalProps> = ({
         <div className="flex-1 overflow-y-auto p-5 space-y-5">
           {isLoading ? (
             <div className="py-20 flex flex-col items-center justify-center gap-3 text-center">
-              <div className="w-8 h-8 rounded-full border-2 border-slate-200 border-t-[#0f172a] animate-spin" />
+              <div className="w-8 h-8 rounded-full border-2 border-slate-200 border-t-[#f28d8d] animate-spin" />
               <div>
                 <h3 className="text-sm font-semibold text-slate-900">Đang quét phân tích rủi ro...</h3>
                 <p className="text-xs text-slate-500 mt-1 max-w-sm">
@@ -273,7 +273,7 @@ export const BoardRiskScannerModal: React.FC<BoardRiskScannerModalProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {data.actionableRecommendations.map((rec, idx) => (
                       <div key={idx} className="flex items-start gap-2 bg-white p-2.5 rounded-md border border-slate-200 text-xs text-slate-800">
-                        <span className="w-4 h-4 rounded-xs bg-[#0f172a] text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
+                        <span className="w-4 h-4 rounded-xs bg-[#87ceeb] text-slate-900 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
                           {idx + 1}
                         </span>
                         <span className="leading-relaxed">{rec}</span>
@@ -289,8 +289,8 @@ export const BoardRiskScannerModal: React.FC<BoardRiskScannerModalProps> = ({
                   onClick={() => setActiveTab('all')}
                   className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer border ${
                     activeTab === 'all'
-                      ? 'bg-[#0f172a] text-white border-[#0f172a]'
-                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                      ? 'bg-[#f28d8d] text-white border-[#d86969] shadow-2xs'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-[#ffc0cb]/20'
                   }`}
                 >
                   Tất cả phân tích
@@ -299,8 +299,8 @@ export const BoardRiskScannerModal: React.FC<BoardRiskScannerModalProps> = ({
                   onClick={() => setActiveTab('bottlenecks')}
                   className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer border ${
                     activeTab === 'bottlenecks'
-                      ? 'bg-[#0f172a] text-white border-[#0f172a]'
-                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                      ? 'bg-[#f28d8d] text-white border-[#d86969] shadow-2xs'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-[#ffc0cb]/20'
                   }`}
                 >
                   Điểm nghẽn ({data.bottlenecks?.length || 0})
@@ -309,8 +309,8 @@ export const BoardRiskScannerModal: React.FC<BoardRiskScannerModalProps> = ({
                   onClick={() => setActiveTab('deadlines')}
                   className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer border ${
                     activeTab === 'deadlines'
-                      ? 'bg-[#0f172a] text-white border-[#0f172a]'
-                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                      ? 'bg-[#f28d8d] text-white border-[#d86969] shadow-2xs'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-[#ffc0cb]/20'
                   }`}
                 >
                   Hạn chót & Quá hạn ({data.deadlineRisks?.length || 0})
@@ -319,8 +319,8 @@ export const BoardRiskScannerModal: React.FC<BoardRiskScannerModalProps> = ({
                   onClick={() => setActiveTab('workload')}
                   className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer border ${
                     activeTab === 'workload'
-                      ? 'bg-[#0f172a] text-white border-[#0f172a]'
-                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                      ? 'bg-[#f28d8d] text-white border-[#d86969] shadow-2xs'
+                      : 'bg-white text-slate-700 border-slate-200 hover:bg-[#ffc0cb]/20'
                   }`}
                 >
                   Phân bổ nhân sự ({data.workloadImbalance?.length || 0})

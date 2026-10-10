@@ -102,7 +102,7 @@ export default function InviteMemberModal({
         </button>
 
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-9 h-9 rounded-md bg-slate-900 flex items-center justify-center text-white shadow-2xs">
+          <div className="w-9 h-9 rounded-md bg-[#f28d8d] flex items-center justify-center text-white shadow-2xs">
             <UserPlus className="w-4 h-4" />
           </div>
           <div>
@@ -141,11 +141,11 @@ export default function InviteMemberModal({
                     type="text"
                     readOnly
                     value={successInfo.inviteLink}
-                    className="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md text-slate-800 font-mono select-all focus:outline-none"
+                    className="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md text-slate-800 font-mono select-all focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
                   />
                   <button
                     onClick={handleCopyLink}
-                    className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold flex items-center gap-1.5 shrink-0 cursor-pointer transition-colors shadow-2xs"
+                    className="px-3.5 py-1.5 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold flex items-center gap-1.5 shrink-0 cursor-pointer transition-colors shadow-2xs"
                   >
                     {copied ? (
                       <>
@@ -174,7 +174,7 @@ export default function InviteMemberModal({
               <button
                 type="button"
                 onClick={handleClose}
-                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold cursor-pointer transition-colors shadow-2xs"
+                className="px-4 py-2 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold cursor-pointer transition-colors shadow-2xs"
               >
                 Hoàn tất
               </button>
@@ -194,7 +194,7 @@ export default function InviteMemberModal({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="nhanvien@example.com"
-                  className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-md placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-slate-800"
+                  className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-md placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
                 />
               </div>
               <p className="text-[11px] text-slate-500 mt-1">
@@ -212,7 +212,7 @@ export default function InviteMemberModal({
                   onClick={() => setRole('MEMBER')}
                   className={`p-3 rounded-md text-left border transition-all cursor-pointer ${
                     role === 'MEMBER'
-                      ? 'bg-slate-100 border-slate-900 text-slate-900'
+                      ? 'bg-[#ffc0cb]/20 border-[#f28d8d] text-[#d86969] ring-1 ring-[#f28d8d]/30'
                       : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
                   }`}
                 >
@@ -227,7 +227,7 @@ export default function InviteMemberModal({
                   onClick={() => setRole('ADMIN')}
                   className={`p-3 rounded-md text-left border transition-all cursor-pointer ${
                     role === 'ADMIN'
-                      ? 'bg-slate-100 border-slate-900 text-slate-900'
+                      ? 'bg-[#ffc0cb]/20 border-[#f28d8d] text-[#d86969] ring-1 ring-[#f28d8d]/30'
                       : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
                   }`}
                 >
@@ -254,7 +254,7 @@ export default function InviteMemberModal({
               <button
                 type="submit"
                 disabled={isLoading || !email.trim()}
-                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
+                className="px-4 py-2 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
               >
                 {isLoading ? (
                   <>

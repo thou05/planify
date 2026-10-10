@@ -45,7 +45,7 @@ function LoginForm() {
   return (
     <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-300 p-8 sm:p-10 relative">
       <div className="flex flex-col items-center mb-8">
-        <div className="w-12 h-12 rounded-md bg-slate-900 flex items-center justify-center text-white shadow-2xs mb-3">
+        <div className="w-12 h-12 rounded-xl bg-[#f28d8d] flex items-center justify-center text-white shadow-xs mb-3">
           <LayoutGrid className="w-6 h-6" />
         </div>
         <h1 className="text-xl sm:text-2xl font-semibold text-slate-900">Đăng nhập Planify</h1>
@@ -74,7 +74,7 @@ function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="tenban@example.com"
-              className="w-full pl-10 pr-4 py-2.5 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-slate-800 transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-colors"
             />
           </div>
         </div>
@@ -91,7 +91,7 @@ function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full pl-10 pr-10 py-2.5 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-slate-800 transition-colors"
+              className="w-full pl-10 pr-10 py-2.5 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-colors"
             />
             <button
               type="button"
@@ -107,7 +107,7 @@ function LoginForm() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
+            className="w-full py-2.5 px-4 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-xs"
           >
             {isLoading ? (
               <>
@@ -129,7 +129,7 @@ function LoginForm() {
           Chưa có tài khoản?{' '}
           <Link
             href={`/register${redirectUrl !== '/dashboard' ? `?redirect=${encodeURIComponent(redirectUrl)}` : ''}`}
-            className="font-semibold text-slate-900 hover:underline"
+            className="font-semibold text-[#d86969] hover:text-[#f28d8d] hover:underline"
           >
             Đăng ký ngay
           </Link>
