@@ -18,10 +18,10 @@ export class ChecklistsService {
     private readonly activitiesService: ActivitiesService,
   ) {}
 
-  private async verifyCardAccess(cardId: string, userId: string) {
+  private async verifyCardAccess(cardId: string, userId: string, requireEdit = true) {
     const { data: card, error: cError } = await this.supabase
       .from('cards')
-      .select('id, list:lists (board_id, board:boards (id, workspace_id))')
+      .select('id, list:lists (board_id, board:boards (id, workspace_id, visibility, workspace:workspaces (owner_id)))')
       .eq('id', cardId)
       .maybeSingle();
 
@@ -32,23 +32,42 @@ export class ChecklistsService {
     const board = (card.list as any)?.board;
     const boardId = (card.list as any)?.board_id || board?.id;
     const workspaceId = board?.workspace_id;
-    if (workspaceId) {
-      const { data: member } = await this.supabase
-        .from('workspace_members')
-        .select('id')
-        .eq('workspace_id', workspaceId)
-        .eq('user_id', userId)
-        .maybeSingle();
 
-      if (!member) {
-        const { data: workspace } = await this.supabase
-          .from('workspaces')
-          .select('owner_id')
-          .eq('id', workspaceId)
+    if (boardId) {
+      const isWorkspaceOwner = (board?.workspace as any)?.owner_id === userId;
+      if (!isWorkspaceOwner) {
+        // 1. Kiểm tra trực tiếp trong board_members
+        const { data: boardMember } = await this.supabase
+          .from('board_members')
+          .select('id, role')
+          .eq('board_id', boardId)
+          .eq('user_id', userId)
           .maybeSingle();
 
-        if (workspace?.owner_id !== userId) {
-          throw new ForbiddenException('Bạn không có quyền thao tác trên thẻ này');
+        if (boardMember) {
+          const canEdit = boardMember.role === 'ADMIN' || boardMember.role === 'EDITOR' || boardMember.role === 'MEMBER';
+          if (requireEdit && !canEdit) {
+            throw new ForbiddenException('Bạn chỉ có quyền xem (Viewer), không thể chỉnh sửa checklist');
+          }
+        } else {
+          // 2. Kiểm tra trong workspace_members
+          const { data: wsMember } = await this.supabase
+            .from('workspace_members')
+            .select('id, role')
+            .eq('workspace_id', workspaceId)
+            .eq('user_id', userId)
+            .maybeSingle();
+
+          if (wsMember) {
+            if (board?.visibility === 'PRIVATE') {
+              throw new ForbiddenException('Bảng này ở chế độ Riêng tư (Private), bạn không có quyền truy cập');
+            }
+          } else {
+            if (board?.visibility === 'PUBLIC' && !requireEdit) {
+              return { card, workspaceId, boardId };
+            }
+            throw new ForbiddenException('Bạn không có quyền thao tác trên thẻ này');
+          }
         }
       }
     }

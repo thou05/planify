@@ -12,10 +12,10 @@ import { UpdateLabelDto } from './dto/update-label.dto';
 export class LabelsService {
   constructor(private readonly supabase: SupabaseService) {}
 
-  private async verifyBoardAccess(boardId: string, userId: string) {
+  private async verifyBoardAccess(boardId: string, userId: string, requireEdit = false) {
     const { data: board, error } = await this.supabase
       .from('boards')
-      .select('id, workspace_id')
+      .select('id, workspace_id, visibility, workspace:workspaces (owner_id)')
       .eq('id', boardId)
       .maybeSingle();
 
@@ -23,26 +23,47 @@ export class LabelsService {
       throw new NotFoundException('Không tìm thấy Bảng (Board)');
     }
 
-    const { data: member } = await this.supabase
+    const isWorkspaceOwner = (board.workspace as any)?.owner_id === userId;
+    if (isWorkspaceOwner) {
+      return board;
+    }
+
+    // 1. Kiểm tra trực tiếp trong board_members
+    const { data: boardMember } = await this.supabase
+      .from('board_members')
+      .select('id, role')
+      .eq('board_id', boardId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (boardMember) {
+      const canEdit = boardMember.role === 'ADMIN' || boardMember.role === 'EDITOR' || boardMember.role === 'MEMBER';
+      if (requireEdit && !canEdit) {
+        throw new ForbiddenException('Bạn chỉ có quyền xem (Viewer), không thể chỉnh sửa nhãn');
+      }
+      return board;
+    }
+
+    // 2. Kiểm tra trong workspace_members
+    const { data: wsMember } = await this.supabase
       .from('workspace_members')
-      .select('id')
+      .select('id, role')
       .eq('workspace_id', board.workspace_id)
       .eq('user_id', userId)
       .maybeSingle();
 
-    if (!member) {
-      const { data: workspace } = await this.supabase
-        .from('workspaces')
-        .select('owner_id')
-        .eq('id', board.workspace_id)
-        .maybeSingle();
-
-      if (workspace?.owner_id !== userId) {
-        throw new ForbiddenException('Bạn không có quyền truy cập bảng này');
+    if (wsMember) {
+      if (board.visibility === 'PRIVATE') {
+        throw new ForbiddenException('Bảng này ở chế độ Riêng tư (Private), bạn không có quyền truy cập');
       }
+      return board;
     }
 
-    return board;
+    if (board.visibility === 'PUBLIC' && !requireEdit) {
+      return board;
+    }
+
+    throw new ForbiddenException('Bạn không có quyền truy cập bảng này');
   }
 
   private async verifyCardAccess(cardId: string, userId: string) {

@@ -19,7 +19,7 @@ export class CommentsService {
   private async verifyBoardAccess(boardId: string, userId: string) {
     const { data: board, error } = await this.supabase
       .from('boards')
-      .select('id, workspace_id')
+      .select('id, workspace_id, visibility, workspace:workspaces (owner_id)')
       .eq('id', boardId)
       .maybeSingle();
 
@@ -27,26 +27,43 @@ export class CommentsService {
       throw new NotFoundException('Không tìm thấy Bảng (Board)');
     }
 
-    const { data: member } = await this.supabase
+    const isWorkspaceOwner = (board.workspace as any)?.owner_id === userId;
+    if (isWorkspaceOwner) {
+      return board;
+    }
+
+    // 1. Kiểm tra trực tiếp trong board_members
+    const { data: boardMember } = await this.supabase
+      .from('board_members')
+      .select('id, role')
+      .eq('board_id', boardId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (boardMember) {
+      return board;
+    }
+
+    // 2. Kiểm tra trong workspace_members
+    const { data: wsMember } = await this.supabase
       .from('workspace_members')
-      .select('id')
+      .select('id, role')
       .eq('workspace_id', board.workspace_id)
       .eq('user_id', userId)
       .maybeSingle();
 
-    if (!member) {
-      const { data: workspace } = await this.supabase
-        .from('workspaces')
-        .select('owner_id')
-        .eq('id', board.workspace_id)
-        .maybeSingle();
-
-      if (workspace?.owner_id !== userId) {
-        throw new ForbiddenException('Bạn không có quyền truy cập bảng này');
+    if (wsMember) {
+      if (board.visibility === 'PRIVATE') {
+        throw new ForbiddenException('Bảng này ở chế độ Riêng tư (Private), bạn không có quyền truy cập');
       }
+      return board;
     }
 
-    return board;
+    if (board.visibility === 'PUBLIC') {
+      return board;
+    }
+
+    throw new ForbiddenException('Bạn không có quyền truy cập bảng này');
   }
 
   private async verifyCardAccess(cardId: string, userId: string) {

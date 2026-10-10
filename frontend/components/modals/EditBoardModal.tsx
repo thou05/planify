@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Edit3, Loader2, Users, Lock, Globe } from 'lucide-react';
+import { X, Edit3, Loader2, Users, Lock, Globe, Check } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 
 interface EditBoardModalProps {
@@ -126,13 +126,16 @@ export default function EditBoardModal({
                 onClick={() => setVisibility('WORKSPACE')}
                 className={`p-2.5 rounded-md text-left border transition-all cursor-pointer ${
                   visibility === 'WORKSPACE'
-                    ? 'bg-[#ffc0cb]/20 border-[#f28d8d] text-[#d86969] ring-1 ring-[#f28d8d]/30'
+                    ? 'bg-[#ffc0cb]/20 border-[#f28d8d] text-[#d86969] ring-1 ring-[#f28d8d]/30 font-semibold'
                     : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
                 }`}
               >
-                <div className="flex items-center gap-1.5 text-xs font-semibold mb-0.5">
-                  <Users className="w-3.5 h-3.5" />
-                  <span>Không gian</span>
+                <div className="flex items-center justify-between text-xs font-semibold mb-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5" />
+                    <span>Không gian</span>
+                  </div>
+                  {visibility === 'WORKSPACE' && <Check className="w-3.5 h-3.5 text-[#d86969]" />}
                 </div>
                 <div className="text-[10px] text-slate-500">Thành viên WS</div>
               </button>
@@ -142,13 +145,16 @@ export default function EditBoardModal({
                 onClick={() => setVisibility('PRIVATE')}
                 className={`p-2.5 rounded-md text-left border transition-all cursor-pointer ${
                   visibility === 'PRIVATE'
-                    ? 'bg-[#ffc0cb]/20 border-[#f28d8d] text-[#d86969] ring-1 ring-[#f28d8d]/30'
+                    ? 'bg-rose-50 border-rose-300 text-rose-700 ring-1 ring-rose-200 font-semibold'
                     : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
                 }`}
               >
-                <div className="flex items-center gap-1.5 text-xs font-semibold mb-0.5">
-                  <Lock className="w-3.5 h-3.5" />
-                  <span>Riêng tư</span>
+                <div className="flex items-center justify-between text-xs font-semibold mb-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Riêng tư</span>
+                  </div>
+                  {visibility === 'PRIVATE' && <Check className="w-3.5 h-3.5 text-rose-600" />}
                 </div>
                 <div className="text-[10px] text-slate-500">Thành viên Board</div>
               </button>
@@ -158,13 +164,16 @@ export default function EditBoardModal({
                 onClick={() => setVisibility('PUBLIC')}
                 className={`p-2.5 rounded-md text-left border transition-all cursor-pointer ${
                   visibility === 'PUBLIC'
-                    ? 'bg-[#ffc0cb]/20 border-[#f28d8d] text-[#d86969] ring-1 ring-[#f28d8d]/30'
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-700 ring-1 ring-emerald-200 font-semibold'
                     : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
                 }`}
               >
-                <div className="flex items-center gap-1.5 text-xs font-semibold mb-0.5">
-                  <Globe className="w-3.5 h-3.5" />
-                  <span>Công khai</span>
+                <div className="flex items-center justify-between text-xs font-semibold mb-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Công khai</span>
+                  </div>
+                  {visibility === 'PUBLIC' && <Check className="w-3.5 h-3.5 text-emerald-600" />}
                 </div>
                 <div className="text-[10px] text-slate-500">Bất kỳ ai có link</div>
               </button>
