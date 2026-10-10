@@ -117,6 +117,9 @@ export class BoardsService {
         name,
         description,
         is_favorite,
+        visibility,
+        is_archived,
+        background,
         lists (id),
         members:board_members (id, user_id, role)
       `)
@@ -159,6 +162,7 @@ export class BoardsService {
         is_favorite: b.is_favorite ?? false,
         is_archived: b.is_archived ?? false,
         visibility: b.visibility || 'WORKSPACE',
+        background: b.background ?? null,
         _count: {
           lists: b.lists?.length || 0,
           members: b.members?.length || 0,
@@ -179,6 +183,9 @@ export class BoardsService {
         name,
         description,
         is_favorite,
+        visibility,
+        is_archived,
+        background,
         workspace:workspaces (id, name, owner_id),
         lists (
           id,
@@ -242,21 +249,37 @@ export class BoardsService {
       .eq('user_id', userId)
       .maybeSingle();
 
-    // Cho phép nếu là Workspace Owner, Workspace Member HOẶC là Board Member
+    // Cho phép nếu là Workspace Owner, Workspace Member, Board Member HOẶC Board ở chế độ PUBLIC
     if (!isWorkspaceOwner && !wsMember && !currentMember) {
-      throw new ForbiddenException('Bạn không có quyền truy cập Bảng này hoặc đã bị xóa');
+      if (b.visibility !== 'PUBLIC') {
+        throw new ForbiddenException('Bạn không có quyền truy cập Bảng này hoặc đã bị xóa');
+      }
     }
 
-    // Kiểm tra private access
+    // Kiểm tra private access: nếu PRIVATE, chỉ Board Member hoặc Workspace Owner được truy cập
     if (b.visibility === 'PRIVATE' && !currentMember && !isWorkspaceOwner) {
-      throw new ForbiddenException('Bảng này ở chế độ Riêng tư (Private), bạn không có quyền truy cập');
+      throw new ForbiddenException('Bảng này ở chế độ Riêng tư (Private), chỉ thành viên được mời mới có quyền truy cập');
     }
 
-    const currentUserBoardRole = isWorkspaceOwner
-      ? 'ADMIN'
-      : currentMember?.role || (wsMember?.role === 'ADMIN' ? 'ADMIN' : 'VIEWER');
+    let currentUserBoardRole: 'ADMIN' | 'EDITOR' | 'VIEWER' = 'VIEWER';
+    if (isWorkspaceOwner) {
+      currentUserBoardRole = 'ADMIN';
+    } else if (currentMember) {
+      if (currentMember.role === 'ADMIN') {
+        currentUserBoardRole = 'ADMIN';
+      } else if (currentMember.role === 'VIEWER') {
+        currentUserBoardRole = 'VIEWER';
+      } else {
+        // 'EDITOR' hoặc 'MEMBER' đều có toàn quyền tương tác/chỉnh sửa nội dung
+        currentUserBoardRole = 'EDITOR';
+      }
+    } else if (wsMember) {
+      currentUserBoardRole = wsMember.role === 'ADMIN' ? 'ADMIN' : 'EDITOR';
+    } else if (b.visibility === 'PUBLIC') {
+      currentUserBoardRole = 'VIEWER';
+    }
 
-    const canEdit = currentUserBoardRole === 'ADMIN' || currentUserBoardRole === 'EDITOR' || isWorkspaceOwner;
+    const canEdit = isWorkspaceOwner || currentUserBoardRole === 'ADMIN' || currentUserBoardRole === 'EDITOR';
     const canManageMembers = currentUserBoardRole === 'ADMIN' || isWorkspaceOwner;
     const canDelete = currentUserBoardRole === 'ADMIN' || isWorkspaceOwner;
 
@@ -274,6 +297,7 @@ export class BoardsService {
       ...b,
       is_archived: b.is_archived ?? false,
       visibility: b.visibility || 'WORKSPACE',
+      background: b.background ?? null,
       currentUserBoardRole,
       isWorkspaceOwner,
       canEdit,

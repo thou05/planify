@@ -31,9 +31,10 @@ export class CardsService {
       throw new NotFoundException('Không tìm thấy danh sách (List)');
     }
 
+    const boardId = list.board_id;
     const workspaceId = (list.board as any)?.workspace_id;
-    if (workspaceId) {
-      await this.verifyWorkspaceAccess(workspaceId, userId);
+    if (boardId) {
+      await this.verifyBoardAccess(boardId, userId, true);
     }
 
     if (list.limit && list.limit > 0) {
@@ -233,7 +234,7 @@ export class CardsService {
 
     const boardId = (card.list as any)?.board_id;
     if (boardId) {
-      await this.verifyBoardAccess(boardId, userId);
+      await this.verifyBoardAccess(boardId, userId, false);
     }
 
     return card;
@@ -252,7 +253,7 @@ export class CardsService {
 
     const boardId = (card.list as any)?.board_id;
     if (boardId) {
-      await this.verifyBoardAccess(boardId, userId);
+      await this.verifyBoardAccess(boardId, userId, true);
     }
 
     const updateData: Record<string, any> = {};
@@ -409,7 +410,7 @@ export class CardsService {
 
     const boardId = (card.list as any)?.board_id;
     if (boardId) {
-      await this.verifyBoardAccess(boardId, userId);
+      await this.verifyBoardAccess(boardId, userId, true);
     }
 
     const { error } = await this.supabase
@@ -471,8 +472,8 @@ export class CardsService {
     }
 
     const sourceBoardId = (sourceCard.list as any)?.board_id;
-    await this.verifyBoardAccess(sourceBoardId, userId);
-    await this.verifyBoardAccess(targetList.board_id, userId);
+    await this.verifyBoardAccess(sourceBoardId, userId, true);
+    await this.verifyBoardAccess(targetList.board_id, userId, true);
 
     const isSameList = sourceCard.list_id === dto.targetListId;
     const targetPosition = Math.max(0, dto.position);
@@ -610,7 +611,7 @@ export class CardsService {
     }
 
     const sourceBoardId = (sourceCard.list as any)?.board_id;
-    await this.verifyBoardAccess(sourceBoardId, userId);
+    await this.verifyBoardAccess(sourceBoardId, userId, true);
 
     const targetListId = dto.targetListId || sourceCard.list_id;
 
@@ -723,7 +724,7 @@ export class CardsService {
 
     const boardId = (card.list as any)?.board_id;
     if (boardId) {
-      await this.verifyBoardAccess(boardId, userId);
+      await this.verifyBoardAccess(boardId, userId, true);
     }
 
     const { data: bForWs } = await this.supabase
@@ -894,10 +895,10 @@ export class CardsService {
     }
   }
 
-  private async verifyBoardAccess(boardId: string, userId: string) {
+  private async verifyBoardAccess(boardId: string, userId: string, requireEdit = false) {
     const { data: board } = await this.supabase
       .from('boards')
-      .select('workspace_id')
+      .select('id, workspace_id, visibility, workspace:workspaces (owner_id)')
       .eq('id', boardId)
       .maybeSingle();
 
@@ -905,23 +906,49 @@ export class CardsService {
       throw new NotFoundException('Không tìm thấy Board');
     }
 
-    const { data: member } = await this.supabase
+    const isWorkspaceOwner = (board.workspace as any)?.owner_id === userId;
+    if (isWorkspaceOwner) {
+      return { role: 'ADMIN', canEdit: true };
+    }
+
+    // 1. Kiểm tra trực tiếp trong board_members
+    const { data: boardMember } = await this.supabase
+      .from('board_members')
+      .select('id, role')
+      .eq('board_id', boardId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (boardMember) {
+      const role = boardMember.role;
+      const canEdit = role === 'ADMIN' || role === 'EDITOR' || role === 'MEMBER';
+      if (requireEdit && !canEdit) {
+        throw new ForbiddenException('Bạn chỉ có quyền xem (Viewer), không thể chỉnh sửa Board này');
+      }
+      return { role, canEdit };
+    }
+
+    // 2. Kiểm tra trong workspace_members
+    const { data: wsMember } = await this.supabase
       .from('workspace_members')
-      .select('id')
+      .select('id, role')
       .eq('workspace_id', board.workspace_id)
       .eq('user_id', userId)
       .maybeSingle();
 
-    if (!member) {
-      const { data: workspace } = await this.supabase
-        .from('workspaces')
-        .select('owner_id')
-        .eq('id', board.workspace_id)
-        .maybeSingle();
-
-      if (workspace?.owner_id !== userId) {
-        throw new ForbiddenException('Bạn không có quyền thao tác trên Board này');
+    if (wsMember) {
+      if (board.visibility === 'PRIVATE') {
+        throw new ForbiddenException('Bảng này ở chế độ Riêng tư (Private), bạn không có quyền truy cập');
       }
+
+      const role = wsMember.role === 'ADMIN' ? 'ADMIN' : 'EDITOR';
+      return { role, canEdit: true };
     }
+
+    if (board.visibility === 'PUBLIC' && !requireEdit) {
+      return { role: 'VIEWER', canEdit: false };
+    }
+
+    throw new ForbiddenException('Bạn không có quyền thao tác trên Board này');
   }
 }

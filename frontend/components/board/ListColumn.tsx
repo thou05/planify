@@ -42,11 +42,13 @@ interface ListColumnProps {
   onListDragEnd: (e: React.DragEvent) => void;
   onListDrop: (e: React.DragEvent, targetListId: string) => void;
   draggedSourceListId?: string | null;
+  canEdit?: boolean;
 }
 
 export default function ListColumn({
   list,
   boardLists,
+  canEdit = true,
   onOpenCardDetail,
   onRefreshBoard,
   onRenameList,
@@ -421,6 +423,7 @@ export default function ListColumn({
               index={idx}
               listId={list.id}
               listTitle={list.title}
+              canEdit={canEdit}
               onOpenDetail={onOpenCardDetail}
               onCardUpdated={onRefreshBoard}
               onMoveCardRequest={onMoveCardRequest}
@@ -437,14 +440,14 @@ export default function ListColumn({
         ) : (
           !isAddingCard && (
             <div className="py-6 px-3 text-center text-[11px] text-slate-400 bg-white/50 rounded-md border border-dashed border-slate-200">
-              Kéo thẻ vào đây hoặc bấm thêm thẻ
+              {canEdit ? 'Kéo thẻ vào đây hoặc bấm thêm thẻ' : 'Chưa có thẻ nào'}
             </div>
           )
         )}
       </div>
 
-      {/* Bottom Inline Add Card Section (Hidden if limit reached) */}
-      {!isLimitReached && (
+      {/* Bottom Inline Add Card Section (Hidden if limit reached or cannot edit) */}
+      {!isLimitReached && canEdit && (
         <div className="mt-2 pt-2 border-t border-slate-200/80">
           {isAddingCard ? (
             <div className="space-y-1.5 animate-in fade-in duration-100">

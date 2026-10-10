@@ -20,6 +20,8 @@ import {
   Settings,
   Plus,
   Star,
+  Lock,
+  Globe,
   UserPlus,
   Trash2,
   Shield,
@@ -679,9 +681,24 @@ export default function WorkspaceDetailPage({
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="text-[10px] px-1.5 py-0.2 rounded-xs font-semibold bg-[#ffc0cb]/30 text-[#d86969] border border-[#ffc0cb]/70">
-                        Kanban Board
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] px-1.5 py-0.2 rounded-xs font-semibold bg-[#ffc0cb]/30 text-[#d86969] border border-[#ffc0cb]/70">
+                          Kanban Board
+                        </span>
+                        {board.visibility === 'PRIVATE' ? (
+                          <span className="text-[10px] px-1.5 py-0.2 rounded-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 inline-flex items-center gap-0.5">
+                            <Lock className="w-2.5 h-2.5" /> Riêng tư
+                          </span>
+                        ) : board.visibility === 'PUBLIC' ? (
+                          <span className="text-[10px] px-1.5 py-0.2 rounded-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-0.5">
+                            <Globe className="w-2.5 h-2.5" /> Công khai
+                          </span>
+                        ) : (
+                          <span className="text-[10px] px-1.5 py-0.2 rounded-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200 inline-flex items-center gap-0.5">
+                            <Users className="w-2.5 h-2.5" /> Workspace
+                          </span>
+                        )}
+                      </div>
                       {board.is_favorite && (
                         <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
                       )}

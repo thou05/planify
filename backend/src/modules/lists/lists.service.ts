@@ -433,10 +433,10 @@ export class ListsService {
     return { message: 'Sắp xếp danh sách thẻ thành công' };
   }
 
-  private async verifyBoardAccess(boardId: string, userId: string) {
+  private async verifyBoardAccess(boardId: string, userId: string, requireEdit = true) {
     const { data: board } = await this.supabase
       .from('boards')
-      .select('workspace_id')
+      .select('id, workspace_id, visibility, workspace:workspaces (owner_id)')
       .eq('id', boardId)
       .maybeSingle();
 
@@ -444,23 +444,49 @@ export class ListsService {
       throw new NotFoundException('Không tìm thấy Board');
     }
 
-    const { data: member } = await this.supabase
+    const isWorkspaceOwner = (board.workspace as any)?.owner_id === userId;
+    if (isWorkspaceOwner) {
+      return { role: 'ADMIN', canEdit: true };
+    }
+
+    // 1. Kiểm tra trực tiếp trong board_members
+    const { data: boardMember } = await this.supabase
+      .from('board_members')
+      .select('id, role')
+      .eq('board_id', boardId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (boardMember) {
+      const role = boardMember.role;
+      const canEdit = role === 'ADMIN' || role === 'EDITOR' || role === 'MEMBER';
+      if (requireEdit && !canEdit) {
+        throw new ForbiddenException('Bạn chỉ có quyền xem (Viewer), không thể chỉnh sửa danh sách');
+      }
+      return { role, canEdit };
+    }
+
+    // 2. Kiểm tra trong workspace_members
+    const { data: wsMember } = await this.supabase
       .from('workspace_members')
-      .select('id')
+      .select('id, role')
       .eq('workspace_id', board.workspace_id)
       .eq('user_id', userId)
       .maybeSingle();
 
-    if (!member) {
-      const { data: workspace } = await this.supabase
-        .from('workspaces')
-        .select('owner_id')
-        .eq('id', board.workspace_id)
-        .maybeSingle();
-
-      if (workspace?.owner_id !== userId) {
-        throw new ForbiddenException('Bạn không có quyền thao tác trên Board này');
+    if (wsMember) {
+      if (board.visibility === 'PRIVATE') {
+        throw new ForbiddenException('Bảng này ở chế độ Riêng tư (Private), bạn không có quyền truy cập');
       }
+
+      const role = wsMember.role === 'ADMIN' ? 'ADMIN' : 'EDITOR';
+      return { role, canEdit: true };
     }
+
+    if (board.visibility === 'PUBLIC' && !requireEdit) {
+      return { role: 'VIEWER', canEdit: false };
+    }
+
+    throw new ForbiddenException('Bạn không có quyền thao tác trên Board này');
   }
 }

@@ -67,6 +67,8 @@ import {
   Search,
   Filter,
   BarChart3,
+  ChevronDown,
+  Loader2,
 } from 'lucide-react';
 import { ActivityItem } from '@/components/modals/MyActivityModal';
 import { BoardRiskScannerModal } from '@/components/board/BoardRiskScannerModal';
@@ -164,6 +166,63 @@ export default function BoardDetailPage({
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [isCardDetailOpen, setIsCardDetailOpen] = useState(false);
   const [realtimeUpdatedCardId, setRealtimeUpdatedCardId] = useState<{ id: string; timestamp: number } | null>(null);
+
+  // Board Visibility Dropdown State
+  const [isVisibilityMenuOpen, setIsVisibilityMenuOpen] = useState(false);
+  const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
+  const visibilityMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (visibilityMenuRef.current && !visibilityMenuRef.current.contains(e.target as Node)) {
+        setIsVisibilityMenuOpen(false);
+      }
+    };
+    if (isVisibilityMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isVisibilityMenuOpen]);
+
+  const [confirmingVisibility, setConfirmingVisibility] = useState<'WORKSPACE' | 'PRIVATE' | 'PUBLIC' | null>(null);
+
+  const handleRequestUpdateVisibility = (newVisibility: 'WORKSPACE' | 'PRIVATE' | 'PUBLIC') => {
+    if (!board || board.visibility === newVisibility || isUpdatingVisibility) return;
+    if (!board.canEdit) return;
+    setIsVisibilityMenuOpen(false);
+    setConfirmingVisibility(newVisibility);
+  };
+
+  const handleConfirmUpdateVisibility = async () => {
+    if (!confirmingVisibility || !board?.id) return;
+    const targetVisibility = confirmingVisibility;
+    const previousVisibility = board.visibility;
+
+    setIsUpdatingVisibility(true);
+    setConfirmingVisibility(null);
+    setBoard((prev: any) => ({ ...prev, visibility: targetVisibility }));
+
+    try {
+      const res = await apiClient<any>(`/boards/${boardId}`, {
+        method: 'PATCH',
+        data: { visibility: targetVisibility },
+      });
+      if (res.success && res.data) {
+        setBoard((prev: any) => ({ ...prev, ...res.data, visibility: targetVisibility }));
+      } else {
+        setBoard((prev: any) => ({ ...prev, visibility: previousVisibility }));
+        fetchBoard(true);
+      }
+    } catch (err: any) {
+      console.error('Lỗi cập nhật quyền hiển thị:', err);
+      setBoard((prev: any) => ({ ...prev, visibility: previousVisibility }));
+      fetchBoard(true);
+    } finally {
+      setIsUpdatingVisibility(false);
+    }
+  };
 
   // Board Activity Drawer State
   const [isBoardActivityOpen, setIsBoardActivityOpen] = useState(false);
@@ -1283,23 +1342,150 @@ export default function BoardDetailPage({
                 />
               </button>
 
-              {/* Visibility Badge */}
-              {board?.visibility === 'PRIVATE' ? (
-                <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.2 rounded-xs bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
-                  <Lock className="w-3 h-3" />
-                  <span>Riêng tư</span>
-                </span>
-              ) : board?.visibility === 'PUBLIC' ? (
-                <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.2 rounded-xs bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
-                  <Globe className="w-3 h-3" />
-                  <span>Công khai</span>
-                </span>
-              ) : (
-                <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.2 rounded-xs bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
-                  <Users className="w-3 h-3" />
-                  <span>Workspace</span>
-                </span>
-              )}
+              {/* Interactive Visibility Dropdown */}
+              <div className="relative shrink-0" ref={visibilityMenuRef}>
+                <button
+                  type="button"
+                  disabled={isUpdatingVisibility}
+                  onClick={() => {
+                    if (board?.canEdit) {
+                      setIsVisibilityMenuOpen(!isVisibilityMenuOpen);
+                    }
+                  }}
+                  className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-md border transition-all ${
+                    board?.canEdit
+                      ? 'cursor-pointer hover:shadow-2xs active:scale-95'
+                      : 'cursor-default opacity-85'
+                  } ${
+                    board?.visibility === 'PRIVATE'
+                      ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100/70'
+                      : board?.visibility === 'PUBLIC'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100/70'
+                      : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200/70'
+                  }`}
+                  title={
+                    board?.canEdit
+                      ? 'Nhấp để thay đổi quyền hiển thị Bảng'
+                      : 'Quyền hiển thị Bảng (Chỉ Quản trị viên/Biên tập viên mới có quyền đổi)'
+                  }
+                >
+                  {board?.visibility === 'PRIVATE' ? (
+                    <Lock className="w-3 h-3 text-rose-600 shrink-0" />
+                  ) : board?.visibility === 'PUBLIC' ? (
+                    <Globe className="w-3 h-3 text-emerald-600 shrink-0" />
+                  ) : (
+                    <Users className="w-3 h-3 text-slate-600 shrink-0" />
+                  )}
+                  <span>
+                    {board?.visibility === 'PRIVATE'
+                      ? 'Riêng tư'
+                      : board?.visibility === 'PUBLIC'
+                      ? 'Công khai'
+                      : 'Không gian'}
+                  </span>
+                  {board?.canEdit && (
+                    <ChevronDown
+                      className={`w-3 h-3 transition-transform text-slate-400 shrink-0 ${
+                        isVisibilityMenuOpen ? 'rotate-180' : ''
+                      }`}
+                    />
+                  )}
+                </button>
+
+                {/* Dropdown Popover */}
+                {isVisibilityMenuOpen && board?.canEdit && (
+                  <div className="absolute left-0 mt-1.5 w-72 bg-white rounded-lg shadow-xl border border-slate-200 p-2 z-50 animate-in fade-in zoom-in-95">
+                    <div className="px-2 py-1.5 border-b border-slate-100 mb-1">
+                      <div className="text-xs font-bold text-slate-800">
+                        Quyền hiển thị Bảng
+                      </div>
+                      <div className="text-[10px] text-slate-500">
+                        Ai có thể tìm thấy và truy cập Bảng này
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      {/* WORKSPACE */}
+                      <button
+                        type="button"
+                        onClick={() => handleRequestUpdateVisibility('WORKSPACE')}
+                        className={`w-full text-left p-2 rounded-md transition-colors flex items-start gap-2.5 cursor-pointer ${
+                          board.visibility === 'WORKSPACE'
+                            ? 'bg-slate-100/90 text-slate-900 font-semibold ring-1 ring-slate-300'
+                            : 'hover:bg-slate-50 text-slate-700 font-medium'
+                        }`}
+                      >
+                        <div className="w-6 h-6 rounded-md bg-slate-100 flex items-center justify-center shrink-0 mt-0.5 text-slate-600">
+                          <Users className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs">Không gian làm việc</span>
+                            {board.visibility === 'WORKSPACE' && (
+                              <Check className="w-3.5 h-3.5 text-slate-700" />
+                            )}
+                          </div>
+                          <p className="text-[10px] text-slate-500 font-normal leading-tight mt-0.5">
+                            Mọi thành viên trong Workspace đều có thể xem và làm việc trên bảng này.
+                          </p>
+                        </div>
+                      </button>
+
+                      {/* PRIVATE */}
+                      <button
+                        type="button"
+                        onClick={() => handleRequestUpdateVisibility('PRIVATE')}
+                        className={`w-full text-left p-2 rounded-md transition-colors flex items-start gap-2.5 cursor-pointer ${
+                          board.visibility === 'PRIVATE'
+                            ? 'bg-rose-50/90 text-rose-900 font-semibold ring-1 ring-rose-300'
+                            : 'hover:bg-slate-50 text-slate-700 font-medium'
+                        }`}
+                      >
+                        <div className="w-6 h-6 rounded-md bg-rose-100 flex items-center justify-center shrink-0 mt-0.5 text-rose-600">
+                          <Lock className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs">Riêng tư (Private)</span>
+                            {board.visibility === 'PRIVATE' && (
+                              <Check className="w-3.5 h-3.5 text-rose-600" />
+                            )}
+                          </div>
+                          <p className="text-[10px] text-slate-500 font-normal leading-tight mt-0.5">
+                            Chỉ những thành viên được mời trực tiếp vào Bảng mới có quyền truy cập.
+                          </p>
+                        </div>
+                      </button>
+
+                      {/* PUBLIC */}
+                      <button
+                        type="button"
+                        onClick={() => handleRequestUpdateVisibility('PUBLIC')}
+                        className={`w-full text-left p-2 rounded-md transition-colors flex items-start gap-2.5 cursor-pointer ${
+                          board.visibility === 'PUBLIC'
+                            ? 'bg-emerald-50/90 text-emerald-900 font-semibold ring-1 ring-emerald-300'
+                            : 'hover:bg-slate-50 text-slate-700 font-medium'
+                        }`}
+                      >
+                        <div className="w-6 h-6 rounded-md bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5 text-emerald-600">
+                          <Globe className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs">Công khai (Public)</span>
+                            {board.visibility === 'PUBLIC' && (
+                              <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            )}
+                          </div>
+                          <p className="text-[10px] text-slate-500 font-normal leading-tight mt-0.5">
+                            Bất kỳ ai có đường link đều có thể xem bảng này (chỉ xem đối với người ngoài).
+                          </p>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* View Switcher Dropdown */}
@@ -1593,6 +1779,7 @@ export default function BoardDetailPage({
                     key={list.id}
                     list={list}
                     boardLists={board.lists}
+                    canEdit={board?.canEdit ?? true}
                     onOpenCardDetail={handleOpenCardDetail}
                     onRefreshBoard={fetchBoard}
                     onRenameList={handleRenameList}
@@ -1765,6 +1952,103 @@ export default function BoardDetailPage({
           }
         }}
       />
+
+      {/* Confirmation Modal for Visibility Change */}
+      {confirmingVisibility && (
+        <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-sm bg-white rounded-xl shadow-2xl border border-slate-200 p-5 sm:p-6 relative animate-in zoom-in-95 duration-150 space-y-4">
+            <button
+              type="button"
+              onClick={() => setConfirmingVisibility(null)}
+              className="absolute top-3.5 right-3.5 p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div
+                className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                  confirmingVisibility === 'PRIVATE'
+                    ? 'bg-rose-100 text-rose-600'
+                    : confirmingVisibility === 'PUBLIC'
+                    ? 'bg-emerald-100 text-emerald-600'
+                    : 'bg-[#ffc0cb]/30 text-[#d86969]'
+                }`}
+              >
+                {confirmingVisibility === 'PRIVATE' ? (
+                  <Lock className="w-5 h-5" />
+                ) : confirmingVisibility === 'PUBLIC' ? (
+                  <Globe className="w-5 h-5" />
+                ) : (
+                  <Users className="w-5 h-5" />
+                )}
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  {confirmingVisibility === 'PRIVATE'
+                    ? 'Đổi sang Riêng tư (Private)?'
+                    : confirmingVisibility === 'PUBLIC'
+                    ? 'Đổi sang Công khai (Public)?'
+                    : 'Đổi sang Không gian làm việc?'}
+                </h3>
+                <p className="text-[11px] text-slate-500 font-medium">
+                  Xác nhận thay đổi quyền hiển thị của Bảng
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600 leading-relaxed">
+              {confirmingVisibility === 'PRIVATE' && (
+                <span>
+                  Chỉ những thành viên <strong>được mời trực tiếp</strong> vào Bảng mới có thể xem và truy cập. Các thành viên khác trong Workspace sẽ không thể thấy hoặc mở bảng này nữa.
+                </span>
+              )}
+              {confirmingVisibility === 'PUBLIC' && (
+                <span>
+                  Bất kỳ ai có đường liên kết đều có thể <strong>xem nội dung</strong> của Bảng này (chế độ chỉ xem đối với người ngoài). Hãy đảm bảo Bảng không chứa dữ liệu nhạy cảm.
+                </span>
+              )}
+              {confirmingVisibility === 'WORKSPACE' && (
+                <span>
+                  <strong>Mọi thành viên</strong> trong Không gian làm việc này đều có quyền tìm thấy, xem và làm việc trên Bảng này.
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setConfirmingVisibility(null)}
+                disabled={isUpdatingVisibility}
+                className="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                disabled={isUpdatingVisibility}
+                onClick={handleConfirmUpdateVisibility}
+                className={`px-3.5 py-1.5 rounded-md text-xs font-semibold text-white transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs ${
+                  confirmingVisibility === 'PRIVATE'
+                    ? 'bg-rose-600 hover:bg-rose-700'
+                    : confirmingVisibility === 'PUBLIC'
+                    ? 'bg-emerald-600 hover:bg-emerald-700'
+                    : 'bg-[#f28d8d] hover:bg-[#e57a7a]'
+                }`}
+              >
+                {isUpdatingVisibility && <Loader2 className="w-3 h-3 animate-spin" />}
+                <span>
+                  {confirmingVisibility === 'PRIVATE'
+                    ? 'Chuyển sang Riêng tư'
+                    : confirmingVisibility === 'PUBLIC'
+                    ? 'Chuyển sang Công khai'
+                    : 'Chuyển sang Không gian'}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 2. Card Detail Modal */}
       <CardDetailModal

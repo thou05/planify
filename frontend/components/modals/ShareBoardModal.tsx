@@ -47,6 +47,12 @@ export default function ShareBoardModal({
   const [selectedRole, setSelectedRole] = useState<'ADMIN' | 'EDITOR' | 'VIEWER'>('EDITOR');
   const [isAdding, setIsAdding] = useState(false);
   const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
+  const [currentVisibility, setCurrentVisibility] = useState<'WORKSPACE' | 'PRIVATE' | 'PUBLIC'>(
+    board?.visibility || 'WORKSPACE'
+  );
+  const [confirmingVisibility, setConfirmingVisibility] = useState<'WORKSPACE' | 'PRIVATE' | 'PUBLIC' | null>(
+    null
+  );
 
   // Invites Tab State
   const [inviteEmail, setInviteEmail] = useState('');
@@ -78,9 +84,19 @@ export default function ShareBoardModal({
   };
 
   useEffect(() => {
+    if (board?.visibility) {
+      setCurrentVisibility(board.visibility);
+    }
+  }, [board?.visibility]);
+
+  useEffect(() => {
     if (isOpen && board?.id) {
       setError('');
       setSuccessMsg('');
+      setConfirmingVisibility(null);
+      if (board.visibility) {
+        setCurrentVisibility(board.visibility);
+      }
       setLatestInviteLink(null);
       if (activeTab === 'invites') {
         fetchPendingInvites();
@@ -104,18 +120,37 @@ export default function ShareBoardModal({
     }
   };
 
-  const handleVisibilityChange = async (newVisibility: 'WORKSPACE' | 'PRIVATE' | 'PUBLIC') => {
+  const handleRequestVisibilityChange = (newVisibility: 'WORKSPACE' | 'PRIVATE' | 'PUBLIC') => {
+    if (newVisibility === currentVisibility) return;
+    setError('');
+    setConfirmingVisibility(newVisibility);
+  };
+
+  const handleConfirmVisibilityChange = async () => {
+    if (!confirmingVisibility || !board?.id) return;
+    const targetVisibility = confirmingVisibility;
+    const previousVisibility = currentVisibility;
+
+    // Cập nhật state tức thì (Optimistic 0ms lag)
+    setCurrentVisibility(targetVisibility);
+    setConfirmingVisibility(null);
     setIsUpdatingVisibility(true);
     setError('');
+
     try {
       const res = await apiClient(`/boards/${board.id}`, {
         method: 'PATCH',
-        data: { visibility: newVisibility },
+        data: { visibility: targetVisibility },
       });
       if (res.success) {
         onUpdated();
+      } else {
+        // Rollback nếu có lỗi
+        setCurrentVisibility(previousVisibility);
+        setError(res.message || 'Không thể cập nhật quyền hiển thị');
       }
     } catch (err: any) {
+      setCurrentVisibility(previousVisibility);
       setError(err.message || 'Không thể cập nhật quyền hiển thị');
     } finally {
       setIsUpdatingVisibility(false);
@@ -332,17 +367,20 @@ export default function ShareBoardModal({
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
-                    disabled={isUpdatingVisibility || !board.canManageMembers}
-                    onClick={() => handleVisibilityChange('WORKSPACE')}
+                    disabled={isUpdatingVisibility || !board.canEdit}
+                    onClick={() => handleRequestVisibilityChange('WORKSPACE')}
                     className={`p-2.5 rounded-md text-left border transition-all cursor-pointer ${
-                      board.visibility === 'WORKSPACE'
-                        ? 'bg-[#ffc0cb]/20 border-[#f28d8d] text-[#d86969] ring-1 ring-[#f28d8d]/30'
+                      currentVisibility === 'WORKSPACE'
+                        ? 'bg-[#ffc0cb]/20 border-[#f28d8d] text-[#d86969] ring-1 ring-[#f28d8d]/30 font-semibold'
                         : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
                     }`}
                   >
-                    <div className="flex items-center gap-1.5 text-xs font-semibold mb-0.5">
-                      <Users className="w-3.5 h-3.5" />
-                      <span>Không gian</span>
+                    <div className="flex items-center justify-between text-xs font-semibold mb-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5" />
+                        <span>Không gian</span>
+                      </div>
+                      {currentVisibility === 'WORKSPACE' && <Check className="w-3.5 h-3.5 text-[#d86969]" />}
                     </div>
                     <div className="text-[10px] text-slate-500 leading-tight">
                       Mọi thành viên Workspace
@@ -351,17 +389,20 @@ export default function ShareBoardModal({
 
                   <button
                     type="button"
-                    disabled={isUpdatingVisibility || !board.canManageMembers}
-                    onClick={() => handleVisibilityChange('PRIVATE')}
+                    disabled={isUpdatingVisibility || !board.canEdit}
+                    onClick={() => handleRequestVisibilityChange('PRIVATE')}
                     className={`p-2.5 rounded-md text-left border transition-all cursor-pointer ${
-                      board.visibility === 'PRIVATE'
-                        ? 'bg-[#ffc0cb]/20 border-[#f28d8d] text-[#d86969] ring-1 ring-[#f28d8d]/30'
+                      currentVisibility === 'PRIVATE'
+                        ? 'bg-rose-50 border-rose-300 text-rose-700 ring-1 ring-rose-200 font-semibold'
                         : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
                     }`}
                   >
-                    <div className="flex items-center gap-1.5 text-xs font-semibold mb-0.5">
-                      <Lock className="w-3.5 h-3.5" />
-                      <span>Riêng tư</span>
+                    <div className="flex items-center justify-between text-xs font-semibold mb-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <Lock className="w-3.5 h-3.5 text-rose-600" />
+                        <span>Riêng tư</span>
+                      </div>
+                      {currentVisibility === 'PRIVATE' && <Check className="w-3.5 h-3.5 text-rose-600" />}
                     </div>
                     <div className="text-[10px] text-slate-500 leading-tight">
                       Chỉ thành viên Board
@@ -370,17 +411,20 @@ export default function ShareBoardModal({
 
                   <button
                     type="button"
-                    disabled={isUpdatingVisibility || !board.canManageMembers}
-                    onClick={() => handleVisibilityChange('PUBLIC')}
+                    disabled={isUpdatingVisibility || !board.canEdit}
+                    onClick={() => handleRequestVisibilityChange('PUBLIC')}
                     className={`p-2.5 rounded-md text-left border transition-all cursor-pointer ${
-                      board.visibility === 'PUBLIC'
-                        ? 'bg-[#ffc0cb]/20 border-[#f28d8d] text-[#d86969] ring-1 ring-[#f28d8d]/30'
+                      currentVisibility === 'PUBLIC'
+                        ? 'bg-emerald-50 border-emerald-300 text-emerald-700 ring-1 ring-emerald-200 font-semibold'
                         : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
                     }`}
                   >
-                    <div className="flex items-center gap-1.5 text-xs font-semibold mb-0.5">
-                      <Globe className="w-3.5 h-3.5" />
-                      <span>Công khai</span>
+                    <div className="flex items-center justify-between text-xs font-semibold mb-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <Globe className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Công khai</span>
+                      </div>
+                      {currentVisibility === 'PUBLIC' && <Check className="w-3.5 h-3.5 text-emerald-600" />}
                     </div>
                     <div className="text-[10px] text-slate-500 leading-tight">
                       Bất kỳ ai có liên kết
@@ -465,17 +509,17 @@ export default function ShareBoardModal({
                         <div className="flex items-center gap-2">
                           {canEditRole ? (
                             <select
-                              value={m.role}
+                              value={m.role === 'MEMBER' ? 'EDITOR' : m.role}
                               onChange={(e) => handleUpdateRole(m.user_id, e.target.value as any)}
                               className="px-2 py-1 text-[11px] bg-white border border-slate-300 rounded-md font-semibold text-slate-800 focus:outline-none"
                             >
                               <option value="ADMIN">Quản trị viên</option>
-                              <option value="EDITOR">Biên tập viên</option>
+                              <option value="EDITOR">Thành viên (Biên tập)</option>
                               <option value="VIEWER">Chỉ xem</option>
                             </select>
                           ) : (
                             <span className="text-[10px] px-2 py-0.5 rounded-xs bg-slate-100 text-slate-700 font-semibold border border-slate-200">
-                              {m.role === 'ADMIN' ? 'Admin' : m.role === 'EDITOR' ? 'Biên tập' : 'Chỉ xem'}
+                              {m.role === 'ADMIN' ? 'Quản trị viên' : m.role === 'VIEWER' ? 'Chỉ xem' : 'Thành viên'}
                             </span>
                           )}
 
@@ -640,6 +684,103 @@ export default function ShareBoardModal({
           )}
         </div>
       </div>
+
+      {/* Confirmation Modal for Visibility Change */}
+      {confirmingVisibility && (
+        <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-sm bg-white rounded-xl shadow-2xl border border-slate-200 p-5 sm:p-6 relative animate-in zoom-in-95 duration-150 space-y-4">
+            <button
+              type="button"
+              onClick={() => setConfirmingVisibility(null)}
+              className="absolute top-3.5 right-3.5 p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div
+                className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                  confirmingVisibility === 'PRIVATE'
+                    ? 'bg-rose-100 text-rose-600'
+                    : confirmingVisibility === 'PUBLIC'
+                    ? 'bg-emerald-100 text-emerald-600'
+                    : 'bg-[#ffc0cb]/30 text-[#d86969]'
+                }`}
+              >
+                {confirmingVisibility === 'PRIVATE' ? (
+                  <Lock className="w-5 h-5" />
+                ) : confirmingVisibility === 'PUBLIC' ? (
+                  <Globe className="w-5 h-5" />
+                ) : (
+                  <Users className="w-5 h-5" />
+                )}
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  {confirmingVisibility === 'PRIVATE'
+                    ? 'Đổi sang Riêng tư (Private)?'
+                    : confirmingVisibility === 'PUBLIC'
+                    ? 'Đổi sang Công khai (Public)?'
+                    : 'Đổi sang Không gian làm việc?'}
+                </h3>
+                <p className="text-[11px] text-slate-500 font-medium">
+                  Xác nhận thay đổi quyền hiển thị của Bảng
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600 leading-relaxed">
+              {confirmingVisibility === 'PRIVATE' && (
+                <span>
+                  Chỉ những thành viên <strong>được mời trực tiếp</strong> vào Bảng mới có thể xem và truy cập. Các thành viên khác trong Workspace sẽ không thể thấy hoặc mở bảng này nữa.
+                </span>
+              )}
+              {confirmingVisibility === 'PUBLIC' && (
+                <span>
+                  Bất kỳ ai có đường liên kết đều có thể <strong>xem nội dung</strong> của Bảng này (chế độ chỉ xem đối với người ngoài). Hãy đảm bảo Bảng không chứa dữ liệu nhạy cảm.
+                </span>
+              )}
+              {confirmingVisibility === 'WORKSPACE' && (
+                <span>
+                  <strong>Mọi thành viên</strong> trong Không gian làm việc này đều có quyền tìm thấy, xem và làm việc trên Bảng này.
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setConfirmingVisibility(null)}
+                disabled={isUpdatingVisibility}
+                className="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                disabled={isUpdatingVisibility}
+                onClick={handleConfirmVisibilityChange}
+                className={`px-3.5 py-1.5 rounded-md text-xs font-semibold text-white transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs ${
+                  confirmingVisibility === 'PRIVATE'
+                    ? 'bg-rose-600 hover:bg-rose-700'
+                    : confirmingVisibility === 'PUBLIC'
+                    ? 'bg-emerald-600 hover:bg-emerald-700'
+                    : 'bg-[#f28d8d] hover:bg-[#e57a7a]'
+                }`}
+              >
+                {isUpdatingVisibility && <Loader2 className="w-3 h-3 animate-spin" />}
+                <span>
+                  {confirmingVisibility === 'PRIVATE'
+                    ? 'Chuyển sang Riêng tư'
+                    : confirmingVisibility === 'PUBLIC'
+                    ? 'Chuyển sang Công khai'
+                    : 'Chuyển sang Không gian'}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

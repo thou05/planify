@@ -32,6 +32,7 @@ interface KanbanCardProps {
   onDropOnCard?: (e: React.DragEvent, targetListId: string, targetIndex: number) => void;
   isDropDisabled?: boolean;
   onShakeError?: () => void;
+  canEdit?: boolean;
 }
 
 export default function KanbanCard({
@@ -50,6 +51,7 @@ export default function KanbanCard({
   onDropOnCard,
   isDropDisabled = false,
   onShakeError,
+  canEdit = true,
 }: KanbanCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuCoords, setMenuCoords] = useState<{
@@ -262,9 +264,9 @@ export default function KanbanCard({
 
       <div
         ref={cardRef}
-        draggable={!isEditingTitle && !isMenuOpen}
+        draggable={canEdit && !isEditingTitle && !isMenuOpen}
         onDragStart={(e) => {
-          if (isMenuOpen) {
+          if (!canEdit || isMenuOpen) {
             e.preventDefault();
             return;
           }
@@ -319,24 +321,26 @@ export default function KanbanCard({
           )}
 
           {/* Quick Menu Trigger Button */}
-          <div
-            className="relative shrink-0"
-            onClick={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-            <button
-              ref={buttonRef}
-              onClick={handleToggleMenu}
-              className={`p-1 rounded transition-colors cursor-pointer ${
-                isMenuOpen
-                  ? 'opacity-100 bg-slate-100 text-slate-900'
-                  : 'opacity-0 group-hover:opacity-100 text-slate-400 hover:text-slate-800 hover:bg-slate-100'
-              }`}
-              title="Tùy chọn thẻ"
+          {canEdit && (
+            <div
+              className="relative shrink-0"
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
             >
-              <MoreHorizontal className="w-3.5 h-3.5" />
-            </button>
-          </div>
+              <button
+                ref={buttonRef}
+                onClick={handleToggleMenu}
+                className={`p-1 rounded transition-colors cursor-pointer ${
+                  isMenuOpen
+                    ? 'opacity-100 bg-slate-100 text-slate-900'
+                    : 'opacity-0 group-hover:opacity-100 text-slate-400 hover:text-slate-800 hover:bg-slate-100'
+                }`}
+                title="Tùy chọn thẻ"
+              >
+                <MoreHorizontal className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Description Snippet */}
