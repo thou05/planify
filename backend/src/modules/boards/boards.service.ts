@@ -218,7 +218,17 @@ export class BoardsService {
                 user:users (id, name, email, avatar)
               )
             ),
-            comments (id)
+            comments (id),
+            custom_field_values (
+              id,
+              field_id,
+              value,
+              field:custom_fields (
+                id,
+                name,
+                field_type
+              )
+            )
           )
         ),
         members:board_members (
@@ -228,7 +238,8 @@ export class BoardsService {
           joined_at,
           user:users (id, name, email, avatar)
         ),
-        labels (id, name, color)
+        labels (id, name, color),
+        custom_fields (id, name, field_type)
       `)
       .eq('id', boardId)
       .maybeSingle();

@@ -69,11 +69,13 @@ import {
   BarChart3,
   ChevronDown,
   Loader2,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { ActivityItem } from '@/components/modals/MyActivityModal';
 import { BoardRiskScannerModal } from '@/components/board/BoardRiskScannerModal';
 import { BoardCopilotDrawer } from '@/components/board/BoardCopilotDrawer';
 import { MarkdownRenderer, formatReportForZalo } from '@/components/board/MarkdownRenderer';
+import CustomFieldsModal from '@/components/modals/CustomFieldsModal';
 
 function applyCardMove(
   prevBoard: any,
@@ -163,6 +165,7 @@ export default function BoardDetailPage({
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isBoardMenuOpen, setIsBoardMenuOpen] = useState(false);
+  const [isCustomFieldsModalOpen, setIsCustomFieldsModalOpen] = useState(false);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [isCardDetailOpen, setIsCardDetailOpen] = useState(false);
   const [realtimeUpdatedCardId, setRealtimeUpdatedCardId] = useState<{ id: string; timestamp: number } | null>(null);
@@ -1636,6 +1639,17 @@ export default function BoardDetailPage({
                     <span>Lịch sử hoạt động Bảng</span>
                   </button>
 
+                  <button
+                    onClick={() => {
+                      setIsBoardMenuOpen(false);
+                      setIsCustomFieldsModalOpen(true);
+                    }}
+                    className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Trường tùy chỉnh (Custom Fields)</span>
+                  </button>
+
                   {board?.canEdit && !board?.is_archived && (
                     <button
                       onClick={() => {
@@ -2555,6 +2569,16 @@ export default function BoardDetailPage({
         totalAllCards={totalAllCards}
         allCards={allBoardCards}
       />
+
+      {/* Custom Fields Modal */}
+      {isCustomFieldsModalOpen && (
+        <CustomFieldsModal
+          boardId={boardId}
+          isOpen={isCustomFieldsModalOpen}
+          onClose={() => setIsCustomFieldsModalOpen(false)}
+          onFieldsChange={fetchBoard}
+        />
+      )}
 
     </>
   );

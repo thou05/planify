@@ -57,8 +57,21 @@ import {
   Sparkles,
   Wand2,
   Bot,
+  SlidersHorizontal,
+  Hash,
+  Square,
+  Type,
+  Star,
+  Percent,
+  DollarSign,
+  Mail,
+  Phone,
+  ListFilter,
+  Settings2,
+  Loader2,
 } from 'lucide-react';
 import { ActivityItem } from '@/components/modals/MyActivityModal';
+import CustomFieldsModal, { CustomField, FIELD_TYPE_CONFIG } from '@/components/modals/CustomFieldsModal';
 
 export interface CardRelationItem {
   id: string;
@@ -193,6 +206,26 @@ const REMINDER_OPTIONS = [
   { value: 1440, label: 'Trước 1 ngày' },
   { value: 2880, label: 'Trước 2 ngày' },
 ];
+
+const DROPDOWN_PRESET_OPTIONS: Record<string, string[]> = {
+  'Mức độ ưu tiên': ['Thấp', 'Trung bình', 'Cao', 'Khẩn cấp'],
+  'Ưu tiên': ['Thấp', 'Trung bình', 'Cao', 'Khẩn cấp'],
+  'Priority': ['Low', 'Medium', 'High', 'Urgent'],
+  'Môi trường': ['Production', 'Staging', 'Develop', 'Testing'],
+  'Nền tảng thiết kế': ['Figma', 'Web UI', 'Mobile App', 'Design System'],
+  'Giai đoạn': ['Tiếp cận', 'Demo/Báo giá', 'Thương lượng', 'Đã chốt'],
+  'Kênh triển khai': ['Facebook Ads', 'Google Ads', 'SEO/Blog', 'Email Marketing', 'Tiktok'],
+  'Trạng thái phê duyệt': ['Chờ duyệt', 'Đã duyệt', 'Cần sửa đổi', 'Từ chối'],
+};
+
+function getDropdownOptionsForField(fieldName: string): string[] {
+  for (const [key, opts] of Object.entries(DROPDOWN_PRESET_OPTIONS)) {
+    if (fieldName.toLowerCase().includes(key.toLowerCase())) {
+      return opts;
+    }
+  }
+  return ['Tùy chọn 1', 'Tùy chọn 2', 'Tùy chọn 3'];
+}
 
 function toLocalDatetimeString(dateStr: string | Date | null | undefined): string {
   if (!dateStr) return '';
@@ -357,6 +390,23 @@ export default function CardDetailModal({
   const [isCreatingLabel, setIsCreatingLabel] = useState(false);
   const [formLabelName, setFormLabelName] = useState('');
   const [formLabelColor, setFormLabelColor] = useState('#3b82f6');
+
+  // Custom Fields state
+  const [boardCustomFields, setBoardCustomFields] = useState<CustomField[]>([]);
+  const [cardCustomFieldValues, setCardCustomFieldValues] = useState<
+    Record<string, { id: string; value: string; field?: any }>
+  >({});
+  const [isCustomFieldsModalOpen, setIsCustomFieldsModalOpen] = useState(false);
+  const [editingCustomFieldId, setEditingCustomFieldId] = useState<string | null>(null);
+  const [tempCustomFieldValue, setTempCustomFieldValue] = useState<string>('');
+  const [isSavingCustomField, setIsSavingCustomField] = useState(false);
+  const customFieldsSectionRef = useRef<HTMLDivElement>(null);
+
+  // Dropdown options management
+  const [managingDropdownField, setManagingDropdownField] = useState<CustomField | null>(null);
+  const [tempDropdownOptionsList, setTempDropdownOptionsList] = useState<string[]>([]);
+  const [newTempOptionInput, setNewTempOptionInput] = useState('');
+  const [isSavingDropdownOptions, setIsSavingDropdownOptions] = useState(false);
 
   // Dates modal/popover state
   const [isDatesModalOpen, setIsDatesModalOpen] = useState(false);
@@ -780,6 +830,123 @@ export default function CardDetailModal({
     }
   };
 
+  const fetchBoardCustomFields = async (bId: string) => {
+    try {
+      const res = await apiClient<CustomField[]>(`/boards/${bId}/custom-fields`);
+      if (res.success && res.data) {
+        setBoardCustomFields(res.data);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleSaveCustomFieldValue = async (fieldId: string, val: any) => {
+    const currentId = activeCardId || cardId;
+    if (!currentId) return;
+
+    // Optimistic update
+    setCardCustomFieldValues((prev) => {
+      const copy = { ...prev };
+      if (val === null || val === undefined || (typeof val === 'string' && val.trim() === '')) {
+        delete copy[fieldId];
+      } else {
+        copy[fieldId] = {
+          id: copy[fieldId]?.id || 'temp',
+          value: String(val),
+          field: boardCustomFields.find((f) => f.id === fieldId),
+        };
+      }
+      return copy;
+    });
+
+    try {
+      setIsSavingCustomField(true);
+      await apiClient(`/cards/${currentId}/custom-field-values/${fieldId}`, {
+        method: 'PUT',
+        data: { value: val },
+      });
+      onCardUpdated();
+    } catch (err: any) {
+      console.error('Lỗi khi lưu giá trị trường tùy chỉnh:', err);
+      fetchCardDetails(currentId, true);
+    } finally {
+      setIsSavingCustomField(false);
+      setEditingCustomFieldId(null);
+    }
+  };
+
+  const handleDeleteCustomFieldValue = async (fieldId: string) => {
+    const currentId = activeCardId || cardId;
+    if (!currentId) return;
+
+    setCardCustomFieldValues((prev) => {
+      const copy = { ...prev };
+      delete copy[fieldId];
+      return copy;
+    });
+
+    try {
+      await apiClient(`/cards/${currentId}/custom-field-values/${fieldId}`, {
+        method: 'DELETE',
+      });
+      onCardUpdated();
+    } catch {
+      fetchCardDetails(currentId, true);
+    }
+  };
+
+  const handleOpenDropdownOptionsModal = (field: CustomField) => {
+    setManagingDropdownField(field);
+    const existing =
+      field.options && field.options.length > 0
+        ? [...field.options]
+        : getDropdownOptionsForField(field.name);
+    setTempDropdownOptionsList(existing);
+    setNewTempOptionInput('');
+  };
+
+  const handleAddTempOption = () => {
+    const val = newTempOptionInput.trim();
+    if (!val) return;
+    if (tempDropdownOptionsList.includes(val)) return;
+    setTempDropdownOptionsList((prev) => [...prev, val]);
+    setNewTempOptionInput('');
+  };
+
+  const handleRemoveTempOption = (idxToRemove: number) => {
+    setTempDropdownOptionsList((prev) => prev.filter((_, idx) => idx !== idxToRemove));
+  };
+
+  const handleSaveDropdownOptions = async () => {
+    if (!managingDropdownField || isSavingDropdownOptions) return;
+    const cleanList = tempDropdownOptionsList.map((o) => o.trim()).filter(Boolean);
+    if (cleanList.length === 0) return;
+
+    try {
+      setIsSavingDropdownOptions(true);
+      const fieldId = managingDropdownField.id;
+      setBoardCustomFields((prev) =>
+        prev.map((f) => (f.id === fieldId ? { ...f, options: cleanList } : f))
+      );
+      setManagingDropdownField(null);
+
+      await apiClient(`/custom-fields/${fieldId}`, {
+        method: 'PATCH',
+        data: { options: cleanList },
+      });
+
+      const bId = card?.list?.board_id || boardId;
+      if (bId) {
+        fetchBoardCustomFields(bId);
+      }
+    } catch (err: any) {
+      console.error('Lỗi lưu danh sách tùy chọn dropdown:', err);
+    } finally {
+      setIsSavingDropdownOptions(false);
+    }
+  };
+
   const fetchCardDetails = async (id: string, silent = false) => {
     try {
       if (!silent) setIsLoading(true);
@@ -811,6 +978,13 @@ export default function CardDetailModal({
         setAssignees(c.card_assignees || []);
         setCardLabels(c.card_labels || []);
 
+        // Custom field values
+        const cfMap: Record<string, { id: string; value: string; field?: any }> = {};
+        (c.custom_field_values || []).forEach((cf: any) => {
+          cfMap[cf.field_id] = { id: cf.id, value: cf.value, field: cf.field };
+        });
+        setCardCustomFieldValues(cfMap);
+
         if (c.due_date && c.reminder_at) {
           const diffMins = Math.round(
             (new Date(c.due_date).getTime() - new Date(c.reminder_at).getTime()) / 60000,
@@ -828,6 +1002,7 @@ export default function CardDetailModal({
         if (effectiveBoardId) {
           fetchBoardMembers(effectiveBoardId);
           fetchBoardLabels(effectiveBoardId);
+          fetchBoardCustomFields(effectiveBoardId);
         }
 
         const effectiveWsId = externalWorkspaceId || c.list?.board?.workspace_id;
@@ -2271,6 +2446,32 @@ export default function CardDetailModal({
                   <span>Liên kết {relations.length > 0 && `(${relations.length})`}</span>
                 </button>
 
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (boardCustomFields.length === 0) {
+                      setIsCustomFieldsModalOpen(true);
+                    } else {
+                      customFieldsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      setHighlightedSection('custom_fields');
+                      setTimeout(() => setHighlightedSection((curr) => curr === 'custom_fields' ? null : curr), 2500);
+                    }
+                  }}
+                  className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer ${
+                    Object.keys(cardCustomFieldValues).length > 0
+                      ? 'text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300'
+                      : 'text-slate-900 bg-slate-100 hover:bg-slate-200'
+                  }`}
+                  title="Quản lý và thiết lập các trường tùy chỉnh cho thẻ"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
+                  <span>
+                    Trường tùy chỉnh{' '}
+                    {Object.keys(cardCustomFieldValues).length > 0 &&
+                      `(${Object.keys(cardCustomFieldValues).length})`}
+                  </span>
+                </button>
+
                 <div className="h-4 w-[1px] bg-slate-200 mx-0.5" />
 
                 <button
@@ -2533,6 +2734,344 @@ export default function CardDetailModal({
                   >
                     Sửa ngày
                   </button>
+                </div>
+              )}
+
+              {/* Custom Fields Section - Chỉ hiển thị khi bảng thực sự có trường tùy chỉnh */}
+              {boardCustomFields.length > 0 && (
+                <div
+                  ref={customFieldsSectionRef}
+                  className={`space-y-3 pt-4 border-t border-slate-100 transition-all rounded-xl ${
+                    highlightedSection === 'custom_fields'
+                      ? 'ring-2 ring-[#f28d8d] bg-[#ffc0cb]/15 p-3'
+                      : ''
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-900 uppercase tracking-wider">
+                      <SlidersHorizontal className="w-4 h-4 text-slate-500" />
+                      <span>Trường tùy chỉnh</span>
+                      <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-800 text-[11px] font-bold">
+                        {Object.keys(cardCustomFieldValues).length}/{boardCustomFields.length}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsCustomFieldsModalOpen(true)}
+                      className="text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200 shadow-2xs"
+                      title="Cấu hình hoặc thêm trường dữ liệu tùy chỉnh cho bảng"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Quản lý trường</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {boardCustomFields.map((field) => {
+                      const curVal = cardCustomFieldValues[field.id]?.value;
+                      const hasValue = curVal !== undefined && curVal !== null && curVal !== '';
+                      const isEditing = editingCustomFieldId === field.id;
+
+                      const typeConfig = FIELD_TYPE_CONFIG[field.field_type] || {
+                        label: field.name,
+                        icon: AlignLeft,
+                        badgeBg: 'bg-slate-50 text-slate-700 border-slate-200',
+                        iconColor: 'text-slate-500',
+                      };
+                      const Icon = typeConfig.icon;
+                      const badgeColor = typeConfig.badgeBg;
+
+                      return (
+                        <div
+                          key={field.id}
+                          className="p-3 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-all shadow-2xs flex flex-col justify-between gap-2.5 group"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className={`p-1 rounded-md bg-slate-50 ${typeConfig.iconColor}`}>
+                                <Icon className="w-3.5 h-3.5 shrink-0" />
+                              </span>
+                              <span className="text-xs font-bold text-slate-800 truncate" title={field.name}>
+                                {field.name}
+                              </span>
+                              <span className="text-[10px] text-slate-400 font-medium hidden sm:inline">
+                                ({typeConfig.label})
+                              </span>
+                            </div>
+                            {hasValue && !isEditing && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteCustomFieldValue(field.id)}
+                                className="opacity-0 group-hover:opacity-100 p-0.5 text-slate-400 hover:text-rose-500 rounded transition-opacity cursor-pointer"
+                                title="Xóa giá trị của trường này"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Controls based on field type */}
+                          {field.field_type === 'CHECKBOX' ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextVal = curVal === 'true' ? 'false' : 'true';
+                                handleSaveCustomFieldValue(field.id, nextVal);
+                              }}
+                              className={`w-full py-1.5 px-3 rounded-lg border text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
+                                curVal === 'true'
+                                  ? 'bg-emerald-50 border-emerald-300 text-emerald-800 shadow-2xs'
+                                  : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                              }`}
+                            >
+                              <span>{curVal === 'true' ? 'Đã kích hoạt' : 'Chưa kích hoạt'}</span>
+                              <div
+                                className={`w-4 h-4 rounded-md flex items-center justify-center transition-colors ${
+                                  curVal === 'true' ? 'bg-emerald-600 text-white' : 'border border-slate-300 bg-white'
+                                }`}
+                              >
+                                {curVal === 'true' && <Check className="w-3 h-3 text-white" />}
+                              </div>
+                            </button>
+                          ) : field.field_type === 'RATING' ? (
+                            <div className="flex items-center justify-between bg-amber-50/60 border border-amber-200/80 rounded-lg px-2.5 py-1.5">
+                              <div className="flex items-center gap-1">
+                                {[1, 2, 3, 4, 5].map((star) => {
+                                  const isFilled = Number(curVal) >= star;
+                                  return (
+                                    <button
+                                      key={star}
+                                      type="button"
+                                      onClick={() => {
+                                        const nextVal = Number(curVal) === star ? null : String(star);
+                                        if (nextVal === null) {
+                                          handleDeleteCustomFieldValue(field.id);
+                                        } else {
+                                          handleSaveCustomFieldValue(field.id, nextVal);
+                                        }
+                                      }}
+                                      className="p-0.5 hover:scale-125 transition-transform cursor-pointer group"
+                                      title={`Đánh giá ${star} sao`}
+                                    >
+                                      <Star
+                                        className={`w-4 h-4 transition-colors ${
+                                          isFilled
+                                            ? 'fill-amber-400 text-amber-500'
+                                            : 'text-slate-300 group-hover:text-amber-300'
+                                        }`}
+                                      />
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                              <span className="text-[11px] font-bold text-amber-800">
+                                {curVal ? `${curVal}/5 sao` : 'Chưa chấm điểm'}
+                              </span>
+                            </div>
+                          ) : field.field_type === 'PERCENT' ? (
+                            <div className="space-y-1.5 bg-slate-50 border border-slate-200 rounded-lg p-2">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-[11px] font-semibold text-slate-600">Tiến độ hoàn thành</span>
+                                <span className="text-xs font-bold text-slate-900">{curVal ? `${curVal}%` : '0%'}</span>
+                              </div>
+                              <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full transition-all duration-300 ${
+                                    Number(curVal) >= 100
+                                      ? 'bg-emerald-500'
+                                      : Number(curVal) >= 50
+                                      ? 'bg-cyan-500'
+                                      : Number(curVal) > 0
+                                      ? 'bg-amber-500'
+                                      : 'bg-transparent'
+                                  }`}
+                                  style={{ width: `${Math.min(100, Math.max(0, Number(curVal) || 0))}%` }}
+                                />
+                              </div>
+                              <div className="flex items-center justify-between gap-1 pt-0.5">
+                                {[0, 25, 50, 75, 100].map((pct) => (
+                                  <button
+                                    key={pct}
+                                    type="button"
+                                    onClick={() => handleSaveCustomFieldValue(field.id, String(pct))}
+                                    className={`flex-1 py-0.5 text-[10px] font-semibold rounded transition-colors cursor-pointer ${
+                                      Number(curVal) === pct
+                                        ? 'bg-cyan-600 text-white shadow-2xs'
+                                        : 'bg-white hover:bg-slate-200 text-slate-600 border border-slate-200'
+                                    }`}
+                                  >
+                                    {pct}%
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ) : field.field_type === 'DROPDOWN' ? (
+                            (() => {
+                              const options =
+                                field.options && field.options.length > 0
+                                  ? field.options
+                                  : getDropdownOptionsForField(field.name);
+                              return (
+                                <div className="flex items-center gap-1.5">
+                                  <select
+                                    value={curVal || ''}
+                                    onChange={(e) => {
+                                      handleSaveCustomFieldValue(field.id, e.target.value);
+                                    }}
+                                    className="flex-1 min-w-0 px-2.5 py-1.5 text-xs bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-[#87ceeb] rounded-lg text-slate-800 font-semibold cursor-pointer shadow-2xs"
+                                  >
+                                    <option value="">-- Chọn {field.name} --</option>
+                                    {options.map((opt) => (
+                                      <option key={opt} value={opt}>
+                                        {opt}
+                                      </option>
+                                    ))}
+                                    {hasValue && !options.includes(curVal) && (
+                                      <option value={curVal}>{curVal} (Tùy chỉnh)</option>
+                                    )}
+                                  </select>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenDropdownOptionsModal(field)}
+                                    className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors cursor-pointer shrink-0"
+                                    title="Chỉnh sửa danh sách các lựa chọn của trường này"
+                                  >
+                                    <Settings2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              );
+                            })()
+                          ) : field.field_type === 'CURRENCY' ? (
+                            isEditing ? (
+                              <div className="flex items-center gap-1.5">
+                                <div className="relative flex-1">
+                                  <input
+                                    type="number"
+                                    value={tempCustomFieldValue}
+                                    onChange={(e) => setTempCustomFieldValue(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') handleSaveCustomFieldValue(field.id, tempCustomFieldValue);
+                                      if (e.key === 'Escape') setEditingCustomFieldId(null);
+                                    }}
+                                    placeholder="Số tiền..."
+                                    autoFocus
+                                    className="w-full pl-2.5 pr-8 py-1 text-xs bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-hidden focus:ring-1 focus:ring-slate-900 font-medium"
+                                  />
+                                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                                    ₫
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  disabled={isSavingCustomField}
+                                  onClick={() => handleSaveCustomFieldValue(field.id, tempCustomFieldValue)}
+                                  className="p-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition-colors cursor-pointer"
+                                  title="Lưu"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingCustomFieldId(null)}
+                                  className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                                  title="Hủy"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ) : hasValue ? (
+                              <div
+                                onClick={() => {
+                                  setEditingCustomFieldId(field.id);
+                                  setTempCustomFieldValue(curVal || '');
+                                }}
+                                className="px-2.5 py-1.5 rounded-lg border text-xs font-bold flex items-center justify-between transition-colors cursor-pointer hover:opacity-90 bg-emerald-50 text-emerald-800 border-emerald-200"
+                                title="Bấm để chỉnh sửa số tiền"
+                              >
+                                <span className="truncate">
+                                  {Number(curVal) ? `${Number(curVal).toLocaleString('vi-VN')} ₫` : curVal}
+                                </span>
+                                <Edit2 className="w-3 h-3 opacity-60 ml-1.5 shrink-0" />
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingCustomFieldId(field.id);
+                                  setTempCustomFieldValue('');
+                                }}
+                                className="w-full py-1.5 px-2.5 rounded-lg border border-dashed border-slate-300 text-slate-400 hover:text-slate-700 hover:border-slate-400 hover:bg-slate-50 text-xs font-medium flex items-center justify-center gap-1 transition-all cursor-pointer"
+                              >
+                                <Plus className="w-3 h-3" />
+                                <span>Nhập số tiền...</span>
+                              </button>
+                            )
+                          ) : isEditing ? (
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type={field.field_type === 'NUMBER' ? 'number' : 'text'}
+                                value={tempCustomFieldValue}
+                                onChange={(e) => setTempCustomFieldValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleSaveCustomFieldValue(field.id, tempCustomFieldValue);
+                                  } else if (e.key === 'Escape') {
+                                    setEditingCustomFieldId(null);
+                                  }
+                                }}
+                                placeholder={field.field_type === 'NUMBER' ? 'Nhập số...' : 'Nhập văn bản...'}
+                                autoFocus
+                                className="flex-1 px-2.5 py-1 text-xs bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-hidden focus:ring-1 focus:ring-slate-900 font-medium"
+                              />
+                              <button
+                                type="button"
+                                disabled={isSavingCustomField}
+                                onClick={() => handleSaveCustomFieldValue(field.id, tempCustomFieldValue)}
+                                className="p-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition-colors cursor-pointer"
+                                title="Lưu"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditingCustomFieldId(null)}
+                                className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                                title="Hủy"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ) : hasValue ? (
+                            <div
+                              onClick={() => {
+                                setEditingCustomFieldId(field.id);
+                                setTempCustomFieldValue(curVal || '');
+                              }}
+                              className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer hover:opacity-90 ${badgeColor}`}
+                              title="Bấm để chỉnh sửa"
+                            >
+                              <span className="truncate">{curVal}</span>
+                              <Edit2 className="w-3 h-3 opacity-60 ml-1.5 shrink-0" />
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingCustomFieldId(field.id);
+                                setTempCustomFieldValue('');
+                              }}
+                              className="w-full py-1.5 px-2.5 rounded-lg border border-dashed border-slate-300 text-slate-400 hover:text-slate-700 hover:border-slate-400 hover:bg-slate-50 text-xs font-medium flex items-center justify-center gap-1 transition-all cursor-pointer"
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span>{field.field_type === 'NUMBER' ? 'Thêm số...' : 'Thêm văn bản...'}</span>
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
@@ -5464,6 +6003,136 @@ export default function CardDetailModal({
                   className="w-full sm:w-auto px-4 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors cursor-pointer"
                 >
                   Đã hiểu
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Custom Fields Manager Modal */}
+        {isCustomFieldsModalOpen && (
+          <CustomFieldsModal
+            boardId={card?.list?.board_id || boardId || ''}
+            isOpen={isCustomFieldsModalOpen}
+            onClose={() => setIsCustomFieldsModalOpen(false)}
+            onFieldsChange={() => {
+              const bId = card?.list?.board_id || boardId;
+              if (bId) fetchBoardCustomFields(bId);
+              const currentId = activeCardId || cardId;
+              if (currentId) fetchCardDetails(currentId, true);
+              onCardUpdated();
+            }}
+          />
+        )}
+
+        {/* Dropdown Options Quick Manager Modal */}
+        {managingDropdownField && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-60 animate-in fade-in duration-150">
+            <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-5 max-w-md w-full space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center">
+                    <ListFilter className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">
+                      Tùy chọn: {managingDropdownField.name}
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      Chỉnh sửa các lựa chọn trong menu dropdown của trường này
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setManagingDropdownField(null)}
+                  className="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Chips list */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-700 block">
+                  Các lựa chọn hiện có ({tempDropdownOptionsList.length})
+                </label>
+                <div className="flex flex-wrap gap-1.5 p-2 bg-slate-50 border border-slate-200 rounded-xl min-h-[44px] max-h-[160px] overflow-y-auto">
+                  {tempDropdownOptionsList.map((opt, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-white text-slate-800 text-xs font-semibold rounded-lg border border-slate-200 shadow-2xs"
+                    >
+                      <span>{opt}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTempOption(idx)}
+                        className="text-slate-400 hover:text-rose-600 cursor-pointer"
+                        title="Xóa lựa chọn này"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                  {tempDropdownOptionsList.length === 0 && (
+                    <span className="text-xs text-rose-500 italic p-1">
+                      Chưa có tùy chọn nào. Hãy thêm ít nhất 1 lựa chọn bên dưới.
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Add new option input */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700 block">
+                  Thêm lựa chọn mới
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    value={newTempOptionInput}
+                    onChange={(e) => setNewTempOptionInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddTempOption();
+                      }
+                    }}
+                    placeholder="Nhập tên lựa chọn và nhấn Enter..."
+                    className="flex-1 px-3 py-1.5 text-xs bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-hidden focus:border-slate-900"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddTempOption}
+                    disabled={!newTempOptionInput.trim()}
+                    className="px-3.5 py-1.5 text-xs font-bold bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-800 rounded-xl transition-colors cursor-pointer shrink-0"
+                  >
+                    + Thêm
+                  </button>
+                </div>
+              </div>
+
+              {/* Buttons */}
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setManagingDropdownField(null)}
+                  className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveDropdownOptions}
+                  disabled={isSavingDropdownOptions || tempDropdownOptionsList.length === 0}
+                  className="px-4 py-1.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 rounded-lg transition-colors cursor-pointer shadow-xs flex items-center gap-1.5"
+                >
+                  {isSavingDropdownOptions ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Check className="w-3.5 h-3.5" />
+                  )}
+                  <span>Lưu thay đổi</span>
                 </button>
               </div>
             </div>
