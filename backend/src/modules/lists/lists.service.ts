@@ -479,8 +479,14 @@ export class ListsService {
         throw new ForbiddenException('Bảng này ở chế độ Riêng tư (Private), bạn không có quyền truy cập');
       }
 
-      const role = wsMember.role === 'ADMIN' ? 'ADMIN' : 'EDITOR';
-      return { role, canEdit: true };
+      if (wsMember.role === 'ADMIN') {
+        return { role: 'ADMIN', canEdit: true };
+      }
+
+      if (requireEdit) {
+        throw new ForbiddenException('Bạn chưa tham gia vào Bảng này, chỉ có quyền xem');
+      }
+      return { role: 'VIEWER', canEdit: false };
     }
 
     if (board.visibility === 'PUBLIC' && !requireEdit) {

@@ -196,11 +196,24 @@ export default function BoardDetailPage({
     };
   }, [isVisibilityMenuOpen]);
 
+  const isBoardMember = Boolean(
+    board?.isBoardMember ||
+      board?.members?.some((m: any) => (m.user_id && m.user_id === user?.id) || (m.user?.id && m.user?.id === user?.id))
+  );
+
   const isGuest = Boolean(
     board?.isGuest ||
       (board && !board?.isWorkspaceOwner && !board?.isWorkspaceMember && board?.currentUserBoardRole !== 'ADMIN')
   );
-  const isViewer = Boolean(board?.currentUserBoardRole === 'VIEWER');
+
+  // Người dùng ở chế độ chỉ xem (VIEWER) hoặc không tham gia vào bảng (không phải board member & không phải workspace admin/owner)
+  const isViewer = Boolean(
+    board?.currentUserBoardRole === 'VIEWER' ||
+      board?.canEdit === false ||
+      (!isBoardMember && !board?.isWorkspaceOwner && board?.currentUserBoardRole !== 'ADMIN')
+  );
+
+  const canEditBoard = !isViewer && Boolean(board?.canEdit !== false);
 
   const canChangeVisibility = Boolean(
     !isGuest &&
@@ -1297,7 +1310,10 @@ export default function BoardDetailPage({
 
   // 3. LIST DRAG & DROP HANDLERS
   const handleListDragStart = (e: React.DragEvent, listId: string) => {
-    if (draggedCardRef.current) return;
+    if (!canEditBoard || draggedCardRef.current) {
+      e.preventDefault();
+      return;
+    }
     draggedListIdRef.current = listId;
     e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'list', listId }));
     e.dataTransfer.effectAllowed = 'move';
@@ -1308,6 +1324,7 @@ export default function BoardDetailPage({
   };
 
   const handleListDrop = async (e: React.DragEvent, targetListId: string) => {
+    if (!canEditBoard) return;
     const sourceListId = draggedListIdRef.current;
     if (!sourceListId || sourceListId === targetListId) return;
 
@@ -1356,6 +1373,10 @@ export default function BoardDetailPage({
     sourceListId: string
   ) => {
     e.stopPropagation();
+    if (!canEditBoard) {
+      e.preventDefault();
+      return;
+    }
     draggedCardRef.current = { cardId, sourceListId };
     setDraggedSourceListId(sourceListId);
     e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'card', cardId, sourceListId }));
@@ -1372,6 +1393,7 @@ export default function BoardDetailPage({
     targetListId: string,
     targetPosition?: number
   ) => {
+    if (!canEditBoard) return;
     const data = draggedCardRef.current;
     draggedCardRef.current = null;
     setDraggedSourceListId(null);
@@ -1792,15 +1814,17 @@ export default function BoardDetailPage({
             ))}
 
             {/* Automation Button */}
-            <button
-              type="button"
-              onClick={() => setIsAutomationModalOpen(true)}
-              className="h-7 px-2.5 text-xs font-semibold rounded-md flex items-center gap-1.5 transition-colors cursor-pointer border bg-white hover:bg-slate-100 text-slate-700 border-slate-200"
-              title="Mở bảng Tự động hóa (Automation)"
-            >
-              <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-              <span className="hidden sm:inline">Tự động hóa</span>
-            </button>
+            {canEditBoard && !isGuest && (
+              <button
+                type="button"
+                onClick={() => setIsAutomationModalOpen(true)}
+                className="h-7 px-2.5 text-xs font-semibold rounded-md flex items-center gap-1.5 transition-colors cursor-pointer border bg-white hover:bg-slate-100 text-slate-700 border-slate-200"
+                title="Mở bảng Tự động hóa (Automation)"
+              >
+                <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                <span className="hidden sm:inline">Tự động hóa</span>
+              </button>
+            )}
 
             <div className="hidden sm:block h-4 w-[1px] bg-slate-200 shrink-0" />
 
@@ -2092,7 +2116,7 @@ export default function BoardDetailPage({
                     key={list.id}
                     list={list}
                     boardLists={board.lists}
-                    canEdit={board?.canEdit ?? true}
+                    canEdit={canEditBoard}
                     onOpenCardDetail={handleOpenCardDetail}
                     onRefreshBoard={fetchBoard}
                     onRenameList={handleRenameList}
@@ -2118,7 +2142,7 @@ export default function BoardDetailPage({
                 ))}
 
                 {/* Add New List Column at End */}
-                {!board?.is_archived && board?.canEdit && (
+                {!board?.is_archived && canEditBoard && (
                   <div className="w-72 shrink-0">
                     {isAddingListInline ? (
                       <form
@@ -2379,6 +2403,7 @@ export default function BoardDetailPage({
         onCopyRequest={(c) => setCopyingCard(c)}
         onSelectCard={(cId) => setSelectedCardId(cId)}
         activeUserIds={activeUserIds}
+        canEdit={canEditBoard}
       />
 
       {/* 3. Copy List Modal */}

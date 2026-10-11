@@ -284,14 +284,15 @@ export class BoardsService {
         // 'EDITOR' hoặc 'MEMBER' đều có toàn quyền tương tác/chỉnh sửa nội dung
         currentUserBoardRole = 'EDITOR';
       }
-    } else if (wsMember) {
-      currentUserBoardRole = wsMember.role === 'ADMIN' ? 'ADMIN' : 'EDITOR';
-    } else if (b.visibility === 'PUBLIC') {
+    } else if (wsMember && wsMember.role === 'ADMIN') {
+      currentUserBoardRole = 'ADMIN';
+    } else {
       currentUserBoardRole = 'VIEWER';
     }
 
     const isGuest = !isWorkspaceOwner && !wsMember;
     const isWorkspaceMember = Boolean(isWorkspaceOwner || wsMember);
+    const isBoardMember = Boolean(currentMember);
 
     const canEdit = isWorkspaceOwner || currentUserBoardRole === 'ADMIN' || currentUserBoardRole === 'EDITOR';
     const canManageMembers = (currentUserBoardRole === 'ADMIN' || isWorkspaceOwner) && isWorkspaceMember;
@@ -316,6 +317,7 @@ export class BoardsService {
       currentUserBoardRole,
       isWorkspaceOwner,
       isWorkspaceMember,
+      isBoardMember,
       isGuest,
       canEdit,
       canManageMembers,

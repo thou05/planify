@@ -220,7 +220,7 @@ export default function KanbanCard({
 
   // Handle Drag Over relative to card height (top half vs bottom half)
   const handleCardDragOver = (e: React.DragEvent) => {
-    if (isMenuOpen || isEditingTitle) return;
+    if (!canEdit || isMenuOpen || isEditingTitle) return;
     if (isDropDisabled) {
       e.dataTransfer.dropEffect = 'none';
       onShakeError?.();
@@ -246,7 +246,7 @@ export default function KanbanCard({
   };
 
   const handleCardDrop = (e: React.DragEvent) => {
-    if (isMenuOpen || isEditingTitle) return;
+    if (!canEdit || isMenuOpen || isEditingTitle) return;
     e.preventDefault();
     e.stopPropagation();
     setDropPosition(null);
@@ -310,7 +310,7 @@ export default function KanbanCard({
 
         {/* Card Header & Title */}
         <div className="flex items-start justify-between gap-2">
-          {isEditingTitle ? (
+          {isEditingTitle && canEdit ? (
             <input
               ref={inputRef}
               type="text"
