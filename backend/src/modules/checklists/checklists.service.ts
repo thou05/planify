@@ -10,12 +10,14 @@ import { UpdateChecklistDto } from './dto/update-checklist.dto';
 import { CreateChecklistItemDto } from './dto/create-checklist-item.dto';
 import { UpdateChecklistItemDto } from './dto/update-checklist-item.dto';
 import { ActivitiesService } from '../activities/activities.service';
+import { AutomationsService } from '../automations/automations.service';
 
 @Injectable()
 export class ChecklistsService {
   constructor(
     private readonly supabase: SupabaseService,
     private readonly activitiesService: ActivitiesService,
+    private readonly automationsService: AutomationsService,
   ) {}
 
   private async verifyCardAccess(cardId: string, userId: string, requireEdit = true) {
@@ -435,6 +437,28 @@ export class ChecklistsService {
         cardId,
         senderId: userId,
       });
+
+      if (dto.is_completed === true) {
+        // Kiểm tra xem tất cả các mục checklist của card đã hoàn thành chưa
+        void (async () => {
+          try {
+            const { data: allItems } = await this.supabase
+              .from('checklist_items')
+              .select('is_completed, checklist:checklists!inner(card_id)')
+              .eq('checklist.card_id', cardId);
+
+            const hasUnfinished = (allItems || []).some((it: any) => !it.is_completed);
+            if (!hasUnfinished && (allItems || []).length > 0) {
+              await this.automationsService.triggerByEvent(
+                bId!,
+                'CHECKLIST_COMPLETED',
+                { cardId },
+                userId,
+              );
+            }
+          } catch {}
+        })();
+      }
     }
 
     return updated;

@@ -43,6 +43,7 @@ interface ListColumnProps {
   onListDrop: (e: React.DragEvent, targetListId: string) => void;
   draggedSourceListId?: string | null;
   canEdit?: boolean;
+  activeUserIds?: Set<string>;
 }
 
 export default function ListColumn({
@@ -69,6 +70,7 @@ export default function ListColumn({
   onListDragEnd,
   onListDrop,
   draggedSourceListId = null,
+  activeUserIds,
 }: ListColumnProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
@@ -435,6 +437,7 @@ export default function ListColumn({
               onDropOnCard={onCardDrop}
               isDropDisabled={isDropDisabled}
               onShakeError={triggerShake}
+              activeUserIds={activeUserIds}
             />
           ))
         ) : (

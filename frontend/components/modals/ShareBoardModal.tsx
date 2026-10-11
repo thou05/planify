@@ -27,6 +27,7 @@ interface ShareBoardModalProps {
   board: any;
   workspaceMembers?: any[];
   currentUserId?: string;
+  activeUserIds?: Set<string>;
   onUpdated: () => void;
 }
 
@@ -36,6 +37,7 @@ export default function ShareBoardModal({
   board,
   workspaceMembers = [],
   currentUserId,
+  activeUserIds,
   onUpdated,
 }: ShareBoardModalProps) {
   const [activeTab, setActiveTab] = useState<'members' | 'invites'>('members');
@@ -513,18 +515,32 @@ export default function ShareBoardModal({
                     return (
                       <div key={m.id} className="py-2.5 flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-md bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center text-slate-700 font-bold text-xs">
+                          <div className="relative w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 font-bold text-xs shrink-0">
                             {m.user?.avatar ? (
                               // eslint-disable-next-line @next/next/no-img-element
-                              <img src={m.user.avatar} alt="avatar" className="w-full h-full object-cover" />
+                              <img src={m.user.avatar} alt="avatar" className="w-full h-full rounded-full object-cover" />
                             ) : (
                               <span>{m.user?.name?.charAt(0).toUpperCase() || 'U'}</span>
+                            )}
+                            {activeUserIds?.has(m.user_id || m.user?.id) && (
+                              <span className="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border-2 border-white"></span>
+                              </span>
                             )}
                           </div>
                           <div>
                             <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                               <span>{m.user?.name}</span>
                               {isSelf && <span className="text-[10px] text-slate-400 font-normal">(Bạn)</span>}
+                              {activeUserIds?.has(m.user_id || m.user?.id) ? (
+                                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1 shadow-2xs">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                  Đang online
+                                </span>
+                              ) : (
+                                <span className="text-[10px] text-slate-400 font-normal">Ngoại tuyến</span>
+                              )}
                             </div>
                             <div className="text-[11px] text-slate-500">{m.user?.email}</div>
                           </div>

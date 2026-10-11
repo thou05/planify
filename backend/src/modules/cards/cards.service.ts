@@ -11,6 +11,7 @@ import { MoveCardDto } from './dto/move-card.dto';
 import { CopyCardDto } from './dto/copy-card.dto';
 import { ActivitiesService } from '../activities/activities.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AutomationsService } from '../automations/automations.service';
 
 @Injectable()
 export class CardsService {
@@ -18,6 +19,7 @@ export class CardsService {
     private readonly supabase: SupabaseService,
     private readonly activitiesService: ActivitiesService,
     private readonly notificationsService: NotificationsService,
+    private readonly automationsService: AutomationsService,
   ) { }
 
   async create(listId: string, userId: string, dto: CreateCardDto) {
@@ -104,6 +106,20 @@ export class CardsService {
         listId,
         senderId: userId,
       });
+
+      // Kích hoạt Automation (CARD_CREATED)
+      this.automationsService
+        .triggerByEvent(
+          list.board_id,
+          'CARD_CREATED',
+          {
+            cardId: createdCard.id,
+            listId,
+            cardData: createdCard,
+          },
+          userId,
+        )
+        .catch(() => {});
     }
 
     return createdCard;
@@ -416,6 +432,38 @@ export class CardsService {
         updated,
         senderId: userId,
       });
+
+      // Kích hoạt Automation khi hoàn thành thẻ
+      if (dto.is_due_date_completed === true || dto.status === 'DONE') {
+        this.automationsService
+          .triggerByEvent(
+            boardId,
+            'CARD_COMPLETED',
+            {
+              cardId,
+              listId: card.list_id,
+              cardData: updated,
+            },
+            userId,
+          )
+          .catch(() => {});
+      }
+
+      // Kích hoạt Automation khi đổi ngày hết hạn
+      if (dto.due_date !== undefined) {
+        this.automationsService
+          .triggerByEvent(
+            boardId,
+            'CARD_DUE_DATE_CHANGED',
+            {
+              cardId,
+              listId: card.list_id,
+              cardData: updated,
+            },
+            userId,
+          )
+          .catch(() => {});
+      }
     }
 
     return updated;
@@ -604,6 +652,22 @@ export class CardsService {
         position: targetPosition,
         senderId: userId,
       });
+    }
+
+    // Kích hoạt Automation khi di chuyển thẻ (CARD_MOVED)
+    if (sourceBoardId) {
+      this.automationsService
+        .triggerByEvent(
+          sourceBoardId,
+          'CARD_MOVED',
+          {
+            cardId,
+            sourceListId: sourceCard.list_id,
+            targetListId: dto.targetListId,
+          },
+          userId,
+        )
+        .catch(() => {});
     }
 
     return this.findById(cardId, userId);

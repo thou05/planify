@@ -38,6 +38,7 @@ interface KanbanCardProps {
   isDropDisabled?: boolean;
   onShakeError?: () => void;
   canEdit?: boolean;
+  activeUserIds?: Set<string>;
 }
 
 export default function KanbanCard({
@@ -57,6 +58,7 @@ export default function KanbanCard({
   isDropDisabled = false,
   onShakeError,
   canEdit = true,
+  activeUserIds,
 }: KanbanCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuCoords, setMenuCoords] = useState<{
@@ -521,25 +523,37 @@ export default function KanbanCard({
           {card.card_assignees?.length > 0 && (
             <div className="flex items-center -space-x-1.5 ml-auto">
               {card.card_assignees.slice(0, 3).map((ca: any) => {
+                const uId = ca.board_member?.user?.id || ca.board_member?.user_id;
+                const isOnline = activeUserIds?.has(uId);
                 const uName = ca.board_member?.user?.name || 'Thành viên';
                 const uAvatar = ca.board_member?.user?.avatar;
                 const firstLetter = uName.charAt(0).toUpperCase();
 
-                return uAvatar ? (
-                  <img
-                    key={ca.id || Math.random()}
-                    src={uAvatar}
-                    alt={uName}
-                    className="w-5 h-5 rounded-full object-cover border border-white shrink-0"
-                    title={uName}
-                  />
-                ) : (
+                return (
                   <div
                     key={ca.id || Math.random()}
-                    className="w-5 h-5 rounded-full bg-[#f28d8d] border border-white text-white flex items-center justify-center text-[9px] font-bold shrink-0"
-                    title={uName}
+                    className="relative shrink-0"
+                    title={`${uName}${isOnline ? ' (🟢 Đang hoạt động)' : ''}`}
                   >
-                    {firstLetter}
+                    {uAvatar ? (
+                      <img
+                        src={uAvatar}
+                        alt={uName}
+                        className="w-5 h-5 rounded-full object-cover border border-white shrink-0"
+                      />
+                    ) : (
+                      <div
+                        className="w-5 h-5 rounded-full bg-[#f28d8d] border border-white text-white flex items-center justify-center text-[9px] font-bold shrink-0"
+                      >
+                        {firstLetter}
+                      </div>
+                    )}
+                    {isOnline && (
+                      <span className="absolute -bottom-0.5 -right-0.5 flex h-2 w-2 z-10">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 border border-white"></span>
+                      </span>
+                    )}
                   </div>
                 );
               })}
