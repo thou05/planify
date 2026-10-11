@@ -72,12 +72,14 @@ import {
   SlidersHorizontal,
   Eye,
   UserCheck,
+  Zap,
 } from 'lucide-react';
 import { ActivityItem } from '@/components/modals/MyActivityModal';
 import { BoardRiskScannerModal } from '@/components/board/BoardRiskScannerModal';
 import { BoardCopilotDrawer } from '@/components/board/BoardCopilotDrawer';
 import { MarkdownRenderer, formatReportForZalo } from '@/components/board/MarkdownRenderer';
 import CustomFieldsModal from '@/components/modals/CustomFieldsModal';
+import AutomationModal from '@/components/modals/AutomationModal';
 
 function applyCardMove(
   prevBoard: any,
@@ -168,6 +170,9 @@ export default function BoardDetailPage({
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isBoardMenuOpen, setIsBoardMenuOpen] = useState(false);
   const [isCustomFieldsModalOpen, setIsCustomFieldsModalOpen] = useState(false);
+  const [isAutomationModalOpen, setIsAutomationModalOpen] = useState(false);
+  const [boardButtons, setBoardButtons] = useState<any[]>([]);
+  const [executingBoardButtonId, setExecutingBoardButtonId] = useState<string | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [isCardDetailOpen, setIsCardDetailOpen] = useState(false);
   const [realtimeUpdatedCardId, setRealtimeUpdatedCardId] = useState<{ id: string; timestamp: number } | null>(null);
@@ -365,6 +370,8 @@ export default function BoardDetailPage({
   const draggedListIdRef = useRef<string | null>(null);
   const [draggedSourceListId, setDraggedSourceListId] = useState<string | null>(null);
   const realtimeChannelRef = useRef<any>(null);
+  const [activeUserIds, setActiveUserIds] = useState<Set<string>>(new Set());
+  const [activeUsersList, setActiveUsersList] = useState<Array<{ id: string; name: string; avatar?: string | null }>>([]);
 
   // Board in-page comprehensive filter state
   const [boardFilters, setBoardFilters] = useState<BoardFilterState>(defaultFilterState);
@@ -645,9 +652,37 @@ export default function BoardDetailPage({
     }
   };
 
+  const fetchBoardButtons = async () => {
+    if (!boardId) return;
+    try {
+      const res = await apiClient<any[]>(`/boards/${boardId}/automations?type=BOARD_BUTTON`);
+      if (res.data && Array.isArray(res.data)) {
+        setBoardButtons(res.data.filter((b: any) => b.is_enabled));
+      }
+    } catch {}
+  };
+
+  const handleExecuteBoardButton = async (btn: any) => {
+    setExecutingBoardButtonId(btn.id);
+    try {
+      const res = await apiClient<any>(`/automations/${btn.id}/run`, {
+        method: 'POST',
+        data: {},
+      });
+      if (res.data?.success) {
+        await fetchBoard(true);
+      }
+    } catch (err: any) {
+      console.error('Error executing board button:', err);
+    } finally {
+      setExecutingBoardButtonId(null);
+    }
+  };
+
   useEffect(() => {
     setBoard(null);
     fetchBoard();
+    fetchBoardButtons();
   }, [boardId]);
 
   // Realtime Supabase Broadcast Subscription (Tối ưu hóa độ trễ <50ms với Direct State Patching)
@@ -657,11 +692,97 @@ export default function BoardDetailPage({
     const channel = supabase.channel(`board:${boardId}`, {
       config: {
         broadcast: { self: false },
+        presence: {
+          key: user?.id || 'guest',
+        },
       },
     });
     realtimeChannelRef.current = channel;
 
+    const handleSyncPresence = () => {
+      const state = channel.presenceState();
+      const onlineIds = new Set<string>();
+      const onlineUsers: Array<{ id: string; name: string; avatar?: string | null }> = [];
+
+      Object.values(state).forEach((presences: any) => {
+        if (Array.isArray(presences)) {
+          presences.forEach((p: any) => {
+            const uid = p.user_id || p.id;
+            if (uid) {
+              onlineIds.add(uid);
+              if (!onlineUsers.some((u) => u.id === uid)) {
+                onlineUsers.push({
+                  id: uid,
+                  name: p.name || 'Thành viên',
+                  avatar: p.avatar,
+                });
+              }
+            }
+          });
+        }
+      });
+
+      if (user?.id) {
+        onlineIds.add(user.id);
+        if (!onlineUsers.some((u) => u.id === user.id)) {
+          onlineUsers.push({
+            id: user.id,
+            name: user.name || 'Tôi',
+            avatar: user.avatar,
+          });
+        }
+      }
+
+      setActiveUserIds(onlineIds);
+      setActiveUsersList(onlineUsers);
+    };
+
     channel
+      .on('presence', { event: 'sync' }, () => {
+        handleSyncPresence();
+      })
+      .on('presence', { event: 'join' }, () => {
+        handleSyncPresence();
+      })
+      .on('presence', { event: 'leave' }, () => {
+        handleSyncPresence();
+      })
+      .on('broadcast', { event: 'USER_PRESENCE_JOIN' }, ({ payload }) => {
+        if (!payload?.user_id) return;
+        setActiveUserIds((prev) => new Set([...prev, payload.user_id]));
+        setActiveUsersList((prev) => {
+          if (prev.some((u) => u.id === payload.user_id)) return prev;
+          return [...prev, { id: payload.user_id, name: payload.name, avatar: payload.avatar }];
+        });
+        if (user?.id && payload.user_id !== user.id) {
+          channel.send({
+            type: 'broadcast',
+            event: 'USER_PRESENCE_PONG',
+            payload: {
+              user_id: user.id,
+              name: user.name,
+              avatar: user.avatar,
+            },
+          });
+        }
+      })
+      .on('broadcast', { event: 'USER_PRESENCE_PONG' }, ({ payload }) => {
+        if (!payload?.user_id) return;
+        setActiveUserIds((prev) => new Set([...prev, payload.user_id]));
+        setActiveUsersList((prev) => {
+          if (prev.some((u) => u.id === payload.user_id)) return prev;
+          return [...prev, { id: payload.user_id, name: payload.name, avatar: payload.avatar }];
+        });
+      })
+      .on('broadcast', { event: 'USER_PRESENCE_LEAVE' }, ({ payload }) => {
+        if (!payload?.user_id) return;
+        setActiveUserIds((prev) => {
+          const next = new Set(prev);
+          next.delete(payload.user_id);
+          return next;
+        });
+        setActiveUsersList((prev) => prev.filter((u) => u.id !== payload.user_id));
+      })
       .on('broadcast', { event: 'CARD_MOVED' }, ({ payload }) => {
         if (payload?.senderId && user?.id && payload.senderId === user.id) return;
         if (!payload?.cardId) return;
@@ -796,9 +917,77 @@ export default function BoardDetailPage({
       })
       .on('broadcast', { event: 'BOARD_UPDATED' }, () => fetchBoard(true))
       .on('broadcast', { event: 'BOARD_REFRESH' }, () => fetchBoard(true))
-      .subscribe();
+      .on('broadcast', { event: 'AUTOMATION_EXECUTED' }, () => fetchBoard(true))
+      .on('broadcast', { event: 'AUTOMATION_CREATED' }, () => fetchBoardButtons())
+      .on('broadcast', { event: 'AUTOMATION_UPDATED' }, () => fetchBoardButtons())
+      .on('broadcast', { event: 'AUTOMATION_DELETED' }, () => fetchBoardButtons())
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          if (user?.id) {
+            try {
+              await channel.track({
+                user_id: user.id,
+                name: user.name || user.email || 'Người dùng',
+                avatar: user.avatar || null,
+                online_at: new Date().toISOString(),
+              });
+            } catch {}
+
+            channel.send({
+              type: 'broadcast',
+              event: 'USER_PRESENCE_JOIN',
+              payload: {
+                user_id: user.id,
+                name: user.name,
+                avatar: user.avatar,
+              },
+            });
+          }
+        }
+      });
+
+    const handleBeforeUnload = () => {
+      if (user?.id && channel) {
+        channel.send({
+          type: 'broadcast',
+          event: 'USER_PRESENCE_LEAVE',
+          payload: { user_id: user.id },
+        });
+        try {
+          channel.untrack();
+        } catch {}
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    const heartbeatInterval = setInterval(() => {
+      if (user?.id && channel) {
+        channel.send({
+          type: 'broadcast',
+          event: 'USER_PRESENCE_PONG',
+          payload: {
+            user_id: user.id,
+            name: user.name,
+            avatar: user.avatar,
+          },
+        });
+      }
+    }, 15000);
 
     return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      clearInterval(heartbeatInterval);
+      if (user?.id) {
+        channel.send({
+          type: 'broadcast',
+          event: 'USER_PRESENCE_LEAVE',
+          payload: { user_id: user.id },
+        });
+        try {
+          channel.untrack();
+        } catch {}
+      }
       supabase.removeChannel(channel);
       realtimeChannelRef.current = null;
     };
@@ -1583,28 +1772,85 @@ export default function BoardDetailPage({
               </div>
             )}
 
+            {/* Active Board Buttons */}
+            {boardButtons.map((btn) => (
+              <button
+                key={btn.id}
+                type="button"
+                onClick={() => handleExecuteBoardButton(btn)}
+                disabled={executingBoardButtonId === btn.id}
+                className="h-7 px-2.5 text-xs font-semibold rounded-md flex items-center gap-1.5 transition-all cursor-pointer border bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-200 shadow-2xs disabled:opacity-50"
+                title={`Thực thi: ${btn.name}`}
+              >
+                {executingBoardButtonId === btn.id ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-600" />
+                ) : (
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                )}
+                <span>{btn.button_label || btn.name}</span>
+              </button>
+            ))}
+
+            {/* Automation Button */}
+            <button
+              type="button"
+              onClick={() => setIsAutomationModalOpen(true)}
+              className="h-7 px-2.5 text-xs font-semibold rounded-md flex items-center gap-1.5 transition-colors cursor-pointer border bg-white hover:bg-slate-100 text-slate-700 border-slate-200"
+              title="Mở bảng Tự động hóa (Automation)"
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+              <span className="hidden sm:inline">Tự động hóa</span>
+            </button>
+
             <div className="hidden sm:block h-4 w-[1px] bg-slate-200 shrink-0" />
 
-            {/* Member Avatar Stack */}
+            {/* Member Avatar Stack with Realtime Presence */}
             <div
               onClick={() => setIsShareOpen(true)}
-              className="hidden md:flex items-center -space-x-1.5 hover:opacity-80 transition-opacity cursor-pointer mr-0.5"
-              title="Xem và quản lý thành viên"
+              className="hidden md:flex items-center -space-x-1 hover:opacity-90 transition-opacity cursor-pointer mr-0.5"
+              title="Xem danh sách thành viên và ai đang trực tuyến"
             >
-              {(board?.members || []).slice(0, 4).map((m: any, idx: number) => (
-                <div
-                  key={m.id || idx}
-                  className="w-6 h-6 rounded-full bg-[#f28d8d] text-white border border-white flex items-center justify-center text-[9px] font-bold shadow-2xs"
-                >
-                  {m.user?.name?.charAt(0).toUpperCase() || 'U'}
-                </div>
-              ))}
-              {(board?.members?.length || 0) > 4 && (
-                <div className="w-6 h-6 rounded-full bg-[#ffc0cb]/60 text-slate-900 border border-white flex items-center justify-center text-[9px] font-bold">
-                  +{board.members.length - 4}
+              {(board?.members || []).slice(0, 5).map((m: any, idx: number) => {
+                const memberUserId = m.user?.id || m.user_id;
+                const isOnline = activeUserIds.has(memberUserId);
+                const userName = m.user?.name || 'Thành viên';
+                const userAvatar = m.user?.avatar;
+                const initial = userName.charAt(0).toUpperCase();
+
+                return (
+                  <div
+                    key={m.id || idx}
+                    className="relative shrink-0 transition-transform hover:scale-110 hover:z-20"
+                    title={`${userName}${isOnline ? ' (🟢 Đang hoạt động trên bảng)' : ' (Ngoại tuyến)'}`}
+                  >
+                    {userAvatar ? (
+                      <img
+                        src={userAvatar}
+                        alt={userName}
+                        className="w-7 h-7 rounded-full object-cover border-2 border-white shadow-xs"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-[#f28d8d] text-white border-2 border-white flex items-center justify-center text-[10px] font-bold shadow-xs">
+                        {initial}
+                      </div>
+                    )}
+                    {/* Dấu chấm xanh biểu thị đang hoạt động */}
+                    {isOnline && (
+                      <span className="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5 z-10">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border-2 border-white"></span>
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+              {(board?.members?.length || 0) > 5 && (
+                <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-700 border-2 border-white flex items-center justify-center text-[10px] font-bold shadow-xs">
+                  +{board.members.length - 5}
                 </div>
               )}
             </div>
+
 
             {/* Share Button */}
             <button
@@ -1672,6 +1918,19 @@ export default function BoardDetailPage({
                     <History className="w-3.5 h-3.5 text-slate-500" />
                     <span>Lịch sử hoạt động Bảng</span>
                   </button>
+
+                  {board?.canEdit && !isGuest && (
+                    <button
+                      onClick={() => {
+                        setIsBoardMenuOpen(false);
+                        setIsAutomationModalOpen(true);
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                      <span>Tự động hóa (Automation)</span>
+                    </button>
+                  )}
 
                   {board?.canEdit && !isGuest && (
                     <button
@@ -1854,6 +2113,7 @@ export default function BoardDetailPage({
                     onListDragEnd={handleListDragEnd}
                     onListDrop={handleListDrop}
                     draggedSourceListId={draggedSourceListId}
+                    activeUserIds={activeUserIds}
                   />
                 ))}
 
@@ -1961,6 +2221,7 @@ export default function BoardDetailPage({
         board={board}
         workspaceMembers={workspaceMembers}
         currentUserId={user?.id}
+        activeUserIds={activeUserIds}
         onClose={() => setIsShareOpen(false)}
         onUpdated={() => fetchBoard()}
       />
@@ -2117,6 +2378,7 @@ export default function BoardDetailPage({
         onMoveRequest={(c) => setMovingCard(c)}
         onCopyRequest={(c) => setCopyingCard(c)}
         onSelectCard={(cId) => setSelectedCardId(cId)}
+        activeUserIds={activeUserIds}
       />
 
       {/* 3. Copy List Modal */}
@@ -2617,6 +2879,22 @@ export default function BoardDetailPage({
           isOpen={isCustomFieldsModalOpen}
           onClose={() => setIsCustomFieldsModalOpen(false)}
           onFieldsChange={fetchBoard}
+        />
+      )}
+
+      {/* Automation Modal */}
+      {isAutomationModalOpen && (
+        <AutomationModal
+          boardId={boardId}
+          isOpen={isAutomationModalOpen}
+          onClose={() => setIsAutomationModalOpen(false)}
+          boardLists={board?.lists || []}
+          boardLabels={boardLabels}
+          boardMembers={board?.members || []}
+          onAutomationsChanged={() => {
+            fetchBoard(true);
+            fetchBoardButtons();
+          }}
         />
       )}
 

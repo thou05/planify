@@ -180,6 +180,7 @@ interface CardDetailModalProps {
   workspaceMembers?: any[];
   workspaceId?: string;
   onSelectCard?: (cardId: string) => void;
+  activeUserIds?: Set<string>;
 }
 
 const LABEL_COLOR_PALETTE = [
@@ -289,6 +290,7 @@ export default function CardDetailModal({
   workspaceMembers: externalWsMembers = [],
   workspaceId: externalWorkspaceId,
   onSelectCard,
+  activeUserIds,
 }: CardDetailModalProps) {
   const [activeCardId, setActiveCardId] = useState<string | null>(cardId);
 
@@ -947,6 +949,40 @@ export default function CardDetailModal({
     }
   };
 
+  const [cardButtons, setCardButtons] = useState<any[]>([]);
+  const [executingCardButtonId, setExecutingCardButtonId] = useState<string | null>(null);
+
+  const fetchCardButtons = async (bId: string) => {
+    try {
+      const res = await apiClient<any[]>(`/boards/${bId}/automations?type=CARD_BUTTON`);
+      if (res.data && Array.isArray(res.data)) {
+        setCardButtons(res.data.filter((b: any) => b.is_enabled));
+      }
+    } catch {}
+  };
+
+  const handleExecuteCardButton = async (btn: any) => {
+    const currentId = activeCardId || cardId;
+    if (!currentId) return;
+
+    setExecutingCardButtonId(btn.id);
+    try {
+      const res = await apiClient<any>(`/automations/${btn.id}/run`, {
+        method: 'POST',
+        data: { cardId: currentId },
+      });
+      if (res.data?.success) {
+        await fetchCardDetails(currentId, true);
+        await fetchCardActivities(currentId, true);
+        onCardUpdated();
+      }
+    } catch (err: any) {
+      console.error('Lỗi thực thi nút tự động hóa:', err);
+    } finally {
+      setExecutingCardButtonId(null);
+    }
+  };
+
   const fetchCardDetails = async (id: string, silent = false) => {
     try {
       if (!silent) setIsLoading(true);
@@ -1003,6 +1039,7 @@ export default function CardDetailModal({
           fetchBoardMembers(effectiveBoardId);
           fetchBoardLabels(effectiveBoardId);
           fetchBoardCustomFields(effectiveBoardId);
+          fetchCardButtons(effectiveBoardId);
         }
 
         const effectiveWsId = externalWorkspaceId || c.list?.board?.workspace_id;
@@ -2472,6 +2509,25 @@ export default function CardDetailModal({
                   </span>
                 </button>
 
+                {/* Nút tự động hóa (Automation Card Buttons) */}
+                {cardButtons.map((btn) => (
+                  <button
+                    key={btn.id}
+                    type="button"
+                    onClick={() => handleExecuteCardButton(btn)}
+                    disabled={executingCardButtonId === btn.id}
+                    className="px-2.5 py-1.5 text-xs font-semibold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200/90 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 shadow-2xs"
+                    title={`Nút tự động hóa: ${btn.name}`}
+                  >
+                    {executingCardButtonId === btn.id ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-600" />
+                    ) : (
+                      <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                    )}
+                    <span>{btn.button_label || btn.name}</span>
+                  </button>
+                ))}
+
                 <div className="h-4 w-[1px] bg-slate-200 mx-0.5" />
 
                 <button
@@ -2561,6 +2617,8 @@ export default function CardDetailModal({
                       <div className="flex flex-wrap items-center gap-1.5">
                         {assignees.map((a) => {
                           const member = a.board_member;
+                          const uId = member?.user?.id || member?.user_id;
+                          const isOnline = activeUserIds?.has(uId);
                           const uName = member?.user?.name || 'Thành viên';
                           const uAvatar = member?.user?.avatar;
                           const firstLetter = uName.charAt(0).toUpperCase();
@@ -2573,19 +2631,27 @@ export default function CardDetailModal({
                                 setMemberSearchQuery('');
                               }}
                               className="group flex items-center gap-1.5 pl-1 pr-2.5 py-1 bg-slate-100 hover:bg-slate-100 rounded-full border border-slate-200/80 transition-all cursor-pointer shadow-2xs"
-                              title={`${uName} (${member?.role || 'MEMBER'}) - Bấm để thay đổi`}
+                              title={`${uName} (${member?.role || 'MEMBER'})${isOnline ? ' - 🟢 Đang hoạt động trên bảng' : ''} - Bấm để thay đổi`}
                             >
-                              {uAvatar ? (
-                                <img
-                                  src={uAvatar}
-                                  alt={uName}
-                                  className="w-5 h-5 rounded-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-5 h-5 rounded-full bg-[#f28d8d] text-white flex items-center justify-center text-[10px] font-bold shadow-2xs">
-                                  {firstLetter}
-                                </div>
-                              )}
+                              <div className="relative shrink-0">
+                                {uAvatar ? (
+                                  <img
+                                    src={uAvatar}
+                                    alt={uName}
+                                    className="w-5 h-5 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-5 h-5 rounded-full bg-[#f28d8d] text-white flex items-center justify-center text-[10px] font-bold shadow-2xs">
+                                    {firstLetter}
+                                  </div>
+                                )}
+                                {isOnline && (
+                                  <span className="absolute -bottom-0.5 -right-0.5 flex h-2 w-2 z-10">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 border border-white"></span>
+                                  </span>
+                                )}
+                              </div>
                               <span className="text-xs font-semibold text-slate-900">{uName}</span>
                             </div>
                           );
@@ -3847,19 +3913,27 @@ export default function CardDetailModal({
                                           setItemMemberSearchQuery('');
                                         }}
                                         className="flex items-center gap-1 pl-0.5 pr-2 py-0.5 bg-slate-100 hover:bg-slate-100 rounded-full border border-slate-200 transition-all cursor-pointer shadow-2xs"
-                                        title={`${item.member.user?.name || 'Thành viên'} - Bấm để đổi`}
+                                        title={`${item.member.user?.name || 'Thành viên'}${activeUserIds?.has(item.member.user?.id || (item.member as any)?.user_id) ? ' - 🟢 Đang online' : ''} - Bấm để đổi`}
                                       >
-                                        {item.member.user?.avatar ? (
-                                          <img
-                                            src={item.member.user.avatar}
-                                            alt={item.member.user.name}
-                                            className="w-4 h-4 rounded-full object-cover shrink-0"
-                                          />
-                                        ) : (
-                                          <div className="w-4 h-4 rounded-full bg-[#f28d8d] text-white flex items-center justify-center text-[8px] font-bold shrink-0">
-                                            {(item.member.user?.name || 'U').charAt(0).toUpperCase()}
-                                          </div>
-                                        )}
+                                        <div className="relative shrink-0">
+                                          {item.member.user?.avatar ? (
+                                            <img
+                                              src={item.member.user.avatar}
+                                              alt={item.member.user.name}
+                                              className="w-4 h-4 rounded-full object-cover shrink-0"
+                                            />
+                                          ) : (
+                                            <div className="w-4 h-4 rounded-full bg-[#f28d8d] text-white flex items-center justify-center text-[8px] font-bold shrink-0">
+                                              {(item.member.user?.name || 'U').charAt(0).toUpperCase()}
+                                            </div>
+                                          )}
+                                          {activeUserIds?.has(item.member.user?.id || (item.member as any)?.user_id) && (
+                                            <span className="absolute -bottom-0.5 -right-0.5 flex h-1.5 w-1.5 z-10">
+                                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                                            </span>
+                                          )}
+                                        </div>
                                         <span className="text-[10px] font-semibold text-slate-900 truncate max-w-[100px]">
                                           {item.member.user?.name}
                                         </span>
@@ -4218,17 +4292,27 @@ export default function CardDetailModal({
                     return (
                       <div key={`cmt-${cmt.id}`} className="flex items-start gap-2.5 group animate-in fade-in duration-150">
                         {/* Author Avatar */}
-                        {authorAvatar ? (
-                          <img
-                            src={authorAvatar}
-                            alt={authorName}
-                            className="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5 shadow-2xs"
-                          />
-                        ) : (
-                          <div className="w-6 h-6 rounded-full bg-[#f28d8d] text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 shadow-2xs">
-                            {authorName.charAt(0).toUpperCase()}
-                          </div>
-                        )}
+                        <div className="relative shrink-0 mt-0.5">
+                          {authorAvatar ? (
+                            <img
+                              src={authorAvatar}
+                              alt={authorName}
+                              className="w-6 h-6 rounded-full object-cover shrink-0 shadow-2xs"
+                            />
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-[#f28d8d] text-white flex items-center justify-center text-[10px] font-bold shrink-0 shadow-2xs">
+                              {authorName.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          {activeUserIds?.has(cmt.user_id) && (
+                            <span
+                              className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full ring-1.5 ring-white z-10"
+                              title="Đang hoạt động trên bảng"
+                            >
+                              <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
+                            </span>
+                          )}
+                        </div>
 
                         {/* Comment Bubble */}
                         <div className="flex-1 bg-white hover:bg-slate-50/90 rounded-md p-2.5 border border-slate-200 transition-colors relative min-w-0 shadow-2xs">
@@ -4756,22 +4840,38 @@ export default function CardDetailModal({
                         className="w-full p-2.5 rounded-md hover:bg-slate-50 flex items-center justify-between gap-3 text-left transition-colors cursor-pointer group"
                       >
                         <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                          {uAvatar ? (
-                            <img
-                              src={uAvatar}
-                              alt={uName}
-                              className="w-7 h-7 rounded-full object-cover shrink-0"
-                            />
-                          ) : (
-                            <div className="w-7 h-7 rounded-full bg-[#f28d8d] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
-                              {uName.charAt(0).toUpperCase()}
-                            </div>
-                          )}
+                          <div className="relative shrink-0">
+                            {uAvatar ? (
+                              <img
+                                src={uAvatar}
+                                alt={uName}
+                                className="w-7 h-7 rounded-full object-cover shrink-0"
+                              />
+                            ) : (
+                              <div className="w-7 h-7 rounded-full bg-[#f28d8d] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
+                                {uName.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            {(activeUserIds?.has(uId) || activeUserIds?.has(m.user_id) || activeUserIds?.has(m.id)) && (
+                              <span
+                                className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white z-10"
+                                title="Đang online trên bảng"
+                              >
+                                <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
+                              </span>
+                            )}
+                          </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
                               <span className="text-xs font-bold text-slate-900 truncate">
                                 {uName}
                               </span>
+                              {(activeUserIds?.has(uId) || activeUserIds?.has(m.user_id) || activeUserIds?.has(m.id)) && (
+                                <span className="text-[10px] px-1.5 py-0.2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded font-semibold shrink-0 flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                  Online
+                                </span>
+                              )}
                               {m.isBoardMember ? (
                                 <span className="text-[10px] px-1.5 py-0.2 bg-slate-200 text-slate-900 rounded font-semibold shrink-0">
                                   Bảng
@@ -5341,22 +5441,38 @@ export default function CardDetailModal({
                         className="w-full p-2.5 rounded-md hover:bg-slate-50 flex items-center justify-between gap-3 text-left transition-colors cursor-pointer group"
                       >
                         <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                          {uAvatar ? (
-                            <img
-                              src={uAvatar}
-                              alt={uName}
-                              className="w-7 h-7 rounded-full object-cover shrink-0"
-                            />
-                          ) : (
-                            <div className="w-7 h-7 rounded-full bg-[#f28d8d] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
-                              {uName.charAt(0).toUpperCase()}
-                            </div>
-                          )}
+                          <div className="relative shrink-0">
+                            {uAvatar ? (
+                              <img
+                                src={uAvatar}
+                                alt={uName}
+                                className="w-7 h-7 rounded-full object-cover shrink-0"
+                              />
+                            ) : (
+                              <div className="w-7 h-7 rounded-full bg-[#f28d8d] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
+                                {uName.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            {(activeUserIds?.has(uId) || activeUserIds?.has(m.user_id) || activeUserIds?.has(m.id)) && (
+                              <span
+                                className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white z-10"
+                                title="Đang online trên bảng"
+                              >
+                                <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
+                              </span>
+                            )}
+                          </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
                               <span className="text-xs font-bold text-slate-900 truncate">
                                 {uName}
                               </span>
+                              {(activeUserIds?.has(uId) || activeUserIds?.has(m.user_id) || activeUserIds?.has(m.id)) && (
+                                <span className="text-[10px] px-1.5 py-0.2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded font-semibold shrink-0 flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                  Online
+                                </span>
+                              )}
                               {m.isBoardMember ? (
                                 <span className="text-[10px] px-1.5 py-0.2 bg-slate-200 text-slate-900 rounded font-semibold shrink-0">
                                   Bảng
