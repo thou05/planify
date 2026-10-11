@@ -178,14 +178,19 @@ export default function ListColumn({
 
   return (
     <div
-      draggable={!isEditingTitle && !isAddingCard}
+      draggable={canEdit && !isEditingTitle && !isAddingCard}
       onDragStart={(e) => {
+        if (!canEdit) {
+          e.preventDefault();
+          return;
+        }
         onListDragStart(e, list.id);
       }}
       onDragEnd={onListDragEnd}
       onDragOver={(e) => {
-        if (isDropDisabled) {
+        if (!canEdit || isDropDisabled) {
           e.dataTransfer.dropEffect = 'none';
+          if (!canEdit) return;
           if (!isShakeError) {
             triggerShake();
           }
@@ -203,8 +208,8 @@ export default function ListColumn({
       onDrop={(e) => {
         e.preventDefault();
         setIsDragOverList(false);
-        if (isDropDisabled) {
-          triggerShake();
+        if (!canEdit || isDropDisabled) {
+          if (isDropDisabled) triggerShake();
           return;
         }
         // List drop or card drop to the end of list
@@ -223,14 +228,16 @@ export default function ListColumn({
       <div className="flex items-center justify-between pb-2 mb-2 px-1 border-b border-slate-200/80 group/header">
         <div className="flex items-center gap-1.5 flex-1 min-w-0 mr-2">
           {/* List Drag handle icon */}
-          <div
-            className="text-slate-400 group-hover/header:text-slate-600 cursor-grab active:cursor-grabbing p-0.5"
-            title="Kéo để đổi vị trí danh sách"
-          >
-            <GripVertical className="w-3.5 h-3.5" />
-          </div>
+          {canEdit && (
+            <div
+              className="text-slate-400 group-hover/header:text-slate-600 cursor-grab active:cursor-grabbing p-0.5"
+              title="Kéo để đổi vị trí danh sách"
+            >
+              <GripVertical className="w-3.5 h-3.5" />
+            </div>
+          )}
 
-          {isEditingTitle ? (
+          {isEditingTitle && canEdit ? (
             <input
               ref={titleInputRef}
               type="text"
@@ -242,9 +249,11 @@ export default function ListColumn({
             />
           ) : (
             <h3
-              onClick={() => setIsEditingTitle(true)}
-              className="font-bold text-xs text-slate-800 truncate cursor-pointer hover:bg-slate-200/60 px-1 py-0.5 rounded-sm transition-colors"
-              title="Click để sửa tên danh sách"
+              onClick={() => canEdit && setIsEditingTitle(true)}
+              className={`font-bold text-xs text-slate-800 truncate px-1 py-0.5 rounded-sm transition-colors ${
+                canEdit ? 'cursor-pointer hover:bg-slate-200/60' : 'cursor-default'
+              }`}
+              title={canEdit ? 'Click để sửa tên danh sách' : list.title}
             >
               {list.title}
             </h3>
@@ -265,6 +274,7 @@ export default function ListColumn({
         </div>
 
         {/* List Actions Menu */}
+        {canEdit && (
         <div ref={menuRef} className="relative shrink-0">
           <button
             onClick={() => {
@@ -413,6 +423,7 @@ export default function ListColumn({
             </div>
           )}
         </div>
+        )}
       </div>
 
       {/* Cards Scroll Container */}

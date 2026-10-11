@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import {
   X,
+  Eye,
   Calendar,
   CheckSquare,
   Copy,
@@ -181,6 +182,7 @@ interface CardDetailModalProps {
   workspaceId?: string;
   onSelectCard?: (cardId: string) => void;
   activeUserIds?: Set<string>;
+  canEdit?: boolean;
 }
 
 const LABEL_COLOR_PALETTE = [
@@ -291,6 +293,7 @@ export default function CardDetailModal({
   workspaceId: externalWorkspaceId,
   onSelectCard,
   activeUserIds,
+  canEdit = true,
 }: CardDetailModalProps) {
   const [activeCardId, setActiveCardId] = useState<string | null>(cardId);
 
@@ -2351,14 +2354,20 @@ export default function CardDetailModal({
                 {card?.list?.title || 'Đang tải...'}
               </span>
             </div>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onBlur={handleSaveAll}
-              className="w-full text-base sm:text-lg font-bold text-slate-900 bg-transparent hover:bg-slate-50 focus:bg-white border border-transparent hover:border-slate-200 focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 rounded-md px-2 py-1 -ml-2 focus:outline-none transition-all"
-              placeholder="Tiêu đề thẻ..."
-            />
+            {canEdit ? (
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                onBlur={handleSaveAll}
+                className="w-full text-base sm:text-lg font-bold text-slate-900 bg-transparent hover:bg-slate-50 focus:bg-white border border-transparent hover:border-slate-200 focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 rounded-md px-2 py-1 -ml-2 focus:outline-none transition-all"
+                placeholder="Tiêu đề thẻ..."
+              />
+            ) : (
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 px-2 py-1 -ml-2 select-text">
+                {title || card?.title || 'Tiêu đề thẻ'}
+              </h2>
+            )}
           </div>
 
           <button
@@ -2368,6 +2377,16 @@ export default function CardDetailModal({
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Read-only Banner for Viewers */}
+        {!canEdit && (
+          <div className="px-4 sm:px-5 py-2 bg-slate-100 border-b border-slate-200 flex items-center gap-2 text-xs text-slate-600 shrink-0">
+            <Eye className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            <span className="font-semibold text-slate-800">Chế độ chỉ xem</span>
+            <span className="text-slate-400">—</span>
+            <span className="text-slate-500">Bạn đang xem thẻ này và không có quyền chỉnh sửa nội dung</span>
+          </div>
+        )}
 
         {/* Modal Body */}
         {isLoading && !card ? (
@@ -2380,7 +2399,8 @@ export default function CardDetailModal({
             {/* Left Pane (Card Details & Settings) */}
             <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6 bg-white min-w-0">
               {/* Quick Actions Toolbar */}
-              <div className="flex flex-wrap items-center gap-2 pb-3 border-b border-slate-100">
+              {canEdit ? (
+                <div className="flex flex-wrap items-center gap-2 pb-3 border-b border-slate-100">
                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">
                   Thao tác:
                 </span>
@@ -2570,9 +2590,26 @@ export default function CardDetailModal({
                   <span>Xóa thẻ</span>
                 </button>
               </div>
+            ) : (
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                  <Eye className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Chế độ chỉ xem — Không thể chỉnh sửa hoặc thao tác trên thẻ</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200"
+                  title="Sao chép liên kết thẻ"
+                >
+                  <LinkIcon className="w-3.5 h-3.5" />
+                  <span>{copyLinkSuccess ? 'Đã chép link!' : 'Sao chép link thẻ'}</span>
+                </button>
+              </div>
+            )}
 
               {/* Inline Add Checklist Form if active */}
-              {isAddingChecklist && (
+              {canEdit && isAddingChecklist && (
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-md space-y-2 animate-in fade-in duration-150 shadow-2xs">
                   <div className="text-xs font-bold text-slate-900">Tiêu đề Checklist</div>
                   <input
@@ -2626,12 +2663,14 @@ export default function CardDetailModal({
                           return (
                             <div
                               key={a.id || member?.id}
-                              onClick={() => {
+                              onClick={canEdit ? () => {
                                 setIsMembersModalOpen(true);
                                 setMemberSearchQuery('');
-                              }}
-                              className="group flex items-center gap-1.5 pl-1 pr-2.5 py-1 bg-slate-100 hover:bg-slate-100 rounded-full border border-slate-200/80 transition-all cursor-pointer shadow-2xs"
-                              title={`${uName} (${member?.role || 'MEMBER'})${isOnline ? ' - 🟢 Đang hoạt động trên bảng' : ''} - Bấm để thay đổi`}
+                              } : undefined}
+                              className={`group flex items-center gap-1.5 pl-1 pr-2.5 py-1 bg-slate-100 rounded-full border border-slate-200/80 transition-all shadow-2xs ${
+                                canEdit ? 'hover:bg-slate-200 cursor-pointer' : 'cursor-default'
+                              }`}
+                              title={`${uName} (${member?.role || 'MEMBER'})${isOnline ? ' - 🟢 Đang hoạt động trên bảng' : ''}${canEdit ? ' - Bấm để thay đổi' : ''}`}
                             >
                               <div className="relative shrink-0">
                                 {uAvatar ? (
@@ -2657,17 +2696,19 @@ export default function CardDetailModal({
                           );
                         })}
 
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsMembersModalOpen(true);
-                            setMemberSearchQuery('');
-                          }}
-                          className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-900 flex items-center justify-center transition-colors cursor-pointer"
-                          title="Thêm thành viên"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                        </button>
+                        {canEdit && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsMembersModalOpen(true);
+                              setMemberSearchQuery('');
+                            }}
+                            className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-900 flex items-center justify-center transition-colors cursor-pointer"
+                            title="Thêm thành viên"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}
@@ -2683,32 +2724,37 @@ export default function CardDetailModal({
                           <button
                             key={cl.id || cl.label?.id}
                             type="button"
+                            disabled={!canEdit}
+                            onClick={canEdit ? () => {
+                              setIsLabelsModalOpen(true);
+                              setIsCreatingLabel(false);
+                              setEditingLabel(null);
+                              setLabelSearchQuery('');
+                            } : undefined}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold text-white shadow-2xs transition-all ${
+                              canEdit ? 'hover:opacity-90 cursor-pointer' : 'cursor-default'
+                            }`}
+                            style={{ backgroundColor: cl.label?.color || '#3b82f6' }}
+                            title={`${cl.label?.name}${canEdit ? ' - Bấm để thay đổi' : ''}`}
+                          >
+                            {cl.label?.name}
+                          </button>
+                        ))}
+                        {canEdit && (
+                          <button
+                            type="button"
                             onClick={() => {
                               setIsLabelsModalOpen(true);
                               setIsCreatingLabel(false);
                               setEditingLabel(null);
                               setLabelSearchQuery('');
                             }}
-                            className="px-2.5 py-1 rounded-lg text-xs font-bold text-white shadow-2xs hover:opacity-90 transition-all cursor-pointer"
-                            style={{ backgroundColor: cl.label?.color || '#3b82f6' }}
-                            title={`${cl.label?.name} - Bấm để thay đổi`}
+                            className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-900 flex items-center justify-center transition-colors cursor-pointer"
+                            title="Thêm nhãn"
                           >
-                            {cl.label?.name}
+                            <Plus className="w-3.5 h-3.5" />
                           </button>
-                        ))}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsLabelsModalOpen(true);
-                            setIsCreatingLabel(false);
-                            setEditingLabel(null);
-                            setLabelSearchQuery('');
-                          }}
-                          className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-900 flex items-center justify-center transition-colors cursor-pointer"
-                          title="Thêm nhãn"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                        </button>
+                        )}
                       </div>
                     </div>
                   )}
@@ -2733,19 +2779,27 @@ export default function CardDetailModal({
                 >
                   <div className="flex items-start gap-3">
                     <button
-                      onClick={handleToggleCompleted}
-                      className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center transition-all cursor-pointer shadow-2xs shrink-0 ${isCompleted
-                          ? 'bg-emerald-600 text-white'
-                          : relations.some(r => r.type === 'BLOCKED_BY' && !r.related_card?.is_due_date_completed && r.related_card?.status !== 'DONE')
-                            ? 'border-2 border-rose-400 bg-rose-50 text-rose-600 hover:border-rose-600'
-                            : 'border-2 border-slate-300 hover:border-slate-300 bg-white'
-                        }`}
+                      onClick={canEdit ? handleToggleCompleted : undefined}
+                      disabled={!canEdit}
+                      className={`mt-0.5 w-5 h-5 rounded-md flex items-center justify-center transition-all shadow-2xs shrink-0 ${
+                        !canEdit
+                          ? isCompleted
+                            ? 'bg-emerald-600 text-white cursor-default'
+                            : 'border-2 border-slate-300 bg-white cursor-default'
+                          : isCompleted
+                            ? 'bg-emerald-600 text-white cursor-pointer'
+                            : relations.some(r => r.type === 'BLOCKED_BY' && !r.related_card?.is_due_date_completed && r.related_card?.status !== 'DONE')
+                              ? 'border-2 border-rose-400 bg-rose-50 text-rose-600 hover:border-rose-600 cursor-pointer'
+                              : 'border-2 border-slate-300 hover:border-slate-300 bg-white cursor-pointer'
+                      }`}
                       title={
-                        isCompleted
-                          ? 'Đánh dấu chưa hoàn thành'
-                          : relations.some(r => r.type === 'BLOCKED_BY' && !r.related_card?.is_due_date_completed && r.related_card?.status !== 'DONE')
-                            ? '⛔ Thẻ đang bị chặn bởi thẻ khác chưa hoàn thành (Bấm để xem chi tiết)'
-                            : 'Đánh dấu đã hoàn thành'
+                        !canEdit
+                          ? isCompleted ? 'Đã hoàn thành' : 'Chưa hoàn thành'
+                          : isCompleted
+                            ? 'Đánh dấu chưa hoàn thành'
+                            : relations.some(r => r.type === 'BLOCKED_BY' && !r.related_card?.is_due_date_completed && r.related_card?.status !== 'DONE')
+                              ? '⛔ Thẻ đang bị chặn bởi thẻ khác chưa hoàn thành (Bấm để xem chi tiết)'
+                              : 'Đánh dấu đã hoàn thành'
                       }
                     >
                       {isCompleted ? (
@@ -2793,13 +2847,15 @@ export default function CardDetailModal({
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleOpenDatesModal}
-                    className="self-end sm:self-center px-2.5 py-1 text-xs font-semibold text-slate-900 hover:bg-slate-100 bg-white/70 border border-slate-200 rounded-lg transition-colors cursor-pointer"
-                  >
-                    Sửa ngày
-                  </button>
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={handleOpenDatesModal}
+                      className="self-end sm:self-center px-2.5 py-1 text-xs font-semibold text-slate-900 hover:bg-slate-100 bg-white/70 border border-slate-200 rounded-lg transition-colors cursor-pointer"
+                    >
+                      Sửa ngày
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -2822,15 +2878,17 @@ export default function CardDetailModal({
                       </span>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setIsCustomFieldsModalOpen(true)}
-                      className="text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200 shadow-2xs"
-                      title="Cấu hình hoặc thêm trường dữ liệu tùy chỉnh cho bảng"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Quản lý trường</span>
-                    </button>
+                    {canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => setIsCustomFieldsModalOpen(true)}
+                        className="text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200 shadow-2xs"
+                        title="Cấu hình hoặc thêm trường dữ liệu tùy chỉnh cho bảng"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Quản lý trường</span>
+                      </button>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -2865,7 +2923,7 @@ export default function CardDetailModal({
                                 ({typeConfig.label})
                               </span>
                             </div>
-                            {hasValue && !isEditing && (
+                            {canEdit && hasValue && !isEditing && (
                               <button
                                 type="button"
                                 onClick={() => handleDeleteCustomFieldValue(field.id)}
@@ -2881,14 +2939,17 @@ export default function CardDetailModal({
                           {field.field_type === 'CHECKBOX' ? (
                             <button
                               type="button"
-                              onClick={() => {
+                              disabled={!canEdit}
+                              onClick={canEdit ? () => {
                                 const nextVal = curVal === 'true' ? 'false' : 'true';
                                 handleSaveCustomFieldValue(field.id, nextVal);
-                              }}
-                              className={`w-full py-1.5 px-3 rounded-lg border text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
+                              } : undefined}
+                              className={`w-full py-1.5 px-3 rounded-lg border text-xs font-semibold flex items-center justify-between transition-all ${
+                                !canEdit ? 'cursor-default' : 'cursor-pointer hover:bg-slate-100'
+                              } ${
                                 curVal === 'true'
                                   ? 'bg-emerald-50 border-emerald-300 text-emerald-800 shadow-2xs'
-                                  : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                                  : 'bg-slate-50 border-slate-200 text-slate-500'
                               }`}
                             >
                               <span>{curVal === 'true' ? 'Đã kích hoạt' : 'Chưa kích hoạt'}</span>
@@ -2909,15 +2970,16 @@ export default function CardDetailModal({
                                     <button
                                       key={star}
                                       type="button"
-                                      onClick={() => {
+                                      disabled={!canEdit}
+                                      onClick={canEdit ? () => {
                                         const nextVal = Number(curVal) === star ? null : String(star);
                                         if (nextVal === null) {
                                           handleDeleteCustomFieldValue(field.id);
                                         } else {
                                           handleSaveCustomFieldValue(field.id, nextVal);
                                         }
-                                      }}
-                                      className="p-0.5 hover:scale-125 transition-transform cursor-pointer group"
+                                      } : undefined}
+                                      className={`p-0.5 transition-transform ${canEdit ? 'hover:scale-125 cursor-pointer group' : 'cursor-default'}`}
                                       title={`Đánh giá ${star} sao`}
                                     >
                                       <Star
@@ -2955,22 +3017,24 @@ export default function CardDetailModal({
                                   style={{ width: `${Math.min(100, Math.max(0, Number(curVal) || 0))}%` }}
                                 />
                               </div>
-                              <div className="flex items-center justify-between gap-1 pt-0.5">
-                                {[0, 25, 50, 75, 100].map((pct) => (
-                                  <button
-                                    key={pct}
-                                    type="button"
-                                    onClick={() => handleSaveCustomFieldValue(field.id, String(pct))}
-                                    className={`flex-1 py-0.5 text-[10px] font-semibold rounded transition-colors cursor-pointer ${
-                                      Number(curVal) === pct
-                                        ? 'bg-cyan-600 text-white shadow-2xs'
-                                        : 'bg-white hover:bg-slate-200 text-slate-600 border border-slate-200'
-                                    }`}
-                                  >
-                                    {pct}%
-                                  </button>
-                                ))}
-                              </div>
+                              {canEdit && (
+                                <div className="flex items-center justify-between gap-1 pt-0.5">
+                                  {[0, 25, 50, 75, 100].map((pct) => (
+                                    <button
+                                      key={pct}
+                                      type="button"
+                                      onClick={() => handleSaveCustomFieldValue(field.id, String(pct))}
+                                      className={`flex-1 py-0.5 text-[10px] font-semibold rounded transition-colors cursor-pointer ${
+                                        Number(curVal) === pct
+                                          ? 'bg-cyan-600 text-white shadow-2xs'
+                                          : 'bg-white hover:bg-slate-200 text-slate-600 border border-slate-200'
+                                      }`}
+                                    >
+                                      {pct}%
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           ) : field.field_type === 'DROPDOWN' ? (
                             (() => {
@@ -2982,12 +3046,15 @@ export default function CardDetailModal({
                                 <div className="flex items-center gap-1.5">
                                   <select
                                     value={curVal || ''}
-                                    onChange={(e) => {
+                                    disabled={!canEdit}
+                                    onChange={canEdit ? (e) => {
                                       handleSaveCustomFieldValue(field.id, e.target.value);
-                                    }}
-                                    className="flex-1 min-w-0 px-2.5 py-1.5 text-xs bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-[#87ceeb] rounded-lg text-slate-800 font-semibold cursor-pointer shadow-2xs"
+                                    } : undefined}
+                                    className={`flex-1 min-w-0 px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-semibold shadow-2xs ${
+                                      canEdit ? 'hover:bg-white focus:bg-white focus:border-[#87ceeb] cursor-pointer' : 'cursor-default opacity-80'
+                                    }`}
                                   >
-                                    <option value="">-- Chọn {field.name} --</option>
+                                    <option value="">-- {curVal || `Chọn ${field.name}`} --</option>
                                     {options.map((opt) => (
                                       <option key={opt} value={opt}>
                                         {opt}
@@ -2998,19 +3065,21 @@ export default function CardDetailModal({
                                     )}
                                   </select>
 
-                                  <button
-                                    type="button"
-                                    onClick={() => handleOpenDropdownOptionsModal(field)}
-                                    className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors cursor-pointer shrink-0"
-                                    title="Chỉnh sửa danh sách các lựa chọn của trường này"
-                                  >
-                                    <Settings2 className="w-3.5 h-3.5" />
-                                  </button>
+                                  {canEdit && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenDropdownOptionsModal(field)}
+                                      className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors cursor-pointer shrink-0"
+                                      title="Chỉnh sửa danh sách các lựa chọn của trường này"
+                                    >
+                                      <Settings2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
                                 </div>
                               );
                             })()
                           ) : field.field_type === 'CURRENCY' ? (
-                            isEditing ? (
+                            isEditing && canEdit ? (
                               <div className="flex items-center gap-1.5">
                                 <div className="relative flex-1">
                                   <input
@@ -3049,19 +3118,21 @@ export default function CardDetailModal({
                               </div>
                             ) : hasValue ? (
                               <div
-                                onClick={() => {
+                                onClick={canEdit ? () => {
                                   setEditingCustomFieldId(field.id);
                                   setTempCustomFieldValue(curVal || '');
-                                }}
-                                className="px-2.5 py-1.5 rounded-lg border text-xs font-bold flex items-center justify-between transition-colors cursor-pointer hover:opacity-90 bg-emerald-50 text-emerald-800 border-emerald-200"
-                                title="Bấm để chỉnh sửa số tiền"
+                                } : undefined}
+                                className={`px-2.5 py-1.5 rounded-lg border text-xs font-bold flex items-center justify-between transition-colors bg-emerald-50 text-emerald-800 border-emerald-200 ${
+                                  canEdit ? 'cursor-pointer hover:opacity-90' : 'cursor-default'
+                                }`}
+                                title={canEdit ? "Bấm để chỉnh sửa số tiền" : undefined}
                               >
                                 <span className="truncate">
                                   {Number(curVal) ? `${Number(curVal).toLocaleString('vi-VN')} ₫` : curVal}
                                 </span>
-                                <Edit2 className="w-3 h-3 opacity-60 ml-1.5 shrink-0" />
+                                {canEdit && <Edit2 className="w-3 h-3 opacity-60 ml-1.5 shrink-0" />}
                               </div>
-                            ) : (
+                            ) : canEdit ? (
                               <button
                                 type="button"
                                 onClick={() => {
@@ -3073,8 +3144,12 @@ export default function CardDetailModal({
                                 <Plus className="w-3 h-3" />
                                 <span>Nhập số tiền...</span>
                               </button>
+                            ) : (
+                              <div className="px-2.5 py-1.5 text-xs text-slate-400 italic">
+                                Chưa nhập
+                              </div>
                             )
-                          ) : isEditing ? (
+                          ) : isEditing && canEdit ? (
                             <div className="flex items-center gap-1.5">
                               <input
                                 type={field.field_type === 'NUMBER' ? 'number' : 'text'}
@@ -3111,17 +3186,19 @@ export default function CardDetailModal({
                             </div>
                           ) : hasValue ? (
                             <div
-                              onClick={() => {
+                              onClick={canEdit ? () => {
                                 setEditingCustomFieldId(field.id);
                                 setTempCustomFieldValue(curVal || '');
-                              }}
-                              className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer hover:opacity-90 ${badgeColor}`}
-                              title="Bấm để chỉnh sửa"
+                              } : undefined}
+                              className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold flex items-center justify-between transition-colors ${badgeColor} ${
+                                canEdit ? 'cursor-pointer hover:opacity-90' : 'cursor-default'
+                              }`}
+                              title={canEdit ? "Bấm để chỉnh sửa" : undefined}
                             >
                               <span className="truncate">{curVal}</span>
-                              <Edit2 className="w-3 h-3 opacity-60 ml-1.5 shrink-0" />
+                              {canEdit && <Edit2 className="w-3 h-3 opacity-60 ml-1.5 shrink-0" />}
                             </div>
-                          ) : (
+                          ) : canEdit ? (
                             <button
                               type="button"
                               onClick={() => {
@@ -3130,9 +3207,13 @@ export default function CardDetailModal({
                               }}
                               className="w-full py-1.5 px-2.5 rounded-lg border border-dashed border-slate-300 text-slate-400 hover:text-slate-700 hover:border-slate-400 hover:bg-slate-50 text-xs font-medium flex items-center justify-center gap-1 transition-all cursor-pointer"
                             >
-                              <Plus className="w-3 h-3" />
+                              <Plus className="w-3.5 h-3.5" />
                               <span>{field.field_type === 'NUMBER' ? 'Thêm số...' : 'Thêm văn bản...'}</span>
                             </button>
+                          ) : (
+                            <div className="px-2.5 py-1.5 text-xs text-slate-400 italic">
+                              Chưa nhập
+                            </div>
                           )}
                         </div>
                       );
@@ -3147,14 +3228,20 @@ export default function CardDetailModal({
                   <AlignLeft className="w-4 h-4 text-slate-500" />
                   <span>Mô tả chi tiết</span>
                 </div>
-                <textarea
-                  rows={4}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  onBlur={handleSaveAll}
-                  placeholder="Thêm mô tả chi tiết hơn về công việc này..."
-                  className="w-full text-xs text-slate-900 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 rounded-md p-3 focus:outline-none transition-all resize-y"
-                />
+                {canEdit ? (
+                  <textarea
+                    rows={4}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    onBlur={handleSaveAll}
+                    placeholder="Thêm mô tả chi tiết hơn về công việc này..."
+                    className="w-full text-xs text-slate-900 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 rounded-md p-3 focus:outline-none transition-all resize-y"
+                  />
+                ) : (
+                  <div className="w-full text-xs text-slate-700 bg-slate-50/70 border border-slate-200/80 rounded-md p-3 whitespace-pre-wrap min-h-[60px]">
+                    {description ? description : <span className="text-slate-400 italic">Không có mô tả chi tiết</span>}
+                  </div>
+                )}
               </div>
 
               {/* Attachments Section */}
@@ -3176,18 +3263,20 @@ export default function CardDetailModal({
                       </span>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsAttachmentsModalOpen(true);
-                        setAttachmentTab('upload');
-                        setSelectedUploadFile(null);
-                      }}
-                      className="text-xs font-semibold text-slate-900 hover:bg-slate-100 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Thêm</span>
-                    </button>
+                    {canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAttachmentsModalOpen(true);
+                          setAttachmentTab('upload');
+                          setSelectedUploadFile(null);
+                        }}
+                        className="text-xs font-semibold text-slate-900 hover:bg-slate-100 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Thêm</span>
+                      </button>
+                    )}
                   </div>
 
                   {/* Attachments List */}
@@ -3317,24 +3406,28 @@ export default function CardDetailModal({
                                   </a>
                                 )}
 
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setEditingAttachmentId(att.id);
-                                    setEditingAttachmentName(att.file_name || '');
-                                  }}
-                                  className="hover:text-slate-900 hover:underline cursor-pointer text-[11px]"
-                                >
-                                  <span>Đổi tên</span>
-                                </button>
+                                {canEdit && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setEditingAttachmentId(att.id);
+                                        setEditingAttachmentName(att.file_name || '');
+                                      }}
+                                      className="hover:text-slate-900 hover:underline cursor-pointer text-[11px]"
+                                    >
+                                      <span>Đổi tên</span>
+                                    </button>
 
-                                <button
-                                  type="button"
-                                  onClick={() => requestDeleteAttachment(att.id, att.file_name || 'Tệp đính kèm')}
-                                  className="text-rose-500 hover:text-rose-700 hover:underline cursor-pointer text-[11px]"
-                                >
-                                  <span>Xóa</span>
-                                </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => requestDeleteAttachment(att.id, att.file_name || 'Tệp đính kèm')}
+                                      className="text-rose-500 hover:text-rose-700 hover:underline cursor-pointer text-[11px]"
+                                    >
+                                      <span>Xóa</span>
+                                    </button>
+                                  </>
+                                )}
                               </div>
                             )}
                           </div>
@@ -3381,14 +3474,16 @@ export default function CardDetailModal({
                         </span>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={handleOpenRelationsModal}
-                        className="text-xs font-semibold text-slate-900 hover:bg-slate-100 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Thêm</span>
-                      </button>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={handleOpenRelationsModal}
+                          className="text-xs font-semibold text-slate-900 hover:bg-slate-100 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Thêm</span>
+                        </button>
+                      )}
                     </div>
 
                     {/* 1. Parent Card (if this card is a subtask of another card) */}
@@ -3399,14 +3494,16 @@ export default function CardDetailModal({
                             <FolderTree className="w-3.5 h-3.5" />
                             <span>Thuộc thẻ cha (Parent Task)</span>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteRelation(parentRelation.id)}
-                            className="p-1 text-slate-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer"
-                            title="Gỡ bỏ liên kết thẻ cha"
-                          >
-                            <Unlink className="w-3.5 h-3.5" />
-                          </button>
+                          {canEdit && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteRelation(parentRelation.id)}
+                              className="p-1 text-slate-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer"
+                              title="Gỡ bỏ liên kết thẻ cha"
+                            >
+                              <Unlink className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                         <div
                           onClick={() => handleNavigateToRelatedCard(parentRelation.related_card!.id)}
@@ -3494,16 +3591,18 @@ export default function CardDetailModal({
                                   )}
                                 </div>
 
-                                <div className="flex items-center gap-2 shrink-0">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeleteRelation(st.id)}
-                                    className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-600 rounded transition-all cursor-pointer"
-                                    title="Gỡ bỏ liên kết thẻ con"
-                                  >
-                                    <Unlink className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
+                                {canEdit && (
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteRelation(st.id)}
+                                      className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-600 rounded transition-all cursor-pointer"
+                                      title="Gỡ bỏ liên kết thẻ con"
+                                    >
+                                      <Unlink className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             );
                           })}
@@ -3569,14 +3668,16 @@ export default function CardDetailModal({
                                   >
                                     {isDone ? 'Đã xong' : 'Chưa xong'}
                                   </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeleteRelation(b.id)}
-                                    className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-600 rounded transition-all cursor-pointer"
-                                    title="Gỡ bỏ liên kết"
-                                  >
-                                    <Unlink className="w-3.5 h-3.5" />
-                                  </button>
+                                  {canEdit && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteRelation(b.id)}
+                                      className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-600 rounded transition-all cursor-pointer"
+                                      title="Gỡ bỏ liên kết"
+                                    >
+                                      <Unlink className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             );
@@ -3617,16 +3718,18 @@ export default function CardDetailModal({
                                   )}
                                 </div>
 
-                                <div className="flex items-center gap-2 shrink-0">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeleteRelation(blk.id)}
-                                    className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-600 rounded transition-all cursor-pointer"
-                                    title="Gỡ bỏ liên kết"
-                                  >
-                                    <Unlink className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
+                                {canEdit && (
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteRelation(blk.id)}
+                                      className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-600 rounded transition-all cursor-pointer"
+                                      title="Gỡ bỏ liên kết"
+                                    >
+                                      <Unlink className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             );
                           })}
@@ -3666,14 +3769,16 @@ export default function CardDetailModal({
                                         </span>
                                       )}
                                     </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleDeleteRelation(rel.id)}
-                                      className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-600 rounded transition-all cursor-pointer"
-                                      title="Gỡ bỏ liên kết"
-                                    >
-                                      <Unlink className="w-3.5 h-3.5" />
-                                    </button>
+                                    {canEdit && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteRelation(rel.id)}
+                                        className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-600 rounded transition-all cursor-pointer"
+                                        title="Gỡ bỏ liên kết"
+                                      >
+                                        <Unlink className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
                                   </div>
                                 );
                               })}
@@ -3710,14 +3815,16 @@ export default function CardDetailModal({
                                         </span>
                                       )}
                                     </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleDeleteRelation(dup.id)}
-                                      className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-600 rounded transition-all cursor-pointer"
-                                      title="Gỡ bỏ liên kết"
-                                    >
-                                      <Unlink className="w-3.5 h-3.5" />
-                                    </button>
+                                    {canEdit && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteRelation(dup.id)}
+                                        className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-600 rounded transition-all cursor-pointer"
+                                        title="Gỡ bỏ liên kết"
+                                      >
+                                        <Unlink className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
                                   </div>
                                 );
                               })}
@@ -3764,7 +3871,7 @@ export default function CardDetailModal({
                         </button>
 
                         <CheckSquare className="w-4 h-4 text-slate-900 shrink-0" />
-                        {editingChecklistId === cl.id ? (
+                        {canEdit && editingChecklistId === cl.id ? (
                           <input
                             type="text"
                             value={editingChecklistTitle}
@@ -3779,26 +3886,30 @@ export default function CardDetailModal({
                           />
                         ) : (
                           <span
-                            onClick={() => {
+                            onClick={canEdit ? () => {
                               setEditingChecklistId(cl.id);
                               setEditingChecklistTitle(cl.title);
-                            }}
-                            className="text-xs font-bold text-slate-900 uppercase tracking-wider cursor-pointer hover:bg-slate-100 px-1.5 py-0.5 rounded-md transition-colors truncate"
-                            title="Bấm để đổi tên checklist"
+                            } : undefined}
+                            className={`text-xs font-bold text-slate-900 uppercase tracking-wider px-1.5 py-0.5 rounded-md transition-colors truncate ${
+                              canEdit ? 'cursor-pointer hover:bg-slate-100' : 'cursor-default'
+                            }`}
+                            title={canEdit ? "Bấm để đổi tên checklist" : undefined}
                           >
                             {cl.title}
                           </span>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => requestDeleteChecklist(cl.id)}
-                          className="px-2 py-1 text-[11px] font-medium text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                        >
-                          Xóa
-                        </button>
-                      </div>
+                      {canEdit && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => requestDeleteChecklist(cl.id)}
+                            className="px-2 py-1 text-[11px] font-medium text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                          >
+                            Xóa
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     {/* Progress Bar */}
@@ -3831,19 +3942,22 @@ export default function CardDetailModal({
                             <div className="flex items-start gap-2.5 flex-1 min-w-0">
                               <button
                                 type="button"
-                                onClick={() =>
+                                disabled={!canEdit}
+                                onClick={canEdit ? () =>
                                   handleToggleChecklistItem(cl.id, item.id, item.is_completed)
-                                }
-                                className={`mt-0.5 w-4 h-4 rounded shrink-0 flex items-center justify-center transition-all cursor-pointer ${item.is_completed
+                                : undefined}
+                                className={`mt-0.5 w-4 h-4 rounded shrink-0 flex items-center justify-center transition-all ${
+                                  !canEdit ? 'cursor-default' : 'cursor-pointer'
+                                } ${item.is_completed
                                     ? 'bg-emerald-600 text-white shadow-2xs'
-                                    : 'border border-slate-300 hover:border-slate-300 bg-white'
+                                    : 'border border-slate-300 bg-white'
                                   }`}
                               >
                                 {item.is_completed && <Check className="w-3 h-3" />}
                               </button>
 
                               <div className="flex-1 min-w-0 space-y-1">
-                                {editingItemId === item.id ? (
+                                {canEdit && editingItemId === item.id ? (
                                   <input
                                     type="text"
                                     value={editingItemContent}
@@ -3858,13 +3972,15 @@ export default function CardDetailModal({
                                   />
                                 ) : (
                                   <span
-                                    onClick={() => {
+                                    onClick={canEdit ? () => {
                                       setEditingItemId(item.id);
                                       setEditingItemContent(item.content);
-                                    }}
-                                    className={`text-xs leading-relaxed cursor-pointer break-words block ${item.is_completed
+                                    } : undefined}
+                                    className={`text-xs leading-relaxed break-words block ${
+                                      canEdit ? 'cursor-pointer hover:text-slate-900' : 'cursor-default'
+                                    } ${item.is_completed
                                         ? 'line-through text-slate-400'
-                                        : 'text-slate-800 hover:text-slate-900'
+                                        : 'text-slate-800'
                                       }`}
                                   >
                                     {item.content}
@@ -3876,68 +3992,115 @@ export default function CardDetailModal({
                                   <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                                     {/* Item Due Date Badge */}
                                     {item.due_date && (
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setActiveItemDate({ checklistId: cl.id, item });
-                                          setTempItemDueDate(toLocalDatetimeString(item.due_date));
-                                        }}
-                                        className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border transition-all cursor-pointer ${item.is_completed
-                                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 line-through'
-                                            : new Date(item.due_date).getTime() < Date.now()
-                                              ? 'bg-rose-50 text-rose-700 border-rose-200 font-bold'
-                                              : new Date(item.due_date).getTime() - Date.now() < 24 * 60 * 60 * 1000
-                                                ? 'bg-amber-50 text-amber-800 border-amber-200'
-                                                : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
-                                          }`}
-                                        title="Bấm để chỉnh sửa thời hạn mục này"
-                                      >
-                                        <Clock className="w-2.5 h-2.5" />
-                                        <span>
-                                          {new Date(item.due_date).toLocaleDateString('vi-VN', {
-                                            month: 'numeric',
-                                            day: 'numeric',
-                                            hour: '2-digit',
-                                            minute: '2-digit',
-                                          })}
-                                        </span>
-                                      </button>
+                                      canEdit ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setActiveItemDate({ checklistId: cl.id, item });
+                                            setTempItemDueDate(toLocalDatetimeString(item.due_date));
+                                          }}
+                                          className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border transition-all cursor-pointer ${item.is_completed
+                                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 line-through'
+                                              : new Date(item.due_date).getTime() < Date.now()
+                                                ? 'bg-rose-50 text-rose-700 border-rose-200 font-bold'
+                                                : new Date(item.due_date).getTime() - Date.now() < 24 * 60 * 60 * 1000
+                                                  ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                                  : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                                            }`}
+                                          title="Bấm để chỉnh sửa thời hạn mục này"
+                                        >
+                                          <Clock className="w-2.5 h-2.5" />
+                                          <span>
+                                            {new Date(item.due_date).toLocaleDateString('vi-VN', {
+                                              month: 'numeric',
+                                              day: 'numeric',
+                                              hour: '2-digit',
+                                              minute: '2-digit',
+                                            })}
+                                          </span>
+                                        </button>
+                                      ) : (
+                                        <div
+                                          className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border ${item.is_completed
+                                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 line-through'
+                                              : new Date(item.due_date).getTime() < Date.now()
+                                                ? 'bg-rose-50 text-rose-700 border-rose-200 font-bold'
+                                                : new Date(item.due_date).getTime() - Date.now() < 24 * 60 * 60 * 1000
+                                                  ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                                  : 'bg-slate-100 text-slate-600 border-slate-200'
+                                            }`}
+                                        >
+                                          <Clock className="w-2.5 h-2.5" />
+                                          <span>
+                                            {new Date(item.due_date).toLocaleDateString('vi-VN', {
+                                              month: 'numeric',
+                                              day: 'numeric',
+                                              hour: '2-digit',
+                                              minute: '2-digit',
+                                            })}
+                                          </span>
+                                        </div>
+                                      )
                                     )}
 
                                     {/* Item Member Badge */}
                                     {item.member && (
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setActiveItemMember({ checklistId: cl.id, item });
-                                          setItemMemberSearchQuery('');
-                                        }}
-                                        className="flex items-center gap-1 pl-0.5 pr-2 py-0.5 bg-slate-100 hover:bg-slate-100 rounded-full border border-slate-200 transition-all cursor-pointer shadow-2xs"
-                                        title={`${item.member.user?.name || 'Thành viên'}${activeUserIds?.has(item.member.user?.id || (item.member as any)?.user_id) ? ' - 🟢 Đang online' : ''} - Bấm để đổi`}
-                                      >
-                                        <div className="relative shrink-0">
-                                          {item.member.user?.avatar ? (
-                                            <img
-                                              src={item.member.user.avatar}
-                                              alt={item.member.user.name}
-                                              className="w-4 h-4 rounded-full object-cover shrink-0"
-                                            />
-                                          ) : (
-                                            <div className="w-4 h-4 rounded-full bg-[#f28d8d] text-white flex items-center justify-center text-[8px] font-bold shrink-0">
-                                              {(item.member.user?.name || 'U').charAt(0).toUpperCase()}
-                                            </div>
-                                          )}
-                                          {activeUserIds?.has(item.member.user?.id || (item.member as any)?.user_id) && (
-                                            <span className="absolute -bottom-0.5 -right-0.5 flex h-1.5 w-1.5 z-10">
-                                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-                                            </span>
-                                          )}
+                                      canEdit ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setActiveItemMember({ checklistId: cl.id, item });
+                                            setItemMemberSearchQuery('');
+                                          }}
+                                          className="flex items-center gap-1 pl-0.5 pr-2 py-0.5 bg-slate-100 hover:bg-slate-100 rounded-full border border-slate-200 transition-all cursor-pointer shadow-2xs"
+                                          title={`${item.member.user?.name || 'Thành viên'}${activeUserIds?.has(item.member.user?.id || (item.member as any)?.user_id) ? ' - 🟢 Đang online' : ''} - Bấm để đổi`}
+                                        >
+                                          <div className="relative shrink-0">
+                                            {item.member.user?.avatar ? (
+                                              <img
+                                                src={item.member.user.avatar}
+                                                alt={item.member.user.name}
+                                                className="w-4 h-4 rounded-full object-cover shrink-0"
+                                              />
+                                            ) : (
+                                              <div className="w-4 h-4 rounded-full bg-[#f28d8d] text-white flex items-center justify-center text-[8px] font-bold shrink-0">
+                                                {(item.member.user?.name || 'U').charAt(0).toUpperCase()}
+                                              </div>
+                                            )}
+                                            {activeUserIds?.has(item.member.user?.id || (item.member as any)?.user_id) && (
+                                              <span className="absolute -bottom-0.5 -right-0.5 flex h-1.5 w-1.5 z-10">
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                                              </span>
+                                            )}
+                                          </div>
+                                          <span className="text-[10px] font-semibold text-slate-900 truncate max-w-[100px]">
+                                            {item.member.user?.name}
+                                          </span>
+                                        </button>
+                                      ) : (
+                                        <div
+                                          className="flex items-center gap-1 pl-0.5 pr-2 py-0.5 bg-slate-100 rounded-full border border-slate-200 shadow-2xs"
+                                          title={`${item.member.user?.name || 'Thành viên'}`}
+                                        >
+                                          <div className="relative shrink-0">
+                                            {item.member.user?.avatar ? (
+                                              <img
+                                                src={item.member.user.avatar}
+                                                alt={item.member.user.name}
+                                                className="w-4 h-4 rounded-full object-cover shrink-0"
+                                              />
+                                            ) : (
+                                              <div className="w-4 h-4 rounded-full bg-[#f28d8d] text-white flex items-center justify-center text-[8px] font-bold shrink-0">
+                                                {(item.member.user?.name || 'U').charAt(0).toUpperCase()}
+                                              </div>
+                                            )}
+                                          </div>
+                                          <span className="text-[10px] font-semibold text-slate-900 truncate max-w-[100px]">
+                                            {item.member.user?.name}
+                                          </span>
                                         </div>
-                                        <span className="text-[10px] font-semibold text-slate-900 truncate max-w-[100px]">
-                                          {item.member.user?.name}
-                                        </span>
-                                      </button>
+                                      )
                                     )}
                                   </div>
                                 )}
@@ -3945,96 +4108,100 @@ export default function CardDetailModal({
                             </div>
 
                             {/* Item Hover Actions */}
-                            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setActiveItemDate({ checklistId: cl.id, item });
-                                  setTempItemDueDate(toLocalDatetimeString(item.due_date));
-                                }}
-                                className="p-1 text-slate-400 hover:text-slate-900 hover:bg-slate-200/60 rounded-md transition-colors cursor-pointer"
-                                title="Thời hạn mục này"
-                              >
-                                <Calendar className="w-3.5 h-3.5" />
-                              </button>
+                            {canEdit && (
+                              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveItemDate({ checklistId: cl.id, item });
+                                    setTempItemDueDate(toLocalDatetimeString(item.due_date));
+                                  }}
+                                  className="p-1 text-slate-400 hover:text-slate-900 hover:bg-slate-200/60 rounded-md transition-colors cursor-pointer"
+                                  title="Thời hạn mục này"
+                                >
+                                  <Calendar className="w-3.5 h-3.5" />
+                                </button>
 
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setActiveItemMember({ checklistId: cl.id, item });
-                                  setItemMemberSearchQuery('');
-                                }}
-                                className="p-1 text-slate-400 hover:text-slate-900 hover:bg-slate-200/60 rounded-md transition-colors cursor-pointer"
-                                title="Phân công thành viên"
-                              >
-                                <UserPlus className="w-3.5 h-3.5" />
-                              </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveItemMember({ checklistId: cl.id, item });
+                                    setItemMemberSearchQuery('');
+                                  }}
+                                  className="p-1 text-slate-400 hover:text-slate-900 hover:bg-slate-200/60 rounded-md transition-colors cursor-pointer"
+                                  title="Phân công thành viên"
+                                >
+                                  <UserPlus className="w-3.5 h-3.5" />
+                                </button>
 
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteChecklistItem(cl.id, item.id)}
-                                className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
-                                title="Xóa mục này"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteChecklistItem(cl.id, item.id)}
+                                  className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
+                                  title="Xóa mục này"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            )}
                           </div>
                         ))}
 
                         {/* Add Item Form */}
-                        {activeNewItemChecklistId === cl.id ? (
-                          <div className="pt-2 space-y-2">
-                            <input
-                              ref={newItemInputRef}
-                              type="text"
-                              value={newItemContent}
-                              onChange={(e) => setNewItemContent(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  handleCreateChecklistItem(cl.id);
-                                }
-                                if (e.key === 'Escape') {
-                                  setActiveNewItemChecklistId(null);
-                                  setNewItemContent('');
-                                }
-                              }}
-                              placeholder="Nhập nội dung công việc cần làm..."
-                              className="w-full text-xs text-slate-900 bg-slate-50 border border-slate-200 focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 rounded-md px-3 py-2 focus:outline-none focus:bg-white shadow-2xs"
-                            />
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleCreateChecklistItem(cl.id)}
-                                className="px-3 py-1.5 text-xs font-semibold text-white bg-[#f28d8d] hover:bg-[#e57a7a] rounded-lg transition-colors cursor-pointer shadow-2xs"
-                              >
-                                Thêm
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setActiveNewItemChecklistId(null);
-                                  setNewItemContent('');
+                        {canEdit && (
+                          activeNewItemChecklistId === cl.id ? (
+                            <div className="pt-2 space-y-2">
+                              <input
+                                ref={newItemInputRef}
+                                type="text"
+                                value={newItemContent}
+                                onChange={(e) => setNewItemContent(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleCreateChecklistItem(cl.id);
+                                  }
+                                  if (e.key === 'Escape') {
+                                    setActiveNewItemChecklistId(null);
+                                    setNewItemContent('');
+                                  }
                                 }}
-                                className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
+                                placeholder="Nhập nội dung công việc cần làm..."
+                                className="w-full text-xs text-slate-900 bg-slate-50 border border-slate-200 focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 rounded-md px-3 py-2 focus:outline-none focus:bg-white shadow-2xs"
+                              />
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleCreateChecklistItem(cl.id)}
+                                  className="px-3 py-1.5 text-xs font-semibold text-white bg-[#f28d8d] hover:bg-[#e57a7a] rounded-lg transition-colors cursor-pointer shadow-2xs"
+                                >
+                                  Thêm
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActiveNewItemChecklistId(null);
+                                    setNewItemContent('');
+                                  }}
+                                  className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActiveNewItemChecklistId(cl.id);
-                              setNewItemContent('');
-                            }}
-                            className="mt-2 text-xs font-semibold text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-colors cursor-pointer"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                            <span>Thêm một mục</span>
-                          </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveNewItemChecklistId(cl.id);
+                                setNewItemContent('');
+                              }}
+                              className="mt-2 text-xs font-semibold text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-colors cursor-pointer"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>Thêm một mục</span>
+                            </button>
+                          )
                         )}
                       </div>
                     )}
@@ -4094,120 +4261,128 @@ export default function CardDetailModal({
 
               {/* Top Comment Composer (Visible on 'comments' tab) */}
               {activityTab === 'comments' && (
-                <div className="p-3.5 sm:p-4 border-b border-slate-200 bg-white shrink-0">
-                  <div className="flex items-start gap-2.5 relative">
-                    {/* Current User Avatar */}
-                    {currentUser?.avatar ? (
-                      <img
-                        src={currentUser.avatar}
-                        alt={currentUser.name || 'User'}
-                        className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5 ring-2 ring-slate-200 shadow-2xs"
-                      />
-                    ) : (
-                      <div className="w-7 h-7 rounded-full bg-[#f28d8d] text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 shadow-2xs">
-                        {(currentUser?.name || 'U').charAt(0).toUpperCase()}
-                      </div>
-                    )}
-
-                    {/* Composer Input Box */}
-                    <div className="flex-1 bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus-within:border-[#87ceeb] focus-within:bg-white focus-within:ring-1 focus-within:ring-[#87ceeb]/40 transition-all shadow-2xs relative">
-                      <textarea
-                        ref={commentInputRef}
-                        value={commentText}
-                        onChange={handleCommentChange}
-                        onKeyDown={handleCommentKeyDown}
-                        rows={commentText.length > 50 || isMentionOpen ? 3 : 2}
-                        placeholder="Viết bình luận..."
-                        className="w-full text-xs text-slate-900 bg-transparent resize-none focus:outline-none placeholder:text-slate-400 leading-relaxed"
-                      />
-
-                      {/* Mention Autocomplete Dropdown */}
-                      {isMentionOpen && (
-                        <div className="absolute left-0 bottom-full mb-1 z-30 w-64 max-h-48 overflow-y-auto bg-white rounded-md shadow-xl border border-slate-200 p-1 space-y-0.5 animate-in zoom-in-95 duration-100">
-                          <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 flex items-center justify-between">
-                            <span>Nhắc tên thành viên</span>
-                            <span className="text-[9px] text-slate-900 font-semibold">Enter chèn</span>
-                          </div>
-                          {filteredMentionMembers.length === 0 ? (
-                            <div className="p-3 text-center text-xs text-slate-400">
-                              Không tìm thấy thành viên
-                            </div>
-                          ) : (
-                            filteredMentionMembers.map((m, idx) => {
-                              const isSelected = idx === selectedMentionIndex;
-                              const mName = m.user?.name || 'Thành viên';
-                              const mAvatar = m.user?.avatar;
-                              const mEmail = m.user?.email || '';
-
-                              return (
-                                <button
-                                  key={m.id}
-                                  type="button"
-                                  onClick={() => handleSelectMention(mName)}
-                                  className={`w-full p-1.5 rounded-lg flex items-center gap-2 text-left transition-colors cursor-pointer ${
-                                    isSelected
-                                      ? 'bg-slate-200 text-slate-900'
-                                      : 'hover:bg-slate-100 text-slate-700'
-                                  }`}
-                                >
-                                  {mAvatar ? (
-                                    <img
-                                      src={mAvatar}
-                                      alt={mName}
-                                      className="w-5 h-5 rounded-full object-cover shrink-0"
-                                    />
-                                  ) : (
-                                    <div className="w-5 h-5 rounded-full bg-[#f28d8d] text-white flex items-center justify-center text-[10px] font-bold shrink-0">
-                                      {mName.charAt(0).toUpperCase()}
-                                    </div>
-                                  )}
-                                  <div className="flex-1 min-w-0">
-                                    <div className="text-xs font-bold truncate leading-tight flex items-center gap-1.5">
-                                      <span className="truncate">{mName}</span>
-                                      {m.isBoardMember ? (
-                                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-200 text-slate-900 font-semibold shrink-0">
-                                          Bảng
-                                        </span>
-                                      ) : (
-                                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-100 text-purple-700 font-semibold shrink-0">
-                                          Workspace
-                                        </span>
-                                      )}
-                                    </div>
-                                    {mEmail && (
-                                      <div className="text-[10px] text-slate-400 truncate leading-tight">
-                                        {mEmail}
-                                      </div>
-                                    )}
-                                  </div>
-                                </button>
-                              );
-                            })
-                          )}
+                canEdit ? (
+                  <div className="p-3.5 sm:p-4 border-b border-slate-200 bg-white shrink-0">
+                    <div className="flex items-start gap-2.5 relative">
+                      {/* Current User Avatar */}
+                      {currentUser?.avatar ? (
+                        <img
+                          src={currentUser.avatar}
+                          alt={currentUser.name || 'User'}
+                          className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5 ring-2 ring-slate-200 shadow-2xs"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-[#f28d8d] text-white flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 shadow-2xs">
+                          {(currentUser?.name || 'U').charAt(0).toUpperCase()}
                         </div>
                       )}
 
-                      {/* Composer Toolbar & Submit */}
-                      <div className="flex items-center justify-end pt-2 border-t border-slate-200/60 mt-1">
-                        <button
-                          type="button"
-                          onClick={handleSubmitComment}
-                          disabled={!commentText.trim() || isSubmittingComment}
-                          className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#f28d8d] hover:bg-[#e57a7a] disabled:opacity-40 rounded-md shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
-                        >
-                          {isSubmittingComment ? (
-                            <span>Đang gửi...</span>
-                          ) : (
-                            <>
-                              <span>Gửi</span>
-                              <Send className="w-3 h-3" />
-                            </>
-                          )}
-                        </button>
+                      {/* Composer Input Box */}
+                      <div className="flex-1 bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus-within:border-[#87ceeb] focus-within:bg-white focus-within:ring-1 focus-within:ring-[#87ceeb]/40 transition-all shadow-2xs relative">
+                        <textarea
+                          ref={commentInputRef}
+                          value={commentText}
+                          onChange={handleCommentChange}
+                          onKeyDown={handleCommentKeyDown}
+                          rows={commentText.length > 50 || isMentionOpen ? 3 : 2}
+                          placeholder="Viết bình luận..."
+                          className="w-full text-xs text-slate-900 bg-transparent resize-none focus:outline-none placeholder:text-slate-400 leading-relaxed"
+                        />
+
+                        {/* Mention Autocomplete Dropdown */}
+                        {isMentionOpen && (
+                          <div className="absolute left-0 bottom-full mb-1 z-30 w-64 max-h-48 overflow-y-auto bg-white rounded-md shadow-xl border border-slate-200 p-1 space-y-0.5 animate-in zoom-in-95 duration-100">
+                            <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 flex items-center justify-between">
+                              <span>Nhắc tên thành viên</span>
+                              <span className="text-[9px] text-slate-900 font-semibold">Enter chèn</span>
+                            </div>
+                            {filteredMentionMembers.length === 0 ? (
+                              <div className="p-3 text-center text-xs text-slate-400">
+                                Không tìm thấy thành viên
+                              </div>
+                            ) : (
+                              filteredMentionMembers.map((m, idx) => {
+                                const isSelected = idx === selectedMentionIndex;
+                                const mName = m.user?.name || 'Thành viên';
+                                const mAvatar = m.user?.avatar;
+                                const mEmail = m.user?.email || '';
+
+                                return (
+                                  <button
+                                    key={m.id}
+                                    type="button"
+                                    onClick={() => handleSelectMention(mName)}
+                                    className={`w-full p-1.5 rounded-lg flex items-center gap-2 text-left transition-colors cursor-pointer ${
+                                      isSelected
+                                        ? 'bg-slate-200 text-slate-900'
+                                        : 'hover:bg-slate-100 text-slate-700'
+                                    }`}
+                                  >
+                                    {mAvatar ? (
+                                      <img
+                                        src={mAvatar}
+                                        alt={mName}
+                                        className="w-5 h-5 rounded-full object-cover shrink-0"
+                                      />
+                                    ) : (
+                                      <div className="w-5 h-5 rounded-full bg-[#f28d8d] text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                                        {mName.charAt(0).toUpperCase()}
+                                      </div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      <div className="text-xs font-bold truncate leading-tight flex items-center gap-1.5">
+                                        <span className="truncate">{mName}</span>
+                                        {m.isBoardMember ? (
+                                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-200 text-slate-900 font-semibold shrink-0">
+                                            Bảng
+                                          </span>
+                                        ) : (
+                                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-100 text-purple-700 font-semibold shrink-0">
+                                            Workspace
+                                          </span>
+                                        )}
+                                      </div>
+                                      {mEmail && (
+                                        <div className="text-[10px] text-slate-400 truncate leading-tight">
+                                          {mEmail}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </button>
+                                );
+                              })
+                            )}
+                          </div>
+                        )}
+
+                        {/* Composer Toolbar & Submit */}
+                        <div className="flex items-center justify-end pt-2 border-t border-slate-200/60 mt-1">
+                          <button
+                            type="button"
+                            onClick={handleSubmitComment}
+                            disabled={!commentText.trim() || isSubmittingComment}
+                            className="px-3.5 py-1.5 text-xs font-semibold text-white bg-[#f28d8d] hover:bg-[#e57a7a] disabled:opacity-40 rounded-md shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+                          >
+                            {isSubmittingComment ? (
+                              <span>Đang gửi...</span>
+                            ) : (
+                              <>
+                                <span>Gửi</span>
+                                <Send className="w-3 h-3" />
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="p-3 border-b border-slate-200 bg-slate-50/80 text-center shrink-0">
+                    <p className="text-xs text-slate-500 font-medium">
+                      Chế độ chỉ xem — Không thể gửi bình luận trên thẻ này
+                    </p>
+                  </div>
+                )
               )}
 
               {/* Scrollable Feed List */}
@@ -4333,7 +4508,7 @@ export default function CardDetailModal({
                             </div>
 
                             {/* Comment Actions (Edit / Delete) */}
-                            {isAuthor && !isEditing && (
+                            {canEdit && isAuthor && !isEditing && (
                               <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
                                   type="button"
