@@ -290,9 +290,13 @@ export class BoardsService {
       currentUserBoardRole = 'VIEWER';
     }
 
+    const isGuest = !isWorkspaceOwner && !wsMember;
+    const isWorkspaceMember = Boolean(isWorkspaceOwner || wsMember);
+
     const canEdit = isWorkspaceOwner || currentUserBoardRole === 'ADMIN' || currentUserBoardRole === 'EDITOR';
-    const canManageMembers = currentUserBoardRole === 'ADMIN' || isWorkspaceOwner;
-    const canDelete = currentUserBoardRole === 'ADMIN' || isWorkspaceOwner;
+    const canManageMembers = (currentUserBoardRole === 'ADMIN' || isWorkspaceOwner) && isWorkspaceMember;
+    const canDelete = (currentUserBoardRole === 'ADMIN' || isWorkspaceOwner) && isWorkspaceMember;
+    const canChangeVisibility = (currentUserBoardRole === 'ADMIN' || isWorkspaceOwner) && isWorkspaceMember;
 
     // Sắp xếp lists và cards theo position
     if (b.lists) {
@@ -311,9 +315,12 @@ export class BoardsService {
       background: b.background ?? null,
       currentUserBoardRole,
       isWorkspaceOwner,
+      isWorkspaceMember,
+      isGuest,
       canEdit,
       canManageMembers,
       canDelete,
+      canChangeVisibility,
     };
   }
 
@@ -321,6 +328,20 @@ export class BoardsService {
     const board = await this.findById(boardId, userId);
     if (!board.canEdit) {
       throw new ForbiddenException('Bạn không có quyền chỉnh sửa thông tin Board này');
+    }
+
+    if (board.isGuest && (dto.name !== undefined || dto.description !== undefined || dto.visibility !== undefined || dto.background !== undefined || dto.is_archived !== undefined)) {
+      throw new ForbiddenException('Khách của Bảng không có quyền thay đổi thông tin hoặc cấu hình của Bảng này');
+    }
+
+    if (dto.visibility !== undefined && !board.canChangeVisibility) {
+      throw new ForbiddenException(
+        'Chỉ Quản trị viên (Admin) hoặc Chủ sở hữu Workspace mới có quyền thay đổi quyền hiển thị của Board',
+      );
+    }
+
+    if (dto.is_archived !== undefined && !board.canDelete && !board.isWorkspaceOwner) {
+      throw new ForbiddenException('Chỉ Quản trị viên Board hoặc Chủ sở hữu Workspace mới có quyền lưu trữ');
     }
 
     const updateData: Record<string, any> = {};

@@ -70,6 +70,8 @@ import {
   ChevronDown,
   Loader2,
   SlidersHorizontal,
+  Eye,
+  UserCheck,
 } from 'lucide-react';
 import { ActivityItem } from '@/components/modals/MyActivityModal';
 import { BoardRiskScannerModal } from '@/components/board/BoardRiskScannerModal';
@@ -189,17 +191,28 @@ export default function BoardDetailPage({
     };
   }, [isVisibilityMenuOpen]);
 
+  const isGuest = Boolean(
+    board?.isGuest ||
+      (board && !board?.isWorkspaceOwner && !board?.isWorkspaceMember && board?.currentUserBoardRole !== 'ADMIN')
+  );
+  const isViewer = Boolean(board?.currentUserBoardRole === 'VIEWER');
+
+  const canChangeVisibility = Boolean(
+    !isGuest &&
+      (board?.canChangeVisibility ??
+        (board?.currentUserBoardRole === 'ADMIN' || board?.isWorkspaceOwner || board?.canManageMembers))
+  );
+
   const [confirmingVisibility, setConfirmingVisibility] = useState<'WORKSPACE' | 'PRIVATE' | 'PUBLIC' | null>(null);
 
   const handleRequestUpdateVisibility = (newVisibility: 'WORKSPACE' | 'PRIVATE' | 'PUBLIC') => {
-    if (!board || board.visibility === newVisibility || isUpdatingVisibility) return;
-    if (!board.canEdit) return;
+    if (!board || !canChangeVisibility || board.visibility === newVisibility || isUpdatingVisibility) return;
     setIsVisibilityMenuOpen(false);
     setConfirmingVisibility(newVisibility);
   };
 
   const handleConfirmUpdateVisibility = async () => {
-    if (!confirmingVisibility || !board?.id) return;
+    if (!confirmingVisibility || !board?.id || !canChangeVisibility) return;
     const targetVisibility = confirmingVisibility;
     const previousVisibility = board.visibility;
 
@@ -1308,9 +1321,9 @@ export default function BoardDetailPage({
           {/* Left: Back button & Board Name & Badges */}
           <div className="flex items-center gap-3 min-w-0">
             <Link
-              href={targetWorkspaceId ? `/workspaces/${targetWorkspaceId}` : '/dashboard'}
+              href={!isGuest && targetWorkspaceId ? `/workspaces/${targetWorkspaceId}` : '/dashboard'}
               className="p-1.5 rounded-md hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
-              title="Quay lại Workspace"
+              title={isGuest ? 'Quay lại Tổng quan (Các bảng dạng khách)' : 'Quay lại Không gian làm việc'}
             >
               <ArrowLeft className="w-4 h-4" />
             </Link>
@@ -1333,6 +1346,27 @@ export default function BoardDetailPage({
                 )}
               </div>
 
+              {/* Guest & Viewer Status Badges */}
+              {isGuest && (
+                <span
+                  className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-xs bg-amber-50 text-amber-700 border border-amber-200 shrink-0"
+                  title="Bạn đang truy cập bảng này với tư cách Khách"
+                >
+                  <UserCheck className="w-3 h-3 text-amber-600" />
+                  <span>Khách</span>
+                </span>
+              )}
+
+              {isViewer && (
+                <span
+                  className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-xs bg-slate-100 text-slate-600 border border-slate-200 shrink-0"
+                  title="Chế độ chỉ xem (Không có quyền chỉnh sửa nội dung)"
+                >
+                  <Eye className="w-3 h-3 text-slate-500" />
+                  <span>Chỉ xem</span>
+                </span>
+              )}
+
               {/* Favorite Star Button */}
               <button
                 onClick={handleToggleFavorite}
@@ -1349,14 +1383,14 @@ export default function BoardDetailPage({
               <div className="relative shrink-0" ref={visibilityMenuRef}>
                 <button
                   type="button"
-                  disabled={isUpdatingVisibility}
+                  disabled={isUpdatingVisibility || !canChangeVisibility}
                   onClick={() => {
-                    if (board?.canEdit) {
+                    if (canChangeVisibility) {
                       setIsVisibilityMenuOpen(!isVisibilityMenuOpen);
                     }
                   }}
                   className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-md border transition-all ${
-                    board?.canEdit
+                    canChangeVisibility
                       ? 'cursor-pointer hover:shadow-2xs active:scale-95'
                       : 'cursor-default opacity-85'
                   } ${
@@ -1367,9 +1401,9 @@ export default function BoardDetailPage({
                       : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200/70'
                   }`}
                   title={
-                    board?.canEdit
+                    canChangeVisibility
                       ? 'Nhấp để thay đổi quyền hiển thị Bảng'
-                      : 'Quyền hiển thị Bảng (Chỉ Quản trị viên/Biên tập viên mới có quyền đổi)'
+                      : 'Quyền hiển thị Bảng (Chỉ Quản trị viên Board hoặc Chủ sở hữu Workspace mới có quyền đổi)'
                   }
                 >
                   {board?.visibility === 'PRIVATE' ? (
@@ -1386,7 +1420,7 @@ export default function BoardDetailPage({
                       ? 'Công khai'
                       : 'Không gian'}
                   </span>
-                  {board?.canEdit && (
+                  {canChangeVisibility && (
                     <ChevronDown
                       className={`w-3 h-3 transition-transform text-slate-400 shrink-0 ${
                         isVisibilityMenuOpen ? 'rotate-180' : ''
@@ -1396,7 +1430,7 @@ export default function BoardDetailPage({
                 </button>
 
                 {/* Dropdown Popover */}
-                {isVisibilityMenuOpen && board?.canEdit && (
+                {isVisibilityMenuOpen && canChangeVisibility && (
                   <div className="absolute left-0 mt-1.5 w-72 bg-white rounded-lg shadow-xl border border-slate-200 p-2 z-50 animate-in fade-in zoom-in-95">
                     <div className="px-2 py-1.5 border-b border-slate-100 mb-1">
                       <div className="text-xs font-bold text-slate-800">
@@ -1639,18 +1673,20 @@ export default function BoardDetailPage({
                     <span>Lịch sử hoạt động Bảng</span>
                   </button>
 
-                  <button
-                    onClick={() => {
-                      setIsBoardMenuOpen(false);
-                      setIsCustomFieldsModalOpen(true);
-                    }}
-                    className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
-                  >
-                    <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Trường tùy chỉnh (Custom Fields)</span>
-                  </button>
+                  {board?.canEdit && !isGuest && (
+                    <button
+                      onClick={() => {
+                        setIsBoardMenuOpen(false);
+                        setIsCustomFieldsModalOpen(true);
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
+                    >
+                      <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Trường tùy chỉnh (Custom Fields)</span>
+                    </button>
+                  )}
 
-                  {board?.canEdit && !board?.is_archived && (
+                  {board?.canEdit && !isGuest && !board?.is_archived && (
                     <button
                       onClick={() => {
                         setIsBoardMenuOpen(false);
@@ -1674,27 +1710,31 @@ export default function BoardDetailPage({
                     <span>Nhân bản Bảng (Copy)</span>
                   </button>
 
-                  <button
-                    onClick={() => {
-                      setIsBoardMenuOpen(false);
-                      setIsSaveAsTemplateOpen(true);
-                    }}
-                    className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
-                  >
-                    <LayoutTemplate className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Lưu thành Mẫu (Template)</span>
-                  </button>
+                  {!isGuest && (
+                    <button
+                      onClick={() => {
+                        setIsBoardMenuOpen(false);
+                        setIsSaveAsTemplateOpen(true);
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
+                    >
+                      <LayoutTemplate className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Lưu thành Mẫu (Template)</span>
+                    </button>
+                  )}
 
-                  <button
-                    onClick={() => {
-                      setIsBoardMenuOpen(false);
-                      setIsImportModalOpen(true);
-                    }}
-                    className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
-                  >
-                    <Upload className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Nhập dữ liệu (Import)</span>
-                  </button>
+                  {board?.canEdit && !isGuest && (
+                    <button
+                      onClick={() => {
+                        setIsBoardMenuOpen(false);
+                        setIsImportModalOpen(true);
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
+                    >
+                      <Upload className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Nhập dữ liệu (Import)</span>
+                    </button>
+                  )}
 
                   <button
                     onClick={() => {
@@ -1718,7 +1758,7 @@ export default function BoardDetailPage({
                     <span>Quản lý thành viên & Quyền</span>
                   </button>
 
-                  {board?.canDelete && (
+                  {board?.canDelete && !isGuest && (
                     <>
                       <div className="h-[1px] bg-slate-100 my-1" />
                       {board.is_archived ? (

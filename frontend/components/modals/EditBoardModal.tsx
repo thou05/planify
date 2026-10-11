@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Edit3, Loader2, Users, Lock, Globe, Check } from 'lucide-react';
+import { X, Edit3, Loader2, Users, Lock, Globe, Check, AlertCircle } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 
 interface EditBoardModalProps {
@@ -23,6 +23,17 @@ export default function EditBoardModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const isGuest = Boolean(
+    board?.isGuest ||
+      (board && !board?.isWorkspaceOwner && !board?.isWorkspaceMember && board?.currentUserBoardRole !== 'ADMIN')
+  );
+
+  const canChangeVisibility = Boolean(
+    !isGuest &&
+      (board?.canChangeVisibility ??
+        (board?.currentUserBoardRole === 'ADMIN' || board?.isWorkspaceOwner || board?.canManageMembers))
+  );
+
   useEffect(() => {
     if (board) {
       setName(board.name || '');
@@ -41,14 +52,18 @@ export default function EditBoardModal({
     setIsLoading(true);
     setError('');
 
+    const payload: any = {
+      name: name.trim(),
+      description: description.trim() || '',
+    };
+    if (canChangeVisibility) {
+      payload.visibility = visibility;
+    }
+
     try {
       const res = await apiClient(`/boards/${board.id}`, {
         method: 'PATCH',
-        data: {
-          name: name.trim(),
-          description: description.trim() || '',
-          visibility,
-        },
+        data: payload,
       });
 
       if (res.success) {
@@ -123,11 +138,14 @@ export default function EditBoardModal({
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
+                disabled={!canChangeVisibility}
                 onClick={() => setVisibility('WORKSPACE')}
-                className={`p-2.5 rounded-md text-left border transition-all cursor-pointer ${
-                  visibility === 'WORKSPACE'
-                    ? 'bg-[#ffc0cb]/20 border-[#f28d8d] text-[#d86969] ring-1 ring-[#f28d8d]/30 font-semibold'
-                    : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                className={`p-2.5 rounded-md text-left border transition-all ${
+                  !canChangeVisibility
+                    ? 'opacity-65 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-500'
+                    : visibility === 'WORKSPACE'
+                    ? 'bg-[#ffc0cb]/20 border-[#f28d8d] text-[#d86969] ring-1 ring-[#f28d8d]/30 font-semibold cursor-pointer'
+                    : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 cursor-pointer'
                 }`}
               >
                 <div className="flex items-center justify-between text-xs font-semibold mb-0.5">
@@ -142,11 +160,14 @@ export default function EditBoardModal({
 
               <button
                 type="button"
+                disabled={!canChangeVisibility}
                 onClick={() => setVisibility('PRIVATE')}
-                className={`p-2.5 rounded-md text-left border transition-all cursor-pointer ${
-                  visibility === 'PRIVATE'
-                    ? 'bg-rose-50 border-rose-300 text-rose-700 ring-1 ring-rose-200 font-semibold'
-                    : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                className={`p-2.5 rounded-md text-left border transition-all ${
+                  !canChangeVisibility
+                    ? 'opacity-65 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-500'
+                    : visibility === 'PRIVATE'
+                    ? 'bg-rose-50 border-rose-300 text-rose-700 ring-1 ring-rose-200 font-semibold cursor-pointer'
+                    : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 cursor-pointer'
                 }`}
               >
                 <div className="flex items-center justify-between text-xs font-semibold mb-0.5">
@@ -161,11 +182,14 @@ export default function EditBoardModal({
 
               <button
                 type="button"
+                disabled={!canChangeVisibility}
                 onClick={() => setVisibility('PUBLIC')}
-                className={`p-2.5 rounded-md text-left border transition-all cursor-pointer ${
-                  visibility === 'PUBLIC'
-                    ? 'bg-emerald-50 border-emerald-300 text-emerald-700 ring-1 ring-emerald-200 font-semibold'
-                    : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                className={`p-2.5 rounded-md text-left border transition-all ${
+                  !canChangeVisibility
+                    ? 'opacity-65 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-500'
+                    : visibility === 'PUBLIC'
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-700 ring-1 ring-emerald-200 font-semibold cursor-pointer'
+                    : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 cursor-pointer'
                 }`}
               >
                 <div className="flex items-center justify-between text-xs font-semibold mb-0.5">
@@ -178,6 +202,13 @@ export default function EditBoardModal({
                 <div className="text-[10px] text-slate-500">Bất kỳ ai có link</div>
               </button>
             </div>
+
+            {!canChangeVisibility && (
+              <div className="mt-2 p-2 rounded-md bg-amber-50 border border-amber-200/80 text-amber-800 text-[11px] font-medium flex items-center gap-1.5">
+                <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span>Chỉ Quản trị viên (Admin) hoặc Chủ sở hữu Workspace mới có quyền thay đổi quyền hiển thị của Board.</span>
+              </div>
+            )}
           </div>
 
           <div className="pt-2 flex items-center justify-end gap-2.5">
