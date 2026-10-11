@@ -65,6 +65,17 @@ export default function ShareBoardModal({
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  const isGuest = Boolean(
+    board?.isGuest ||
+      (board && !board?.isWorkspaceOwner && !board?.isWorkspaceMember && board?.currentUserBoardRole !== 'ADMIN')
+  );
+
+  const canChangeVisibility = Boolean(
+    !isGuest &&
+      (board?.canChangeVisibility ??
+        (board?.currentUserBoardRole === 'ADMIN' || board?.isWorkspaceOwner || board?.canManageMembers))
+  );
+
   const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
   const boardUrl = `${origin}/boards/${board?.id}`;
 
@@ -121,13 +132,13 @@ export default function ShareBoardModal({
   };
 
   const handleRequestVisibilityChange = (newVisibility: 'WORKSPACE' | 'PRIVATE' | 'PUBLIC') => {
-    if (newVisibility === currentVisibility) return;
+    if (!canChangeVisibility || newVisibility === currentVisibility) return;
     setError('');
     setConfirmingVisibility(newVisibility);
   };
 
   const handleConfirmVisibilityChange = async () => {
-    if (!confirmingVisibility || !board?.id) return;
+    if (!canChangeVisibility || !confirmingVisibility || !board?.id) return;
     const targetVisibility = confirmingVisibility;
     const previousVisibility = currentVisibility;
 
@@ -367,12 +378,14 @@ export default function ShareBoardModal({
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
-                    disabled={isUpdatingVisibility || !board.canEdit}
+                    disabled={isUpdatingVisibility || !canChangeVisibility}
                     onClick={() => handleRequestVisibilityChange('WORKSPACE')}
-                    className={`p-2.5 rounded-md text-left border transition-all cursor-pointer ${
-                      currentVisibility === 'WORKSPACE'
-                        ? 'bg-[#ffc0cb]/20 border-[#f28d8d] text-[#d86969] ring-1 ring-[#f28d8d]/30 font-semibold'
-                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                    className={`p-2.5 rounded-md text-left border transition-all ${
+                      !canChangeVisibility
+                        ? 'opacity-65 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-500'
+                        : currentVisibility === 'WORKSPACE'
+                        ? 'bg-[#ffc0cb]/20 border-[#f28d8d] text-[#d86969] ring-1 ring-[#f28d8d]/30 font-semibold cursor-pointer'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 cursor-pointer'
                     }`}
                   >
                     <div className="flex items-center justify-between text-xs font-semibold mb-0.5">
@@ -389,12 +402,14 @@ export default function ShareBoardModal({
 
                   <button
                     type="button"
-                    disabled={isUpdatingVisibility || !board.canEdit}
+                    disabled={isUpdatingVisibility || !canChangeVisibility}
                     onClick={() => handleRequestVisibilityChange('PRIVATE')}
-                    className={`p-2.5 rounded-md text-left border transition-all cursor-pointer ${
-                      currentVisibility === 'PRIVATE'
-                        ? 'bg-rose-50 border-rose-300 text-rose-700 ring-1 ring-rose-200 font-semibold'
-                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                    className={`p-2.5 rounded-md text-left border transition-all ${
+                      !canChangeVisibility
+                        ? 'opacity-65 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-500'
+                        : currentVisibility === 'PRIVATE'
+                        ? 'bg-rose-50 border-rose-300 text-rose-700 ring-1 ring-rose-200 font-semibold cursor-pointer'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 cursor-pointer'
                     }`}
                   >
                     <div className="flex items-center justify-between text-xs font-semibold mb-0.5">
@@ -411,12 +426,14 @@ export default function ShareBoardModal({
 
                   <button
                     type="button"
-                    disabled={isUpdatingVisibility || !board.canEdit}
+                    disabled={isUpdatingVisibility || !canChangeVisibility}
                     onClick={() => handleRequestVisibilityChange('PUBLIC')}
-                    className={`p-2.5 rounded-md text-left border transition-all cursor-pointer ${
-                      currentVisibility === 'PUBLIC'
-                        ? 'bg-emerald-50 border-emerald-300 text-emerald-700 ring-1 ring-emerald-200 font-semibold'
-                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                    className={`p-2.5 rounded-md text-left border transition-all ${
+                      !canChangeVisibility
+                        ? 'opacity-65 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-500'
+                        : currentVisibility === 'PUBLIC'
+                        ? 'bg-emerald-50 border-emerald-300 text-emerald-700 ring-1 ring-emerald-200 font-semibold cursor-pointer'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 cursor-pointer'
                     }`}
                   >
                     <div className="flex items-center justify-between text-xs font-semibold mb-0.5">
@@ -431,10 +448,17 @@ export default function ShareBoardModal({
                     </div>
                   </button>
                 </div>
+
+                {!canChangeVisibility && (
+                  <div className="mt-2 p-2 rounded-md bg-amber-50 border border-amber-200/80 text-amber-800 text-[11px] font-medium flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span>Chỉ Quản trị viên (Admin) hoặc Chủ sở hữu Workspace mới có quyền thay đổi quyền hiển thị của Bảng.</span>
+                  </div>
+                )}
               </div>
 
               {/* Add Member from Workspace */}
-              {board.canManageMembers && availableWsMembers.length > 0 && (
+              {!isGuest && board.canManageMembers && availableWsMembers.length > 0 && (
                 <form onSubmit={handleAddMember} className="p-3.5 rounded-md bg-slate-50 border border-slate-200 space-y-2">
                   <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
                     <UserPlus className="w-3.5 h-3.5 text-slate-600" />

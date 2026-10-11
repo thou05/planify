@@ -23,6 +23,8 @@ export interface WorkspaceItem {
   name: string;
   description?: string | null;
   boards?: Array<{ id: string; name: string; is_favorite?: boolean }>;
+  isGuest?: boolean;
+  currentUserRole?: string;
 }
 
 interface SidebarProps {
@@ -87,14 +89,24 @@ export default function Sidebar({
   });
 
   const currentWorkspace = workspaces.find((w) => w.id === currentWorkspaceId) || workspaces[0];
+  const isCurrentGuest = Boolean(
+    currentWorkspace?.isGuest || currentWorkspace?.currentUserRole === 'GUEST'
+  );
+
+  const myWorkspaces = workspaces.filter(
+    (w) => !w.isGuest && w.currentUserRole !== 'GUEST'
+  );
+  const guestWorkspaces = workspaces.filter(
+    (w) => w.isGuest || w.currentUserRole === 'GUEST'
+  );
 
   const getActiveNavKey = useCallback(() => {
     if (pathname === '/dashboard') return 'dashboard';
-    if (currentWorkspace && pathname === `/workspaces/${currentWorkspace.id}`) return 'workspace';
+    if (!isCurrentGuest && currentWorkspace && pathname === `/workspaces/${currentWorkspace.id}`) return 'workspace';
     if (pathname.startsWith('/templates')) return 'templates';
     if (pathname === '/my-activities' || pathname.startsWith('/my-activities')) return 'my-activities';
     return null;
-  }, [pathname, currentWorkspace]);
+  }, [pathname, currentWorkspace, isCurrentGuest]);
 
   const getActiveBoardId = useCallback(() => {
     if (pathname.startsWith('/boards/')) {
@@ -204,11 +216,21 @@ export default function Sidebar({
                 className="w-full flex items-center justify-between p-2 rounded-md bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors text-left group cursor-pointer"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-7 h-7 rounded-md bg-[#f28d8d] flex items-center justify-center text-white shrink-0 font-bold text-xs shadow-2xs">
+                  <div
+                    className={`w-7 h-7 rounded-md flex items-center justify-center text-white shrink-0 font-bold text-xs shadow-2xs ${
+                      isCurrentGuest ? 'bg-amber-500' : 'bg-[#f28d8d]'
+                    }`}
+                  >
                     {currentWorkspace ? currentWorkspace.name.charAt(0).toUpperCase() : 'W'}
                   </div>
                   <div className="min-w-0">
-                    <div className="text-[10px] text-[#d86969] font-semibold uppercase tracking-wider">Workspace</div>
+                    <div
+                      className={`text-[10px] font-semibold uppercase tracking-wider ${
+                        isCurrentGuest ? 'text-amber-600' : 'text-[#d86969]'
+                      }`}
+                    >
+                      {isCurrentGuest ? 'Bảng dạng khách' : 'Workspace'}
+                    </div>
                     <div className="text-xs font-bold text-slate-900 truncate">
                       {currentWorkspace ? currentWorkspace.name : 'Chọn Workspace'}
                     </div>
@@ -224,28 +246,73 @@ export default function Sidebar({
               {/* Dropdown Menu - 100% Solid White */}
               {isWsDropdownOpen && (
                 <div className="absolute top-full left-0 right-0 mt-1.5 p-1.5 bg-white rounded-lg shadow-md border border-slate-200 z-50 animate-in fade-in zoom-in-95 duration-100">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1">
-                    Danh sách Không gian làm việc
-                  </div>
-                  <div className="max-h-48 overflow-y-auto space-y-0.5 my-1">
-                    {workspaces.map((ws) => (
-                      <button
-                        key={ws.id}
-                        onClick={() => {
-                          onSelectWorkspace?.(ws.id);
-                          setIsWsDropdownOpen(false);
-                        }}
-                        className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
-                          ws.id === currentWorkspace?.id
-                            ? 'bg-[#ffc0cb]/30 text-slate-900 font-bold border border-[#ffc0cb]/80'
-                            : 'hover:bg-slate-100 text-slate-700'
-                        }`}
-                      >
-                        <Layers className={`w-3.5 h-3.5 shrink-0 ${ws.id === currentWorkspace?.id ? 'text-[#f28d8d]' : 'text-slate-500'}`} />
-                        <span className="truncate">{ws.name}</span>
-                      </button>
-                    ))}
-                  </div>
+                  {myWorkspaces.length > 0 && (
+                    <>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1">
+                        Không gian làm việc của bạn
+                      </div>
+                      <div className="max-h-36 overflow-y-auto space-y-0.5 my-1">
+                        {myWorkspaces.map((ws) => (
+                          <button
+                            key={ws.id}
+                            onClick={() => {
+                              onSelectWorkspace?.(ws.id);
+                              setIsWsDropdownOpen(false);
+                            }}
+                            className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer ${
+                              ws.id === currentWorkspace?.id
+                                ? 'bg-[#ffc0cb]/30 text-slate-900 font-bold border border-[#ffc0cb]/80'
+                                : 'hover:bg-slate-100 text-slate-700'
+                            }`}
+                          >
+                            <Layers
+                              className={`w-3.5 h-3.5 shrink-0 ${
+                                ws.id === currentWorkspace?.id ? 'text-[#f28d8d]' : 'text-slate-500'
+                              }`}
+                            />
+                            <span className="truncate">{ws.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {guestWorkspaces.length > 0 && (
+                    <>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-amber-600 px-2 py-1 mt-1 border-t border-slate-100 pt-1.5 flex items-center gap-1">
+                        <Users className="w-3 h-3 text-amber-600" />
+                        <span>Các bảng dạng khách</span>
+                      </div>
+                      <div className="max-h-36 overflow-y-auto space-y-0.5 my-1">
+                        {guestWorkspaces.map((ws) => (
+                          <button
+                            key={ws.id}
+                            onClick={() => {
+                              onSelectWorkspace?.(ws.id);
+                              setIsWsDropdownOpen(false);
+                            }}
+                            className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center justify-between gap-2 transition-colors cursor-pointer ${
+                              ws.id === currentWorkspace?.id
+                                ? 'bg-amber-50 text-amber-900 font-bold border border-amber-200'
+                                : 'hover:bg-slate-100 text-slate-700'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 truncate min-w-0">
+                              <Kanban
+                                className={`w-3.5 h-3.5 shrink-0 ${
+                                  ws.id === currentWorkspace?.id ? 'text-amber-600' : 'text-slate-500'
+                                }`}
+                              />
+                              <span className="truncate">{ws.name}</span>
+                            </div>
+                            <span className="text-[9px] px-1.5 py-0.5 rounded-xs font-semibold bg-amber-100 text-amber-800 shrink-0">
+                              Khách
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
 
                   <button
                     onClick={() => {
@@ -258,8 +325,8 @@ export default function Sidebar({
                     <span>Tạo Workspace mới</span>
                   </button>
                 </div>
-          )}
-        </div>
+              )}
+            </div>
 
         {onToggleCollapse && (
           <button
@@ -333,8 +400,8 @@ export default function Sidebar({
             <span>Tổng quan</span>
           </Link>
 
-          {/* Item 2: Thành viên & Cài đặt */}
-          {currentWorkspace && (
+          {/* Item 2: Thành viên & Cài đặt (Ẩn khi đang chọn Bảng dạng khách) */}
+          {currentWorkspace && !isCurrentGuest && (
             <Link
               ref={(el) => {
                 navItemRefs.current['workspace'] = el;
@@ -427,9 +494,9 @@ export default function Sidebar({
         <div className="flex-1 flex flex-col min-h-0">
           <div className="flex items-center justify-between px-2 mb-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Các Bảng (Boards)
+              {isCurrentGuest ? 'Bảng dạng khách' : 'Các Bảng (Boards)'}
             </span>
-            {onOpenCreateBoard && (
+            {onOpenCreateBoard && !isCurrentGuest && (
               <button
                 onClick={onOpenCreateBoard}
                 className="p-1 hover:bg-[#ffc0cb]/30 rounded text-[#f28d8d] hover:text-[#d86969] transition-colors cursor-pointer"
