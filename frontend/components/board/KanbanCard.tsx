@@ -14,6 +14,11 @@ import {
   Edit2,
   Check,
   Paperclip,
+  Hash,
+  Star,
+  Percent,
+  DollarSign,
+  ListFilter,
 } from 'lucide-react';
 
 interface KanbanCardProps {
@@ -348,6 +353,109 @@ export default function KanbanCard({
           <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">
             {card.description}
           </p>
+        )}
+
+        {/* Custom Field Badges */}
+        {card.custom_field_values && card.custom_field_values.length > 0 && (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            {card.custom_field_values.map((cf: any) => {
+              if (cf.value === null || cf.value === undefined || cf.value === '') return null;
+              const fName = cf.field?.name || 'Trường';
+              const fType = cf.field?.field_type || 'TEXT';
+
+              if (fType === 'CHECKBOX') {
+                if (cf.value !== 'true' && cf.value !== true) return null;
+                return (
+                  <span
+                    key={cf.id || cf.field_id}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    title={`${fName}: Đã kích hoạt`}
+                  >
+                    <Check className="w-2.5 h-2.5" />
+                    <span>{fName}</span>
+                  </span>
+                );
+              }
+
+              if (fType === 'RATING') {
+                return (
+                  <span
+                    key={cf.id || cf.field_id}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200"
+                    title={`${fName}: ${cf.value}/5 sao`}
+                  >
+                    <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-500" />
+                    <span>{cf.value}/5</span>
+                  </span>
+                );
+              }
+
+              if (fType === 'PERCENT') {
+                return (
+                  <span
+                    key={cf.id || cf.field_id}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-cyan-50 text-cyan-700 border border-cyan-200"
+                    title={`${fName}: ${cf.value}%`}
+                  >
+                    <Percent className="w-2.5 h-2.5 text-cyan-600" />
+                    <span>{cf.value}%</span>
+                  </span>
+                );
+              }
+
+              if (fType === 'CURRENCY') {
+                const num = Number(cf.value);
+                const formatted = !isNaN(num) ? `${num.toLocaleString('vi-VN')} ₫` : cf.value;
+                return (
+                  <span
+                    key={cf.id || cf.field_id}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    title={`${fName}: ${formatted}`}
+                  >
+                    <DollarSign className="w-2.5 h-2.5 text-emerald-600" />
+                    <span>{formatted}</span>
+                  </span>
+                );
+              }
+
+              if (fType === 'DROPDOWN') {
+                return (
+                  <span
+                    key={cf.id || cf.field_id}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-semibold bg-orange-50 text-orange-700 border border-orange-200"
+                    title={`${fName}: ${cf.value}`}
+                  >
+                    <ListFilter className="w-2.5 h-2.5 text-orange-500" />
+                    <span className="truncate max-w-[100px]">{cf.value}</span>
+                  </span>
+                );
+              }
+
+              if (fType === 'NUMBER') {
+                return (
+                  <span
+                    key={cf.id || cf.field_id}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-slate-100 text-slate-800 border border-slate-200"
+                    title={`${fName}: ${cf.value}`}
+                  >
+                    <Hash className="w-2.5 h-2.5 text-slate-500" />
+                    <span>{fName}: {cf.value}</span>
+                  </span>
+                );
+              }
+
+              return (
+                <span
+                  key={cf.id || cf.field_id}
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-medium bg-slate-100 text-slate-700 border border-slate-200 max-w-[130px] truncate"
+                  title={`${fName}: ${cf.value}`}
+                >
+                  <span className="font-semibold shrink-0">{fName}:</span>
+                  <span className="truncate">{cf.value}</span>
+                </span>
+              );
+            })}
+          </div>
         )}
 
         {/* Card Footer Badges */}

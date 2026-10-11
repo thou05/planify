@@ -22,6 +22,7 @@ import { ImportExportModule } from './modules/import-export/import-export.module
 
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { SearchModule } from './modules/search/search.module';
+import { CustomFieldsModule } from './modules/custom-fields/custom-fields.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { SearchModule } from './modules/search/search.module';
     CardsModule,
     ChecklistsModule,
     LabelsModule,
+    CustomFieldsModule,
     CommentsModule,
     AttachmentsModule,
     ActivitiesModule,

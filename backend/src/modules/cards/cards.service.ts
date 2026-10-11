@@ -176,6 +176,18 @@ export class CardsService {
           file_name,
           file_url,
           file_size
+        ),
+        custom_field_values (
+          id,
+          card_id,
+          field_id,
+          value,
+          field:custom_fields (
+            id,
+            board_id,
+            name,
+            field_type
+          )
         )
       `)
       .eq('id', cardId)
@@ -220,6 +232,18 @@ export class CardsService {
             file_name,
             file_url,
             file_size
+          ),
+          custom_field_values (
+            id,
+            card_id,
+            field_id,
+            value,
+            field:custom_fields (
+              id,
+              board_id,
+              name,
+              field_type
+            )
           )
         `)
         .eq('id', cardId)
@@ -698,6 +722,21 @@ export class CardsService {
           await this.supabase.from('checklist_items').insert(newItems);
         }
       }
+    }
+
+    // Clone custom field values
+    const { data: cfValues } = await this.supabase
+      .from('custom_field_values')
+      .select('field_id, value')
+      .eq('card_id', sourceCard.id);
+
+    if (cfValues && cfValues.length > 0) {
+      const newCfValues = cfValues.map((cf: any) => ({
+        card_id: newCard.id,
+        field_id: cf.field_id,
+        value: cf.value,
+      }));
+      await this.supabase.from('custom_field_values').insert(newCfValues);
     }
 
     if (sourceBoardId) {
