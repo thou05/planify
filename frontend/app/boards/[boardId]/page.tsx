@@ -383,6 +383,10 @@ export default function BoardDetailPage({
   const draggedListIdRef = useRef<string | null>(null);
   const [draggedSourceListId, setDraggedSourceListId] = useState<string | null>(null);
   const realtimeChannelRef = useRef<any>(null);
+  const userRef = useRef(user);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
   const [activeUserIds, setActiveUserIds] = useState<Set<string>>(new Set());
   const [activeUsersList, setActiveUsersList] = useState<Array<{ id: string; name: string; avatar?: string | null }>>([]);
 
@@ -698,15 +702,18 @@ export default function BoardDetailPage({
     fetchBoardButtons();
   }, [boardId]);
 
-  // Realtime Supabase Broadcast Subscription (Tối ưu hóa độ trễ <50ms với Direct State Patching)
+  // Realtime Supabase Broadcast & Presence Subscription (Kênh kết nối WebSocket ổn định)
   useEffect(() => {
     if (!boardId) return;
+
+    let isSubscribed = true;
+    let reconnectTimeout: any = null;
 
     const channel = supabase.channel(`board:${boardId}`, {
       config: {
         broadcast: { self: false },
         presence: {
-          key: user?.id || 'guest',
+          key: userRef.current?.id || 'guest',
         },
       },
     });
@@ -735,19 +742,44 @@ export default function BoardDetailPage({
         }
       });
 
-      if (user?.id) {
-        onlineIds.add(user.id);
-        if (!onlineUsers.some((u) => u.id === user.id)) {
+      const currentU = userRef.current;
+      if (currentU?.id) {
+        onlineIds.add(currentU.id);
+        if (!onlineUsers.some((u) => u.id === currentU.id)) {
           onlineUsers.push({
-            id: user.id,
-            name: user.name || 'Tôi',
-            avatar: user.avatar,
+            id: currentU.id,
+            name: currentU.name || 'Tôi',
+            avatar: currentU.avatar,
           });
         }
       }
 
       setActiveUserIds(onlineIds);
       setActiveUsersList(onlineUsers);
+    };
+
+    const trackCurrentPresence = async () => {
+      const currentU = userRef.current;
+      if (!currentU?.id || !channel) return;
+      try {
+        await channel.track({
+          user_id: currentU.id,
+          name: currentU.name || currentU.email || 'Người dùng',
+          avatar: currentU.avatar || null,
+          online_at: new Date().toISOString(),
+        });
+        channel.send({
+          type: 'broadcast',
+          event: 'USER_PRESENCE_JOIN',
+          payload: {
+            user_id: currentU.id,
+            name: currentU.name,
+            avatar: currentU.avatar,
+          },
+        });
+      } catch (err) {
+        console.warn('[Planify Realtime] Lỗi track presence:', err);
+      }
     };
 
     channel
@@ -767,14 +799,15 @@ export default function BoardDetailPage({
           if (prev.some((u) => u.id === payload.user_id)) return prev;
           return [...prev, { id: payload.user_id, name: payload.name, avatar: payload.avatar }];
         });
-        if (user?.id && payload.user_id !== user.id) {
+        const currentU = userRef.current;
+        if (currentU?.id && payload.user_id !== currentU.id) {
           channel.send({
             type: 'broadcast',
             event: 'USER_PRESENCE_PONG',
             payload: {
-              user_id: user.id,
-              name: user.name,
-              avatar: user.avatar,
+              user_id: currentU.id,
+              name: currentU.name,
+              avatar: currentU.avatar,
             },
           });
         }
@@ -797,7 +830,8 @@ export default function BoardDetailPage({
         setActiveUsersList((prev) => prev.filter((u) => u.id !== payload.user_id));
       })
       .on('broadcast', { event: 'CARD_MOVED' }, ({ payload }) => {
-        if (payload?.senderId && user?.id && payload.senderId === user.id) return;
+        const currentU = userRef.current;
+        if (payload?.senderId && currentU?.id && payload.senderId === currentU.id) return;
         if (!payload?.cardId) return;
         setBoard((prev: any) =>
           applyCardMove(
@@ -810,7 +844,8 @@ export default function BoardDetailPage({
         );
       })
       .on('broadcast', { event: 'CARD_DELETED' }, ({ payload }) => {
-        if (payload?.senderId && user?.id && payload.senderId === user.id) return;
+        const currentU = userRef.current;
+        if (payload?.senderId && currentU?.id && payload.senderId === currentU.id) return;
         if (!payload?.cardId) return;
         setBoard((prev: any) => {
           if (!prev?.lists) return prev;
@@ -824,7 +859,8 @@ export default function BoardDetailPage({
         });
       })
       .on('broadcast', { event: 'CARD_CREATED' }, ({ payload }) => {
-        if (payload?.senderId && user?.id && payload.senderId === user.id) return;
+        const currentU = userRef.current;
+        if (payload?.senderId && currentU?.id && payload.senderId === currentU.id) return;
         if (!payload?.card) {
           fetchBoard(true);
           return;
@@ -849,7 +885,8 @@ export default function BoardDetailPage({
         });
       })
       .on('broadcast', { event: 'CARD_UPDATED' }, ({ payload }) => {
-        if (payload?.senderId && user?.id && payload.senderId === user.id) return;
+        const currentU = userRef.current;
+        if (payload?.senderId && currentU?.id && payload.senderId === currentU.id) return;
         if (payload?.cardId) {
           setRealtimeUpdatedCardId({ id: payload.cardId, timestamp: Date.now() });
           setBoard((prev: any) => {
@@ -870,7 +907,8 @@ export default function BoardDetailPage({
         }
       })
       .on('broadcast', { event: 'LIST_CREATED' }, ({ payload }) => {
-        if (payload?.senderId && user?.id && payload.senderId === user.id) return;
+        const currentU = userRef.current;
+        if (payload?.senderId && currentU?.id && payload.senderId === currentU.id) return;
         if (!payload?.list) {
           fetchBoard(true);
           return;
@@ -886,7 +924,8 @@ export default function BoardDetailPage({
         });
       })
       .on('broadcast', { event: 'LIST_UPDATED' }, ({ payload }) => {
-        if (payload?.senderId && user?.id && payload.senderId === user.id) return;
+        const currentU = userRef.current;
+        if (payload?.senderId && currentU?.id && payload.senderId === currentU.id) return;
         if (!payload?.list) {
           fetchBoard(true);
           return;
@@ -902,7 +941,8 @@ export default function BoardDetailPage({
         });
       })
       .on('broadcast', { event: 'LIST_DELETED' }, ({ payload }) => {
-        if (payload?.senderId && user?.id && payload.senderId === user.id) return;
+        const currentU = userRef.current;
+        if (payload?.senderId && currentU?.id && payload.senderId === currentU.id) return;
         if (!payload?.listId) return;
         setBoard((prev: any) => {
           if (!prev?.lists) return prev;
@@ -913,7 +953,8 @@ export default function BoardDetailPage({
         });
       })
       .on('broadcast', { event: 'LISTS_REORDERED' }, ({ payload }) => {
-        if (payload?.senderId && user?.id && payload.senderId === user.id) return;
+        const currentU = userRef.current;
+        if (payload?.senderId && currentU?.id && payload.senderId === currentU.id) return;
         if (!payload?.listIds) {
           fetchBoard(true);
           return;
@@ -935,36 +976,27 @@ export default function BoardDetailPage({
       .on('broadcast', { event: 'AUTOMATION_UPDATED' }, () => fetchBoardButtons())
       .on('broadcast', { event: 'AUTOMATION_DELETED' }, () => fetchBoardButtons())
       .subscribe(async (status) => {
+        if (!isSubscribed) return;
+        console.log(`[Planify Realtime] Kênh board:${boardId} trạng thái:`, status);
         if (status === 'SUBSCRIBED') {
-          if (user?.id) {
-            try {
-              await channel.track({
-                user_id: user.id,
-                name: user.name || user.email || 'Người dùng',
-                avatar: user.avatar || null,
-                online_at: new Date().toISOString(),
-              });
-            } catch {}
-
-            channel.send({
-              type: 'broadcast',
-              event: 'USER_PRESENCE_JOIN',
-              payload: {
-                user_id: user.id,
-                name: user.name,
-                avatar: user.avatar,
-              },
-            });
-          }
+          await trackCurrentPresence();
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn(`[Planify Realtime] Kết nối gặp sự cố (${status}), tự động thử lại sau 3s...`);
+          reconnectTimeout = setTimeout(() => {
+            if (isSubscribed && realtimeChannelRef.current === channel) {
+              channel.subscribe();
+            }
+          }, 3000);
         }
       });
 
     const handleBeforeUnload = () => {
-      if (user?.id && channel) {
+      const currentU = userRef.current;
+      if (currentU?.id && channel) {
         channel.send({
           type: 'broadcast',
           event: 'USER_PRESENCE_LEAVE',
-          payload: { user_id: user.id },
+          payload: { user_id: currentU.id },
         });
         try {
           channel.untrack();
@@ -972,39 +1004,81 @@ export default function BoardDetailPage({
       }
     };
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isSubscribed) {
+        trackCurrentPresence();
+      }
+    };
+
     window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('online', handleVisibilityChange);
 
     const heartbeatInterval = setInterval(() => {
-      if (user?.id && channel) {
+      const currentU = userRef.current;
+      if (currentU?.id && channel) {
         channel.send({
           type: 'broadcast',
           event: 'USER_PRESENCE_PONG',
           payload: {
-            user_id: user.id,
-            name: user.name,
-            avatar: user.avatar,
+            user_id: currentU.id,
+            name: currentU.name,
+            avatar: currentU.avatar,
           },
         });
       }
     }, 15000);
 
     return () => {
+      isSubscribed = false;
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('online', handleVisibilityChange);
       clearInterval(heartbeatInterval);
-      if (user?.id) {
+
+      const currentU = userRef.current;
+      if (currentU?.id) {
         channel.send({
           type: 'broadcast',
           event: 'USER_PRESENCE_LEAVE',
-          payload: { user_id: user.id },
+          payload: { user_id: currentU.id },
         });
         try {
           channel.untrack();
         } catch {}
       }
       supabase.removeChannel(channel);
-      realtimeChannelRef.current = null;
+      if (realtimeChannelRef.current === channel) {
+        realtimeChannelRef.current = null;
+      }
     };
-  }, [boardId, user?.id, isBoardActivityOpen]);
+  }, [boardId]);
+
+  // Tự động kích hoạt track presence ngay khi dữ liệu user sẵn sàng (khi đăng nhập xong hoặc token verify xong)
+  useEffect(() => {
+    if (user?.id && realtimeChannelRef.current) {
+      realtimeChannelRef.current
+        .track({
+          user_id: user.id,
+          name: user.name || user.email || 'Người dùng',
+          avatar: user.avatar || null,
+          online_at: new Date().toISOString(),
+        })
+        .then(() => {
+          realtimeChannelRef.current?.send({
+            type: 'broadcast',
+            event: 'USER_PRESENCE_JOIN',
+            payload: {
+              user_id: user.id,
+              name: user.name,
+              avatar: user.avatar,
+            },
+          });
+        })
+        .catch(() => {});
+    }
+  }, [user?.id, user?.name, user?.avatar]);
 
   // Deep linking: check URL query for ?cardId=...
   useEffect(() => {
