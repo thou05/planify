@@ -30,4 +30,14 @@ function getValidSupabaseAnonKey(): string {
 const supabaseUrl = getValidSupabaseUrl();
 const supabaseAnonKey = getValidSupabaseAnonKey();
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 20,
+    },
+  },
+});
