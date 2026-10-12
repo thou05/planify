@@ -4689,8 +4689,14 @@ export default function CardDetailModal({
 
         {/* AI TASK BREAKDOWN MODAL */}
         {isAiBreakdownOpen && (
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-60 animate-in fade-in duration-150">
-            <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
+          <div
+            className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-60 animate-in fade-in duration-150"
+            onClick={() => setIsAiBreakdownOpen(false)}
+          >
+            <div
+              className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]"
+              onClick={(e) => e.stopPropagation()}
+            >
               {/* Header */}
               <div className="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between bg-white text-slate-900">
                 <div className="flex items-center gap-2.5">
@@ -4948,8 +4954,14 @@ export default function CardDetailModal({
 
         {/* MEMBERS ASSIGNMENT POPOVER / MODAL */}
         {isMembersModalOpen && (
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-100">
-            <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[80vh]">
+          <div
+            className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-60 animate-in fade-in duration-150"
+            onClick={() => setIsMembersModalOpen(false)}
+          >
+            <div
+              className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[80vh]"
+              onClick={(e) => e.stopPropagation()}
+            >
               {/* Header */}
               <div className="p-4 border-b border-slate-200 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
@@ -5097,8 +5109,14 @@ export default function CardDetailModal({
 
         {/* DATES CONFIGURATION POPOVER / MODAL */}
         {isDatesModalOpen && (
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-100">
-            <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150">
+          <div
+            className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-60 animate-in fade-in duration-150"
+            onClick={() => setIsDatesModalOpen(false)}
+          >
+            <div
+              className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150"
+              onClick={(e) => e.stopPropagation()}
+            >
               {/* Header */}
               <div className="p-4 border-b border-slate-200 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
@@ -5221,10 +5239,19 @@ export default function CardDetailModal({
         )}
 
         {/* LABELS POPOVER / MODAL */}
-        {/* LABELS POPOVER / MODAL */}
         {isLabelsModalOpen && (
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-100">
-            <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]">
+          <div
+            className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-60 animate-in fade-in duration-150"
+            onClick={() => {
+              setIsLabelsModalOpen(false);
+              setIsCreatingLabel(false);
+              setEditingLabel(null);
+            }}
+          >
+            <div
+              className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[85vh]"
+              onClick={(e) => e.stopPropagation()}
+            >
               {/* Header */}
               <div className="p-4 border-b border-slate-200 flex items-center justify-between">
                 {isCreatingLabel || editingLabel ? (
@@ -5436,8 +5463,14 @@ export default function CardDetailModal({
         )}
         {/* CHECKLIST ITEM DEADLINE POPOVER / MODAL */}
         {activeItemDate && (
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-2xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-100">
-            <div className="bg-white rounded-lg shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150">
+          <div
+            className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-60 animate-in fade-in duration-150"
+            onClick={() => setActiveItemDate(null)}
+          >
+            <div
+              className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150"
+              onClick={(e) => e.stopPropagation()}
+            >
               {/* Header */}
               <div className="p-4 border-b border-slate-100 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
@@ -5553,8 +5586,14 @@ export default function CardDetailModal({
 
         {/* CHECKLIST ITEM MEMBER ASSIGNMENT POPOVER / MODAL */}
         {activeItemMember && (
-          <div className="absolute inset-0 bg-black/30 backdrop-blur-2xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-100">
-            <div className="bg-white rounded-lg shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[80vh]">
+          <div
+            className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-60 animate-in fade-in duration-150"
+            onClick={() => setActiveItemMember(null)}
+          >
+            <div
+              className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[80vh]"
+              onClick={(e) => e.stopPropagation()}
+            >
               {/* Header */}
               <div className="p-4 border-b border-slate-100 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
@@ -5710,8 +5749,14 @@ export default function CardDetailModal({
 
         {/* ATTACHMENT MODAL / POPOVER */}
         {isAttachmentsModalOpen && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-60 animate-in fade-in duration-100">
-            <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]">
+          <div
+            className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-60 animate-in fade-in duration-100"
+            onClick={() => setIsAttachmentsModalOpen(false)}
+          >
+            <div
+              className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]"
+              onClick={(e) => e.stopPropagation()}
+            >
               {/* Header */}
               <div className="p-4 border-b border-slate-200 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
@@ -5947,7 +5992,7 @@ export default function CardDetailModal({
 
         {/* CUSTOM CONFIRMATION POPUP MODAL */}
         {confirmDialog.isOpen && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-70 animate-in fade-in duration-150">
+          <div className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-70 animate-in fade-in duration-150">
             <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-sm overflow-hidden p-5 space-y-4 animate-in zoom-in-95 duration-150">
               <div className="flex items-start gap-3.5">
                 <div className="w-9 h-9 rounded-md bg-red-100 text-red-600 border border-red-200 flex items-center justify-center shrink-0">
@@ -5990,8 +6035,14 @@ export default function CardDetailModal({
 
         {/* ADD CARD RELATION MODAL POPUP */}
         {isRelationsModalOpen && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-70 animate-in fade-in duration-150">
-            <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-150">
+          <div
+            className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-70 animate-in fade-in duration-150"
+            onClick={() => setIsRelationsModalOpen(false)}
+          >
+            <div
+              className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-xl overflow-hidden flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-150"
+              onClick={(e) => e.stopPropagation()}
+            >
               {/* Header */}
               <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-white">
                 <div className="flex items-center gap-2.5">
