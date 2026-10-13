@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsInt, IsOptional, IsString, MaxLength, Min, IsISO8601, IsUUID } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString, MaxLength, Min, IsISO8601, Matches } from 'class-validator';
 
 export class UpdateChecklistItemDto {
   @ApiPropertyOptional({ example: 'Chuẩn bị tài liệu kỹ thuật (đã sửa)', description: 'Nội dung mục công việc con' })
@@ -26,11 +26,13 @@ export class UpdateChecklistItemDto {
 
   @ApiPropertyOptional({ example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', description: 'ID thành viên được phân công' })
   @IsOptional()
-  @IsUUID('4', { message: 'ID thành viên không hợp lệ' })
+  @IsString()
+  @Matches(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/, { message: 'ID thành viên không hợp lệ' })
   member_id?: string | null;
 
   @ApiPropertyOptional({ example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', description: 'ID người dùng được phân công trực tiếp' })
   @IsOptional()
-  @IsUUID('4', { message: 'ID người dùng không hợp lệ' })
+  @IsString()
+  @Matches(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/, { message: 'ID người dùng không hợp lệ' })
   user_id?: string | null;
 }

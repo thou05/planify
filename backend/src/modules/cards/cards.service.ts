@@ -865,16 +865,12 @@ export class CardsService {
       targetUserName = bMember.user?.name || 'thành viên';
       effectiveBoardMemberId = bMember.id;
     } else {
-      // 2. Không thuộc board_members: Cho phép gán thành viên Workspace trực tiếp (bảng WORKSPACE hoặc PUBLIC)
+      // 2. Không thuộc board_members: Cho phép gán thành viên Workspace trực tiếp (bảng WORKSPACE hoặc PUBLIC, hoặc Workspace Owner)
       const { data: bInfo } = await this.supabase
         .from('boards')
-        .select('id, workspace_id, visibility')
+        .select('id, workspace_id, visibility, workspace:workspaces (owner_id)')
         .eq('id', boardId)
         .maybeSingle();
-
-      if (bInfo && bInfo.visibility === 'PRIVATE') {
-        throw new BadRequestException('Bảng này là bảng Riêng tư. Chỉ có thể phân công thành viên đã tham gia bảng.');
-      }
 
       if (!bInfo?.workspace_id) {
         throw new BadRequestException('Bảng này không thuộc Không gian làm việc nào.');
@@ -889,8 +885,15 @@ export class CardsService {
         .maybeSingle();
 
       let wsUser: any = Array.isArray(wsMember?.user) ? wsMember.user[0] : wsMember?.user;
+      let isWsOwner = false;
+
+      // Kiểm tra xem có phải là workspace owner không
+      const wsOwnerId = (bInfo.workspace as any)?.owner_id;
+      if (wsOwnerId && wsOwnerId === memberIdOrUserId) {
+        isWsOwner = true;
+      }
+
       if (!wsUser) {
-        // Kiểm tra xem có phải là workspace owner không
         const { data: wsOwner } = await this.supabase
           .from('workspaces')
           .select('owner:users (id, name, email, avatar)')
@@ -898,10 +901,15 @@ export class CardsService {
           .eq('owner_id', memberIdOrUserId)
           .maybeSingle();
         wsUser = Array.isArray((wsOwner as any)?.owner) ? (wsOwner as any).owner[0] : (wsOwner as any)?.owner;
+        if (wsUser) isWsOwner = true;
       }
 
       if (!wsUser) {
         throw new BadRequestException('Người dùng này không thuộc Không gian làm việc.');
+      }
+
+      if (bInfo && bInfo.visibility === 'PRIVATE' && !isWsOwner) {
+        throw new BadRequestException('Bảng này là bảng Riêng tư. Chỉ có thể phân công thành viên đã tham gia bảng.');
       }
 
       targetUserId = wsUser.id;

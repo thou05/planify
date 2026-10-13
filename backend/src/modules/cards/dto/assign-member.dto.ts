@@ -1,5 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsUUID } from 'class-validator';
+import { IsOptional, IsString, Matches } from 'class-validator';
+
+const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
 export class AssignMemberDto {
   @ApiPropertyOptional({
@@ -7,14 +9,16 @@ export class AssignMemberDto {
     description: 'ID thành viên Board hoặc ID người dùng',
   })
   @IsOptional()
-  @IsUUID('4', { message: 'board_member_id phải là định dạng UUID hợp lệ' })
+  @IsString()
+  @Matches(UUID_REGEX, { message: 'board_member_id phải là định dạng UUID hợp lệ' })
   board_member_id?: string;
 
   @ApiPropertyOptional({
-    example: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+    example: '11111111-1111-1111-1111-111111111111',
     description: 'ID người dùng (user_id)',
   })
   @IsOptional()
-  @IsUUID('4', { message: 'user_id phải là định dạng UUID hợp lệ' })
+  @IsString()
+  @Matches(UUID_REGEX, { message: 'user_id phải là định dạng UUID hợp lệ' })
   user_id?: string;
 }

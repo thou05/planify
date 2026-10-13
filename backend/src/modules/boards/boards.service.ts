@@ -204,7 +204,16 @@ export class BoardsService {
             checklists (
               id,
               title,
-              items:checklist_items (id, content, is_completed)
+              items:checklist_items (
+                id,
+                checklist_id,
+                content,
+                is_completed,
+                position,
+                due_date,
+                user_id,
+                user:users (id, name, email, avatar)
+              )
             ),
             card_labels (
               label:labels (id, name, color)
