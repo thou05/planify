@@ -212,19 +212,35 @@ export class ChecklistsService {
       return bmById.user_id;
     }
 
-    // 2. Tìm board và kiểm tra visibility
+    // 2. Tìm board và workspace_id
     const { data: board } = await this.supabase
       .from('boards')
-      .select('visibility, workspace_id')
+      .select('visibility, workspace_id, workspace:workspaces (owner_id)')
       .eq('id', boardId)
       .maybeSingle();
 
-    if (board && board.visibility === 'PRIVATE') {
-      throw new BadRequestException('Bảng này là bảng Riêng tư. Chỉ có thể phân công thành viên đã tham gia bảng.');
-    }
-
     if (!board?.workspace_id) {
       throw new BadRequestException('Bảng này không thuộc Không gian làm việc nào.');
+    }
+
+    // 2.1 Workspace Owner luôn có toàn quyền và được phép phân công (kể cả bảng PRIVATE hay chưa có trong board_members)
+    const wsOwnerId = (board.workspace as any)?.owner_id;
+    if (wsOwnerId && wsOwnerId === memberIdOrUserId) {
+      return wsOwnerId;
+    }
+
+    const { data: ws } = await this.supabase
+      .from('workspaces')
+      .select('owner_id')
+      .eq('id', board.workspace_id)
+      .maybeSingle();
+
+    if (ws?.owner_id === memberIdOrUserId) {
+      return ws.owner_id;
+    }
+
+    if (board && board.visibility === 'PRIVATE') {
+      throw new BadRequestException('Bảng này là bảng Riêng tư. Chỉ có thể phân công thành viên đã tham gia bảng.');
     }
 
     // 3. Kiểm tra xem người dùng có thuộc workspace không
@@ -237,17 +253,6 @@ export class ChecklistsService {
 
     if (wsMember) {
       return wsMember.user_id;
-    }
-
-    // Kiểm tra xem có phải Workspace Owner không
-    const { data: ws } = await this.supabase
-      .from('workspaces')
-      .select('owner_id')
-      .eq('id', board.workspace_id)
-      .maybeSingle();
-
-    if (ws?.owner_id === memberIdOrUserId) {
-      return ws.owner_id;
     }
 
     throw new BadRequestException('Người dùng này không thuộc Không gian làm việc.');

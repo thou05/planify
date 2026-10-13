@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsOptional, IsUUID } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
 
 export class AddBoardMemberDto {
   @ApiProperty({
@@ -7,7 +7,8 @@ export class AddBoardMemberDto {
     example: '11111111-1111-1111-1111-111111111111',
   })
   @IsNotEmpty({ message: 'userId không được để trống' })
-  @IsUUID('4', { message: 'userId phải là UUID hợp lệ' })
+  @IsString()
+  @Matches(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/, { message: 'userId phải là UUID hợp lệ' })
   userId: string;
 
   @ApiPropertyOptional({

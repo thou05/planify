@@ -2192,7 +2192,7 @@ export default function BoardDetailPage({
                     boardLists={board.lists}
                     canEdit={canEditBoard}
                     onOpenCardDetail={handleOpenCardDetail}
-                    onRefreshBoard={fetchBoard}
+                    onRefreshBoard={() => fetchBoard(true)}
                     onRenameList={handleRenameList}
                     onDeleteList={handleDeleteList}
                     onCopyListRequest={(l) => setCopyingList(l)}
@@ -2273,7 +2273,7 @@ export default function BoardDetailPage({
           <BoardTableView
             board={effectiveBoard || board}
             onOpenCardDetail={handleOpenCardDetail}
-            onRefreshBoard={fetchBoard}
+            onRefreshBoard={() => fetchBoard(true)}
             onDeleteCard={handleDeleteCard}
           />
         )}
@@ -2283,7 +2283,7 @@ export default function BoardDetailPage({
           <BoardCalendarView
             board={effectiveBoard || board}
             onOpenCardDetail={handleOpenCardDetail}
-            onRefreshBoard={fetchBoard}
+            onRefreshBoard={() => fetchBoard(true)}
           />
         )}
 
@@ -2292,7 +2292,7 @@ export default function BoardDetailPage({
           <BoardScheduleView
             board={effectiveBoard || board}
             onOpenCardDetail={handleOpenCardDetail}
-            onRefreshBoard={fetchBoard}
+            onRefreshBoard={() => fetchBoard(true)}
           />
         )}
 
@@ -2473,7 +2473,7 @@ export default function BoardDetailPage({
         realtimeUpdatedCardId={realtimeUpdatedCardId}
         isOpen={isCardDetailOpen}
         onClose={handleCloseCardDetail}
-        onCardUpdated={() => fetchBoard()}
+        onCardUpdated={() => fetchBoard(true)}
         onMoveRequest={(c) => setMovingCard(c)}
         onCopyRequest={(c) => setCopyingCard(c)}
         onSelectCard={(cId) => setSelectedCardId(cId)}

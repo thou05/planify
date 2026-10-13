@@ -352,6 +352,8 @@ export default function CardDetailModal({
   const [workspaceMembersList, setWorkspaceMembersList] = useState<any[]>(externalWsMembers || []);
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
+  const lastLoadedBoardIdRef = useRef<string | null>(null);
+  const lastLoadedWsIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (externalWsMembers && externalWsMembers.length > 0) {
@@ -364,9 +366,9 @@ export default function CardDetailModal({
     boardVisibilityProp || card?.list?.board?.visibility || 'WORKSPACE';
   const isPrivateBoard = boardVisibility === 'PRIVATE';
 
-  // Thành viên có thể phân công (CHỈ các thành viên trong Bảng - board_members)
+  // Thành viên có thể phân công (CHỈ các thành viên trong Bảng - board_members + Workspace Owner)
   const assignableMembers = React.useMemo(() => {
-    return (boardMembers || []).map((m) => {
+    const list = (boardMembers || []).map((m) => {
       const uId = m.user?.id || m.user_id;
       return {
         id: m.id || uId,
@@ -377,7 +379,25 @@ export default function CardDetailModal({
         isBoardMember: true,
       };
     });
-  }, [boardMembers]);
+
+    // Nếu Workspace Owner chưa có trong board_members, vẫn cho phép nhận phân công vì có toàn quyền
+    const wsOwner = (workspaceMembersList || []).find((wm) => wm.role === 'OWNER');
+    if (wsOwner) {
+      const ownerId = wsOwner.user?.id || wsOwner.user_id;
+      if (ownerId && !list.some((bm) => bm.user_id === ownerId || bm.user?.id === ownerId)) {
+        list.unshift({
+          id: wsOwner.id || ownerId,
+          board_member_id: wsOwner.id,
+          user_id: ownerId,
+          user: wsOwner.user || { id: ownerId, name: 'Chủ sở hữu' },
+          role: 'ADMIN',
+          isBoardMember: true,
+        });
+      }
+    }
+
+    return list;
+  }, [boardMembers, workspaceMembersList]);
 
   // Thành viên gợi ý từ Workspace (chưa tham gia Bảng này)
   // Chỉ hiển thị cho bảng WORKSPACE hoặc PUBLIC, tuyệt đối KHÔNG hiển thị cho PRIVATE
@@ -1099,7 +1119,8 @@ export default function CardDetailModal({
         setAttachments(c.attachments || []);
 
         const effectiveBoardId = c.list?.board_id || boardId;
-        if (effectiveBoardId) {
+        if (effectiveBoardId && lastLoadedBoardIdRef.current !== effectiveBoardId) {
+          lastLoadedBoardIdRef.current = effectiveBoardId;
           fetchBoardMembers(effectiveBoardId);
           fetchBoardLabels(effectiveBoardId);
           fetchBoardCustomFields(effectiveBoardId);
@@ -1107,7 +1128,8 @@ export default function CardDetailModal({
         }
 
         const effectiveWsId = externalWorkspaceId || c.list?.board?.workspace_id;
-        if (effectiveWsId) {
+        if (effectiveWsId && lastLoadedWsIdRef.current !== effectiveWsId) {
+          lastLoadedWsIdRef.current = effectiveWsId;
           fetchWorkspaceMembers(effectiveWsId);
         }
       }
@@ -1164,6 +1186,8 @@ export default function CardDetailModal({
       setIsMentionOpen(false);
       setIsEditMentionOpen(false);
       setIsRelationsModalOpen(false);
+      lastLoadedBoardIdRef.current = null;
+      lastLoadedWsIdRef.current = null;
     }
   }, [isOpen, cardId, activeCardId]);
 
@@ -1287,7 +1311,10 @@ export default function CardDetailModal({
 
   // Toggle Assign Member
   const handleToggleAssignee = async (memberId: string) => {
-    const bMember = (boardMembers || []).find(
+    const currentCardId = activeCardId || cardId || card?.id;
+    if (!currentCardId) return;
+
+    const bMember = (assignableMembers || []).find(
       (m) => m.id === memberId || m.user_id === memberId || m.user?.id === memberId,
     );
 
@@ -1373,17 +1400,25 @@ export default function CardDetailModal({
     }
 
     try {
-      const res = await apiClient<any>(`/cards/${cardId}/assignees/toggle`, {
+      const res = await apiClient<any>(`/cards/${currentCardId}/assignees/toggle`, {
         method: 'POST',
         data: { user_id: targetUserId, board_member_id: effectiveMemberId || targetUserId },
       });
       if (res.success && res.data) {
-        fetchCardDetails(cardId!);
+        if (res.data.assigned && res.data.assignee) {
+          setAssignees((prev) =>
+            prev.map((a) =>
+              targetUserId && (a.user_id === targetUserId || a.user?.id === targetUserId)
+                ? { ...a, ...res.data.assignee }
+                : a,
+            ),
+          );
+        }
         onCardUpdated();
       }
     } catch (err: any) {
       alert(err.message || 'Không thể thay đổi thành viên gán');
-      fetchCardDetails(cardId!);
+      fetchCardDetails(currentCardId, true);
     }
   };
 
@@ -1434,7 +1469,7 @@ export default function CardDetailModal({
       }
     } catch (err: any) {
       alert(err.message || 'Không thể thay đổi nhãn thẻ');
-      fetchCardDetails(cardId!);
+      fetchCardDetails(cardId!, true);
     }
   };
 
@@ -1986,7 +2021,7 @@ export default function CardDetailModal({
       onCardUpdated();
     } catch (err: any) {
       alert(err.message || 'Không thể xóa checklist');
-      fetchCardDetails(cardId);
+      fetchCardDetails(cardId, true);
     }
   };
 
@@ -2102,7 +2137,7 @@ export default function CardDetailModal({
       onCardUpdated();
     } catch (err: any) {
       alert(err.message || 'Không thể xóa mục công việc');
-      fetchCardDetails(cardId);
+      fetchCardDetails(cardId, true);
     }
   };
 
@@ -2136,7 +2171,7 @@ export default function CardDetailModal({
       onCardUpdated();
     } catch (err: any) {
       alert(err.message || 'Không thể lưu thời hạn mục');
-      fetchCardDetails(cardId!);
+      fetchCardDetails(cardId!, true);
     }
   };
 
@@ -2147,8 +2182,10 @@ export default function CardDetailModal({
   ) => {
     let effectiveMemberId = boardMemberId;
     let targetUser: any = null;
+    const allMembersPool = [...assignableMembers, ...suggestedWorkspaceMembers];
+
     if (boardMemberId) {
-      const targetMember = (assignableMembers || []).find(
+      const targetMember = allMembersPool.find(
         (m) => m.id === boardMemberId || m.user_id === boardMemberId || m.user?.id === boardMemberId,
       );
       if (!targetMember) {
@@ -2169,7 +2206,7 @@ export default function CardDetailModal({
     }
 
     const memberObj = effectiveMemberId
-      ? assignableMembers.find(
+      ? allMembersPool.find(
           (m) => m.id === effectiveMemberId || m.user_id === effectiveMemberId || m.user?.id === effectiveMemberId,
         ) || null
       : null;
@@ -2196,6 +2233,8 @@ export default function CardDetailModal({
     );
     setActiveItemMember(null);
 
+    const currentCardId = activeCardId || cardId || card?.id;
+
     try {
       await apiClient(`/checklist-items/${itemId}`, {
         method: 'PATCH',
@@ -2204,7 +2243,7 @@ export default function CardDetailModal({
       onCardUpdated();
     } catch (err: any) {
       alert(err.message || 'Không thể phân công thành viên cho mục');
-      fetchCardDetails(cardId!);
+      if (currentCardId) fetchCardDetails(currentCardId, true);
     }
   };
 
@@ -2226,6 +2265,15 @@ export default function CardDetailModal({
   });
 
   const filteredItemBoardMembers = assignableMembers.filter((m) => {
+    const q = itemMemberSearchQuery.toLowerCase().trim();
+    if (!q) return true;
+    const name = m.user?.name?.toLowerCase() || '';
+    const email = m.user?.email?.toLowerCase() || '';
+    return name.includes(q) || email.includes(q);
+  });
+
+  const filteredItemSuggestedMembers = suggestedWorkspaceMembers.filter((m) => {
+    if (isPrivateBoard) return false;
     const q = itemMemberSearchQuery.toLowerCase().trim();
     if (!q) return true;
     const name = m.user?.name?.toLowerCase() || '';
@@ -5310,6 +5358,7 @@ export default function CardDetailModal({
                       const uId = m.user?.id || m.user_id;
                       const isAssigned = assignees.some(
                         (a) =>
+                          (uId && (a.user_id === uId || a.user?.id === uId)) ||
                           a.board_member_id === m.id ||
                           a.board_member?.id === m.id ||
                           a.board_member?.user_id === uId ||
@@ -6026,115 +6075,216 @@ export default function CardDetailModal({
               </div>
 
               {/* Member list */}
-              <div className="p-2 overflow-y-auto space-y-1 flex-1">
-                {filteredItemBoardMembers.length === 0 ? (
-                  <div className="p-6 text-center text-xs text-slate-400">
-                    Không tìm thấy thành viên phù hợp
+              <div className="p-2 overflow-y-auto space-y-3 flex-1">
+                {/* 1. Thành viên Bảng */}
+                <div className="space-y-1">
+                  <div className="px-2 py-1 flex items-center justify-between text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                    <span>Thành viên trong bảng ({filteredItemBoardMembers.length})</span>
                   </div>
-                ) : (
-                  filteredItemBoardMembers.map((m) => {
-                    const uName = m.user?.name || 'Thành viên';
-                    const uEmail = m.user?.email || '';
-                    const uAvatar = m.user?.avatar;
-                    const uId = m.user?.id || m.user_id;
-                    const isAssigned =
-                      activeItemMember.item.user_id === uId ||
-                      activeItemMember.item.member_id === m.id ||
-                      activeItemMember.item.member_id === uId ||
-                      activeItemMember.item.user?.id === uId ||
-                      activeItemMember.item.member?.id === m.id ||
-                      activeItemMember.item.member?.user?.id === uId;
-                    const isViewer = m.role === 'VIEWER';
-                    const roleName =
-                      m.role === 'ADMIN' || m.role === 'OWNER'
-                        ? 'Quản trị'
-                        : isViewer
-                          ? 'Người xem'
-                          : 'Chỉnh sửa';
 
-                    return (
-                      <div
-                        key={m.id || uId}
-                        onClick={() => {
-                          if (isViewer) return;
-                          handleAssignItemMember(
-                            activeItemMember.checklistId,
-                            activeItemMember.item.id,
-                            isAssigned ? null : (m.id || uId),
-                          );
-                        }}
-                        className={`w-full p-2.5 rounded-md flex items-center justify-between gap-3 text-left transition-colors ${
-                          isViewer
-                            ? 'opacity-60 bg-slate-50/70 cursor-not-allowed select-none'
-                            : 'hover:bg-slate-50 cursor-pointer group'
-                        }`}
-                        title={isViewer ? 'Người xem (Viewer) không thể nhận nhiệm vụ' : undefined}
-                      >
-                        <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                          <div className="relative shrink-0">
-                            {uAvatar ? (
-                              <img
-                                src={uAvatar}
-                                alt={uName}
-                                className="w-7 h-7 rounded-full object-cover shrink-0"
-                              />
-                            ) : (
-                              <div className="w-7 h-7 rounded-full bg-[#f28d8d] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
-                                {uName.charAt(0).toUpperCase()}
-                              </div>
-                            )}
-                            {(activeUserIds?.has(uId) || activeUserIds?.has(m.user_id) || activeUserIds?.has(m.id)) && (
-                              <span
-                                className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white z-10"
-                                title="Đang online trên bảng"
-                              >
-                                <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="text-xs font-bold text-slate-900 truncate">
-                                {uName}
-                              </span>
+                  {filteredItemBoardMembers.length === 0 ? (
+                    <div className="p-4 text-center text-xs text-slate-400 bg-slate-50/70 rounded-md">
+                      {assignableMembers.length === 0
+                        ? 'Chưa có thành viên nào tham gia bảng này'
+                        : 'Không tìm thấy thành viên bảng phù hợp'}
+                    </div>
+                  ) : (
+                    filteredItemBoardMembers.map((m) => {
+                      const uName = m.user?.name || 'Thành viên';
+                      const uEmail = m.user?.email || '';
+                      const uAvatar = m.user?.avatar;
+                      const uId = m.user?.id || m.user_id;
+                      const isAssigned =
+                        activeItemMember.item.user_id === uId ||
+                        activeItemMember.item.member_id === m.id ||
+                        activeItemMember.item.member_id === uId ||
+                        activeItemMember.item.user?.id === uId ||
+                        activeItemMember.item.member?.id === m.id ||
+                        activeItemMember.item.member?.user?.id === uId;
+                      const isViewer = m.role === 'VIEWER';
+                      const roleName =
+                        m.role === 'ADMIN' || m.role === 'OWNER'
+                          ? 'Quản trị'
+                          : isViewer
+                            ? 'Người xem'
+                            : 'Chỉnh sửa';
+
+                      return (
+                        <div
+                          key={m.id || uId}
+                          onClick={() => {
+                            if (isViewer) return;
+                            handleAssignItemMember(
+                              activeItemMember.checklistId,
+                              activeItemMember.item.id,
+                              isAssigned ? null : (m.id || uId),
+                            );
+                          }}
+                          className={`w-full p-2.5 rounded-md flex items-center justify-between gap-3 text-left transition-colors ${
+                            isViewer
+                              ? 'opacity-60 bg-slate-50/70 cursor-not-allowed select-none'
+                              : 'hover:bg-slate-50 cursor-pointer group'
+                          }`}
+                          title={isViewer ? 'Người xem (Viewer) không thể nhận nhiệm vụ' : undefined}
+                        >
+                          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                            <div className="relative shrink-0">
+                              {uAvatar ? (
+                                <img
+                                  src={uAvatar}
+                                  alt={uName}
+                                  className="w-7 h-7 rounded-full object-cover shrink-0"
+                                />
+                              ) : (
+                                <div className="w-7 h-7 rounded-full bg-[#f28d8d] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
+                                  {uName.charAt(0).toUpperCase()}
+                                </div>
+                              )}
                               {(activeUserIds?.has(uId) || activeUserIds?.has(m.user_id) || activeUserIds?.has(m.id)) && (
-                                <span className="text-[10px] px-1.5 py-0.2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded font-semibold shrink-0 flex items-center gap-1">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                  Online
+                                <span
+                                  className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white z-10"
+                                  title="Đang online trên bảng"
+                                >
+                                  <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
                                 </span>
                               )}
-                              <span
-                                className={`text-[10px] px-1.5 py-0.2 rounded font-medium shrink-0 ${
-                                  isViewer
-                                    ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                    : 'bg-slate-100 text-slate-600'
-                                }`}
-                              >
-                                {roleName}
-                              </span>
                             </div>
-                            {isViewer ? (
-                              <div className="text-[11px] text-amber-600 font-medium">
-                                Chỉ xem • Không thể phân công
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-xs font-bold text-slate-900 truncate">
+                                  {uName}
+                                </span>
+                                {(activeUserIds?.has(uId) || activeUserIds?.has(m.user_id) || activeUserIds?.has(m.id)) && (
+                                  <span className="text-[10px] px-1.5 py-0.2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded font-semibold shrink-0 flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    Online
+                                  </span>
+                                )}
+                                <span
+                                  className={`text-[10px] px-1.5 py-0.2 rounded font-medium shrink-0 ${
+                                    isViewer
+                                      ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                      : 'bg-slate-100 text-slate-600'
+                                  }`}
+                                >
+                                  {roleName}
+                                </span>
                               </div>
-                            ) : uEmail ? (
-                              <div className="text-[11px] text-slate-400 truncate">{uEmail}</div>
-                            ) : null}
+                              {isViewer ? (
+                                <div className="text-[11px] text-amber-600 font-medium">
+                                  Chỉ xem • Không thể phân công
+                                </div>
+                              ) : uEmail ? (
+                                <div className="text-[11px] text-slate-400 truncate">{uEmail}</div>
+                              ) : null}
+                            </div>
+                          </div>
+
+                          <div
+                            className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
+                              isAssigned
+                                ? 'bg-[#f28d8d] text-white'
+                                : 'border border-slate-200 group-hover:border-slate-300'
+                            }`}
+                          >
+                            {isAssigned && !isViewer && <Check className="w-3.5 h-3.5" />}
                           </div>
                         </div>
+                      );
+                    })
+                  )}
+                </div>
 
-                        <div
-                          className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
-                            isAssigned
-                              ? 'bg-[#f28d8d] text-white'
-                              : 'border border-slate-200 group-hover:border-slate-300'
-                          }`}
-                        >
-                          {isAssigned && !isViewer && <Check className="w-3.5 h-3.5" />}
-                        </div>
+                {/* 2. Gợi ý từ Workspace (chỉ hiển thị cho bảng WORKSPACE và PUBLIC) */}
+                {!isPrivateBoard && (
+                  <div className="pt-2 border-t border-slate-100 space-y-1">
+                    <div className="px-2 py-1 flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                      <span>Gợi ý từ Workspace ({filteredItemSuggestedMembers.length})</span>
+                      <span className="text-[10px] text-slate-400 lowercase font-normal">chưa vào bảng</span>
+                    </div>
+
+                    {filteredItemSuggestedMembers.length === 0 ? (
+                      <div className="p-3 text-center text-xs text-slate-400">
+                        {suggestedWorkspaceMembers.length === 0
+                          ? 'Tất cả thành viên Workspace đã có trong bảng'
+                          : 'Không tìm thấy gợi ý phù hợp'}
                       </div>
-                    );
-                  })
+                    ) : (
+                      filteredItemSuggestedMembers.map((m) => {
+                        const uName = m.user?.name || 'Thành viên';
+                        const uEmail = m.user?.email || '';
+                        const uAvatar = m.user?.avatar;
+                        const uId = m.user?.id || m.user_id;
+                        const isAssigned =
+                          activeItemMember.item.user_id === uId ||
+                          activeItemMember.item.member_id === uId ||
+                          activeItemMember.item.user?.id === uId ||
+                          activeItemMember.item.member?.id === uId ||
+                          activeItemMember.item.member?.user?.id === uId;
+
+                        return (
+                          <div
+                            key={m.id || uId}
+                            onClick={() => {
+                              handleAssignItemMember(
+                                activeItemMember.checklistId,
+                                activeItemMember.item.id,
+                                isAssigned ? null : uId,
+                              );
+                            }}
+                            className="w-full p-2.5 rounded-md hover:bg-slate-50 flex items-center justify-between gap-3 text-left transition-colors cursor-pointer group"
+                          >
+                            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                              <div className="relative shrink-0">
+                                {uAvatar ? (
+                                  <img
+                                    src={uAvatar}
+                                    alt={uName}
+                                    className="w-7 h-7 rounded-full object-cover shrink-0"
+                                  />
+                                ) : (
+                                  <div className="w-7 h-7 rounded-full bg-slate-400 text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
+                                    {uName.charAt(0).toUpperCase()}
+                                  </div>
+                                )}
+                                {(activeUserIds?.has(uId) || activeUserIds?.has(m.user_id) || activeUserIds?.has(m.id)) && (
+                                  <span
+                                    className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white z-10"
+                                    title="Đang online trên bảng"
+                                  >
+                                    <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="text-xs font-bold text-slate-900 truncate">
+                                    {uName}
+                                  </span>
+                                  <span className="text-[10px] px-1.5 py-0.2 bg-purple-50 text-purple-700 border border-purple-200 rounded font-medium shrink-0">
+                                    Workspace
+                                  </span>
+                                </div>
+                                {uEmail && (
+                                  <div className="text-[11px] text-slate-400 truncate">{uEmail}</div>
+                                )}
+                              </div>
+                            </div>
+
+                            <div
+                              className={`w-5 h-5 rounded-md flex items-center justify-center transition-all shrink-0 ${
+                                isAssigned
+                                  ? 'bg-[#f28d8d] text-white'
+                                  : 'border border-slate-200 group-hover:border-slate-300'
+                              }`}
+                            >
+                              {isAssigned && <Check className="w-3.5 h-3.5" />}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
                 )}
               </div>
 
