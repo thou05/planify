@@ -151,7 +151,7 @@ export class CardsService {
       .from('cards')
       .select(`
         *,
-        list:lists (id, title, board_id),
+        list:lists (id, title, board_id, board:boards (id, name, visibility, workspace_id)),
         creator:users (id, name, email, avatar),
         checklists (
           id,
@@ -163,23 +163,19 @@ export class CardsService {
             is_completed,
             position,
             due_date,
-            member_id,
-            member:board_members (
-              id,
-              role,
-              user:users (id, name, email, avatar)
-            )
+            user_id,
+            user:users (id, name, email, avatar)
           )
         ),
         card_labels (
           label:labels (id, name, color)
         ),
         card_assignees (
-          board_member:board_members (
-            id,
-            role,
-            user:users (id, name, email, avatar)
-          )
+          id,
+          card_id,
+          user_id,
+          assigned_at,
+          user:users (id, name, email, avatar)
         ),
         comments (
           id,
@@ -214,7 +210,7 @@ export class CardsService {
         .from('cards')
         .select(`
           *,
-          list:lists (id, title, board_id),
+          list:lists (id, title, board_id, board:boards (id, name, visibility, workspace_id)),
           creator:users (id, name, email, avatar),
           checklists (
             id,
@@ -231,11 +227,11 @@ export class CardsService {
             label:labels (id, name, color)
           ),
           card_assignees (
-            board_member:board_members (
-              id,
-              role,
-              user:users (id, name, email, avatar)
-            )
+            id,
+            card_id,
+            user_id,
+            assigned_at,
+            user:users (id, name, email, avatar)
           ),
           comments (
             id,
@@ -347,12 +343,8 @@ export class CardsService {
             is_completed,
             position,
             due_date,
-            member_id,
-            member:board_members (
-              id,
-              role,
-              user:users (id, name, email, avatar)
-            )
+            user_id,
+            user:users (id, name, email, avatar)
           )
         ),
         card_labels (
@@ -841,7 +833,7 @@ export class CardsService {
     let bMember: any = null;
     const { data: foundById } = await this.supabase
       .from('board_members')
-      .select('id, board_id, role, user:users (id, name, email, avatar)')
+      .select('id, board_id, user_id, role, user:users (id, name, email, avatar)')
       .eq('id', memberIdOrUserId)
       .eq('board_id', boardId)
       .maybeSingle();
@@ -851,7 +843,7 @@ export class CardsService {
     } else {
       const { data: foundByUserId } = await this.supabase
         .from('board_members')
-        .select('id, board_id, role, user:users (id, name, email, avatar)')
+        .select('id, board_id, user_id, role, user:users (id, name, email, avatar)')
         .eq('user_id', memberIdOrUserId)
         .eq('board_id', boardId)
         .maybeSingle();
@@ -861,64 +853,84 @@ export class CardsService {
       }
     }
 
-    // 2. Nếu chưa có trong board_members nhưng thuộc workspace, tự động thêm vào board_members
-    if (!bMember && wsIdForToggle) {
-      let targetUserId = memberIdOrUserId;
+    let targetUserId: string | null = null;
+    let targetUserName = 'thành viên';
+    let effectiveBoardMemberId: string | null = null;
 
-      const { data: wsMember } = await this.supabase
-        .from('workspace_members')
-        .select('user_id, role')
-        .eq('workspace_id', wsIdForToggle)
-        .or(`id.eq.${memberIdOrUserId},user_id.eq.${memberIdOrUserId}`)
+    if (bMember) {
+      if (bMember.role === 'VIEWER') {
+        throw new BadRequestException('Thành viên có vai trò Người xem (Viewer) không thể nhận nhiệm vụ.');
+      }
+      targetUserId = bMember.user?.id || bMember.user_id;
+      targetUserName = bMember.user?.name || 'thành viên';
+      effectiveBoardMemberId = bMember.id;
+    } else {
+      // 2. Không thuộc board_members: Cho phép gán thành viên Workspace trực tiếp (bảng WORKSPACE hoặc PUBLIC)
+      const { data: bInfo } = await this.supabase
+        .from('boards')
+        .select('id, workspace_id, visibility')
+        .eq('id', boardId)
         .maybeSingle();
 
-      if (wsMember) {
-        targetUserId = wsMember.user_id;
-      } else {
-        const { data: ws } = await this.supabase
+      if (bInfo && bInfo.visibility === 'PRIVATE') {
+        throw new BadRequestException('Bảng này là bảng Riêng tư. Chỉ có thể phân công thành viên đã tham gia bảng.');
+      }
+
+      if (!bInfo?.workspace_id) {
+        throw new BadRequestException('Bảng này không thuộc Không gian làm việc nào.');
+      }
+
+      // Kiểm tra xem user có thuộc Workspace không
+      const { data: wsMember } = await this.supabase
+        .from('workspace_members')
+        .select('id, user_id, role, user:users (id, name, email, avatar)')
+        .eq('workspace_id', bInfo.workspace_id)
+        .eq('user_id', memberIdOrUserId)
+        .maybeSingle();
+
+      let wsUser: any = Array.isArray(wsMember?.user) ? wsMember.user[0] : wsMember?.user;
+      if (!wsUser) {
+        // Kiểm tra xem có phải là workspace owner không
+        const { data: wsOwner } = await this.supabase
           .from('workspaces')
-          .select('owner_id')
-          .eq('id', wsIdForToggle)
+          .select('owner:users (id, name, email, avatar)')
+          .eq('id', bInfo.workspace_id)
+          .eq('owner_id', memberIdOrUserId)
           .maybeSingle();
-
-        if (ws?.owner_id === memberIdOrUserId) {
-          targetUserId = ws.owner_id;
-        } else {
-          throw new BadRequestException('Thành viên không thuộc về bảng hoặc không gian làm việc này');
-        }
+        wsUser = Array.isArray((wsOwner as any)?.owner) ? (wsOwner as any).owner[0] : (wsOwner as any)?.owner;
       }
 
-      // Thêm vào board_members
-      const { data: addedBM, error: addErr } = await this.supabase
-        .from('board_members')
-        .insert({
-          board_id: boardId,
-          user_id: targetUserId,
-          role: 'EDITOR',
-        })
-        .select('id, board_id, role, user:users (id, name, email, avatar)')
-        .single();
-
-      if (addErr || !addedBM) {
-        throw new BadRequestException('Không thể liên kết thành viên vào bảng');
+      if (!wsUser) {
+        throw new BadRequestException('Người dùng này không thuộc Không gian làm việc.');
       }
 
-      bMember = addedBM;
+      targetUserId = wsUser.id;
+      targetUserName = wsUser.name;
+      effectiveBoardMemberId = null;
     }
 
-    if (!bMember) {
-      throw new BadRequestException('Thành viên không thuộc về bảng này');
+    // 3. Kiểm tra xem đã gán chưa theo user_id
+    let existing: any = null;
+    if (targetUserId) {
+      const { data: exUser } = await this.supabase
+        .from('card_assignees')
+        .select('id')
+        .eq('card_id', cardId)
+        .eq('user_id', targetUserId)
+        .maybeSingle();
+      existing = exUser;
     }
 
-    const effectiveBoardMemberId = bMember.id;
-
-    // Check if already assigned
-    const { data: existing } = await this.supabase
-      .from('card_assignees')
-      .select('id')
-      .eq('card_id', cardId)
-      .eq('board_member_id', effectiveBoardMemberId)
-      .maybeSingle();
+    // Fallback kiểm tra theo board_member_id nếu schema cũ chưa migrate
+    if (!existing && effectiveBoardMemberId) {
+      const { data: exBm } = await this.supabase
+        .from('card_assignees')
+        .select('id')
+        .eq('card_id', cardId)
+        .eq('board_member_id', effectiveBoardMemberId)
+        .maybeSingle();
+      existing = exBm;
+    }
 
     if (existing) {
       await this.supabase
@@ -930,7 +942,7 @@ export class CardsService {
         await this.activitiesService.logActivity({
           workspaceId: wsIdForToggle,
           userId,
-          action: `đã hủy gán thẻ cho "${(bMember as any)?.user?.name || 'thành viên'}"`,
+          action: `đã hủy gán thẻ cho "${targetUserName}"`,
           targetType: `card:${cardId}`,
         });
       }
@@ -942,49 +954,58 @@ export class CardsService {
         });
       }
 
-      return { assigned: false, board_member_id: effectiveBoardMemberId };
+      return { assigned: false, user_id: targetUserId };
     } else {
-      const { data: newAssignee, error } = await this.supabase
-        .from('card_assignees')
-        .insert({
-          card_id: cardId,
-          board_member_id: effectiveBoardMemberId,
-        })
-        .select(`
-          id,
-          board_member_id,
-          assigned_at,
-          board_member:board_members (
-            id,
-            role,
-            user:users (id, name, email, avatar)
-          )
-        `)
-        .single();
+      const insertPayload: any = {
+        card_id: cardId,
+        user_id: targetUserId,
+      };
 
-      if (error || !newAssignee) {
-        throw new BadRequestException('Không thể gán thành viên vào thẻ');
+      let { data: newAssignee, error } = await this.supabase
+        .from('card_assignees')
+        .insert(insertPayload)
+        .select('*')
+        .maybeSingle();
+
+      if (error) {
+        // Fallback nếu database chưa xóa cột board_member_id và chưa có user_id
+        if (effectiveBoardMemberId) {
+          const fallbackRes = await this.supabase
+            .from('card_assignees')
+            .insert({ card_id: cardId, board_member_id: effectiveBoardMemberId })
+            .select('*')
+            .maybeSingle();
+          newAssignee = fallbackRes.data;
+          error = fallbackRes.error;
+        }
+
+        if (error) {
+          if (error.message?.includes('user_id') || error.message?.includes('board_member_id')) {
+            throw new BadRequestException(
+              'Để gán trực tiếp thành viên Workspace mà không cần thêm vào Bảng, vui lòng chạy file migration SQL: "database/migration_card_assignees_user_id.sql"'
+            );
+          }
+          throw new BadRequestException(error.message || 'Không thể gán thành viên vào thẻ');
+        }
+      }
+
+      // Thông báo cho người được phân công
+      if (targetUserId && targetUserId !== userId) {
+        await this.notificationsService.createNotification({
+          userId: targetUserId,
+          title: 'Bạn được phân công một thẻ mới',
+          message: `Bạn đã được phân công vào thẻ trong bảng`,
+          type: 'CARD_ASSIGNED',
+        });
       }
 
       if (wsIdForToggle) {
         await this.activitiesService.logActivity({
           workspaceId: wsIdForToggle,
           userId,
-          action: `đã gán thẻ cho "${(bMember as any)?.user?.name || 'thành viên'}"`,
+          action: `đã phân công thẻ cho "${targetUserName}"`,
           targetType: `card:${cardId}`,
         });
-      }
-
-      // Gửi thông báo phân công thẻ nếu người được gán khác người thực hiện
-      const targetUserId = (bMember as any)?.user?.id;
-      if (targetUserId && targetUserId !== userId) {
-        const cardTitle = card.title || 'Thẻ';
-        await this.notificationsService.createNotification({
-          userId: targetUserId,
-          title: `Phân công thẻ mới`,
-          message: `Bạn đã được phân công vào thẻ "${cardTitle}"||/boards/${boardId}?cardId=${cardId}`,
-          type: 'ASSIGN',
-        }).catch(() => {});
       }
 
       if (boardId) {

@@ -143,15 +143,15 @@ export class CardRelationsService {
             )
           ),
           card_assignees (
-            board_member:board_members (
+            id,
+            card_id,
+            user_id,
+            assigned_at,
+            user:users (
               id,
-              role,
-              user:users (
-                id,
-                name,
-                avatar,
-                email
-              )
+              name,
+              avatar,
+              email
             )
           ),
           card_labels (
@@ -322,15 +322,15 @@ export class CardRelationsService {
             )
           ),
           card_assignees (
-            board_member:board_members (
+            id,
+            card_id,
+            user_id,
+            assigned_at,
+            user:users (
               id,
-              role,
-              user:users (
-                id,
-                name,
-                avatar,
-                email
-              )
+              name,
+              avatar,
+              email
             )
           ),
           card_labels (

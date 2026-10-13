@@ -123,6 +123,13 @@ interface ChecklistItem {
   is_completed: boolean;
   position: number;
   due_date?: string | null;
+  user_id?: string | null;
+  user?: {
+    id: string;
+    name: string;
+    email?: string;
+    avatar?: string;
+  } | null;
   member_id?: string | null;
   member?: {
     id: string;
@@ -172,6 +179,7 @@ export interface CardAttachment {
 interface CardDetailModalProps {
   cardId: string | null;
   boardId?: string;
+  boardVisibility?: 'WORKSPACE' | 'PRIVATE' | 'PUBLIC';
   realtimeUpdatedCardId?: { id: string; timestamp: number } | null;
   isOpen: boolean;
   onClose: () => void;
@@ -283,6 +291,7 @@ function removeVietnameseTones(str: string): string {
 export default function CardDetailModal({
   cardId,
   boardId,
+  boardVisibility: boardVisibilityProp,
   realtimeUpdatedCardId,
   isOpen,
   onClose,
@@ -350,41 +359,82 @@ export default function CardDetailModal({
     }
   }, [externalWsMembers]);
 
-  // Danh sách thành viên hợp nhất từ cả Workspace và Board (loại bỏ trùng lặp user_id)
+  // Board visibility & Private board logic
+  const boardVisibility: 'WORKSPACE' | 'PRIVATE' | 'PUBLIC' =
+    boardVisibilityProp || card?.list?.board?.visibility || 'WORKSPACE';
+  const isPrivateBoard = boardVisibility === 'PRIVATE';
+
+  // Thành viên có thể phân công (CHỈ các thành viên trong Bảng - board_members)
   const assignableMembers = React.useMemo(() => {
-    const map = new Map<string, any>();
-
-    // 1. Thêm thành viên Workspace trước
-    (workspaceMembersList || []).forEach((m) => {
+    return (boardMembers || []).map((m) => {
       const uId = m.user?.id || m.user_id;
-      if (uId && !map.has(uId)) {
-        map.set(uId, {
-          id: m.id || uId,
+      return {
+        id: m.id || uId,
+        board_member_id: m.id,
+        user_id: uId,
+        user: m.user || { id: uId, name: 'Thành viên' },
+        role: m.role || 'EDITOR',
+        isBoardMember: true,
+      };
+    });
+  }, [boardMembers]);
+
+  // Thành viên gợi ý từ Workspace (chưa tham gia Bảng này)
+  // Chỉ hiển thị cho bảng WORKSPACE hoặc PUBLIC, tuyệt đối KHÔNG hiển thị cho PRIVATE
+  const suggestedWorkspaceMembers = React.useMemo(() => {
+    if (isPrivateBoard) return [];
+    const boardUserIds = new Set(
+      (boardMembers || []).map((bm) => bm.user?.id || bm.user_id).filter(Boolean),
+    );
+    return (workspaceMembersList || [])
+      .filter((wm) => {
+        const uId = wm.user?.id || wm.user_id;
+        return uId && !boardUserIds.has(uId);
+      })
+      .map((wm) => {
+        const uId = wm.user?.id || wm.user_id;
+        return {
+          id: wm.id || uId,
           user_id: uId,
-          user: m.user || { id: uId, name: 'Thành viên' },
-          role: m.role || 'MEMBER',
+          user: wm.user || { id: uId, name: 'Thành viên' },
+          role: wm.role || 'MEMBER',
           isBoardMember: false,
-        });
-      }
-    });
+        };
+      });
+  }, [isPrivateBoard, boardMembers, workspaceMembersList]);
 
-    // 2. Thêm hoặc cập nhật thành viên Board
-    (boardMembers || []).forEach((m) => {
-      const uId = m.user?.id || m.user_id;
-      if (uId) {
-        const existing = map.get(uId);
-        map.set(uId, {
-          id: m.id || uId,
-          user_id: uId,
-          user: m.user || existing?.user || { id: uId, name: 'Thành viên' },
-          role: m.role || existing?.role || 'MEMBER',
-          isBoardMember: true,
-        });
-      }
-    });
+  // Thành viên có thể tag Mention (trong bình luận)
+  const mentionableMembers = React.useMemo(() => {
+    if (isPrivateBoard) {
+      return assignableMembers;
+    }
+    return [...assignableMembers, ...suggestedWorkspaceMembers];
+  }, [isPrivateBoard, assignableMembers, suggestedWorkspaceMembers]);
 
-    return Array.from(map.values());
-  }, [workspaceMembersList, boardMembers]);
+  const [addingBoardMemberId, setAddingBoardMemberId] = useState<string | null>(null);
+
+  const handleAddMemberToBoard = async (userToAddId: string) => {
+    const effectiveBoardId = card?.list?.board_id || boardId;
+    if (!effectiveBoardId || addingBoardMemberId) return;
+
+    try {
+      setAddingBoardMemberId(userToAddId);
+      const res = await apiClient<any>(`/boards/${effectiveBoardId}/members`, {
+        method: 'POST',
+        data: { userId: userToAddId, role: 'EDITOR' },
+      });
+      if (res.success) {
+        await fetchBoardMembers(effectiveBoardId);
+        onCardUpdated();
+      } else {
+        alert(res.error || res.message || 'Không thể thêm thành viên vào bảng');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Lỗi khi thêm thành viên vào bảng');
+    } finally {
+      setAddingBoardMemberId(null);
+    }
+  };
 
   // Labels state
   const [cardLabels, setCardLabels] = useState<any[]>([]);
@@ -575,6 +625,9 @@ export default function CardDetailModal({
   const [isUpdatingAttachment, setIsUpdatingAttachment] = useState(false);
   const [previewImageAttachment, setPreviewImageAttachment] = useState<CardAttachment | null>(null);
   const attachmentFileInputRef = useRef<HTMLInputElement>(null);
+  const MAX_ATTACHMENT_SIZE_BYTES = 25 * 1024 * 1024; // 25MB
+  const [uploadFileError, setUploadFileError] = useState<string | null>(null);
+  const [downloadingAttachmentId, setDownloadingAttachmentId] = useState<string | null>(null);
 
   // Custom Confirmation Popup Dialog State
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -1033,7 +1086,15 @@ export default function CardDetailModal({
           setReminderMinutes(-1);
         }
 
-        setChecklists(c.checklists || []);
+        const mappedChecklists = (c.checklists || []).map((ck: any) => ({
+          ...ck,
+          items: (ck.items || []).map((it: any) => ({
+            ...it,
+            user: it.user || it.member?.user || null,
+            member: it.member || (it.user ? { user: it.user, id: it.user.id } : null),
+          })),
+        }));
+        setChecklists(mappedChecklists);
         setComments(c.comments || []);
         setAttachments(c.attachments || []);
 
@@ -1226,12 +1287,51 @@ export default function CardDetailModal({
 
   // Toggle Assign Member
   const handleToggleAssignee = async (memberId: string) => {
+    const bMember = (boardMembers || []).find(
+      (m) => m.id === memberId || m.user_id === memberId || m.user?.id === memberId,
+    );
+
+    let effectiveMemberId: string | null = null;
+    let targetUserId: string | null = null;
+    let targetUser: any = null;
+
+    if (bMember) {
+      if (bMember.role === 'VIEWER') {
+        alert('Thành viên có vai trò Người xem (Viewer) không thể nhận nhiệm vụ.');
+        return;
+      }
+      effectiveMemberId = bMember.id;
+      targetUserId = bMember.user?.id || bMember.user_id;
+      targetUser = bMember.user;
+    } else {
+      if (isPrivateBoard) {
+        alert('Bảng này là bảng Riêng tư. Chỉ có thể phân công thành viên đã tham gia bảng.');
+        return;
+      }
+
+      const wsMember = (workspaceMembersList || []).find(
+        (m) => m.id === memberId || m.user_id === memberId || m.user?.id === memberId,
+      );
+
+      if (!wsMember) {
+        alert('Thành viên không thuộc Không gian làm việc.');
+        return;
+      }
+
+      effectiveMemberId = null;
+      targetUserId = wsMember.user?.id || wsMember.user_id;
+      targetUser = wsMember.user;
+    }
+
     const isAssigned = assignees.some(
       (a) =>
-        a.board_member_id === memberId ||
-        a.board_member?.id === memberId ||
-        a.board_member?.user_id === memberId ||
-        a.board_member?.user?.id === memberId,
+        (targetUserId &&
+          (a.user_id === targetUserId ||
+            a.user?.id === targetUserId ||
+            a.board_member?.user_id === targetUserId ||
+            a.board_member?.user?.id === targetUserId)) ||
+        (effectiveMemberId &&
+          (a.board_member_id === effectiveMemberId || a.board_member?.id === effectiveMemberId)),
     );
 
     // Optimistic
@@ -1239,32 +1339,43 @@ export default function CardDetailModal({
       setAssignees((prev) =>
         prev.filter(
           (a) =>
-            a.board_member_id !== memberId &&
-            a.board_member?.id !== memberId &&
-            a.board_member?.user_id !== memberId &&
-            a.board_member?.user?.id !== memberId,
+            !(
+              targetUserId &&
+              (a.user_id === targetUserId ||
+                a.user?.id === targetUserId ||
+                a.board_member?.user_id === targetUserId ||
+                a.board_member?.user?.id === targetUserId)
+            ) &&
+            !(
+              effectiveMemberId &&
+              (a.board_member_id === effectiveMemberId || a.board_member?.id === effectiveMemberId)
+            ),
         ),
       );
     } else {
-      const memberObj = assignableMembers.find(
-        (m) => m.id === memberId || m.user_id === memberId || m.user?.id === memberId,
-      );
-      if (memberObj) {
-        setAssignees((prev) => [
-          ...prev,
-          {
-            id: `temp-${Date.now()}`,
-            board_member_id: memberObj.id || memberId,
-            board_member: memberObj,
-          },
-        ]);
-      }
+      setAssignees((prev) => [
+        ...prev,
+        {
+          id: `temp-${Date.now()}`,
+          user_id: targetUserId,
+          user: targetUser,
+          board_member_id: effectiveMemberId,
+          board_member: bMember
+            ? {
+                id: effectiveMemberId,
+                user_id: targetUserId,
+                user: targetUser,
+                role: bMember.role,
+              }
+            : undefined,
+        },
+      ]);
     }
 
     try {
       const res = await apiClient<any>(`/cards/${cardId}/assignees/toggle`, {
         method: 'POST',
-        data: { board_member_id: memberId },
+        data: { user_id: targetUserId, board_member_id: effectiveMemberId || targetUserId },
       });
       if (res.success && res.data) {
         fetchCardDetails(cardId!);
@@ -1477,12 +1588,36 @@ export default function CardDetailModal({
     return <File className="w-5 h-5 text-slate-600" />;
   };
 
+  const handleSelectFile = (file?: File | null) => {
+    if (!file) return;
+    if (file.size > MAX_ATTACHMENT_SIZE_BYTES) {
+      setUploadFileError(
+        `Tệp "${file.name}" vượt quá giới hạn tối đa 25MB (${formatFileSize(file.size)}). Vui lòng chọn tệp nhỏ hơn.`
+      );
+      setSelectedUploadFile(null);
+      if (attachmentFileInputRef.current) {
+        attachmentFileInputRef.current.value = '';
+      }
+      return;
+    }
+    setUploadFileError(null);
+    setSelectedUploadFile(file);
+  };
+
   const handleUploadAttachment = async (file?: File) => {
     const fileToUpload = file || selectedUploadFile;
     if (!fileToUpload || !cardId || isUploadingAttachment) return;
 
+    if (fileToUpload.size > MAX_ATTACHMENT_SIZE_BYTES) {
+      setUploadFileError(
+        `Tệp "${fileToUpload.name}" vượt quá giới hạn tối đa 25MB (${formatFileSize(fileToUpload.size)}).`
+      );
+      return;
+    }
+
     try {
       setIsUploadingAttachment(true);
+      setUploadFileError(null);
       const formData = new FormData();
       formData.append('file', fileToUpload);
       const res = await apiClient<CardAttachment>(`/cards/${cardId}/attachments/upload`, {
@@ -1494,13 +1629,85 @@ export default function CardDetailModal({
         const item: CardAttachment = (res.data as any)?.data || res.data;
         setAttachments((prev) => [...prev, item]);
         setSelectedUploadFile(null);
+        setUploadFileError(null);
         setIsAttachmentsModalOpen(false);
         onCardUpdated();
       }
     } catch (err: any) {
+      setUploadFileError(err.message || 'Không thể tải tệp lên');
       alert(err.message || 'Không thể tải tệp lên');
     } finally {
       setIsUploadingAttachment(false);
+    }
+  };
+
+  const handleDownloadAttachment = async (att: CardAttachment) => {
+    if (!att.file_url) return;
+    const fileName = att.file_name || 'download';
+
+    // 1. Data URI
+    if (att.file_url.startsWith('data:')) {
+      const a = document.createElement('a');
+      a.href = att.file_url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return;
+    }
+
+    try {
+      setDownloadingAttachmentId(att.id);
+
+      // 2. Tải trực tiếp dưới dạng blob để trình duyệt lưu file ngay vào máy (không nhảy sang tab/link mới)
+      const response = await fetch(att.file_url, {
+        method: 'GET',
+        mode: 'cors',
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = blobUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+
+      setTimeout(() => {
+        window.URL.revokeObjectURL(blobUrl);
+        document.body.removeChild(a);
+      }, 500);
+    } catch (err) {
+      console.warn('Direct blob fetch failed, falling back to download parameter/endpoint:', err);
+      try {
+        let downloadUrl = att.file_url;
+        if (att.file_url.includes('/storage/v1/object/public/')) {
+          const sep = att.file_url.includes('?') ? '&' : '?';
+          downloadUrl = `${att.file_url}${sep}download=${encodeURIComponent(fileName)}`;
+        } else {
+          const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+          downloadUrl = `${baseUrl.replace(/\/$/, '')}/attachments/${att.id}/download`;
+        }
+
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = downloadUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+        }, 500);
+      } catch (fallbackErr) {
+        window.open(att.file_url, '_blank');
+      }
+    } finally {
+      setDownloadingAttachmentId(null);
     }
   };
 
@@ -1938,10 +2145,34 @@ export default function CardDetailModal({
     itemId: string,
     boardMemberId: string | null,
   ) => {
-    const memberObj =
-      assignableMembers.find(
+    let effectiveMemberId = boardMemberId;
+    let targetUser: any = null;
+    if (boardMemberId) {
+      const targetMember = (assignableMembers || []).find(
         (m) => m.id === boardMemberId || m.user_id === boardMemberId || m.user?.id === boardMemberId,
-      ) || null;
+      );
+      if (!targetMember) {
+        alert('Thành viên không thuộc Không gian làm việc này.');
+        return;
+      }
+      if (targetMember.role === 'VIEWER') {
+        alert('Thành viên có vai trò Người xem (Viewer) không thể nhận nhiệm vụ.');
+        return;
+      }
+      effectiveMemberId = targetMember.user?.id || targetMember.user_id || targetMember.id;
+      targetUser = targetMember.user || {
+        id: effectiveMemberId,
+        name: (targetMember as any).name || 'Thành viên',
+        avatar: (targetMember as any).avatar,
+        email: (targetMember as any).email,
+      };
+    }
+
+    const memberObj = effectiveMemberId
+      ? assignableMembers.find(
+          (m) => m.id === effectiveMemberId || m.user_id === effectiveMemberId || m.user?.id === effectiveMemberId,
+        ) || null
+      : null;
 
     setChecklists((prev) =>
       prev.map((cl) =>
@@ -1952,7 +2183,9 @@ export default function CardDetailModal({
               it.id === itemId
                 ? {
                   ...it,
-                  member_id: boardMemberId,
+                  user_id: effectiveMemberId,
+                  user: targetUser,
+                  member_id: effectiveMemberId,
                   member: memberObj,
                 }
                 : it,
@@ -1966,7 +2199,7 @@ export default function CardDetailModal({
     try {
       await apiClient(`/checklist-items/${itemId}`, {
         method: 'PATCH',
-        data: { member_id: boardMemberId },
+        data: { user_id: effectiveMemberId, member_id: effectiveMemberId },
       });
       onCardUpdated();
     } catch (err: any) {
@@ -1983,6 +2216,15 @@ export default function CardDetailModal({
     return name.includes(q) || email.includes(q);
   });
 
+  const filteredSuggestedMembers = suggestedWorkspaceMembers.filter((m) => {
+    if (isPrivateBoard) return false;
+    const q = memberSearchQuery.toLowerCase().trim();
+    if (!q) return true;
+    const name = m.user?.name?.toLowerCase() || '';
+    const email = m.user?.email?.toLowerCase() || '';
+    return name.includes(q) || email.includes(q);
+  });
+
   const filteredItemBoardMembers = assignableMembers.filter((m) => {
     const q = itemMemberSearchQuery.toLowerCase().trim();
     if (!q) return true;
@@ -1992,7 +2234,7 @@ export default function CardDetailModal({
   });
 
   // Filtered members for new comment mention autocomplete - LOẠI BỎ CHÍNH MÌNH (currentUser)
-  const filteredMentionMembers = assignableMembers
+  const filteredMentionMembers = mentionableMembers
     .filter((m) => {
       const uId = m.user?.id || m.user_id;
       return uId !== currentUser?.id;
@@ -2012,7 +2254,7 @@ export default function CardDetailModal({
     });
 
   // Filtered members for edit comment mention autocomplete - LOẠI BỎ CHÍNH MÌNH (currentUser)
-  const filteredEditMentionMembers = assignableMembers
+  const filteredEditMentionMembers = mentionableMembers
     .filter((m) => {
       const uId = m.user?.id || m.user_id;
       return uId !== currentUser?.id;
@@ -2654,10 +2896,10 @@ export default function CardDetailModal({
                       <div className="flex flex-wrap items-center gap-1.5">
                         {assignees.map((a) => {
                           const member = a.board_member;
-                          const uId = member?.user?.id || member?.user_id;
+                          const uId = a.user_id || a.user?.id || member?.user?.id || member?.user_id;
                           const isOnline = activeUserIds?.has(uId);
-                          const uName = member?.user?.name || 'Thành viên';
-                          const uAvatar = member?.user?.avatar;
+                          const uName = a.user?.name || member?.user?.name || 'Thành viên';
+                          const uAvatar = a.user?.avatar || member?.user?.avatar;
                           const firstLetter = uName.charAt(0).toUpperCase();
 
                           return (
@@ -3352,16 +3594,36 @@ export default function CardDetailModal({
                             ) : (
                               <>
                                 <div className="flex items-center gap-2">
-                                  <a
-                                    href={att.file_url || '#'}
-                                    target={att.file_url ? '_blank' : undefined}
-                                    rel="noopener noreferrer"
-                                    className="text-xs font-bold text-slate-900 hover:underline truncate"
-                                    title={att.file_name || att.file_url || ''}
-                                  >
-                                    {att.file_name || att.file_url || 'Tệp đính kèm'}
-                                  </a>
-                                  {att.file_url && (att.file_url.startsWith('http://') || att.file_url.startsWith('https://')) && (
+                                  {(!att.file_size && !att.file_url?.includes('/attachments/') && !att.file_url?.startsWith('data:')) ? (
+                                    <a
+                                      href={att.file_url || '#'}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-xs font-bold text-slate-900 hover:underline truncate"
+                                      title={att.file_name || att.file_url || ''}
+                                    >
+                                      {att.file_name || att.file_url || 'Liên kết'}
+                                    </a>
+                                  ) : isImg ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => setPreviewImageAttachment(att)}
+                                      className="text-xs font-bold text-slate-900 hover:underline truncate text-left cursor-pointer"
+                                      title={att.file_name || 'Bấm để xem ảnh'}
+                                    >
+                                      {att.file_name || 'Ảnh đính kèm'}
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDownloadAttachment(att)}
+                                      className="text-xs font-bold text-slate-900 hover:underline truncate text-left cursor-pointer"
+                                      title={att.file_name ? `Bấm để tải xuống ${att.file_name}` : 'Tải xuống'}
+                                    >
+                                      {att.file_name || 'Tệp đính kèm'}
+                                    </button>
+                                  )}
+                                  {att.file_url && (!att.file_size && !att.file_url?.includes('/attachments/') && !att.file_url?.startsWith('data:')) && (
                                     <a
                                       href={att.file_url}
                                       target="_blank"
@@ -3395,15 +3657,37 @@ export default function CardDetailModal({
                                 )}
 
                                 {att.file_url && (
-                                  <a
-                                    href={att.file_url}
-                                    download={att.file_name || 'attachment'}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="hover:text-slate-900 hover:underline cursor-pointer flex items-center gap-0.5 text-[11px]"
-                                  >
-                                    <span>Tải xuống</span>
-                                  </a>
+                                  (!att.file_size && !att.file_url?.includes('/attachments/') && !att.file_url?.startsWith('data:')) ? (
+                                    <a
+                                      href={att.file_url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="hover:text-slate-900 hover:underline cursor-pointer flex items-center gap-1 text-[11px]"
+                                    >
+                                      <ExternalLink className="w-3 h-3" />
+                                      <span>Mở liên kết</span>
+                                    </a>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDownloadAttachment(att)}
+                                      disabled={downloadingAttachmentId === att.id}
+                                      className="hover:text-slate-900 hover:underline cursor-pointer flex items-center gap-1 text-[11px] disabled:opacity-50"
+                                      title="Tải tệp xuống máy tính"
+                                    >
+                                      {downloadingAttachmentId === att.id ? (
+                                        <>
+                                          <div className="w-2.5 h-2.5 border-2 border-slate-600/30 border-t-slate-900 rounded-full animate-spin" />
+                                          <span>Đang tải...</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Download className="w-3 h-3" />
+                                          <span>Tải xuống</span>
+                                        </>
+                                      )}
+                                    </button>
+                                  )
                                 )}
 
                                 {canEdit && (
@@ -4964,9 +5248,22 @@ export default function CardDetailModal({
             >
               {/* Header */}
               <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-                  <Users className="w-4 h-4 text-slate-700" />
-                  <span>Thành viên ({assignableMembers.length})</span>
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-900 flex-wrap">
+                  <Users className="w-4 h-4 text-slate-700 shrink-0" />
+                  <span>Phân công thành viên</span>
+                  {isPrivateBoard ? (
+                    <span className="text-[10px] px-2 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 rounded font-semibold shrink-0">
+                      Riêng tư 🔒
+                    </span>
+                  ) : boardVisibility === 'PUBLIC' ? (
+                    <span className="text-[10px] px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded font-semibold shrink-0">
+                      Công khai 🌐
+                    </span>
+                  ) : (
+                    <span className="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded font-semibold shrink-0">
+                      Không gian 🏢
+                    </span>
+                  )}
                 </div>
                 <button
                   type="button"
@@ -4992,104 +5289,209 @@ export default function CardDetailModal({
               </div>
 
               {/* Members list */}
-              <div className="p-2 overflow-y-auto space-y-1 flex-1">
-                {filteredBoardMembers.length === 0 ? (
-                  <div className="p-6 text-center text-xs text-slate-400">
-                    {assignableMembers.length === 0
-                      ? 'Chưa có thành viên nào trong không gian làm việc'
-                      : 'Không tìm thấy thành viên phù hợp'}
+              <div className="p-2 overflow-y-auto space-y-3 flex-1">
+                {/* 1. Thành viên Bảng */}
+                <div className="space-y-1">
+                  <div className="px-2 py-1 flex items-center justify-between text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                    <span>Thành viên trong bảng ({filteredBoardMembers.length})</span>
                   </div>
-                ) : (
-                  filteredBoardMembers.map((m) => {
-                    const uName = m.user?.name || 'Thành viên';
-                    const uEmail = m.user?.email || '';
-                    const uAvatar = m.user?.avatar;
-                    const uId = m.user?.id || m.user_id;
-                    const isAssigned = assignees.some(
-                      (a) =>
-                        a.board_member_id === m.id ||
-                        a.board_member?.id === m.id ||
-                        a.board_member?.user_id === uId ||
-                        a.board_member?.user?.id === uId,
-                    );
-                    const roleName =
-                      m.role === 'ADMIN' || m.role === 'OWNER'
-                        ? 'Quản trị'
-                        : m.role === 'VIEWER'
-                          ? 'Người xem'
-                          : 'Thành viên';
 
-                    return (
-                      <button
-                        key={m.id || uId}
-                        type="button"
-                        onClick={() => handleToggleAssignee(m.id || uId)}
-                        className="w-full p-2.5 rounded-md hover:bg-slate-50 flex items-center justify-between gap-3 text-left transition-colors cursor-pointer group"
-                      >
-                        <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                          <div className="relative shrink-0">
-                            {uAvatar ? (
-                              <img
-                                src={uAvatar}
-                                alt={uName}
-                                className="w-7 h-7 rounded-full object-cover shrink-0"
-                              />
-                            ) : (
-                              <div className="w-7 h-7 rounded-full bg-[#f28d8d] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
-                                {uName.charAt(0).toUpperCase()}
-                              </div>
-                            )}
-                            {(activeUserIds?.has(uId) || activeUserIds?.has(m.user_id) || activeUserIds?.has(m.id)) && (
-                              <span
-                                className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white z-10"
-                                title="Đang online trên bảng"
-                              >
-                                <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs font-bold text-slate-900 truncate">
-                                {uName}
-                              </span>
+                  {filteredBoardMembers.length === 0 ? (
+                    <div className="p-4 text-center text-xs text-slate-400 bg-slate-50/70 rounded-md">
+                      {assignableMembers.length === 0
+                        ? 'Chưa có thành viên nào tham gia bảng này'
+                        : 'Không tìm thấy thành viên bảng phù hợp'}
+                    </div>
+                  ) : (
+                    filteredBoardMembers.map((m) => {
+                      const uName = m.user?.name || 'Thành viên';
+                      const uEmail = m.user?.email || '';
+                      const uAvatar = m.user?.avatar;
+                      const uId = m.user?.id || m.user_id;
+                      const isAssigned = assignees.some(
+                        (a) =>
+                          a.board_member_id === m.id ||
+                          a.board_member?.id === m.id ||
+                          a.board_member?.user_id === uId ||
+                          a.board_member?.user?.id === uId,
+                      );
+                      const isViewer = m.role === 'VIEWER';
+                      const roleName =
+                        m.role === 'ADMIN' || m.role === 'OWNER'
+                          ? 'Quản trị'
+                          : isViewer
+                            ? 'Người xem'
+                            : 'Chỉnh sửa';
+
+                      return (
+                        <div
+                          key={m.id || uId}
+                          onClick={() => {
+                            if (isViewer) return;
+                            handleToggleAssignee(m.id || uId);
+                          }}
+                          className={`w-full p-2.5 rounded-md flex items-center justify-between gap-3 text-left transition-colors ${
+                            isViewer
+                              ? 'opacity-60 bg-slate-50/70 cursor-not-allowed select-none'
+                              : 'hover:bg-slate-50 cursor-pointer group'
+                          }`}
+                          title={isViewer ? 'Người xem (Viewer) không thể nhận nhiệm vụ' : undefined}
+                        >
+                          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                            <div className="relative shrink-0">
+                              {uAvatar ? (
+                                <img
+                                  src={uAvatar}
+                                  alt={uName}
+                                  className="w-7 h-7 rounded-full object-cover shrink-0"
+                                />
+                              ) : (
+                                <div className="w-7 h-7 rounded-full bg-[#f28d8d] text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
+                                  {uName.charAt(0).toUpperCase()}
+                                </div>
+                              )}
                               {(activeUserIds?.has(uId) || activeUserIds?.has(m.user_id) || activeUserIds?.has(m.id)) && (
-                                <span className="text-[10px] px-1.5 py-0.2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded font-semibold shrink-0 flex items-center gap-1">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                  Online
+                                <span
+                                  className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white z-10"
+                                  title="Đang online trên bảng"
+                                >
+                                  <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
                                 </span>
                               )}
-                              {m.isBoardMember ? (
-                                <span className="text-[10px] px-1.5 py-0.2 bg-slate-200 text-slate-900 rounded font-semibold shrink-0">
-                                  Bảng
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-xs font-bold text-slate-900 truncate">
+                                  {uName}
                                 </span>
+                                {(activeUserIds?.has(uId) || activeUserIds?.has(m.user_id) || activeUserIds?.has(m.id)) && (
+                                  <span className="text-[10px] px-1.5 py-0.2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded font-semibold shrink-0 flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    Online
+                                  </span>
+                                )}
+                                <span
+                                  className={`text-[10px] px-1.5 py-0.2 rounded font-medium shrink-0 ${
+                                    isViewer
+                                      ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                      : 'bg-slate-100 text-slate-600'
+                                  }`}
+                                >
+                                  {roleName}
+                                </span>
+                              </div>
+                              {isViewer ? (
+                                <div className="text-[11px] text-amber-600 font-medium">
+                                  Chỉ xem • Không thể phân công
+                                </div>
+                              ) : uEmail ? (
+                                <div className="text-[11px] text-slate-400 truncate">{uEmail}</div>
+                              ) : null}
+                            </div>
+                          </div>
+
+                          <div
+                            className={`w-5 h-5 rounded-md flex items-center justify-center transition-all shrink-0 ${
+                              isViewer
+                                ? 'border border-slate-200 text-slate-300'
+                                : isAssigned
+                                  ? 'bg-[#f28d8d] text-white'
+                                  : 'border border-slate-200 group-hover:border-slate-300'
+                            }`}
+                          >
+                            {isAssigned && !isViewer && <Check className="w-3.5 h-3.5" />}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* 2. Gợi ý từ Workspace (chỉ hiển thị cho bảng WORKSPACE và PUBLIC) */}
+                {!isPrivateBoard && (
+                  <div className="pt-2 border-t border-slate-100 space-y-1">
+                    <div className="px-2 py-1 flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                      <span>Gợi ý từ Workspace ({filteredSuggestedMembers.length})</span>
+                      <span className="text-[10px] text-slate-400 lowercase font-normal">chưa vào bảng</span>
+                    </div>
+
+                    {filteredSuggestedMembers.length === 0 ? (
+                      <div className="p-3 text-center text-xs text-slate-400">
+                        {suggestedWorkspaceMembers.length === 0
+                          ? 'Tất cả thành viên Workspace đã có trong bảng'
+                          : 'Không tìm thấy gợi ý phù hợp'}
+                      </div>
+                    ) : (
+                    filteredSuggestedMembers.map((m) => {
+                      const uName = m.user?.name || 'Thành viên';
+                      const uEmail = m.user?.email || '';
+                      const uAvatar = m.user?.avatar;
+                      const uId = m.user?.id || m.user_id;
+                      const isAssigned = assignees.some(
+                        (a) =>
+                          a.user_id === uId ||
+                          a.user?.id === uId ||
+                          a.board_member?.user_id === uId ||
+                          a.board_member?.user?.id === uId,
+                      );
+
+                      return (
+                        <div
+                          key={m.id || uId}
+                          onClick={() => handleToggleAssignee(uId)}
+                          className="w-full p-2.5 rounded-md hover:bg-slate-50 flex items-center justify-between gap-3 text-left transition-colors cursor-pointer group"
+                        >
+                          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                            <div className="relative shrink-0">
+                              {uAvatar ? (
+                                <img
+                                  src={uAvatar}
+                                  alt={uName}
+                                  className="w-7 h-7 rounded-full object-cover shrink-0"
+                                />
                               ) : (
-                                <span className="text-[10px] px-1.5 py-0.2 bg-purple-100 text-purple-700 rounded font-semibold shrink-0">
+                                <div className="w-7 h-7 rounded-full bg-slate-400 text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
+                                  {uName.charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                              {(activeUserIds?.has(uId) || activeUserIds?.has(m.user_id) || activeUserIds?.has(m.id)) && (
+                                <span
+                                  className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white z-10"
+                                  title="Đang online trên bảng"
+                                >
+                                  <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-xs font-bold text-slate-900 truncate">
+                                  {uName}
+                                </span>
+                                <span className="text-[10px] px-1.5 py-0.2 bg-purple-50 text-purple-700 border border-purple-200 rounded font-medium shrink-0">
                                   Workspace
                                 </span>
+                              </div>
+                              {uEmail && (
+                                <div className="text-[11px] text-slate-400 truncate">{uEmail}</div>
                               )}
-                              <span className="text-[10px] px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded font-medium shrink-0">
-                                {roleName}
-                              </span>
                             </div>
-                            {uEmail && (
-                              <div className="text-[11px] text-slate-400 truncate">{uEmail}</div>
-                            )}
+                          </div>
+
+                          <div
+                            className={`w-5 h-5 rounded-md flex items-center justify-center transition-all shrink-0 ${
+                              isAssigned
+                                ? 'bg-[#f28d8d] text-white'
+                                : 'border border-slate-200 group-hover:border-slate-300'
+                            }`}
+                          >
+                            {isAssigned && <Check className="w-3.5 h-3.5" />}
                           </div>
                         </div>
-
-                        <div
-                          className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
-                            isAssigned
-                              ? 'bg-[#f28d8d] text-white'
-                              : 'border border-slate-200 group-hover:border-slate-300'
-                          }`}
-                        >
-                          {isAssigned && <Check className="w-3.5 h-3.5" />}
-                        </div>
-                      </button>
-                    );
-                  })
+                      );
+                    })
+                    )}
+                  </div>
                 )}
               </div>
 
@@ -5636,23 +6038,37 @@ export default function CardDetailModal({
                     const uAvatar = m.user?.avatar;
                     const uId = m.user?.id || m.user_id;
                     const isAssigned =
+                      activeItemMember.item.user_id === uId ||
                       activeItemMember.item.member_id === m.id ||
                       activeItemMember.item.member_id === uId ||
+                      activeItemMember.item.user?.id === uId ||
                       activeItemMember.item.member?.id === m.id ||
                       activeItemMember.item.member?.user?.id === uId;
+                    const isViewer = m.role === 'VIEWER';
+                    const roleName =
+                      m.role === 'ADMIN' || m.role === 'OWNER'
+                        ? 'Quản trị'
+                        : isViewer
+                          ? 'Người xem'
+                          : 'Chỉnh sửa';
 
                     return (
-                      <button
+                      <div
                         key={m.id || uId}
-                        type="button"
-                        onClick={() =>
+                        onClick={() => {
+                          if (isViewer) return;
                           handleAssignItemMember(
                             activeItemMember.checklistId,
                             activeItemMember.item.id,
                             isAssigned ? null : (m.id || uId),
-                          )
-                        }
-                        className="w-full p-2.5 rounded-md hover:bg-slate-50 flex items-center justify-between gap-3 text-left transition-colors cursor-pointer group"
+                          );
+                        }}
+                        className={`w-full p-2.5 rounded-md flex items-center justify-between gap-3 text-left transition-colors ${
+                          isViewer
+                            ? 'opacity-60 bg-slate-50/70 cursor-not-allowed select-none'
+                            : 'hover:bg-slate-50 cursor-pointer group'
+                        }`}
+                        title={isViewer ? 'Người xem (Viewer) không thể nhận nhiệm vụ' : undefined}
                       >
                         <div className="flex items-center gap-2.5 flex-1 min-w-0">
                           <div className="relative shrink-0">
@@ -5677,7 +6093,7 @@ export default function CardDetailModal({
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="text-xs font-bold text-slate-900 truncate">
                                 {uName}
                               </span>
@@ -5687,19 +6103,23 @@ export default function CardDetailModal({
                                   Online
                                 </span>
                               )}
-                              {m.isBoardMember ? (
-                                <span className="text-[10px] px-1.5 py-0.2 bg-slate-200 text-slate-900 rounded font-semibold shrink-0">
-                                  Bảng
-                                </span>
-                              ) : (
-                                <span className="text-[10px] px-1.5 py-0.2 bg-purple-100 text-purple-700 rounded font-semibold shrink-0">
-                                  Workspace
-                                </span>
-                              )}
+                              <span
+                                className={`text-[10px] px-1.5 py-0.2 rounded font-medium shrink-0 ${
+                                  isViewer
+                                    ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                    : 'bg-slate-100 text-slate-600'
+                                }`}
+                              >
+                                {roleName}
+                              </span>
                             </div>
-                            {uEmail && (
+                            {isViewer ? (
+                              <div className="text-[11px] text-amber-600 font-medium">
+                                Chỉ xem • Không thể phân công
+                              </div>
+                            ) : uEmail ? (
                               <div className="text-[11px] text-slate-400 truncate">{uEmail}</div>
-                            )}
+                            ) : null}
                           </div>
                         </div>
 
@@ -5710,9 +6130,9 @@ export default function CardDetailModal({
                               : 'border border-slate-200 group-hover:border-slate-300'
                           }`}
                         >
-                          {isAssigned && <Check className="w-3.5 h-3.5" />}
+                          {isAssigned && !isViewer && <Check className="w-3.5 h-3.5" />}
                         </div>
-                      </button>
+                      </div>
                     );
                   })
                 )}
@@ -5720,7 +6140,7 @@ export default function CardDetailModal({
 
               {/* Footer */}
               <div className="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                {activeItemMember.item.member_id && (
+                {(activeItemMember.item.user_id || activeItemMember.item.member_id) && (
                   <button
                     type="button"
                     onClick={() =>
@@ -5807,8 +6227,7 @@ export default function CardDetailModal({
                       type="file"
                       ref={attachmentFileInputRef}
                       onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) setSelectedUploadFile(file);
+                        handleSelectFile(e.target.files?.[0]);
                       }}
                       className="hidden"
                     />
@@ -5818,8 +6237,7 @@ export default function CardDetailModal({
                       onDragOver={(e) => e.preventDefault()}
                       onDrop={(e) => {
                         e.preventDefault();
-                        const file = e.dataTransfer.files?.[0];
-                        if (file) setSelectedUploadFile(file);
+                        handleSelectFile(e.dataTransfer.files?.[0]);
                       }}
                       onClick={() => attachmentFileInputRef.current?.click()}
                       className="border border-dashed border-slate-300 hover:border-[#87ceeb] rounded-md p-6 flex flex-col items-center justify-center gap-2 transition-all cursor-pointer bg-slate-50 hover:bg-[#87ceeb]/5"
@@ -5838,6 +6256,14 @@ export default function CardDetailModal({
                       </div>
                     </div>
 
+                    {/* Error banner if file too large */}
+                    {uploadFileError && (
+                      <div className="p-3 bg-rose-50 border border-rose-200 rounded-md text-xs text-rose-700 flex items-start gap-2 animate-in fade-in duration-150">
+                        <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                        <span>{uploadFileError}</span>
+                      </div>
+                    )}
+
                     {/* Selected File Info */}
                     {selectedUploadFile && (
                       <div className="p-3 bg-slate-50 rounded-md border border-slate-200 flex items-center justify-between gap-3 animate-in fade-in duration-150">
@@ -5855,7 +6281,13 @@ export default function CardDetailModal({
 
                         <button
                           type="button"
-                          onClick={() => setSelectedUploadFile(null)}
+                          onClick={() => {
+                            setSelectedUploadFile(null);
+                            setUploadFileError(null);
+                            if (attachmentFileInputRef.current) {
+                              attachmentFileInputRef.current.value = '';
+                            }
+                          }}
                           className="p-1 text-slate-400 hover:text-rose-600 rounded-md hover:bg-slate-200 transition-colors cursor-pointer"
                         >
                           <X className="w-4 h-4" />
@@ -5957,17 +6389,20 @@ export default function CardDetailModal({
                 </span>
                 <div className="flex items-center gap-2">
                   {previewImageAttachment.file_url && (
-                    <a
-                      href={previewImageAttachment.file_url}
-                      download={previewImageAttachment.file_name || 'image'}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors cursor-pointer flex items-center gap-1 text-xs"
-                      title="Tải xuống"
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadAttachment(previewImageAttachment)}
+                      disabled={downloadingAttachmentId === previewImageAttachment.id}
+                      className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors cursor-pointer flex items-center gap-1 text-xs disabled:opacity-50"
+                      title="Tải xuống trực tiếp"
                     >
-                      <Download className="w-4 h-4" />
+                      {downloadingAttachmentId === previewImageAttachment.id ? (
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <Download className="w-4 h-4" />
+                      )}
                       <span>Tải về</span>
-                    </a>
+                    </button>
                   )}
                   <button
                     type="button"

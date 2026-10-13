@@ -127,7 +127,18 @@ export class CommentsService {
       const usersMap = new Map<string, { id: string; name: string }>();
 
       // 1. Lấy danh sách thành viên trong bảng
+      let isPrivateBoard = false;
       if (boardId) {
+        const { data: bInfo } = await this.supabase
+          .from('boards')
+          .select('visibility')
+          .eq('id', boardId)
+          .maybeSingle();
+
+        if (bInfo?.visibility === 'PRIVATE') {
+          isPrivateBoard = true;
+        }
+
         const { data: boardMembers } = await this.supabase
           .from('board_members')
           .select('user_id, user:users (id, name)')
@@ -143,8 +154,8 @@ export class CommentsService {
         }
       }
 
-      // 2. Lấy danh sách thành viên trong Workspace & Owner
-      if (workspaceId) {
+      // 2. Lấy danh sách thành viên trong Workspace & Owner (Chỉ áp dụng khi KHÔNG PHẢI bảng PRIVATE)
+      if (workspaceId && !isPrivateBoard) {
         const { data: wsMembers } = await this.supabase
           .from('workspace_members')
           .select('user_id, user:users (id, name)')

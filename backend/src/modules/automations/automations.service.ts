@@ -702,49 +702,32 @@ export class AutomationsService {
         const memberId = params.memberId === 'current_user' ? actorId : params.memberId;
         if (!memberId) break;
 
-        // Find member in board_members
-        const { data: bm } = await this.supabase
-          .from('board_members')
-          .select('id')
-          .eq('board_id', automation.board_id)
-          .eq('user_id', memberId)
+        await this.supabase
+          .from('card_assignees')
+          .insert({ card_id: card.id, user_id: memberId })
           .maybeSingle();
 
-        if (bm) {
-          await this.supabase
-            .from('card_assignees')
-            .insert({ card_id: card.id, board_member_id: bm.id })
-            .maybeSingle();
-
-          this.supabase.emitBoardEvent(automation.board_id, 'CARD_UPDATED', {
-            cardId: card.id,
-            senderId: actorId,
-          });
-        }
+        this.supabase.emitBoardEvent(automation.board_id, 'CARD_UPDATED', {
+          cardId: card.id,
+          senderId: actorId,
+        });
         break;
       }
 
       case 'REMOVE_MEMBER': {
         if (!card?.id || !params.memberId) break;
-        const { data: bm } = await this.supabase
-          .from('board_members')
-          .select('id')
-          .eq('board_id', automation.board_id)
-          .eq('user_id', params.memberId)
-          .maybeSingle();
+        const memberId = params.memberId === 'current_user' ? actorId : params.memberId;
 
-        if (bm) {
-          await this.supabase
-            .from('card_assignees')
-            .delete()
-            .eq('card_id', card.id)
-            .eq('board_member_id', bm.id);
+        await this.supabase
+          .from('card_assignees')
+          .delete()
+          .eq('card_id', card.id)
+          .eq('user_id', memberId);
 
-          this.supabase.emitBoardEvent(automation.board_id, 'CARD_UPDATED', {
-            cardId: card.id,
-            senderId: actorId,
-          });
-        }
+        this.supabase.emitBoardEvent(automation.board_id, 'CARD_UPDATED', {
+          cardId: card.id,
+          senderId: actorId,
+        });
         break;
       }
 
@@ -920,7 +903,7 @@ export class AutomationsService {
         // Fetch card to evaluate conditions
         const { data: card } = await this.supabase
           .from('cards')
-          .select('*, card_labels(label_id), card_assignees(board_member_id)')
+          .select('*, card_labels(label_id), card_assignees(user_id)')
           .eq('id', context.cardId)
           .maybeSingle();
 

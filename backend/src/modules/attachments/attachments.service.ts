@@ -28,7 +28,7 @@ export class AttachmentsService {
   constructor(
     private readonly supabase: SupabaseService,
     private readonly activitiesService: ActivitiesService,
-  ) {}
+  ) { }
 
   private async ensureBucket() {
     if (this.bucketChecked) return;
@@ -64,6 +64,14 @@ export class AttachmentsService {
   async uploadFile(cardId: string, file: UploadedFileType, userId?: string) {
     if (!file || !file.originalname || !file.buffer) {
       throw new BadRequestException('Vui lòng chọn tệp tin hợp lệ để tải lên');
+    }
+
+    const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
+    if (file.size > MAX_FILE_SIZE) {
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+      throw new BadRequestException(
+        `Dung lượng tệp "${file.originalname}" vượt quá giới hạn 25MB (${sizeMb}MB). Vui lòng chọn tệp nhỏ hơn.`,
+      );
     }
 
     await this.ensureBucket();
@@ -264,5 +272,61 @@ export class AttachmentsService {
     }
 
     return { success: true };
+  }
+
+  async download(id: string, res: any) {
+    const { data: att, error } = await this.supabase
+      .from('attachments')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error || !att || !att.file_url) {
+      throw new NotFoundException('Không tìm thấy tệp đính kèm');
+    }
+
+    const fileName = att.file_name || 'attachment';
+
+    // 1. Data URI fallback
+    if (att.file_url.startsWith('data:')) {
+      const matches = att.file_url.match(/^data:([A-Za-z0-9\-+/]+);base64,(.+)$/);
+      if (matches && matches.length === 3) {
+        const mimeType = matches[1];
+        const buffer = Buffer.from(matches[2], 'base64');
+        res.setHeader('Content-Type', mimeType);
+        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
+        return res.send(buffer);
+      }
+    }
+
+    // 2. Supabase Storage download
+    if (att.file_url.includes('/attachments/')) {
+      try {
+        const parts = att.file_url.split('/attachments/');
+        if (parts[1]) {
+          const storagePath = decodeURIComponent(parts[1].split('?')[0]);
+          const { data: fileData, error: downloadError } = await this.supabase.client.storage
+            .from('attachments')
+            .download(storagePath);
+
+          if (!downloadError && fileData) {
+            const buffer = Buffer.from(await fileData.arrayBuffer());
+            res.setHeader('Content-Type', fileData.type || 'application/octet-stream');
+            res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
+            return res.send(buffer);
+          }
+        }
+      } catch (err: any) {
+        this.logger.warn(`Storage download stream failed, falling back to redirect: ${err.message}`);
+      }
+    }
+
+    // 3. Fallback redirect with download query parameter
+    let downloadUrl = att.file_url;
+    if (att.file_url.includes('/storage/v1/object/public/')) {
+      const sep = att.file_url.includes('?') ? '&' : '?';
+      downloadUrl = `${att.file_url}${sep}download=${encodeURIComponent(fileName)}`;
+    }
+    return res.redirect(downloadUrl);
   }
 }

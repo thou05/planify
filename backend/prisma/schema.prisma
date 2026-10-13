@@ -25,6 +25,8 @@ model User {
   activity_logs     ActivityLog[]
   created_cards     Card[]
   comments          Comment[]
+  card_assignees    CardAssignee[]
+  checklist_items   ChecklistItem[]
 
   @@map("users")
 }
@@ -133,7 +135,6 @@ model BoardMember {
 
   board          Board          @relation(fields: [board_id], references: [id], onDelete: Cascade)
   user           User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  card_assignees CardAssignee[]
 
   @@unique([board_id, user_id])
   @@map("board_members")
@@ -183,15 +184,15 @@ model Card {
 
 // 11. CARD ASSIGNEES
 model CardAssignee {
-  id              String      @id @default(uuid()) @db.Uuid
-  card_id         String      @db.Uuid
-  board_member_id String      @db.Uuid
-  assigned_at     DateTime    @default(now()) @db.Timestamptz
+  id              String       @id @default(uuid()) @db.Uuid
+  card_id         String       @db.Uuid
+  user_id         String       @db.Uuid
+  assigned_at     DateTime     @default(now()) @db.Timestamptz
 
-  card            Card        @relation(fields: [card_id], references: [id], onDelete: Cascade)
-  board_member    BoardMember @relation(fields: [board_member_id], references: [id], onDelete: Cascade)
+  card            Card         @relation(fields: [card_id], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
-  @@unique([card_id, board_member_id])
+  @@unique([card_id, user_id])
   @@map("card_assignees")
 }
 
@@ -242,8 +243,11 @@ model ChecklistItem {
   content      String    @db.VarChar(500)
   is_completed Boolean   @default(false)
   position     Int
+  due_date     DateTime? @db.Timestamptz
+  user_id      String?   @db.Uuid
 
   checklist    Checklist @relation(fields: [checklist_id], references: [id], onDelete: Cascade)
+  user         User?     @relation(fields: [user_id], references: [id], onDelete: SetNull)
 
   @@map("checklist_items")
 }
