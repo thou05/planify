@@ -2467,6 +2467,7 @@ export default function BoardDetailPage({
       <CardDetailModal
         cardId={selectedCardId}
         boardId={boardId}
+        boardVisibility={board?.visibility}
         workspaceMembers={workspaceMembers}
         workspaceId={board?.workspace_id}
         realtimeUpdatedCardId={realtimeUpdatedCardId}

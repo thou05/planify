@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { CardsService } from './cards.service';
@@ -97,6 +98,10 @@ export class CardsController {
     @CurrentUser('id') userId: string,
     @Body() dto: AssignMemberDto,
   ) {
-    return this.cardsService.toggleAssignMember(id, userId, dto.board_member_id);
+    const targetId = dto.user_id || dto.board_member_id;
+    if (!targetId) {
+      throw new BadRequestException('Vui lòng cung cấp user_id hoặc board_member_id');
+    }
+    return this.cardsService.toggleAssignMember(id, userId, targetId);
   }
 }

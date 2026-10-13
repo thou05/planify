@@ -210,16 +210,13 @@ export class AnalyticsService {
           is_due_date_completed,
           position,
           card_assignees (
-            board_member:board_members (
+            id,
+            user_id,
+            user:users (
               id,
-              user_id,
-              role,
-              user:users (
-                id,
-                name,
-                email,
-                avatar
-              )
+              name,
+              email,
+              avatar
             )
           ),
           card_labels (
@@ -389,7 +386,7 @@ export class AnalyticsService {
         // Lấy danh sách thẻ quá hạn hoặc sắp đến hạn để cảnh báo
         if (!isDone && (dueDate < now || dueDate <= twoDaysLater)) {
           const assignees = (card.card_assignees || [])
-            .map((ca: any) => ca.board_member?.user)
+            .map((ca: any) => ca.user || ca.board_member?.user)
             .filter(Boolean)
             .map((u: any) => ({ name: u.name, avatar: u.avatar }));
 
@@ -413,7 +410,7 @@ export class AnalyticsService {
       } else {
         const isOverdue = !isDone && card.due_date && new Date(card.due_date) < now;
         cardAssignees.forEach((ca: any) => {
-          const u = ca.board_member?.user;
+          const u = ca.user || ca.board_member?.user;
           if (u) {
             let mStat = memberStatCounts.get(u.id);
             if (!mStat) {

@@ -193,9 +193,7 @@ export class ImportExportService {
             label:labels (id, name, color)
           ),
           card_assignees (
-            board_member:board_members (
-              user:users (email, name)
-            )
+            user:users (email, name)
           ),
           checklists (
             id,
@@ -230,7 +228,7 @@ export class ImportExportService {
                 : [];
               const cardAssigneesList = includeMembers
                 ? (c.card_assignees || [])
-                    .map((ca: any) => ca.board_member?.user?.email || ca.board_member?.user?.name)
+                    .map((ca: any) => ca.user?.email || ca.user?.name || ca.board_member?.user?.email || ca.board_member?.user?.name)
                     .filter(Boolean)
                 : [];
               const cardChecklistsList = includeChecklists

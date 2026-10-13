@@ -194,75 +194,63 @@ export class ChecklistsService {
     return { message: 'Đã xóa danh sách việc cần làm thành công' };
   }
 
-  private async resolveBoardMemberId(boardId: string, memberIdOrUserId: string): Promise<string | null> {
-    if (!memberIdOrUserId) return null;
+  private async resolveChecklistUserId(boardId: string, memberIdOrUserId: string): Promise<string> {
+    if (!memberIdOrUserId) return '';
 
-    // 1. Kiểm tra xem đã là ID của board_members chưa
-    const { data: foundById } = await this.supabase
+    // 1. Kiểm tra xem đã là ID của board_members hay user_id trong bảng chưa
+    const { data: bmById } = await this.supabase
       .from('board_members')
-      .select('id')
-      .eq('id', memberIdOrUserId)
+      .select('id, user_id, role')
       .eq('board_id', boardId)
+      .or(`id.eq.${memberIdOrUserId},user_id.eq.${memberIdOrUserId}`)
       .maybeSingle();
 
-    if (foundById) return foundById.id;
+    if (bmById) {
+      if (bmById.role === 'VIEWER') {
+        throw new BadRequestException('Thành viên chỉ có quyền xem (Viewer) không thể nhận phân công.');
+      }
+      return bmById.user_id;
+    }
 
-    // 2. Kiểm tra xem có phải user_id trong board_members chưa
-    const { data: foundByUserId } = await this.supabase
-      .from('board_members')
-      .select('id')
-      .eq('user_id', memberIdOrUserId)
-      .eq('board_id', boardId)
-      .maybeSingle();
-
-    if (foundByUserId) return foundByUserId.id;
-
-    // 3. Tìm workspace_id của bảng
+    // 2. Tìm board và kiểm tra visibility
     const { data: board } = await this.supabase
       .from('boards')
-      .select('workspace_id')
+      .select('visibility, workspace_id')
       .eq('id', boardId)
       .maybeSingle();
 
-    if (!board?.workspace_id) return null;
+    if (board && board.visibility === 'PRIVATE') {
+      throw new BadRequestException('Bảng này là bảng Riêng tư. Chỉ có thể phân công thành viên đã tham gia bảng.');
+    }
 
-    // Kiểm tra xem người dùng có thuộc workspace không
-    let targetUserId = memberIdOrUserId;
+    if (!board?.workspace_id) {
+      throw new BadRequestException('Bảng này không thuộc Không gian làm việc nào.');
+    }
+
+    // 3. Kiểm tra xem người dùng có thuộc workspace không
     const { data: wsMember } = await this.supabase
       .from('workspace_members')
-      .select('user_id, role')
+      .select('user_id')
       .eq('workspace_id', board.workspace_id)
       .or(`id.eq.${memberIdOrUserId},user_id.eq.${memberIdOrUserId}`)
       .maybeSingle();
 
     if (wsMember) {
-      targetUserId = wsMember.user_id;
-    } else {
-      const { data: ws } = await this.supabase
-        .from('workspaces')
-        .select('owner_id')
-        .eq('id', board.workspace_id)
-        .maybeSingle();
-
-      if (ws?.owner_id === memberIdOrUserId) {
-        targetUserId = ws.owner_id;
-      } else {
-        return null;
-      }
+      return wsMember.user_id;
     }
 
-    // Tự động thêm vào board_members
-    const { data: newBoardMember } = await this.supabase
-      .from('board_members')
-      .insert({
-        board_id: boardId,
-        user_id: targetUserId,
-        role: 'EDITOR',
-      })
-      .select('id')
-      .single();
+    // Kiểm tra xem có phải Workspace Owner không
+    const { data: ws } = await this.supabase
+      .from('workspaces')
+      .select('owner_id')
+      .eq('id', board.workspace_id)
+      .maybeSingle();
 
-    return newBoardMember?.id || null;
+    if (ws?.owner_id === memberIdOrUserId) {
+      return ws.owner_id;
+    }
+
+    throw new BadRequestException('Người dùng này không thuộc Không gian làm việc.');
   }
 
   async createItem(checklistId: string, userId: string, dto: CreateChecklistItemDto) {
@@ -297,16 +285,20 @@ export class ChecklistsService {
       is_completed: false,
     };
     if (dto.due_date !== undefined) insertPayload.due_date = dto.due_date;
-    if (dto.member_id !== undefined) {
-      if (dto.member_id && boardId) {
-        const resolvedId = await this.resolveBoardMemberId(boardId, dto.member_id);
-        insertPayload.member_id = resolvedId;
+
+    const rawMemberId = (dto as any).user_id || dto.member_id;
+    if (rawMemberId !== undefined) {
+      if (rawMemberId && boardId) {
+        const resolvedUserId = await this.resolveChecklistUserId(boardId, rawMemberId);
+        insertPayload.user_id = resolvedUserId;
       } else {
-        insertPayload.member_id = dto.member_id;
+        insertPayload.user_id = null;
       }
     }
 
-    let { data: item, error } = await this.supabase
+    let item: any;
+    let error: any;
+    const insertRes = await this.supabase
       .from('checklist_items')
       .insert(insertPayload)
       .select(`
@@ -316,22 +308,30 @@ export class ChecklistsService {
         is_completed,
         position,
         due_date,
-        member_id,
-        member:board_members (
-          id,
-          role,
-          user:users (id, name, email, avatar)
-        )
+        user_id,
+        user:users (id, name, email, avatar)
       `)
       .maybeSingle();
+    item = insertRes.data;
+    error = insertRes.error;
 
     if (error) {
-      delete insertPayload.due_date;
-      delete insertPayload.member_id;
+      // Fallback nếu database chưa hoàn tất migration sang user_id (thử dùng member_id cũ)
+      if (insertPayload.user_id) {
+        insertPayload.member_id = insertPayload.user_id;
+        delete insertPayload.user_id;
+      }
       const fallbackRes = await this.supabase
         .from('checklist_items')
         .insert(insertPayload)
-        .select()
+        .select(`
+          id,
+          checklist_id,
+          content,
+          is_completed,
+          position,
+          due_date
+        `)
         .maybeSingle();
       item = fallbackRes.data;
       error = fallbackRes.error;
@@ -374,16 +374,20 @@ export class ChecklistsService {
     if (dto.is_completed !== undefined) updatePayload.is_completed = dto.is_completed;
     if (dto.position !== undefined) updatePayload.position = dto.position;
     if (dto.due_date !== undefined) updatePayload.due_date = dto.due_date;
-    if (dto.member_id !== undefined) {
-      if (dto.member_id && bId) {
-        const resolvedId = await this.resolveBoardMemberId(bId, dto.member_id);
-        updatePayload.member_id = resolvedId;
+
+    const rawMemberId = (dto as any).user_id !== undefined ? (dto as any).user_id : dto.member_id;
+    if (rawMemberId !== undefined) {
+      if (rawMemberId && bId) {
+        const resolvedUserId = await this.resolveChecklistUserId(bId, rawMemberId);
+        updatePayload.user_id = resolvedUserId;
       } else {
-        updatePayload.member_id = dto.member_id;
+        updatePayload.user_id = null;
       }
     }
 
-    let { data: updated, error } = await this.supabase
+    let updated: any;
+    let error: any;
+    const updateRes = await this.supabase
       .from('checklist_items')
       .update(updatePayload)
       .eq('id', id)
@@ -394,23 +398,30 @@ export class ChecklistsService {
         is_completed,
         position,
         due_date,
-        member_id,
-        member:board_members (
-          id,
-          role,
-          user:users (id, name, email, avatar)
-        )
+        user_id,
+        user:users (id, name, email, avatar)
       `)
       .maybeSingle();
+    updated = updateRes.data;
+    error = updateRes.error;
 
     if (error) {
-      delete updatePayload.due_date;
-      delete updatePayload.member_id;
+      if (updatePayload.user_id !== undefined) {
+        updatePayload.member_id = updatePayload.user_id;
+        delete updatePayload.user_id;
+      }
       const fallbackRes = await this.supabase
         .from('checklist_items')
         .update(updatePayload)
         .eq('id', id)
-        .select()
+        .select(`
+          id,
+          checklist_id,
+          content,
+          is_completed,
+          position,
+          due_date
+        `)
         .maybeSingle();
       updated = fallbackRes.data;
       error = fallbackRes.error;

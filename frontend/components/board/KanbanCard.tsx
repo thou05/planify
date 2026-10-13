@@ -19,7 +19,48 @@ import {
   Percent,
   DollarSign,
   ListFilter,
+  FileText,
+  FileArchive,
+  FileCode,
+  File,
 } from 'lucide-react';
+
+const isImageFile = (filename?: string | null, url?: string | null) => {
+  const name = (filename || '').toLowerCase();
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext)) return true;
+  if (url?.startsWith('data:image/')) return true;
+  if (url && /\.(jpg|jpeg|png|webp|gif|svg)(\?|$)/i.test(url)) return true;
+  return false;
+};
+
+const getDocIcon = (filename?: string | null, url?: string | null) => {
+  const name = (filename || '').toLowerCase();
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  if (['pdf'].includes(ext)) {
+    return <FileText className="w-3.5 h-3.5 text-rose-500 shrink-0" />;
+  }
+  if (['doc', 'docx', 'txt', 'rtf'].includes(ext)) {
+    return <FileText className="w-3.5 h-3.5 text-blue-500 shrink-0" />;
+  }
+  if (['xls', 'xlsx', 'csv'].includes(ext)) {
+    return <FileText className="w-3.5 h-3.5 text-emerald-600 shrink-0" />;
+  }
+  if (['zip', 'rar', '7z'].includes(ext)) {
+    return <FileArchive className="w-3.5 h-3.5 text-amber-500 shrink-0" />;
+  }
+  if (['js', 'ts', 'tsx', 'jsx', 'json', 'py', 'java', 'html', 'css'].includes(ext)) {
+    return <FileCode className="w-3.5 h-3.5 text-indigo-500 shrink-0" />;
+  }
+  return <File className="w-3.5 h-3.5 text-slate-500 shrink-0" />;
+};
+
+const formatFileSize = (bytes?: number | null) => {
+  if (!bytes || bytes <= 0) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
 
 interface KanbanCardProps {
   card: any;
@@ -72,11 +113,19 @@ export default function KanbanCard({
   const [copySuccess, setCopySuccess] = useState(false);
   const [dropPosition, setDropPosition] = useState<'top' | 'bottom' | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [isCoverError, setIsCoverError] = useState(false);
+
+  const coverImage = card.attachments?.find((att: any) => isImageFile(att.file_name, att.file_url));
+  const firstDocAttachment = card.attachments?.find((att: any) => !isImageFile(att.file_name, att.file_url));
 
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setIsCoverError(false);
+  }, [card.id, coverImage?.file_url]);
 
   useEffect(() => {
     setMounted(true);
@@ -289,10 +338,23 @@ export default function KanbanCard({
         onClick={() => {
           if (!isEditingTitle && !isMenuOpen) onOpenDetail(card.id);
         }}
-        className={`kanban-card group relative p-3 bg-white rounded-md border border-slate-200 hover:border-slate-400 transition-colors duration-150 cursor-pointer select-none active:cursor-grabbing ${
+        className={`kanban-card group relative p-3 bg-white rounded-md border border-slate-200 hover:border-slate-400 transition-colors duration-150 cursor-pointer select-none active:cursor-grabbing overflow-hidden ${
           dropPosition ? 'ring-1 ring-[#87ceeb]' : ''
         } ${isMenuOpen ? '!z-30 ring-1 ring-slate-400' : ''}`}
       >
+        {/* Trello-like Card Cover Image */}
+        {coverImage && !isCoverError && (
+          <div className="-mx-3 -mt-3 mb-2.5 max-h-44 w-[calc(100%+1.5rem)] overflow-hidden bg-slate-100/90 border-b border-slate-200/60 flex items-center justify-center relative">
+            <img
+              src={coverImage.file_url}
+              alt={coverImage.file_name || 'Ảnh bìa thẻ'}
+              onError={() => setIsCoverError(true)}
+              className="max-h-44 w-full object-contain select-none"
+              loading="lazy"
+            />
+          </div>
+        )}
+
         {/* Labels preview */}
         {card.card_labels?.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-2">
@@ -355,6 +417,23 @@ export default function KanbanCard({
           <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">
             {card.description}
           </p>
+        )}
+
+        {/* File attachment preview chip (when no cover image) */}
+        {!coverImage && firstDocAttachment && (
+          <div className="mt-2 flex items-center gap-1.5 p-1.5 rounded-md bg-slate-50 border border-slate-200/80 text-[11px] text-slate-700 max-w-full hover:bg-slate-100/80 transition-colors">
+            <div className="shrink-0">
+              {getDocIcon(firstDocAttachment.file_name, firstDocAttachment.file_url)}
+            </div>
+            <span className="truncate font-medium flex-1 text-[11px]" title={firstDocAttachment.file_name}>
+              {firstDocAttachment.file_name || 'Tệp đính kèm'}
+            </span>
+            {firstDocAttachment.file_size ? (
+              <span className="text-[10px] text-slate-400 shrink-0 font-mono">
+                {formatFileSize(firstDocAttachment.file_size)}
+              </span>
+            ) : null}
+          </div>
         )}
 
         {/* Custom Field Badges */}
@@ -523,10 +602,10 @@ export default function KanbanCard({
           {card.card_assignees?.length > 0 && (
             <div className="flex items-center -space-x-1.5 ml-auto">
               {card.card_assignees.slice(0, 3).map((ca: any) => {
-                const uId = ca.board_member?.user?.id || ca.board_member?.user_id;
+                const uId = ca.user?.id || ca.user_id || ca.board_member?.user?.id || ca.board_member?.user_id;
                 const isOnline = activeUserIds?.has(uId);
-                const uName = ca.board_member?.user?.name || 'Thành viên';
-                const uAvatar = ca.board_member?.user?.avatar;
+                const uName = ca.user?.name || ca.board_member?.user?.name || 'Thành viên';
+                const uAvatar = ca.user?.avatar || ca.board_member?.user?.avatar;
                 const firstLetter = uName.charAt(0).toUpperCase();
 
                 return (

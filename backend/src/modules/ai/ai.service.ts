@@ -392,9 +392,7 @@ ${dto?.customPrompt ? `- YÊU CẦU ĐẶC BIỆT TỪ NGƯỜI DÙNG: ${dto.cus
           due_date,
           is_due_date_completed,
           card_assignees (
-            board_member:board_members (
-              user:users (name, email)
-            )
+            user:users (name, email)
           )
         )
       `)
@@ -512,9 +510,7 @@ Hãy dùng format Markdown rõ ràng, bullet points đẹp mắt, emoji sinh đ�
           due_date,
           is_due_date_completed,
           card_assignees (
-            board_member:board_members (
-              user:users (id, name, email)
-            )
+            user:users (id, name, email)
           ),
           card_labels (
             label:labels (name, color)
@@ -616,7 +612,7 @@ Hãy dùng format Markdown rõ ràng, bullet points đẹp mắt, emoji sinh đ�
           memberTasks['Chưa phân công'].inProgress++;
         } else {
           assignees.forEach((a: any) => {
-            const name = a.board_member?.user?.name || 'Thành viên';
+            const name = a.user?.name || a.board_member?.user?.name || 'Thành viên';
             memberTasks[name] = memberTasks[name] || { total: 0, completed: 0, inProgress: 0 };
             memberTasks[name].total++;
             if (isDone) memberTasks[name].completed++;
@@ -788,9 +784,7 @@ Lưu ý: Chỉ số rủi ro tính toán từ dữ liệu cứng là ${baselineS
           due_date,
           is_due_date_completed,
           card_assignees (
-            board_member:board_members (
-              user:users (id, name)
-            )
+            user:users (id, name)
           ),
           card_labels (
             label:labels (name, color)
@@ -810,7 +804,7 @@ Lưu ý: Chỉ số rủi ro tính toán từ dữ liệu cứng là ${baselineS
         const cards = (l.cards || [])
           .map((c: any) => {
             const assignees = (c.card_assignees || [])
-              .map((a: any) => a.board_member?.user?.name)
+              .map((a: any) => a.user?.name || a.board_member?.user?.name)
               .filter(Boolean);
             const labels = (c.card_labels || [])
               .map((lb: any) => lb.label?.name)

@@ -260,9 +260,7 @@ export class NotificationsService implements OnModuleInit {
             )
           ),
           card_assignees (
-            board_member:board_members (
-              user_id
-            )
+            user_id
           )
         `)
         .eq('is_due_date_completed', false)
@@ -375,7 +373,7 @@ export class NotificationsService implements OnModuleInit {
           content,
           is_completed,
           due_date,
-          member_id,
+          user_id,
           checklist:checklists (
             id,
             title,
@@ -391,15 +389,9 @@ export class NotificationsService implements OnModuleInit {
                 )
               ),
               card_assignees (
-                board_member:board_members (
-                  user_id
-                )
+                user_id
               )
             )
-          ),
-          member:board_members (
-            id,
-            user_id
           )
         `)
         .eq('is_completed', false)
@@ -425,8 +417,9 @@ export class NotificationsService implements OnModuleInit {
 
           // Xác định người nhận: ưu tiên người được giao mục con, nếu không có thì gửi cho assignees & creator của thẻ
           const recipientUserIds = new Set<string>();
-          if (item.member?.user_id) {
-            recipientUserIds.add(item.member.user_id);
+          const assignedUser = item.user_id || item.member?.user_id;
+          if (assignedUser) {
+            recipientUserIds.add(assignedUser);
           } else {
             if (Array.isArray(card.card_assignees)) {
               card.card_assignees.forEach((a: any) => {

@@ -211,14 +211,13 @@ export class BoardsService {
             ),
             card_assignees (
               id,
-              board_member_id,
-              board_member:board_members (
-                id,
-                role,
-                user:users (id, name, email, avatar)
-              )
+              card_id,
+              user_id,
+              assigned_at,
+              user:users (id, name, email, avatar)
             ),
             comments (id),
+            attachments (id, file_name, file_url, file_size),
             custom_field_values (
               id,
               field_id,
@@ -709,16 +708,19 @@ export class BoardsService {
       throw new ForbiddenException('Bạn không có quyền thêm thành viên vào Board này');
     }
 
-    // Kiểm tra xem targetUser có thuộc Workspace không
-    const { data: wsMember } = await this.supabase
-      .from('workspace_members')
-      .select('id')
-      .eq('workspace_id', board.workspace_id)
-      .eq('user_id', dto.userId)
-      .maybeSingle();
+    // Kiểm tra xem targetUser có thuộc Workspace không (hoặc là chủ sở hữu workspace)
+    const isWsOwner = (board.workspace as any)?.owner_id === dto.userId;
+    if (!isWsOwner) {
+      const { data: wsMember } = await this.supabase
+        .from('workspace_members')
+        .select('id')
+        .eq('workspace_id', board.workspace_id)
+        .eq('user_id', dto.userId)
+        .maybeSingle();
 
-    if (!wsMember) {
-      throw new BadRequestException('Người dùng này chưa phải là thành viên của Không gian làm việc');
+      if (!wsMember) {
+        throw new BadRequestException('Người dùng này chưa phải là thành viên của Không gian làm việc');
+      }
     }
 
     // Kiểm tra xem đã là member của board chưa
