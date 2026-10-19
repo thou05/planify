@@ -857,65 +857,19 @@ export class CardsService {
     let targetUserName = 'thành viên';
     let effectiveBoardMemberId: string | null = null;
 
-    if (bMember) {
-      if (bMember.role === 'VIEWER') {
-        throw new BadRequestException('Thành viên có vai trò Người xem (Viewer) không thể nhận nhiệm vụ.');
-      }
-      targetUserId = bMember.user?.id || bMember.user_id;
-      targetUserName = bMember.user?.name || 'thành viên';
-      effectiveBoardMemberId = bMember.id;
-    } else {
-      // 2. Không thuộc board_members: Cho phép gán thành viên Workspace trực tiếp (bảng WORKSPACE hoặc PUBLIC, hoặc Workspace Owner)
-      const { data: bInfo } = await this.supabase
-        .from('boards')
-        .select('id, workspace_id, visibility, workspace:workspaces (owner_id)')
-        .eq('id', boardId)
-        .maybeSingle();
-
-      if (!bInfo?.workspace_id) {
-        throw new BadRequestException('Bảng này không thuộc Không gian làm việc nào.');
-      }
-
-      // Kiểm tra xem user có thuộc Workspace không
-      const { data: wsMember } = await this.supabase
-        .from('workspace_members')
-        .select('id, user_id, role, user:users (id, name, email, avatar)')
-        .eq('workspace_id', bInfo.workspace_id)
-        .eq('user_id', memberIdOrUserId)
-        .maybeSingle();
-
-      let wsUser: any = Array.isArray(wsMember?.user) ? wsMember.user[0] : wsMember?.user;
-      let isWsOwner = false;
-
-      // Kiểm tra xem có phải là workspace owner không
-      const wsOwnerId = (bInfo.workspace as any)?.owner_id;
-      if (wsOwnerId && wsOwnerId === memberIdOrUserId) {
-        isWsOwner = true;
-      }
-
-      if (!wsUser) {
-        const { data: wsOwner } = await this.supabase
-          .from('workspaces')
-          .select('owner:users (id, name, email, avatar)')
-          .eq('id', bInfo.workspace_id)
-          .eq('owner_id', memberIdOrUserId)
-          .maybeSingle();
-        wsUser = Array.isArray((wsOwner as any)?.owner) ? (wsOwner as any).owner[0] : (wsOwner as any)?.owner;
-        if (wsUser) isWsOwner = true;
-      }
-
-      if (!wsUser) {
-        throw new BadRequestException('Người dùng này không thuộc Không gian làm việc.');
-      }
-
-      if (bInfo && bInfo.visibility === 'PRIVATE' && !isWsOwner) {
-        throw new BadRequestException('Bảng này là bảng Riêng tư. Chỉ có thể phân công thành viên đã tham gia bảng.');
-      }
-
-      targetUserId = wsUser.id;
-      targetUserName = wsUser.name;
-      effectiveBoardMemberId = null;
+    if (!bMember) {
+      throw new BadRequestException(
+        'Chỉ có thể phân công thành viên đã tham gia Bảng này với vai trò Quản trị viên hoặc Biên tập viên.',
+      );
     }
+
+    if (bMember.role === 'VIEWER') {
+      throw new BadRequestException('Thành viên có vai trò Người xem (Viewer) không thể nhận nhiệm vụ.');
+    }
+
+    targetUserId = bMember.user?.id || bMember.user_id;
+    targetUserName = bMember.user?.name || 'thành viên';
+    effectiveBoardMemberId = bMember.id;
 
     // 3. Kiểm tra xem đã gán chưa theo user_id
     let existing: any = null;
@@ -1057,10 +1011,15 @@ export class CardsService {
       if (requireEdit && !canEdit) {
         throw new ForbiddenException('Bạn chỉ có quyền xem (Viewer), không thể chỉnh sửa Board này');
       }
-      return { role, canEdit };
+      return { role: canEdit ? (role === 'ADMIN' ? 'ADMIN' : 'EDITOR') : 'VIEWER', canEdit };
     }
 
-    // 2. Kiểm tra trong workspace_members
+    // Nếu không phải board_members, không thể chỉnh sửa board
+    if (requireEdit) {
+      throw new ForbiddenException('Bạn chưa tham gia vào Bảng này hoặc không có quyền chỉnh sửa');
+    }
+
+    // 2. Kiểm tra quyền xem trong workspace_members
     const { data: wsMember } = await this.supabase
       .from('workspace_members')
       .select('id, role')
@@ -1072,18 +1031,10 @@ export class CardsService {
       if (board.visibility === 'PRIVATE') {
         throw new ForbiddenException('Bảng này ở chế độ Riêng tư (Private), bạn không có quyền truy cập');
       }
-
-      if (wsMember.role === 'ADMIN') {
-        return { role: 'ADMIN', canEdit: true };
-      }
-
-      if (requireEdit) {
-        throw new ForbiddenException('Bạn chưa tham gia vào Bảng này, chỉ có quyền xem');
-      }
       return { role: 'VIEWER', canEdit: false };
     }
 
-    if (board.visibility === 'PUBLIC' && !requireEdit) {
+    if (board.visibility === 'PUBLIC') {
       return { role: 'VIEWER', canEdit: false };
     }
 

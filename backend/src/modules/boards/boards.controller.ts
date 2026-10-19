@@ -171,6 +171,16 @@ export class BoardsController {
     return this.boardsService.getBoardMembers(id, userId);
   }
 
+  @Get('boards/:id/assignable-members')
+  @ApiOperation({ summary: 'Danh sách thành viên có thể được phân công Card (ADMIN & EDITOR)' })
+  @ApiResponse({ status: 200, description: 'Danh sách thành viên có thể gán' })
+  async getAssignableMembers(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.boardsService.getAssignableMembers(id, userId);
+  }
+
   @Post('boards/:id/members')
   @ApiOperation({ summary: 'Thêm thành viên từ Workspace vào Board' })
   @ApiResponse({ status: 201, description: 'Thêm thành viên thành công' })
