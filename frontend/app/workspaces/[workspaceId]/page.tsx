@@ -13,6 +13,7 @@ import InviteMemberModal from '@/components/modals/InviteMemberModal';
 import TransferOwnershipModal from '@/components/modals/TransferOwnershipModal';
 import ArchivedBoardsModal from '@/components/modals/ArchivedBoardsModal';
 import ImportBoardModal from '@/components/modals/ImportBoardModal';
+import { canCreateBoard } from '@/lib/permissions';
 import {
   Layers,
   Kanban,
@@ -76,7 +77,7 @@ export default function WorkspaceDetailPage({
   const [activeTab, setActiveTab] = useState<'boards' | 'members' | 'settings' | 'activities'>('boards');
 
   // Sub-tabs in Member Management
-  const [memberSubTab, setMemberSubTab] = useState<'members' | 'single_guests' | 'multi_guests' | 'invites'>('members');
+  const [memberSubTab, setMemberSubTab] = useState<'members' | 'guests' | 'invites'>('members');
   const [actionGuestId, setActionGuestId] = useState<string | null>(null);
 
   // Workspace Activities State
@@ -542,6 +543,11 @@ export default function WorkspaceDetailPage({
                         <Shield className="w-3 h-3 text-sky-600" />
                         Admin
                       </span>
+                    ) : workspace.currentUserRole === 'GUEST' || workspace.isGuest ? (
+                      <span className="text-[10px] px-2 py-0.5 rounded-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
+                        <Kanban className="w-3 h-3 text-amber-600" />
+                        Khách (Guest)
+                      </span>
                     ) : (
                       <span className="text-[10px] px-2 py-0.5 rounded-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
                         Thành viên
@@ -586,13 +592,15 @@ export default function WorkspaceDetailPage({
                   </>
                 )}
 
-                <button
-                  onClick={() => setIsCreateBoardOpen(true)}
-                  className="px-3.5 py-1.5 rounded-md bg-[#f28d8d] hover:bg-[#e57a7a] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Tạo Board mới</span>
-                </button>
+                {canCreateBoard({ role: workspace.currentUserRole, isOwner: workspace.isOwner }) && (
+                  <button
+                    onClick={() => setIsCreateBoardOpen(true)}
+                    className="px-3.5 py-1.5 rounded-md bg-[#f28d8d] hover:bg-[#e57a7a] text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Tạo Board mới</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -722,15 +730,17 @@ export default function WorkspaceDetailPage({
                 </Link>
               ))}
 
-              <button
-                onClick={() => setIsCreateBoardOpen(true)}
-                className="p-5 rounded-xl bg-white hover:bg-[#ffc0cb]/20 border border-dashed border-slate-300 hover:border-[#f28d8d] transition-colors flex flex-col items-center justify-center gap-2 text-slate-600 hover:text-[#d86969] cursor-pointer min-h-[130px] shadow-2xs group"
-              >
-                <div className="w-8 h-8 rounded-md bg-[#ffc0cb]/30 flex items-center justify-center text-[#f28d8d] group-hover:scale-105 transition-transform">
-                  <Plus className="w-4 h-4" />
-                </div>
-                <span className="text-xs font-semibold">Tạo Board mới</span>
-              </button>
+              {canCreateBoard({ role: workspace?.currentUserRole, isOwner: workspace?.isOwner }) && (
+                <button
+                  onClick={() => setIsCreateBoardOpen(true)}
+                  className="p-5 rounded-xl bg-white hover:bg-[#ffc0cb]/20 border border-dashed border-slate-300 hover:border-[#f28d8d] transition-colors flex flex-col items-center justify-center gap-2 text-slate-600 hover:text-[#d86969] cursor-pointer min-h-[130px] shadow-2xs group"
+                >
+                  <div className="w-8 h-8 rounded-md bg-[#ffc0cb]/30 flex items-center justify-center text-[#f28d8d] group-hover:scale-105 transition-transform">
+                    <Plus className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs font-semibold">Tạo Board mới</span>
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -755,27 +765,15 @@ export default function WorkspaceDetailPage({
               </button>
 
               <button
-                onClick={() => setMemberSubTab('single_guests')}
+                onClick={() => setMemberSubTab('guests')}
                 className={`px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer border ${
-                  memberSubTab === 'single_guests'
+                  memberSubTab === 'guests'
                     ? 'bg-white text-amber-900 border-amber-300 font-semibold'
                     : 'text-slate-600 hover:text-slate-900 border-transparent hover:bg-slate-200/50'
                 }`}
               >
-                <Kanban className="w-3.5 h-3.5" />
-                <span>Khách 1 bảng ({workspace?.singleBoardGuestsCount || 0})</span>
-              </button>
-
-              <button
-                onClick={() => setMemberSubTab('multi_guests')}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-2 transition-colors cursor-pointer border ${
-                  memberSubTab === 'multi_guests'
-                    ? 'bg-white text-purple-900 border-purple-300 font-semibold'
-                    : 'text-slate-600 hover:text-slate-900 border-transparent hover:bg-slate-200/50'
-                }`}
-              >
-                <Layers className="w-3.5 h-3.5" />
-                <span>Khách đa bảng ({workspace?.multiBoardGuestsCount || 0})</span>
+                <Kanban className="w-3.5 h-3.5 text-amber-600" />
+                <span>Khách (Guest) ({workspace?.guestCount || 0})</span>
               </button>
 
               {workspace?.isAdmin && (
@@ -907,9 +905,10 @@ export default function WorkspaceDetailPage({
             )}
 
             {/* ------------------------------------------------------------------ */}
-            {/* SUB-TAB 2: SINGLE-BOARD GUESTS */}
             {/* ------------------------------------------------------------------ */}
-            {memberSubTab === 'single_guests' && (
+            {/* SUB-TAB 2: UNIFIED GUESTS (KHÁCH GUEST) */}
+            {/* ------------------------------------------------------------------ */}
+            {memberSubTab === 'guests' && (
               <div className="space-y-4">
                 <div className="bg-white p-5 sm:p-6 rounded-lg border border-slate-200 space-y-4">
                   <div className="pb-3.5 border-b border-slate-100">
@@ -918,30 +917,30 @@ export default function WorkspaceDetailPage({
                         <Kanban className="w-3.5 h-3.5" />
                       </span>
                       <h3 className="text-sm font-bold text-slate-900">
-                        Khách một bảng ({workspace?.singleBoardGuestsCount || 0})
+                        Danh sách Khách (Guest) ({workspace?.guestCount || 0})
                       </h3>
                     </div>
                     <p className="text-xs text-slate-500 mt-1">
-                      Người dùng bên ngoài chỉ tham gia vào duy nhất đúng 1 Bảng trong Không gian làm việc này
+                      Người dùng bên ngoài được mời tham gia vào các Bảng cụ thể trong Không gian làm việc này. Quyền trong từng bảng được quy định độc lập.
                     </p>
                   </div>
 
-                  {/* Single Guests Table */}
+                  {/* Guests Table */}
                   {(() => {
-                    const singleGuests: any[] = workspace?.singleBoardGuests || (workspace?.guests || []).filter((g: any) => g.guestType === 'SINGLE_BOARD');
+                    const guestsList: any[] = workspace?.guests || [];
 
-                    if (singleGuests.length === 0) {
+                    if (guestsList.length === 0) {
                       return (
                         <div className="py-8 text-center text-xs text-slate-500 space-y-1">
-                          <p className="font-semibold text-sm text-slate-800">Không có khách một bảng nào</p>
-                          <p>Hiện tại không có người dùng bên ngoài nào chỉ tham gia 1 bảng trong Không gian này.</p>
+                          <p className="font-semibold text-sm text-slate-800">Không có khách nào</p>
+                          <p>Hiện tại không có người dùng bên ngoài nào tham gia các Bảng trong Không gian này.</p>
                         </div>
                       );
                     }
 
                     return (
                       <div className="divide-y divide-slate-100">
-                        {singleGuests.map((g: any) => {
+                        {guestsList.map((g: any) => {
                           const isProcessing = actionGuestId === g.user_id;
 
                           return (
@@ -960,7 +959,7 @@ export default function WorkspaceDetailPage({
                                     </span>
                                     <span className="text-[10px] px-1.5 py-0.2 rounded-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
                                       <Kanban className="w-3 h-3" />
-                                      Khách 1 bảng
+                                      Khách (Guest) • {g.boardCount || g.boards?.length || 0} bảng
                                     </span>
                                   </div>
 
@@ -969,141 +968,6 @@ export default function WorkspaceDetailPage({
                                   </div>
 
                                   {/* List of boards guest is in */}
-                                  <div className="pt-1 flex flex-wrap items-center gap-1.5">
-                                    <span className="text-[11px] text-slate-400 font-medium">Bảng tham gia:</span>
-                                    {g.boards?.map((b: any) => (
-                                      <Link
-                                        key={b.id}
-                                        href={`/boards/${b.id}`}
-                                        className="px-2 py-0.5 rounded-xs bg-slate-50 hover:bg-slate-100 text-[11px] font-medium text-slate-700 border border-slate-200 flex items-center gap-1 transition-colors"
-                                        title="Mở bảng"
-                                      >
-                                        <Kanban className="w-3 h-3 text-slate-500" />
-                                        <span>{b.name}</span>
-                                        <span className="text-[9px] px-1 py-0.2 rounded-xs bg-slate-200 text-slate-700 font-semibold">
-                                          {b.role === 'ADMIN' ? 'Admin' : b.role === 'VIEWER' ? 'Chỉ xem' : 'Thành viên'}
-                                        </span>
-                                      </Link>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Guest Actions (Admin only) */}
-                              {workspace?.isAdmin && (
-                                <div className="flex flex-wrap items-center gap-2 self-end md:self-center shrink-0">
-                                  {/* Change Role in Board */}
-                                  {g.boards?.length > 0 && (
-                                    <select
-                                      value={g.boards[0]?.role === 'MEMBER' ? 'EDITOR' : g.boards[0]?.role || 'EDITOR'}
-                                      disabled={isProcessing}
-                                      onChange={(e) => handleUpdateBoardGuestRole(g.boards[0]?.id, g.user_id, e.target.value)}
-                                      className="px-2 py-1 text-xs rounded-md border border-slate-200 bg-white font-medium text-slate-700 cursor-pointer focus:outline-none focus:border-slate-400"
-                                      title="Thay đổi quyền của khách trong Bảng"
-                                    >
-                                      <option value="EDITOR">Thành viên (Chỉnh sửa)</option>
-                                      <option value="ADMIN">Quản trị viên Bảng</option>
-                                      <option value="VIEWER">Chỉ xem</option>
-                                    </select>
-                                  )}
-
-                                  <button
-                                    onClick={() => handleConvertGuest(g.user_id, 'MEMBER')}
-                                    disabled={isProcessing}
-                                    className="px-2.5 py-1 rounded-md bg-white hover:bg-slate-50 border border-slate-200 text-xs font-medium text-emerald-700 flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors"
-                                    title="Nâng cấp khách thành Thành viên chính thức của Workspace"
-                                  >
-                                    {isProcessing ? (
-                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                    ) : (
-                                      <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
-                                    )}
-                                    <span>Thêm vào Workspace</span>
-                                  </button>
-
-                                  <button
-                                    onClick={() => handleRemoveGuest(g.user_id, g.user?.name)}
-                                    disabled={isProcessing}
-                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer disabled:opacity-50"
-                                    title="Xóa khách khỏi Bảng trong Không gian làm việc"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-            )}
-
-            {/* ------------------------------------------------------------------ */}
-            {/* SUB-TAB 3: MULTI-BOARD GUESTS */}
-            {/* ------------------------------------------------------------------ */}
-            {memberSubTab === 'multi_guests' && (
-              <div className="space-y-4">
-                <div className="bg-white p-5 sm:p-6 rounded-lg border border-slate-200 space-y-4">
-                  <div className="pb-3.5 border-b border-slate-100">
-                    <div className="flex items-center gap-2">
-                      <span className="p-1 rounded-xs bg-purple-50 text-purple-700 border border-purple-200">
-                        <Layers className="w-3.5 h-3.5" />
-                      </span>
-                      <h3 className="text-sm font-bold text-slate-900">
-                        Khách đa bảng ({workspace?.multiBoardGuestsCount || 0})
-                      </h3>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Người dùng bên ngoài được mời tham gia vào từ 2 Bảng trở lên trong Không gian làm việc này
-                    </p>
-                  </div>
-
-                  {/* Multi Guests Table */}
-                  {(() => {
-                    const multiGuests: any[] = workspace?.multiBoardGuests || (workspace?.guests || []).filter((g: any) => g.guestType === 'MULTI_BOARD');
-
-                    if (multiGuests.length === 0) {
-                      return (
-                        <div className="py-8 text-center text-xs text-slate-500 space-y-1">
-                          <p className="font-semibold text-sm text-slate-800">Không có khách đa bảng nào</p>
-                          <p>Hiện tại không có người dùng bên ngoài nào tham gia từ 2 bảng trở lên trong Không gian này.</p>
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div className="divide-y divide-slate-100">
-                        {multiGuests.map((g: any) => {
-                          const isProcessing = actionGuestId === g.user_id;
-
-                          return (
-                            <div
-                              key={g.id}
-                              className="py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3"
-                            >
-                              <div className="flex items-start gap-3 min-w-0">
-                                <div className="w-8 h-8 rounded-full bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-800 font-bold text-xs shrink-0">
-                                  {g.user?.name?.charAt(0).toUpperCase() || 'K'}
-                                </div>
-                                <div className="space-y-1 min-w-0">
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <span className="text-xs font-semibold text-slate-900 truncate">
-                                      {g.user?.name}
-                                    </span>
-                                    <span className="text-[10px] px-1.5 py-0.2 rounded-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">
-                                      <Layers className="w-3 h-3" />
-                                      Khách đa bảng ({g.boardCount} bảng)
-                                    </span>
-                                  </div>
-
-                                  <div className="text-[11px] text-slate-500">
-                                    {g.user?.email}
-                                  </div>
-
-                                  {/* List of boards guest is in with role changer */}
                                   <div className="pt-1 flex flex-wrap items-center gap-2">
                                     <span className="text-[11px] text-slate-400 font-medium">Bảng tham gia:</span>
                                     {g.boards?.map((b: any) => (
@@ -1128,13 +992,13 @@ export default function WorkspaceDetailPage({
                                             className="text-[10px] font-medium bg-white border border-slate-200 rounded px-1 py-0.5 cursor-pointer text-slate-700"
                                             title="Thay đổi quyền trong Bảng này"
                                           >
-                                            <option value="EDITOR">Thành viên</option>
-                                            <option value="ADMIN">Admin</option>
-                                            <option value="VIEWER">Chỉ xem</option>
+                                            <option value="EDITOR">Editor (Biên tập)</option>
+                                            <option value="ADMIN">Admin (Quản trị Bảng)</option>
+                                            <option value="VIEWER">Viewer (Chỉ xem)</option>
                                           </select>
                                         ) : (
                                           <span className="text-[9px] px-1 py-0.2 rounded-xs bg-slate-200 text-slate-700 font-semibold">
-                                            {b.role === 'ADMIN' ? 'Admin' : b.role === 'VIEWER' ? 'Chỉ xem' : 'Thành viên'}
+                                            {b.role === 'ADMIN' ? 'Admin' : b.role === 'VIEWER' ? 'Viewer' : 'Editor'}
                                           </span>
                                         )}
                                       </div>
@@ -1179,6 +1043,7 @@ export default function WorkspaceDetailPage({
                 </div>
               </div>
             )}
+
 
             {/* ------------------------------------------------------------------ */}
             {/* SUB-TAB 4: PENDING INVITATIONS */}

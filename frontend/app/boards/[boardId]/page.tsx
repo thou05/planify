@@ -26,6 +26,7 @@ import BoardTableView from '@/components/board/views/BoardTableView';
 import BoardCalendarView from '@/components/board/views/BoardCalendarView';
 import BoardScheduleView from '@/components/board/views/BoardScheduleView';
 import BoardAnalyticsView from '@/components/board/views/BoardAnalyticsView';
+import LivePresenceBar, { PresenceUser } from '@/components/board/LivePresenceBar';
 import BoardFilterModal, {
   BoardFilterState,
   defaultFilterState,
@@ -386,9 +387,24 @@ export default function BoardDetailPage({
   const userRef = useRef(user);
   useEffect(() => {
     userRef.current = user;
-  }, [user]);
+    if (user?.id) {
+      const me: PresenceUser = {
+        id: user.id,
+        name: user.name || user.email || 'Thành viên',
+        avatar: user.avatar || null,
+        email: user.email || null,
+        isGuest: Boolean(isGuest),
+        online_at: new Date().toISOString(),
+      };
+      setActiveUsersList((prev) => {
+        const remaining = prev.filter((u) => u.id !== user.id && !u.id.startsWith('guest_'));
+        return [me, ...remaining];
+      });
+      setActiveUserIds((prev) => new Set([...prev, user.id]));
+    }
+  }, [user, isGuest]);
   const [activeUserIds, setActiveUserIds] = useState<Set<string>>(new Set());
-  const [activeUsersList, setActiveUsersList] = useState<Array<{ id: string; name: string; avatar?: string | null }>>([]);
+  const [activeUsersList, setActiveUsersList] = useState<Array<PresenceUser>>([]);
 
   // Board in-page comprehensive filter state
   const [boardFilters, setBoardFilters] = useState<BoardFilterState>(defaultFilterState);
@@ -702,6 +718,32 @@ export default function BoardDetailPage({
     fetchBoardButtons();
   }, [boardId]);
 
+  // Helper tạo danh tính khách tạm thời nếu chưa đăng nhập (Google Docs animal anonymous style)
+  const getGuestSessionUser = React.useCallback((): { id: string; name: string; avatar?: string | null; isGuest: true } => {
+    if (typeof window === 'undefined') {
+      return { id: 'guest_anon', name: 'Khách Ẩn Danh', isGuest: true };
+    }
+    let guestId = sessionStorage.getItem('planify_guest_id');
+    let guestName = sessionStorage.getItem('planify_guest_name');
+    if (!guestId) {
+      guestId = 'guest_' + Math.random().toString(36).substring(2, 9);
+      const ANIMAL_NAMES = [
+        'Khách Ẩn Danh',
+        'Cáo Ẩn Danh',
+        'Gấu Ẩn Danh',
+        'Sói Ẩn Danh',
+        'Mèo Ẩn Danh',
+        'Cú Ẩn Danh',
+        'Thỏ Ẩn Danh',
+        'Chim Cánh Cụt Ẩn Danh',
+      ];
+      guestName = ANIMAL_NAMES[Math.floor(Math.random() * ANIMAL_NAMES.length)];
+      sessionStorage.setItem('planify_guest_id', guestId);
+      sessionStorage.setItem('planify_guest_name', guestName);
+    }
+    return { id: guestId, name: guestName || 'Khách Ẩn Danh', isGuest: true };
+  }, []);
+
   // Realtime Supabase Broadcast & Presence Subscription (Kênh kết nối WebSocket ổn định)
   useEffect(() => {
     if (!boardId) return;
@@ -709,20 +751,52 @@ export default function BoardDetailPage({
     let isSubscribed = true;
     let reconnectTimeout: any = null;
 
+    const currentGuest = !userRef.current?.id ? getGuestSessionUser() : null;
+    const presenceKey = userRef.current?.id || currentGuest?.id || 'guest_' + Math.random().toString(36).substring(2, 8);
+
     const channel = supabase.channel(`board:${boardId}`, {
       config: {
         broadcast: { self: false },
         presence: {
-          key: userRef.current?.id || 'guest',
+          key: presenceKey,
         },
       },
     });
     realtimeChannelRef.current = channel;
 
+    const getCurrentParticipant = (): PresenceUser => {
+      const currentU = userRef.current;
+      if (currentU?.id) {
+        return {
+          id: currentU.id,
+          name: currentU.name || currentU.email || 'Thành viên',
+          avatar: currentU.avatar || null,
+          email: currentU.email || null,
+          isGuest: Boolean(isGuest),
+          online_at: new Date().toISOString(),
+        };
+      }
+      const g = getGuestSessionUser();
+      return {
+        id: g.id,
+        name: g.name,
+        avatar: null,
+        email: null,
+        isGuest: true,
+        online_at: new Date().toISOString(),
+      };
+    };
+
+    const initialMe = getCurrentParticipant();
+    if (initialMe.id) {
+      setActiveUsersList((prev) => (prev.some((u) => u.id === initialMe.id) ? prev : [initialMe, ...prev]));
+      setActiveUserIds((prev) => new Set([...prev, initialMe.id]));
+    }
+
     const handleSyncPresence = () => {
       const state = channel.presenceState();
       const onlineIds = new Set<string>();
-      const onlineUsers: Array<{ id: string; name: string; avatar?: string | null }> = [];
+      const onlineUsers: PresenceUser[] = [];
 
       Object.values(state).forEach((presences: any) => {
         if (Array.isArray(presences)) {
@@ -733,8 +807,12 @@ export default function BoardDetailPage({
               if (!onlineUsers.some((u) => u.id === uid)) {
                 onlineUsers.push({
                   id: uid,
-                  name: p.name || 'Thành viên',
+                  name: p.name || (p.isGuest ? 'Khách (Guest)' : 'Thành viên'),
                   avatar: p.avatar,
+                  email: p.email,
+                  isGuest: Boolean(p.isGuest),
+                  color: p.color,
+                  online_at: p.online_at,
                 });
               }
             }
@@ -742,15 +820,11 @@ export default function BoardDetailPage({
         }
       });
 
-      const currentU = userRef.current;
-      if (currentU?.id) {
-        onlineIds.add(currentU.id);
-        if (!onlineUsers.some((u) => u.id === currentU.id)) {
-          onlineUsers.push({
-            id: currentU.id,
-            name: currentU.name || 'Tôi',
-            avatar: currentU.avatar,
-          });
+      const me = getCurrentParticipant();
+      if (me.id) {
+        onlineIds.add(me.id);
+        if (!onlineUsers.some((u) => u.id === me.id)) {
+          onlineUsers.push(me);
         }
       }
 
@@ -759,22 +833,26 @@ export default function BoardDetailPage({
     };
 
     const trackCurrentPresence = async () => {
-      const currentU = userRef.current;
-      if (!currentU?.id || !channel) return;
+      if (!channel) return;
+      const me = getCurrentParticipant();
       try {
         await channel.track({
-          user_id: currentU.id,
-          name: currentU.name || currentU.email || 'Người dùng',
-          avatar: currentU.avatar || null,
-          online_at: new Date().toISOString(),
+          user_id: me.id,
+          name: me.name,
+          avatar: me.avatar,
+          email: me.email,
+          isGuest: me.isGuest,
+          online_at: me.online_at,
         });
         channel.send({
           type: 'broadcast',
           event: 'USER_PRESENCE_JOIN',
           payload: {
-            user_id: currentU.id,
-            name: currentU.name,
-            avatar: currentU.avatar,
+            user_id: me.id,
+            name: me.name,
+            avatar: me.avatar,
+            email: me.email,
+            isGuest: me.isGuest,
           },
         });
       } catch (err) {
@@ -797,17 +875,28 @@ export default function BoardDetailPage({
         setActiveUserIds((prev) => new Set([...prev, payload.user_id]));
         setActiveUsersList((prev) => {
           if (prev.some((u) => u.id === payload.user_id)) return prev;
-          return [...prev, { id: payload.user_id, name: payload.name, avatar: payload.avatar }];
+          return [
+            ...prev,
+            {
+              id: payload.user_id,
+              name: payload.name || (payload.isGuest ? 'Khách (Guest)' : 'Thành viên'),
+              avatar: payload.avatar,
+              email: payload.email,
+              isGuest: Boolean(payload.isGuest),
+            },
+          ];
         });
-        const currentU = userRef.current;
-        if (currentU?.id && payload.user_id !== currentU.id) {
+        const me = getCurrentParticipant();
+        if (me.id && payload.user_id !== me.id) {
           channel.send({
             type: 'broadcast',
             event: 'USER_PRESENCE_PONG',
             payload: {
-              user_id: currentU.id,
-              name: currentU.name,
-              avatar: currentU.avatar,
+              user_id: me.id,
+              name: me.name,
+              avatar: me.avatar,
+              email: me.email,
+              isGuest: me.isGuest,
             },
           });
         }
@@ -817,7 +906,16 @@ export default function BoardDetailPage({
         setActiveUserIds((prev) => new Set([...prev, payload.user_id]));
         setActiveUsersList((prev) => {
           if (prev.some((u) => u.id === payload.user_id)) return prev;
-          return [...prev, { id: payload.user_id, name: payload.name, avatar: payload.avatar }];
+          return [
+            ...prev,
+            {
+              id: payload.user_id,
+              name: payload.name || (payload.isGuest ? 'Khách (Guest)' : 'Thành viên'),
+              avatar: payload.avatar,
+              email: payload.email,
+              isGuest: Boolean(payload.isGuest),
+            },
+          ];
         });
       })
       .on('broadcast', { event: 'USER_PRESENCE_LEAVE' }, ({ payload }) => {
@@ -991,12 +1089,12 @@ export default function BoardDetailPage({
       });
 
     const handleBeforeUnload = () => {
-      const currentU = userRef.current;
-      if (currentU?.id && channel) {
+      const me = getCurrentParticipant();
+      if (me.id && channel) {
         channel.send({
           type: 'broadcast',
           event: 'USER_PRESENCE_LEAVE',
-          payload: { user_id: currentU.id },
+          payload: { user_id: me.id },
         });
         try {
           channel.untrack();
@@ -1015,15 +1113,17 @@ export default function BoardDetailPage({
     window.addEventListener('online', handleVisibilityChange);
 
     const heartbeatInterval = setInterval(() => {
-      const currentU = userRef.current;
-      if (currentU?.id && channel) {
+      const me = getCurrentParticipant();
+      if (me.id && channel) {
         channel.send({
           type: 'broadcast',
           event: 'USER_PRESENCE_PONG',
           payload: {
-            user_id: currentU.id,
-            name: currentU.name,
-            avatar: currentU.avatar,
+            user_id: me.id,
+            name: me.name,
+            avatar: me.avatar,
+            email: me.email,
+            isGuest: me.isGuest,
           },
         });
       }
@@ -1037,12 +1137,12 @@ export default function BoardDetailPage({
       window.removeEventListener('online', handleVisibilityChange);
       clearInterval(heartbeatInterval);
 
-      const currentU = userRef.current;
-      if (currentU?.id) {
+      const me = getCurrentParticipant();
+      if (me.id) {
         channel.send({
           type: 'broadcast',
           event: 'USER_PRESENCE_LEAVE',
-          payload: { user_id: currentU.id },
+          payload: { user_id: me.id },
         });
         try {
           channel.untrack();
@@ -1053,32 +1153,34 @@ export default function BoardDetailPage({
         realtimeChannelRef.current = null;
       }
     };
-  }, [boardId]);
+  }, [boardId, isGuest, getGuestSessionUser]);
 
   // Tự động kích hoạt track presence ngay khi dữ liệu user sẵn sàng (khi đăng nhập xong hoặc token verify xong)
   useEffect(() => {
-    if (user?.id && realtimeChannelRef.current) {
+    if (realtimeChannelRef.current) {
+      const me = user?.id
+        ? {
+            user_id: user.id,
+            name: user.name || user.email || 'Thành viên',
+            avatar: user.avatar || null,
+            email: user.email || null,
+            isGuest: Boolean(isGuest),
+            online_at: new Date().toISOString(),
+          }
+        : getGuestSessionUser();
+
       realtimeChannelRef.current
-        .track({
-          user_id: user.id,
-          name: user.name || user.email || 'Người dùng',
-          avatar: user.avatar || null,
-          online_at: new Date().toISOString(),
-        })
+        .track(me)
         .then(() => {
           realtimeChannelRef.current?.send({
             type: 'broadcast',
             event: 'USER_PRESENCE_JOIN',
-            payload: {
-              user_id: user.id,
-              name: user.name,
-              avatar: user.avatar,
-            },
+            payload: me,
           });
         })
         .catch(() => {});
     }
-  }, [user?.id, user?.name, user?.avatar]);
+  }, [user?.id, user?.name, user?.avatar, isGuest, getGuestSessionUser]);
 
   // Deep linking: check URL query for ?cardId=...
   useEffect(() => {
@@ -1902,52 +2004,12 @@ export default function BoardDetailPage({
 
             <div className="hidden sm:block h-4 w-[1px] bg-slate-200 shrink-0" />
 
-            {/* Member Avatar Stack with Realtime Presence */}
-            <div
-              onClick={() => setIsShareOpen(true)}
-              className="hidden md:flex items-center -space-x-1 hover:opacity-90 transition-opacity cursor-pointer mr-0.5"
-              title="Xem danh sách thành viên và ai đang trực tuyến"
-            >
-              {(board?.members || []).slice(0, 5).map((m: any, idx: number) => {
-                const memberUserId = m.user?.id || m.user_id;
-                const isOnline = activeUserIds.has(memberUserId);
-                const userName = m.user?.name || 'Thành viên';
-                const userAvatar = m.user?.avatar;
-                const initial = userName.charAt(0).toUpperCase();
-
-                return (
-                  <div
-                    key={m.id || idx}
-                    className="relative shrink-0 transition-transform hover:scale-110 hover:z-20"
-                    title={`${userName}${isOnline ? ' (🟢 Đang hoạt động trên bảng)' : ' (Ngoại tuyến)'}`}
-                  >
-                    {userAvatar ? (
-                      <img
-                        src={userAvatar}
-                        alt={userName}
-                        className="w-7 h-7 rounded-full object-cover border-2 border-white shadow-xs"
-                      />
-                    ) : (
-                      <div className="w-7 h-7 rounded-full bg-[#f28d8d] text-white border-2 border-white flex items-center justify-center text-[10px] font-bold shadow-xs">
-                        {initial}
-                      </div>
-                    )}
-                    {/* Dấu chấm xanh biểu thị đang hoạt động */}
-                    {isOnline && (
-                      <span className="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5 z-10">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border-2 border-white"></span>
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-              {(board?.members?.length || 0) > 5 && (
-                <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-700 border-2 border-white flex items-center justify-center text-[10px] font-bold shadow-xs">
-                  +{board.members.length - 5}
-                </div>
-              )}
-            </div>
+            {/* Google Docs-Style Live Presence Bar (Avatars for active members and guests) */}
+            <LivePresenceBar
+              activeUsers={activeUsersList}
+              currentUserId={user?.id}
+              onOpenShareModal={() => setIsShareOpen(true)}
+            />
 
 
             {/* Share Button */}

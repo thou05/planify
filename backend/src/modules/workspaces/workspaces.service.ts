@@ -203,11 +203,47 @@ export class WorkspacesService {
     }
 
     const currentMember = (workspace.members || []).find((m: any) => m.user_id === userId);
-    if (!currentMember && workspace.owner_id !== userId) {
-      throw new ForbiddenException('Bạn không có quyền truy cập Workspace này');
+    const isOwner = workspace.owner_id === userId;
+
+    let currentUserRole: string;
+    if (isOwner) {
+      currentUserRole = 'OWNER';
+    } else if (currentMember) {
+      currentUserRole = currentMember.role || 'MEMBER';
+    } else {
+      // Kiểm tra nếu người dùng là Khách (Guest) trong ít nhất 1 Bảng thuộc Không gian này
+      const boardIds = (workspace.boards || []).map((b: any) => b.id);
+      let isBoardGuest = false;
+      if (boardIds.length > 0) {
+        const { data: userBm } = await this.supabase
+          .from('board_members')
+          .select('id')
+          .eq('user_id', userId)
+          .in('board_id', boardIds)
+          .limit(1);
+        if (userBm && userBm.length > 0) {
+          isBoardGuest = true;
+        }
+      }
+
+      if (!isBoardGuest) {
+        throw new ForbiddenException('Bạn không có quyền truy cập Workspace này');
+      }
+      currentUserRole = 'GUEST';
     }
 
-    const currentUserRole = workspace.owner_id === userId ? 'OWNER' : currentMember?.role || 'MEMBER';
+    // Lọc danh sách boards nếu người dùng là GUEST (chỉ xem được các board mà mình tham gia)
+    let userBoards = workspace.boards || [];
+    if (currentUserRole === 'GUEST') {
+      const { data: userBoardMemberships } = await this.supabase
+        .from('board_members')
+        .select('board_id')
+        .eq('user_id', userId)
+        .in('board_id', (workspace.boards || []).map((b: any) => b.id));
+
+      const allowedBoardIds = new Set((userBoardMemberships || []).map((m: any) => m.board_id));
+      userBoards = userBoards.filter((b: any) => allowedBoardIds.has(b.id));
+    }
 
     // Query guests from boards belonging to this workspace
     const boardIds = (workspace.boards || []).map((b: any) => b.id);
@@ -254,14 +290,14 @@ export class WorkspacesService {
           }
         }
 
+        // Gộp chung 1 bảng/đa bảng thành Khách (Guest) duy nhất
         guests = Array.from(guestMap.entries()).map(([uId, data]) => {
-          const isMulti = data.boards.length > 1;
           return {
             id: uId,
             user_id: uId,
             user: data.user,
-            guestType: isMulti ? 'MULTI_BOARD' : 'SINGLE_BOARD',
-            guestTypeLabel: isMulti ? 'Khách đa bảng' : 'Khách 1 bảng',
+            guestType: 'GUEST',
+            guestTypeLabel: 'Khách (Guest)',
             boardCount: data.boards.length,
             boards: data.boards,
           };
@@ -269,20 +305,19 @@ export class WorkspacesService {
       }
     }
 
-    const singleBoardGuests = guests.filter((g) => g.guestType === 'SINGLE_BOARD');
-    const multiBoardGuests = guests.filter((g) => g.guestType === 'MULTI_BOARD');
-
     return {
       ...workspace,
+      boards: userBoards,
       currentUserRole,
-      isOwner: workspace.owner_id === userId,
+      isOwner,
       isAdmin: currentUserRole === 'OWNER' || currentUserRole === 'ADMIN',
+      isGuest: currentUserRole === 'GUEST',
       guests,
-      singleBoardGuests,
-      multiBoardGuests,
+      singleBoardGuests: guests,
+      multiBoardGuests: guests,
       guestCount: guests.length,
-      singleBoardGuestsCount: singleBoardGuests.length,
-      multiBoardGuestsCount: multiBoardGuests.length,
+      singleBoardGuestsCount: guests.length,
+      multiBoardGuestsCount: guests.length,
     };
   }
 
@@ -514,6 +549,9 @@ export class WorkspacesService {
         );
       }
     }
+
+    // Dọn dẹp liên hoàn: xóa card assignments và board membership trong tất cả các board của workspace
+    await this.cleanupUserFromWorkspaceBoards(workspaceId, currentUserId);
 
     const { error } = await this.supabase
       .from('workspace_members')
@@ -943,6 +981,9 @@ export class WorkspacesService {
 
     const targetName = targetUser?.name || targetUser?.email || 'thành viên';
 
+    // Dọn dẹp liên hoàn: xóa card assignments và board membership trong tất cả các board của workspace
+    await this.cleanupUserFromWorkspaceBoards(workspaceId, targetUserId);
+
     const { error } = await this.supabase
       .from('workspace_members')
       .delete()
@@ -1134,5 +1175,69 @@ export class WorkspacesService {
       workspace,
       currentMember: currentMember || { role: 'OWNER' },
     };
+  }
+
+  private async cleanupUserFromWorkspaceBoards(workspaceId: string, userId: string) {
+    try {
+      // 1. Tìm tất cả boards trong workspace
+      const { data: boards } = await this.supabase
+        .from('boards')
+        .select('id')
+        .eq('workspace_id', workspaceId);
+
+      const boardIds = (boards || []).map((b: any) => b.id);
+      if (boardIds.length === 0) return;
+
+      // 2. Tìm tất cả cards trong các board này
+      const { data: lists } = await this.supabase
+        .from('lists')
+        .select('id, cards (id)')
+        .in('board_id', boardIds);
+
+      const cardIds: string[] = [];
+      (lists || []).forEach((l: any) => {
+        (l.cards || []).forEach((c: any) => {
+          if (c.id) cardIds.push(c.id);
+        });
+      });
+
+      // 3. Xóa card_assignees của user trong các card này
+      if (cardIds.length > 0) {
+        await this.supabase
+          .from('card_assignees')
+          .delete()
+          .in('card_id', cardIds)
+          .eq('user_id', userId);
+
+        // Fallback xóa theo board_member_id nếu schema cũ
+        const { data: bMembers } = await this.supabase
+          .from('board_members')
+          .select('id')
+          .in('board_id', boardIds)
+          .eq('user_id', userId);
+        const bmIds = (bMembers || []).map((m: any) => m.id);
+        if (bmIds.length > 0) {
+          await this.supabase
+            .from('card_assignees')
+            .delete()
+            .in('card_id', cardIds)
+            .in('board_member_id', bmIds);
+        }
+      }
+
+      // 4. Xóa board_members của user trong các board của workspace
+      await this.supabase
+        .from('board_members')
+        .delete()
+        .in('board_id', boardIds)
+        .eq('user_id', userId);
+
+      // Emit board events để các client đang mở board nhận được cập nhật
+      boardIds.forEach((bId: string) => {
+        this.supabase.emitBoardEvent(bId, 'BOARD_MEMBERS_CHANGED', { senderId: userId });
+      });
+    } catch (err) {
+      console.error('Lỗi dọn dẹp liên hoàn khi rời workspace:', err);
+    }
   }
 }

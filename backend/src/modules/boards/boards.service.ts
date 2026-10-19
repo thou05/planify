@@ -25,7 +25,10 @@ export class BoardsService {
   ) {}
 
   async create(workspaceId: string, userId: string, dto: CreateBoardDto) {
-    await this.verifyWorkspaceAccess(workspaceId, userId);
+    const wsAccess = await this.verifyWorkspaceAccess(workspaceId, userId);
+    if (wsAccess.role === 'GUEST') {
+      throw new ForbiddenException('Thành viên dạng Khách (Guest) không có quyền tạo Bảng mới trong Không gian làm việc.');
+    }
 
     // 1. Tạo board (hỗ trợ trường mở rộng an toàn)
     const insertPayload: Record<string, any> = {
@@ -107,7 +110,7 @@ export class BoardsService {
   }
 
   async findAllInWorkspace(workspaceId: string, userId: string, includeArchived = false) {
-    await this.verifyWorkspaceAccess(workspaceId, userId);
+    const wsAccess = await this.verifyWorkspaceAccess(workspaceId, userId);
 
     let query = this.supabase
       .from('boards')
@@ -140,12 +143,18 @@ export class BoardsService {
       .maybeSingle();
 
     const isWsOwner = workspace?.owner_id === userId;
+    const isGuest = wsAccess.role === 'GUEST';
 
     return (boards || [])
       .filter((b: any) => {
         // Lọc archived nếu có trường is_archived
         if (!includeArchived && b.is_archived === true) return false;
         if (includeArchived && b.is_archived !== true) return false;
+
+        // Nếu là Khách (Guest), chỉ được xem các bảng mà mình là thành viên
+        if (isGuest) {
+          return (b.members || []).some((m: any) => m.user_id === userId);
+        }
 
         // Nếu là private, chỉ hiển thị nếu là member hoặc WS owner
         if (b.visibility === 'PRIVATE') {
@@ -281,31 +290,30 @@ export class BoardsService {
     }
 
     let currentUserBoardRole: 'ADMIN' | 'EDITOR' | 'VIEWER' = 'VIEWER';
-    if (isWorkspaceOwner) {
-      currentUserBoardRole = 'ADMIN';
-    } else if (currentMember) {
+    if (currentMember) {
       if (currentMember.role === 'ADMIN') {
         currentUserBoardRole = 'ADMIN';
       } else if (currentMember.role === 'VIEWER') {
         currentUserBoardRole = 'VIEWER';
       } else {
-        // 'EDITOR' hoặc 'MEMBER' đều có toàn quyền tương tác/chỉnh sửa nội dung
+        // 'EDITOR' hoặc 'MEMBER' đều là người biên tập/thực thi
         currentUserBoardRole = 'EDITOR';
       }
-    } else if (wsMember && wsMember.role === 'ADMIN') {
+    } else if (isWorkspaceOwner) {
       currentUserBoardRole = 'ADMIN';
     } else {
       currentUserBoardRole = 'VIEWER';
     }
 
-    const isGuest = !isWorkspaceOwner && !wsMember;
-    const isWorkspaceMember = Boolean(isWorkspaceOwner || wsMember);
+    const isGuest = !isWorkspaceOwner && (!wsMember || wsMember.role === 'GUEST');
+    const isWorkspaceMember = Boolean(isWorkspaceOwner || (wsMember && wsMember.role !== 'GUEST'));
     const isBoardMember = Boolean(currentMember);
 
-    const canEdit = isWorkspaceOwner || currentUserBoardRole === 'ADMIN' || currentUserBoardRole === 'EDITOR';
-    const canManageMembers = (currentUserBoardRole === 'ADMIN' || isWorkspaceOwner) && isWorkspaceMember;
-    const canDelete = (currentUserBoardRole === 'ADMIN' || isWorkspaceOwner) && isWorkspaceMember;
-    const canChangeVisibility = (currentUserBoardRole === 'ADMIN' || isWorkspaceOwner) && isWorkspaceMember;
+    const canEdit = currentUserBoardRole === 'ADMIN' || currentUserBoardRole === 'EDITOR';
+    const canManageMembers = currentUserBoardRole === 'ADMIN';
+    const canInviteMembers = currentUserBoardRole === 'ADMIN' || currentUserBoardRole === 'EDITOR';
+    const canDelete = currentUserBoardRole === 'ADMIN';
+    const canChangeVisibility = currentUserBoardRole === 'ADMIN';
 
     // Sắp xếp lists và cards theo position
     if (b.lists) {
@@ -329,6 +337,7 @@ export class BoardsService {
       isGuest,
       canEdit,
       canManageMembers,
+      canInviteMembers,
       canDelete,
       canChangeVisibility,
     };
@@ -691,6 +700,26 @@ export class BoardsService {
   }
 
   // --- BOARD MEMBERS MANAGEMENT ---
+  private async cleanupBoardCardAssignments(boardId: string, userId: string) {
+    try {
+      const { data: boardCards } = await this.supabase
+        .from('cards')
+        .select('id, list:lists!inner(board_id)')
+        .eq('list.board_id', boardId);
+
+      const cardIds = (boardCards || []).map((c: any) => c.id);
+      if (cardIds.length > 0) {
+        await this.supabase
+          .from('card_assignees')
+          .delete()
+          .eq('user_id', userId)
+          .in('card_id', cardIds);
+      }
+    } catch (err: any) {
+      console.warn(`Failed to cleanup card assignments for user ${userId} in board ${boardId}: ${err?.message}`);
+    }
+  }
+
   async getBoardMembers(boardId: string, userId: string) {
     await this.findById(boardId, userId);
 
@@ -711,11 +740,37 @@ export class BoardsService {
     return members || [];
   }
 
+  async getAssignableMembers(boardId: string, userId: string) {
+    await this.findById(boardId, userId);
+
+    // Nghiệp vụ: Chỉ thành viên Board có role ADMIN hoặc EDITOR mới có thể được phân công Card
+    const { data: members, error } = await this.supabase
+      .from('board_members')
+      .select(`
+        id,
+        board_id,
+        user_id,
+        role,
+        joined_at,
+        user:users (id, name, email, avatar)
+      `)
+      .eq('board_id', boardId)
+      .in('role', ['ADMIN', 'EDITOR', 'MEMBER']);
+
+    if (error) throw new BadRequestException(error.message);
+
+    return members || [];
+  }
+
   async addBoardMember(boardId: string, currentUserId: string, dto: AddBoardMemberDto) {
     const board = await this.findById(boardId, currentUserId);
-    if (!board.canManageMembers) {
-      throw new ForbiddenException('Bạn không có quyền thêm thành viên vào Board này');
+    // Cả Board ADMIN và Board EDITOR đều có quyền mời / thêm thành viên vào Board
+    if (!board.canInviteMembers && !board.canManageMembers) {
+      throw new ForbiddenException('Bạn không có quyền thêm thành viên vào Board này (chỉ Admin và Editor)');
     }
+
+    // Nếu người mời là EDITOR, vai trò của thành viên mới bắt buộc phải là EDITOR (Section 8.1)
+    const roleToAssign = board.currentUserBoardRole === 'ADMIN' ? (dto.role || 'EDITOR') : 'EDITOR';
 
     // Kiểm tra xem targetUser có thuộc Workspace không (hoặc là chủ sở hữu workspace)
     const isWsOwner = (board.workspace as any)?.owner_id === dto.userId;
@@ -728,7 +783,7 @@ export class BoardsService {
         .maybeSingle();
 
       if (!wsMember) {
-        throw new BadRequestException('Người dùng này chưa phải là thành viên của Không gian làm việc');
+        throw new BadRequestException('Người dùng này chưa phải là thành viên của Không gian làm việc. Phải mời vào Workspace trước.');
       }
     }
 
@@ -749,7 +804,7 @@ export class BoardsService {
       .insert({
         board_id: boardId,
         user_id: dto.userId,
-        role: dto.role || 'EDITOR',
+        role: roleToAssign,
       })
       .select(`
         id,
@@ -790,8 +845,9 @@ export class BoardsService {
     dto: UpdateBoardMemberRoleDto,
   ) {
     const board = await this.findById(boardId, currentUserId);
-    if (!board.canManageMembers) {
-      throw new ForbiddenException('Bạn không có quyền thay đổi vai trò thành viên Board');
+    // Nghiệp vụ TC05C & Section 8.1: Chỉ Board ADMIN mới có quyền thay đổi Board Role
+    if (board.currentUserBoardRole !== 'ADMIN') {
+      throw new ForbiddenException('Chỉ Quản trị viên Board (Admin) mới có quyền thay đổi vai trò thành viên');
     }
 
     // Nếu hạ quyền Admin, kiểm tra xem còn Admin nào khác không
@@ -833,9 +889,14 @@ export class BoardsService {
 
     if (error) throw new BadRequestException(error.message);
 
+    // Nghiệp vụ TC11 & Section 26: Khi đổi sang VIEWER, tự động gỡ bỏ thành viên khỏi tất cả Card Assignment trong Board đó
+    if (dto.role === 'VIEWER') {
+      await this.cleanupBoardCardAssignments(boardId, targetUserId);
+    }
+
     const targetUserObj = Array.isArray((updated as any)?.user) ? (updated as any)?.user[0] : (updated as any)?.user;
     const targetName = targetUserObj?.name || targetUserObj?.email || 'thành viên';
-    const roleLabel = dto.role === 'ADMIN' ? 'Quản trị viên' : dto.role === 'VIEWER' ? 'Người xem' : 'Thành viên';
+    const roleLabel = dto.role === 'ADMIN' ? 'Quản trị viên' : dto.role === 'VIEWER' ? 'Người xem' : 'Biên tập viên';
 
     await this.activitiesService.logActivity({
       workspaceId: board.workspace_id,
@@ -877,8 +938,9 @@ export class BoardsService {
 
   async removeBoardMember(boardId: string, currentUserId: string, targetUserId: string) {
     const board = await this.findById(boardId, currentUserId);
-    if (!board.canManageMembers) {
-      throw new ForbiddenException('Bạn không có quyền xóa thành viên khỏi Board này');
+    // Nghiệp vụ TC05B & Section 8.1: Chỉ Board ADMIN mới có quyền xóa thành viên khỏi Board
+    if (board.currentUserBoardRole !== 'ADMIN') {
+      throw new ForbiddenException('Chỉ Quản trị viên Board (Admin) mới có quyền xóa thành viên khỏi Board này');
     }
 
     // Kiểm tra nếu là Admin cuối cùng
@@ -900,6 +962,9 @@ export class BoardsService {
         throw new BadRequestException('Không thể xóa Quản trị viên cuối cùng của Board');
       }
     }
+
+    // Nghiệp vụ TC10 & Section 27: Cleanup toàn bộ Card Assignment của user trong Board này trước khi xóa BoardMember
+    await this.cleanupBoardCardAssignments(boardId, targetUserId);
 
     // Lấy thông tin thành viên bị xóa để ghi rõ tên trong dòng hoạt động
     const { data: targetUser } = await this.supabase
@@ -986,6 +1051,9 @@ export class BoardsService {
       }
     }
 
+    // Dọn dẹp Card Assignment của chính mình trong board trước khi rời
+    await this.cleanupBoardCardAssignments(boardId, currentUserId);
+
     const { error } = await this.supabase
       .from('board_members')
       .delete()
@@ -1000,12 +1068,14 @@ export class BoardsService {
   // --- BOARD INVITATIONS ---
   async inviteMember(boardId: string, currentUserId: string, dto: InviteBoardMemberDto) {
     const board = await this.findById(boardId, currentUserId);
-    if (!board.canManageMembers) {
+    // Cả Board ADMIN và Board EDITOR đều được quyền mời thành viên vào Board (Section 8.1 & TC05)
+    if (!board.canInviteMembers && !board.canManageMembers) {
       throw new ForbiddenException('Bạn không có quyền mời thành viên vào Board');
     }
 
     const email = dto.email.trim().toLowerCase();
-    const role = dto.role || 'EDITOR';
+    // Nếu Actor là EDITOR, role mời bắt buộc là EDITOR (chỉ Admin mới được chọn role khác)
+    const role = board.currentUserBoardRole === 'ADMIN' ? (dto.role || 'EDITOR') : 'EDITOR';
 
     // 1. Kiểm tra xem người dùng đã là thành viên của Board chưa
     const { data: targetUser } = await this.supabase
@@ -1325,24 +1395,46 @@ export class BoardsService {
     return { message: 'Đã từ chối lời mời tham gia Bảng' };
   }
 
-  private async verifyWorkspaceAccess(workspaceId: string, userId: string) {
+  private async verifyWorkspaceAccess(workspaceId: string, userId: string): Promise<{ role: string }> {
+    const { data: workspace } = await this.supabase
+      .from('workspaces')
+      .select('owner_id')
+      .eq('id', workspaceId)
+      .maybeSingle();
+
+    if (!workspace) {
+      throw new NotFoundException('Không tìm thấy Không gian làm việc');
+    }
+
+    if (workspace.owner_id === userId) {
+      return { role: 'OWNER' };
+    }
+
     const { data: member } = await this.supabase
       .from('workspace_members')
-      .select('id')
+      .select('id, role')
       .eq('workspace_id', workspaceId)
       .eq('user_id', userId)
       .maybeSingle();
 
-    if (!member) {
-      const { data: workspace } = await this.supabase
-        .from('workspaces')
-        .select('owner_id')
-        .eq('id', workspaceId)
-        .maybeSingle();
-
-      if (workspace?.owner_id !== userId) {
-        throw new ForbiddenException('Bạn không có quyền truy cập Không gian làm việc này');
-      }
+    if (member) {
+      return { role: member.role || 'MEMBER' };
     }
+
+    // Kiểm tra nếu là Khách (Guest) trong ít nhất một Bảng thuộc Workspace
+    const { data: boards } = await this.supabase
+      .from('boards')
+      .select('id, members:board_members(user_id)')
+      .eq('workspace_id', workspaceId);
+
+    const isBoardGuest = (boards || []).some((b: any) =>
+      (b.members || []).some((m: any) => m.user_id === userId)
+    );
+
+    if (isBoardGuest) {
+      return { role: 'GUEST' };
+    }
+
+    throw new ForbiddenException('Bạn không có quyền truy cập Không gian làm việc này');
   }
 }

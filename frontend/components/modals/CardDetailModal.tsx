@@ -366,9 +366,9 @@ export default function CardDetailModal({
     boardVisibilityProp || card?.list?.board?.visibility || 'WORKSPACE';
   const isPrivateBoard = boardVisibility === 'PRIVATE';
 
-  // Thành viên có thể phân công (CHỈ các thành viên trong Bảng - board_members + Workspace Owner)
+  // Thành viên có thể phân công (CHỈ các thành viên trong Bảng với vai trò ADMIN hoặc EDITOR)
   const assignableMembers = React.useMemo(() => {
-    const list = (boardMembers || []).map((m) => {
+    return (boardMembers || []).map((m) => {
       const uId = m.user?.id || m.user_id;
       return {
         id: m.id || uId,
@@ -379,57 +379,15 @@ export default function CardDetailModal({
         isBoardMember: true,
       };
     });
+  }, [boardMembers]);
 
-    // Nếu Workspace Owner chưa có trong board_members, vẫn cho phép nhận phân công vì có toàn quyền
-    const wsOwner = (workspaceMembersList || []).find((wm) => wm.role === 'OWNER');
-    if (wsOwner) {
-      const ownerId = wsOwner.user?.id || wsOwner.user_id;
-      if (ownerId && !list.some((bm) => bm.user_id === ownerId || bm.user?.id === ownerId)) {
-        list.unshift({
-          id: wsOwner.id || ownerId,
-          board_member_id: wsOwner.id,
-          user_id: ownerId,
-          user: wsOwner.user || { id: ownerId, name: 'Chủ sở hữu' },
-          role: 'ADMIN',
-          isBoardMember: true,
-        });
-      }
-    }
-
-    return list;
-  }, [boardMembers, workspaceMembersList]);
-
-  // Thành viên gợi ý từ Workspace (chưa tham gia Bảng này)
-  // Chỉ hiển thị cho bảng WORKSPACE hoặc PUBLIC, tuyệt đối KHÔNG hiển thị cho PRIVATE
-  const suggestedWorkspaceMembers = React.useMemo(() => {
-    if (isPrivateBoard) return [];
-    const boardUserIds = new Set(
-      (boardMembers || []).map((bm) => bm.user?.id || bm.user_id).filter(Boolean),
-    );
-    return (workspaceMembersList || [])
-      .filter((wm) => {
-        const uId = wm.user?.id || wm.user_id;
-        return uId && !boardUserIds.has(uId);
-      })
-      .map((wm) => {
-        const uId = wm.user?.id || wm.user_id;
-        return {
-          id: wm.id || uId,
-          user_id: uId,
-          user: wm.user || { id: uId, name: 'Thành viên' },
-          role: wm.role || 'MEMBER',
-          isBoardMember: false,
-        };
-      });
-  }, [isPrivateBoard, boardMembers, workspaceMembersList]);
+  // Không hiển thị thành viên ngoài Bảng trong danh sách phân công
+  const suggestedWorkspaceMembers = React.useMemo<any[]>(() => [], []);
 
   // Thành viên có thể tag Mention (trong bình luận)
   const mentionableMembers = React.useMemo(() => {
-    if (isPrivateBoard) {
-      return assignableMembers;
-    }
-    return [...assignableMembers, ...suggestedWorkspaceMembers];
-  }, [isPrivateBoard, assignableMembers, suggestedWorkspaceMembers]);
+    return assignableMembers;
+  }, [assignableMembers]);
 
   const [addingBoardMemberId, setAddingBoardMemberId] = useState<string | null>(null);
 
@@ -888,7 +846,7 @@ export default function CardDetailModal({
 
   const fetchBoardMembers = async (boardId: string) => {
     try {
-      const res = await apiClient<any[]>(`/boards/${boardId}/members`);
+      const res = await apiClient<any[]>(`/boards/${boardId}/assignable-members`);
       if (res.success && res.data) {
         setBoardMembers(res.data);
       }
@@ -1322,33 +1280,19 @@ export default function CardDetailModal({
     let targetUserId: string | null = null;
     let targetUser: any = null;
 
-    if (bMember) {
-      if (bMember.role === 'VIEWER') {
-        alert('Thành viên có vai trò Người xem (Viewer) không thể nhận nhiệm vụ.');
-        return;
-      }
-      effectiveMemberId = bMember.id;
-      targetUserId = bMember.user?.id || bMember.user_id;
-      targetUser = bMember.user;
-    } else {
-      if (isPrivateBoard) {
-        alert('Bảng này là bảng Riêng tư. Chỉ có thể phân công thành viên đã tham gia bảng.');
-        return;
-      }
-
-      const wsMember = (workspaceMembersList || []).find(
-        (m) => m.id === memberId || m.user_id === memberId || m.user?.id === memberId,
-      );
-
-      if (!wsMember) {
-        alert('Thành viên không thuộc Không gian làm việc.');
-        return;
-      }
-
-      effectiveMemberId = null;
-      targetUserId = wsMember.user?.id || wsMember.user_id;
-      targetUser = wsMember.user;
+    if (!bMember) {
+      alert('Chỉ có thể phân công thành viên đã tham gia Bảng này với vai trò Quản trị viên hoặc Biên tập viên.');
+      return;
     }
+
+    if (bMember.role === 'VIEWER') {
+      alert('Thành viên có vai trò Người xem (Viewer) không thể nhận nhiệm vụ.');
+      return;
+    }
+
+    effectiveMemberId = bMember.id;
+    targetUserId = bMember.user?.id || bMember.user_id;
+    targetUser = bMember.user;
 
     const isAssigned = assignees.some(
       (a) =>
@@ -2255,14 +2199,7 @@ export default function CardDetailModal({
     return name.includes(q) || email.includes(q);
   });
 
-  const filteredSuggestedMembers = suggestedWorkspaceMembers.filter((m) => {
-    if (isPrivateBoard) return false;
-    const q = memberSearchQuery.toLowerCase().trim();
-    if (!q) return true;
-    const name = m.user?.name?.toLowerCase() || '';
-    const email = m.user?.email?.toLowerCase() || '';
-    return name.includes(q) || email.includes(q);
-  });
+  const filteredSuggestedMembers: any[] = [];
 
   const filteredItemBoardMembers = assignableMembers.filter((m) => {
     const q = itemMemberSearchQuery.toLowerCase().trim();
@@ -2272,14 +2209,7 @@ export default function CardDetailModal({
     return name.includes(q) || email.includes(q);
   });
 
-  const filteredItemSuggestedMembers = suggestedWorkspaceMembers.filter((m) => {
-    if (isPrivateBoard) return false;
-    const q = itemMemberSearchQuery.toLowerCase().trim();
-    if (!q) return true;
-    const name = m.user?.name?.toLowerCase() || '';
-    const email = m.user?.email?.toLowerCase() || '';
-    return name.includes(q) || email.includes(q);
-  });
+  const filteredItemSuggestedMembers: any[] = [];
 
   // Filtered members for new comment mention autocomplete - LOẠI BỎ CHÍNH MÌNH (currentUser)
   const filteredMentionMembers = mentionableMembers
@@ -5456,92 +5386,7 @@ export default function CardDetailModal({
                   )}
                 </div>
 
-                {/* 2. Gợi ý từ Workspace (chỉ hiển thị cho bảng WORKSPACE và PUBLIC) */}
-                {!isPrivateBoard && (
-                  <div className="pt-2 border-t border-slate-100 space-y-1">
-                    <div className="px-2 py-1 flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                      <span>Gợi ý từ Workspace ({filteredSuggestedMembers.length})</span>
-                      <span className="text-[10px] text-slate-400 lowercase font-normal">chưa vào bảng</span>
-                    </div>
 
-                    {filteredSuggestedMembers.length === 0 ? (
-                      <div className="p-3 text-center text-xs text-slate-400">
-                        {suggestedWorkspaceMembers.length === 0
-                          ? 'Tất cả thành viên Workspace đã có trong bảng'
-                          : 'Không tìm thấy gợi ý phù hợp'}
-                      </div>
-                    ) : (
-                    filteredSuggestedMembers.map((m) => {
-                      const uName = m.user?.name || 'Thành viên';
-                      const uEmail = m.user?.email || '';
-                      const uAvatar = m.user?.avatar;
-                      const uId = m.user?.id || m.user_id;
-                      const isAssigned = assignees.some(
-                        (a) =>
-                          a.user_id === uId ||
-                          a.user?.id === uId ||
-                          a.board_member?.user_id === uId ||
-                          a.board_member?.user?.id === uId,
-                      );
-
-                      return (
-                        <div
-                          key={m.id || uId}
-                          onClick={() => handleToggleAssignee(uId)}
-                          className="w-full p-2.5 rounded-md hover:bg-slate-50 flex items-center justify-between gap-3 text-left transition-colors cursor-pointer group"
-                        >
-                          <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                            <div className="relative shrink-0">
-                              {uAvatar ? (
-                                <img
-                                  src={uAvatar}
-                                  alt={uName}
-                                  className="w-7 h-7 rounded-full object-cover shrink-0"
-                                />
-                              ) : (
-                                <div className="w-7 h-7 rounded-full bg-slate-400 text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
-                                  {uName.charAt(0).toUpperCase()}
-                                </div>
-                              )}
-                              {(activeUserIds?.has(uId) || activeUserIds?.has(m.user_id) || activeUserIds?.has(m.id)) && (
-                                <span
-                                  className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white z-10"
-                                  title="Đang online trên bảng"
-                                >
-                                  <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="text-xs font-bold text-slate-900 truncate">
-                                  {uName}
-                                </span>
-                                <span className="text-[10px] px-1.5 py-0.2 bg-purple-50 text-purple-700 border border-purple-200 rounded font-medium shrink-0">
-                                  Workspace
-                                </span>
-                              </div>
-                              {uEmail && (
-                                <div className="text-[11px] text-slate-400 truncate">{uEmail}</div>
-                              )}
-                            </div>
-                          </div>
-
-                          <div
-                            className={`w-5 h-5 rounded-md flex items-center justify-center transition-all shrink-0 ${
-                              isAssigned
-                                ? 'bg-[#f28d8d] text-white'
-                                : 'border border-slate-200 group-hover:border-slate-300'
-                            }`}
-                          >
-                            {isAssigned && <Check className="w-3.5 h-3.5" />}
-                          </div>
-                        </div>
-                      );
-                    })
-                    )}
-                  </div>
-                )}
               </div>
 
               {/* Footer */}
@@ -6195,97 +6040,7 @@ export default function CardDetailModal({
                   )}
                 </div>
 
-                {/* 2. Gợi ý từ Workspace (chỉ hiển thị cho bảng WORKSPACE và PUBLIC) */}
-                {!isPrivateBoard && (
-                  <div className="pt-2 border-t border-slate-100 space-y-1">
-                    <div className="px-2 py-1 flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                      <span>Gợi ý từ Workspace ({filteredItemSuggestedMembers.length})</span>
-                      <span className="text-[10px] text-slate-400 lowercase font-normal">chưa vào bảng</span>
-                    </div>
 
-                    {filteredItemSuggestedMembers.length === 0 ? (
-                      <div className="p-3 text-center text-xs text-slate-400">
-                        {suggestedWorkspaceMembers.length === 0
-                          ? 'Tất cả thành viên Workspace đã có trong bảng'
-                          : 'Không tìm thấy gợi ý phù hợp'}
-                      </div>
-                    ) : (
-                      filteredItemSuggestedMembers.map((m) => {
-                        const uName = m.user?.name || 'Thành viên';
-                        const uEmail = m.user?.email || '';
-                        const uAvatar = m.user?.avatar;
-                        const uId = m.user?.id || m.user_id;
-                        const isAssigned =
-                          activeItemMember.item.user_id === uId ||
-                          activeItemMember.item.member_id === uId ||
-                          activeItemMember.item.user?.id === uId ||
-                          activeItemMember.item.member?.id === uId ||
-                          activeItemMember.item.member?.user?.id === uId;
-
-                        return (
-                          <div
-                            key={m.id || uId}
-                            onClick={() => {
-                              handleAssignItemMember(
-                                activeItemMember.checklistId,
-                                activeItemMember.item.id,
-                                isAssigned ? null : uId,
-                              );
-                            }}
-                            className="w-full p-2.5 rounded-md hover:bg-slate-50 flex items-center justify-between gap-3 text-left transition-colors cursor-pointer group"
-                          >
-                            <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                              <div className="relative shrink-0">
-                                {uAvatar ? (
-                                  <img
-                                    src={uAvatar}
-                                    alt={uName}
-                                    className="w-7 h-7 rounded-full object-cover shrink-0"
-                                  />
-                                ) : (
-                                  <div className="w-7 h-7 rounded-full bg-slate-400 text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-2xs">
-                                    {uName.charAt(0).toUpperCase()}
-                                  </div>
-                                )}
-                                {(activeUserIds?.has(uId) || activeUserIds?.has(m.user_id) || activeUserIds?.has(m.id)) && (
-                                  <span
-                                    className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white z-10"
-                                    title="Đang online trên bảng"
-                                  >
-                                    <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="text-xs font-bold text-slate-900 truncate">
-                                    {uName}
-                                  </span>
-                                  <span className="text-[10px] px-1.5 py-0.2 bg-purple-50 text-purple-700 border border-purple-200 rounded font-medium shrink-0">
-                                    Workspace
-                                  </span>
-                                </div>
-                                {uEmail && (
-                                  <div className="text-[11px] text-slate-400 truncate">{uEmail}</div>
-                                )}
-                              </div>
-                            </div>
-
-                            <div
-                              className={`w-5 h-5 rounded-md flex items-center justify-center transition-all shrink-0 ${
-                                isAssigned
-                                  ? 'bg-[#f28d8d] text-white'
-                                  : 'border border-slate-200 group-hover:border-slate-300'
-                              }`}
-                            >
-                              {isAssigned && <Check className="w-3.5 h-3.5" />}
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                )}
               </div>
 
               {/* Footer */}
