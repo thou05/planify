@@ -16,6 +16,27 @@ import { ActivitiesService } from '../activities/activities.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import * as crypto from 'crypto';
 
+export function extractBoardAppearance(rawBackground: any, rawIcon?: any) {
+  let background = rawBackground ?? null;
+  let icon = rawIcon ?? null;
+
+  if (typeof background === 'string' && background.startsWith('{') && background.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(background);
+      if (parsed && typeof parsed === 'object') {
+        background = parsed.bg ?? null;
+        if (!icon && parsed.icon) {
+          icon = parsed.icon;
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return { background, icon };
+}
+
 @Injectable()
 export class BoardsService {
   constructor(
@@ -41,6 +62,12 @@ export class BoardsService {
     if (dto.visibility) {
       insertPayload.visibility = dto.visibility;
     }
+    if (dto.background) {
+      insertPayload.background = dto.background;
+    }
+    if (dto.icon) {
+      insertPayload.icon = dto.icon;
+    }
 
     let board: any;
     const { data: createdBoard, error: bError } = await this.supabase
@@ -50,8 +77,13 @@ export class BoardsService {
       .single();
 
     if (bError) {
-      // Fallback nếu cột visibility chưa tồn tại trong schema
-      if (bError.message?.includes('visibility') || bError.code === '42703') {
+      // Fallback nếu cột icon hoặc visibility chưa tồn tại trong schema
+      if (bError.code === '42703' || bError.message?.includes('column')) {
+        if (insertPayload.icon !== undefined) {
+          const targetIcon = insertPayload.icon;
+          delete insertPayload.icon;
+          insertPayload.background = JSON.stringify({ bg: insertPayload.background || null, icon: targetIcon || null });
+        }
         delete insertPayload.visibility;
         const { data: retryBoard, error: retryErr } = await this.supabase
           .from('boards')
@@ -163,20 +195,24 @@ export class BoardsService {
         }
         return true;
       })
-      .map((b: any) => ({
-        id: b.id,
-        workspace_id: b.workspace_id,
-        name: b.name,
-        description: b.description,
-        is_favorite: b.is_favorite ?? false,
-        is_archived: b.is_archived ?? false,
-        visibility: b.visibility || 'WORKSPACE',
-        background: b.background ?? null,
-        _count: {
-          lists: b.lists?.length || 0,
-          members: b.members?.length || 0,
-        },
-      }));
+      .map((b: any) => {
+        const { background, icon } = extractBoardAppearance(b.background, b.icon);
+        return {
+          id: b.id,
+          workspace_id: b.workspace_id,
+          name: b.name,
+          description: b.description,
+          is_favorite: b.is_favorite ?? false,
+          is_archived: b.is_archived ?? false,
+          visibility: b.visibility || 'WORKSPACE',
+          background,
+          icon,
+          _count: {
+            lists: b.lists?.length || 0,
+            members: b.members?.length || 0,
+          },
+        };
+      });
   }
 
   async findArchivedInWorkspace(workspaceId: string, userId: string) {
@@ -325,11 +361,14 @@ export class BoardsService {
       });
     }
 
+    const { background, icon } = extractBoardAppearance(b.background, b.icon);
+
     return {
       ...b,
       is_archived: b.is_archived ?? false,
       visibility: b.visibility || 'WORKSPACE',
-      background: b.background ?? null,
+      background,
+      icon,
       currentUserBoardRole,
       isWorkspaceOwner,
       isWorkspaceMember,
@@ -370,6 +409,7 @@ export class BoardsService {
     if (dto.visibility !== undefined) updateData.visibility = dto.visibility;
     if (dto.is_archived !== undefined) updateData.is_archived = dto.is_archived;
     if (dto.background !== undefined) updateData.background = dto.background;
+    if (dto.icon !== undefined) updateData.icon = dto.icon;
 
     let updated: any;
     const { data, error } = await this.supabase
@@ -380,19 +420,41 @@ export class BoardsService {
       .single();
 
     if (error) {
-      // Fallback nếu cột mở rộng chưa tồn tại trong schema
-      if (error.code === '42703') {
-        delete updateData.visibility;
-        delete updateData.is_archived;
-        delete updateData.background;
+      // Fallback nếu cột mở rộng (icon, visibility, is_archived, background) chưa tồn tại trong schema
+      if (error.code === '42703' || error.message?.includes('column')) {
+        if (updateData.icon !== undefined) {
+          const targetIcon = updateData.icon;
+          delete updateData.icon;
+          const currentBg = updateData.background !== undefined ? updateData.background : board.background;
+          updateData.background = JSON.stringify({ bg: currentBg || null, icon: targetIcon || null });
+        }
+        if (error.message?.includes('visibility')) delete updateData.visibility;
+        if (error.message?.includes('is_archived')) delete updateData.is_archived;
+
         const { data: retryData, error: retryErr } = await this.supabase
           .from('boards')
           .update(updateData)
           .eq('id', boardId)
           .select()
           .single();
-        if (retryErr) throw new BadRequestException(retryErr.message);
-        updated = retryData;
+
+        if (retryErr) {
+          if (retryErr.code === '42703' && retryErr.message?.includes('background')) {
+            delete updateData.background;
+            const { data: finalData, error: finalErr } = await this.supabase
+              .from('boards')
+              .update(updateData)
+              .eq('id', boardId)
+              .select()
+              .single();
+            if (finalErr) throw new BadRequestException(finalErr.message);
+            updated = finalData;
+          } else {
+            throw new BadRequestException(retryErr.message);
+          }
+        } else {
+          updated = retryData;
+        }
       } else {
         throw new BadRequestException(error.message || 'Không thể cập nhật Board');
       }
@@ -1436,5 +1498,112 @@ export class BoardsService {
     }
 
     throw new ForbiddenException('Bạn không có quyền truy cập Không gian làm việc này');
+  }
+
+  async uploadBackground(boardId: string, file: Express.Multer.File, userId: string) {
+    const board = await this.findById(boardId, userId);
+    if (!board.canEdit || board.isGuest) {
+      throw new ForbiddenException('Bạn không có quyền thay đổi hình nền của Bảng này');
+    }
+
+    if (!file || !file.buffer) {
+      throw new BadRequestException('Vui lòng chọn tệp ảnh hợp lệ để tải lên');
+    }
+
+    const MAX_SIZE = 15 * 1024 * 1024; // 15MB
+    if (file.size > MAX_SIZE) {
+      throw new BadRequestException('Dung lượng ảnh không được vượt quá 15MB');
+    }
+
+    let publicUrl = '';
+    const ext = file.originalname?.split('.').pop() || 'jpg';
+    const filePath = `boards/${boardId}/background-${Date.now()}.${ext}`;
+
+    try {
+      const { data: buckets } = await this.supabase.client.storage.listBuckets();
+      if (!buckets?.some((b) => b.name === 'attachments')) {
+        await this.supabase.client.storage.createBucket('attachments', { public: true });
+      }
+
+      const { error: uploadError } = await this.supabase.client.storage
+        .from('attachments')
+        .upload(filePath, file.buffer, {
+          contentType: file.mimetype || 'image/jpeg',
+          upsert: true,
+        });
+
+      if (uploadError) {
+        publicUrl = `data:${file.mimetype || 'image/jpeg'};base64,${file.buffer.toString('base64')}`;
+      } else {
+        const { data: urlData } = this.supabase.client.storage
+          .from('attachments')
+          .getPublicUrl(filePath);
+        publicUrl = urlData.publicUrl;
+      }
+    } catch {
+      publicUrl = `data:${file.mimetype || 'image/jpeg'};base64,${file.buffer.toString('base64')}`;
+    }
+
+    // Tự động lưu hình nền mới vào Board, đồng thời lấy thẳng ảnh nền làm favicon & biểu tượng đại diện
+    await this.update(boardId, userId, { background: publicUrl, icon: publicUrl });
+
+    return {
+      success: true,
+      url: publicUrl,
+      icon: publicUrl,
+    };
+  }
+
+  async uploadIcon(boardId: string, file: Express.Multer.File, userId: string) {
+    const board = await this.findById(boardId, userId);
+    if (!board.canEdit || board.isGuest) {
+      throw new ForbiddenException('Bạn không có quyền thay đổi biểu tượng của Bảng này');
+    }
+
+    if (!file || !file.buffer) {
+      throw new BadRequestException('Vui lòng chọn tệp ảnh biểu tượng hợp lệ');
+    }
+
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+    if (file.size > MAX_SIZE) {
+      throw new BadRequestException('Dung lượng ảnh biểu tượng không được vượt quá 5MB');
+    }
+
+    let publicUrl = '';
+    const ext = file.originalname?.split('.').pop() || 'png';
+    const filePath = `boards/${boardId}/icon-${Date.now()}.${ext}`;
+
+    try {
+      const { data: buckets } = await this.supabase.client.storage.listBuckets();
+      if (!buckets?.some((b) => b.name === 'attachments')) {
+        await this.supabase.client.storage.createBucket('attachments', { public: true });
+      }
+
+      const { error: uploadError } = await this.supabase.client.storage
+        .from('attachments')
+        .upload(filePath, file.buffer, {
+          contentType: file.mimetype || 'image/png',
+          upsert: true,
+        });
+
+      if (uploadError) {
+        publicUrl = `data:${file.mimetype || 'image/png'};base64,${file.buffer.toString('base64')}`;
+      } else {
+        const { data: urlData } = this.supabase.client.storage
+          .from('attachments')
+          .getPublicUrl(filePath);
+        publicUrl = urlData.publicUrl;
+      }
+    } catch {
+      publicUrl = `data:${file.mimetype || 'image/png'};base64,${file.buffer.toString('base64')}`;
+    }
+
+    // Tự động lưu icon mới vào Board
+    await this.update(boardId, userId, { icon: publicUrl });
+
+    return {
+      success: true,
+      url: publicUrl,
+    };
   }
 }
