@@ -7,8 +7,11 @@ import {
   Body,
   Param,
   UseGuards,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { BoardsService } from './boards.service';
 import { CreateBoardDto } from './dto/create-board.dto';
 import { UpdateBoardDto } from './dto/update-board.dto';
@@ -99,7 +102,7 @@ export class BoardsController {
   }
 
   @Patch('boards/:id')
-  @ApiOperation({ summary: 'Cập nhật thông tin Board (Tên, mô tả, visibility, background)' })
+  @ApiOperation({ summary: 'Cập nhật thông tin Board (Tên, mô tả, visibility, background, icon)' })
   @ApiResponse({ status: 200, description: 'Cập nhật thành công' })
   async update(
     @Param('id') id: string,
@@ -107,6 +110,38 @@ export class BoardsController {
     @Body() dto: UpdateBoardDto,
   ) {
     return this.boardsService.update(id, userId, dto);
+  }
+
+  @Post('boards/:id/upload-background')
+  @ApiOperation({ summary: 'Tải ảnh nền cho Board từ thiết bị' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 15 * 1024 * 1024 },
+    }),
+  )
+  async uploadBackground(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.boardsService.uploadBackground(id, file, userId);
+  }
+
+  @Post('boards/:id/upload-icon')
+  @ApiOperation({ summary: 'Tải biểu tượng Favicon cho Board từ thiết bị' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  async uploadIcon(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.boardsService.uploadIcon(id, file, userId);
   }
 
   @Post('boards/:id/favorite')

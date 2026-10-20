@@ -8,6 +8,17 @@ export interface User {
   name: string;
   email: string;
   avatar?: string | null;
+  cover_image?: string | null;
+  job_title?: string | null;
+  department?: string | null;
+  location?: string | null;
+  website?: string | null;
+  social_links?: {
+    github?: string;
+    linkedin?: string;
+    twitter?: string;
+  } | null;
+  work_status?: 'WORKING' | 'BUSY' | 'AWAY' | string;
   bio?: string | null;
   timezone?: string;
   language?: string;

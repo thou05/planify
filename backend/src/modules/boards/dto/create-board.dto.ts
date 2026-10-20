@@ -36,4 +36,16 @@ export class CreateBoardDto {
   @IsOptional()
   @IsBoolean()
   create_default_lists?: boolean;
+
+  @ApiPropertyOptional({ example: '#2b1572', description: 'Màu nền, gradient hoặc URL ảnh nền' })
+  @IsOptional()
+  @IsString()
+  background?: string;
+
+  @ApiPropertyOptional({ example: '🚀', description: 'Biểu tượng Emoji hoặc icon URL của Board (dùng làm Favicon)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  icon?: string;
 }
+

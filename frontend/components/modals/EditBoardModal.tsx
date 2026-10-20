@@ -9,6 +9,7 @@ interface EditBoardModalProps {
   onClose: () => void;
   board: any;
   onUpdated: () => void;
+  onOpenAppearance?: () => void;
 }
 
 export default function EditBoardModal({
@@ -16,6 +17,7 @@ export default function EditBoardModal({
   onClose,
   board,
   onUpdated,
+  onOpenAppearance,
 }: EditBoardModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -130,6 +132,49 @@ export default function EditBoardModal({
               className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-md font-medium text-slate-900 placeholder:text-slate-400 resize-none focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
             />
           </div>
+
+          {/* Quick Appearance link */}
+          {onOpenAppearance && (
+            <div className="p-3 rounded-lg bg-slate-50 border border-slate-200/90 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-md bg-[#87ceeb]/25 border border-[#87ceeb]/40 flex items-center justify-center text-slate-800 text-base shrink-0 overflow-hidden">
+                  {board?.icon &&
+                  (board.icon.startsWith('http') ||
+                    board.icon.startsWith('data:image') ||
+                    board.icon.startsWith('blob:')) ? (
+                    <img src={board.icon} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    board?.icon || '🎨'
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-slate-900 truncate">
+                    Hình nền & Biểu tượng (Favicon)
+                  </div>
+                  <div className="text-[10px] text-slate-500 truncate">
+                    {board?.icon
+                      ? board.icon.startsWith('http') ||
+                        board.icon.startsWith('data:image') ||
+                        board.icon.startsWith('blob:')
+                        ? 'Biểu tượng: Ảnh tải lên'
+                        : `Biểu tượng: ${board.icon}`
+                      : 'Chưa đặt biểu tượng'}
+                    {board?.background ? ' • Có hình nền riêng' : ' • Nền mặc định'}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenAppearance();
+                }}
+                className="px-2.5 py-1.5 rounded-md text-xs font-semibold text-[#d86969] bg-[#ffc0cb]/25 hover:bg-[#ffc0cb]/40 transition-colors cursor-pointer shrink-0"
+              >
+                Đổi giao diện →
+              </button>
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">

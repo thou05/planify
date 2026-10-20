@@ -10,6 +10,7 @@ import { useShell } from '@/components/layout/ShellContext';
 import ListColumn from '@/components/board/ListColumn';
 import CreateListModal from '@/components/modals/CreateListModal';
 import EditBoardModal from '@/components/modals/EditBoardModal';
+import BoardAppearanceModal from '@/components/board/BoardAppearanceModal';
 import ShareBoardModal from '@/components/modals/ShareBoardModal';
 import CopyBoardModal from '@/components/modals/CopyBoardModal';
 import CardDetailModal from '@/components/modals/CardDetailModal';
@@ -74,6 +75,7 @@ import {
   Eye,
   UserCheck,
   Zap,
+  Palette,
 } from 'lucide-react';
 import { ActivityItem } from '@/components/modals/MyActivityModal';
 import { BoardRiskScannerModal } from '@/components/board/BoardRiskScannerModal';
@@ -165,6 +167,7 @@ export default function BoardDetailPage({
   const [isCreateListOpen, setIsCreateListOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
   const [isCopyOpen, setIsCopyOpen] = useState(false);
   const [isSaveAsTemplateOpen, setIsSaveAsTemplateOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -717,6 +720,59 @@ export default function BoardDetailPage({
     fetchBoard();
     fetchBoardButtons();
   }, [boardId]);
+
+  // Realtime Dynamic Favicon & Browser Tab Title
+  useEffect(() => {
+    if (!board) return;
+
+    // 1. Cập nhật Title tab trình duyệt (nếu icon là URL ảnh thì không nối vào title)
+    const effectiveIcon =
+      board.icon ||
+      (board.background &&
+      (board.background.startsWith('http://') ||
+        board.background.startsWith('https://') ||
+        board.background.startsWith('data:image') ||
+        board.background.startsWith('blob:'))
+        ? board.background
+        : null);
+
+    const isImageIcon = Boolean(
+      effectiveIcon &&
+        (effectiveIcon.startsWith('http://') ||
+          effectiveIcon.startsWith('https://') ||
+          effectiveIcon.startsWith('data:image') ||
+          effectiveIcon.startsWith('blob:'))
+    );
+
+    const titlePrefix = board.icon && !isImageIcon ? `${board.icon} ` : '';
+    document.title = `${titlePrefix}${board.name || 'Bảng công việc'} | Planify`;
+
+    // 2. Cập nhật Favicon động (hỗ trợ cả emoji SVG và URL ảnh từ thiết bị/hình nền)
+    let faviconLink: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
+    const originalFaviconHref = faviconLink?.href || '/favicon.ico';
+
+    if (effectiveIcon) {
+      let faviconUrl = effectiveIcon;
+      if (!isImageIcon) {
+        const emojiSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">${effectiveIcon}</text></svg>`;
+        faviconUrl = `data:image/svg+xml,${encodeURIComponent(emojiSvg)}`;
+      }
+
+      if (!faviconLink) {
+        faviconLink = document.createElement('link');
+        faviconLink.rel = 'icon';
+        document.head.appendChild(faviconLink);
+      }
+      faviconLink.href = faviconUrl;
+    }
+
+    return () => {
+      document.title = 'Planify — Collaborative Work Management';
+      if (faviconLink && originalFaviconHref) {
+        faviconLink.href = originalFaviconHref;
+      }
+    };
+  }, [board?.icon, board?.background, board?.name]);
 
   // Helper tạo danh tính khách tạm thời nếu chưa đăng nhập (Google Docs animal anonymous style)
   const getGuestSessionUser = React.useCallback((): { id: string; name: string; avatar?: string | null; isGuest: true } => {
@@ -1666,11 +1722,21 @@ export default function BoardDetailPage({
     );
   }
 
+  const isPhotoBg = Boolean(
+    board?.background &&
+      (board.background.startsWith('http') || board.background.startsWith('data:'))
+  );
+
   return (
     <>
       <div
         className="h-full flex flex-col relative bg-dot-pattern"
-        style={board?.background ? { background: board.background } : undefined}
+        style={{
+          background: isPhotoBg ? undefined : board?.background || undefined,
+          backgroundImage: isPhotoBg ? `url("${board.background}")` : undefined,
+          backgroundSize: isPhotoBg ? 'cover' : undefined,
+          backgroundPosition: isPhotoBg ? 'center' : undefined,
+        }}
       >
         {/* Archived Banner Warning */}
         {board?.is_archived && (
@@ -1704,7 +1770,13 @@ export default function BoardDetailPage({
         )}
 
         {/* Board Top Navigation Bar */}
-        <div className="h-14 px-6 bg-white border-b border-slate-200 flex items-center justify-between shrink-0 select-none">
+        <div
+          className={`h-14 px-6 border-b flex items-center justify-between shrink-0 select-none transition-colors duration-200 ${
+            board?.background
+              ? 'bg-white/85 backdrop-blur-md border-white/20 shadow-xs'
+              : 'bg-white border-slate-200'
+          }`}
+        >
           {/* Left: Back button & Board Name & Badges */}
           <div className="flex items-center gap-3 min-w-0">
             <Link
@@ -1718,6 +1790,35 @@ export default function BoardDetailPage({
             <div className="h-4 w-[1px] bg-slate-200" />
 
             <div className="flex items-center gap-2 min-w-0">
+              {/* Quick Board Icon / Favicon Button */}
+              {canEditBoard && !isGuest && !board?.is_archived ? (
+                <button
+                  type="button"
+                  onClick={() => setIsAppearanceOpen(true)}
+                  className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-base sm:text-lg transition-transform hover:scale-110 active:scale-95 cursor-pointer shrink-0 border border-slate-200/70 shadow-2xs overflow-hidden"
+                  title="Nhấp để đổi biểu tượng hoặc hình nền Bảng"
+                >
+                  {board?.icon &&
+                  (board.icon.startsWith('http') ||
+                    board.icon.startsWith('data:image') ||
+                    board.icon.startsWith('blob:')) ? (
+                    <img src={board.icon} alt="" className="w-5 h-5 rounded object-cover" />
+                  ) : (
+                    <span>{board?.icon || '🎨'}</span>
+                  )}
+                </button>
+              ) : board?.icon ? (
+                board.icon.startsWith('http') ||
+                board.icon.startsWith('data:image') ||
+                board.icon.startsWith('blob:') ? (
+                  <img src={board.icon} alt="" className="w-5 h-5 rounded object-cover shrink-0" title="Biểu tượng Bảng" />
+                ) : (
+                  <span className="text-base sm:text-lg leading-none shrink-0" title="Biểu tượng Bảng">
+                    {board.icon}
+                  </span>
+                )
+              ) : null}
+
               <div className="relative group/boardTitle flex items-center min-w-0">
                 <h1
                   className="text-sm sm:text-base font-bold text-slate-900 tracking-tight truncate max-w-[130px] sm:max-w-[180px] md:max-w-[220px] lg:max-w-[280px] cursor-default"
@@ -2106,16 +2207,29 @@ export default function BoardDetailPage({
                   )}
 
                   {board?.canEdit && !isGuest && !board?.is_archived && (
-                    <button
-                      onClick={() => {
-                        setIsBoardMenuOpen(false);
-                        setIsEditOpen(true);
-                      }}
-                      className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
-                    >
-                      <Edit3 className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Chỉnh sửa thông tin Bảng</span>
-                    </button>
+                    <>
+                      <button
+                        onClick={() => {
+                          setIsBoardMenuOpen(false);
+                          setIsAppearanceOpen(true);
+                        }}
+                        className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
+                      >
+                        <Palette className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Đổi hình nền & Biểu tượng</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setIsBoardMenuOpen(false);
+                          setIsEditOpen(true);
+                        }}
+                        className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Chỉnh sửa thông tin Bảng</span>
+                      </button>
+                    </>
                   )}
 
                   <button
@@ -2391,6 +2505,14 @@ export default function BoardDetailPage({
         board={board}
         onClose={() => setIsEditOpen(false)}
         onUpdated={() => fetchBoard()}
+        onOpenAppearance={() => setIsAppearanceOpen(true)}
+      />
+
+      <BoardAppearanceModal
+        isOpen={isAppearanceOpen}
+        board={board}
+        onClose={() => setIsAppearanceOpen(false)}
+        onUpdated={() => fetchBoard(true)}
       />
 
       <CopyBoardModal

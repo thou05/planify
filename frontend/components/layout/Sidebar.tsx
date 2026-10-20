@@ -22,7 +22,7 @@ export interface WorkspaceItem {
   id: string;
   name: string;
   description?: string | null;
-  boards?: Array<{ id: string; name: string; is_favorite?: boolean }>;
+  boards?: Array<{ id: string; name: string; is_favorite?: boolean; icon?: string | null; background?: string | null }>;
   isGuest?: boolean;
   currentUserRole?: string;
 }
@@ -566,7 +566,17 @@ export default function Sidebar({
                     }`}
                   >
                     <div className="flex items-center gap-2 truncate pl-1">
-                      <Kanban className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-[#f28d8d]' : 'opacity-70 group-hover:opacity-100'}`} />
+                      {board.icon ? (
+                        board.icon.startsWith('http') ||
+                        board.icon.startsWith('data:image') ||
+                        board.icon.startsWith('blob:') ? (
+                          <img src={board.icon} alt="" className="w-4 h-4 rounded-xs object-cover shrink-0" />
+                        ) : (
+                          <span className="text-sm shrink-0 leading-none">{board.icon}</span>
+                        )
+                      ) : (
+                        <Kanban className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-[#f28d8d]' : 'opacity-70 group-hover:opacity-100'}`} />
+                      )}
                       <span className="truncate">{board.name}</span>
                     </div>
                     {board.is_favorite && (

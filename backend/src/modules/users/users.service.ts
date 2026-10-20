@@ -9,6 +9,44 @@ import { SupabaseService } from '../../integrations/supabase/supabase.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 
+const META_TAG_REGEX = /\n?<!--planify_profile_meta:([\s\S]*?)-->$/;
+
+function parseUserWithMetadata(user: any) {
+  let bio = user.bio || '';
+  let meta: Record<string, any> = {};
+
+  const match = bio.match(META_TAG_REGEX);
+  if (match) {
+    try {
+      meta = JSON.parse(match[1]);
+      bio = bio.replace(META_TAG_REGEX, '').trim();
+    } catch {
+      // fallback if json parse error
+    }
+  }
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    avatar: user.avatar || null,
+    cover_image: user.cover_image || meta.cover_image || null,
+    job_title: user.job_title || meta.job_title || '',
+    department: user.department || meta.department || '',
+    location: user.location || meta.location || '',
+    website: user.website || meta.website || '',
+    social_links: user.social_links || meta.social_links || null,
+    work_status: user.work_status || meta.work_status || 'WORKING',
+    bio: bio,
+    timezone: user.timezone || 'Asia/Ho_Chi_Minh',
+    language: user.language || 'vi',
+    phone: user.phone || '',
+    theme: user.theme || 'system',
+    status: user.status,
+    created_at: user.created_at,
+  };
+}
+
 @Injectable()
 export class UsersService {
   constructor(private readonly supabase: SupabaseService) {}
@@ -27,25 +65,20 @@ export class UsersService {
     // Không trả về mật khẩu
     delete user.password_hash;
 
-    return {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      avatar: user.avatar || null,
-      bio: user.bio || '',
-      timezone: user.timezone || 'Asia/Ho_Chi_Minh',
-      language: user.language || 'vi',
-      phone: user.phone || '',
-      theme: user.theme || 'system',
-      status: user.status,
-      created_at: user.created_at,
-    };
+    return parseUserWithMetadata(user);
   }
 
   async updateProfile(id: string, dto: UpdateProfileDto) {
     const updateData: Record<string, any> = {};
     if (dto.name !== undefined) updateData.name = dto.name.trim();
     if (dto.avatar !== undefined) updateData.avatar = dto.avatar;
+    if (dto.cover_image !== undefined) updateData.cover_image = dto.cover_image;
+    if (dto.job_title !== undefined) updateData.job_title = dto.job_title;
+    if (dto.department !== undefined) updateData.department = dto.department;
+    if (dto.location !== undefined) updateData.location = dto.location;
+    if (dto.website !== undefined) updateData.website = dto.website;
+    if (dto.social_links !== undefined) updateData.social_links = dto.social_links;
+    if (dto.work_status !== undefined) updateData.work_status = dto.work_status;
     if (dto.bio !== undefined) updateData.bio = dto.bio;
     if (dto.timezone !== undefined) updateData.timezone = dto.timezone;
     if (dto.language !== undefined) updateData.language = dto.language;
@@ -59,15 +92,45 @@ export class UsersService {
       .select('*')
       .maybeSingle();
 
-    // Fallback nếu các cột mới chưa có trong schema database
-    if (error && (error.code === '42703' || error.message?.includes('does not exist'))) {
-      const basicData: Record<string, any> = {};
-      if (dto.name !== undefined) basicData.name = dto.name.trim();
-      if (dto.avatar !== undefined) basicData.avatar = dto.avatar;
+    // Fallback nếu các cột mới chưa có trong schema database (trước khi chạy migration SQL)
+    const isSchemaError =
+      error &&
+      (error.code === '42703' ||
+        error.code === 'PGRST204' ||
+        error.message?.includes('does not exist') ||
+        error.message?.includes('schema cache') ||
+        error.message?.includes('column'));
+
+    if (isSchemaError) {
+      const existing = await this.findById(id);
+      const meta = {
+        cover_image: dto.cover_image !== undefined ? dto.cover_image : existing.cover_image,
+        job_title: dto.job_title !== undefined ? dto.job_title : existing.job_title,
+        department: dto.department !== undefined ? dto.department : existing.department,
+        location: dto.location !== undefined ? dto.location : existing.location,
+        website: dto.website !== undefined ? dto.website : existing.website,
+        social_links: dto.social_links !== undefined ? dto.social_links : existing.social_links,
+        work_status: dto.work_status !== undefined ? dto.work_status : existing.work_status,
+      };
+
+      const cleanBio = dto.bio !== undefined ? dto.bio.trim() : existing.bio;
+      const combinedBio = cleanBio
+        ? `${cleanBio}\n<!--planify_profile_meta:${JSON.stringify(meta)}-->`
+        : `<!--planify_profile_meta:${JSON.stringify(meta)}-->`;
+
+      const safeData: Record<string, any> = {
+        bio: combinedBio,
+      };
+      if (dto.name !== undefined) safeData.name = dto.name.trim();
+      if (dto.avatar !== undefined) safeData.avatar = dto.avatar;
+      if (dto.timezone !== undefined) safeData.timezone = dto.timezone;
+      if (dto.language !== undefined) safeData.language = dto.language;
+      if (dto.phone !== undefined) safeData.phone = dto.phone;
+      if (dto.theme !== undefined) safeData.theme = dto.theme;
 
       const { data: fallbackUser, error: fallbackError } = await this.supabase
         .from('users')
-        .update(basicData)
+        .update(safeData)
         .eq('id', id)
         .select('*')
         .single();
@@ -75,25 +138,109 @@ export class UsersService {
       if (fallbackError || !fallbackUser) {
         throw new BadRequestException(fallbackError?.message || 'Không thể cập nhật hồ sơ');
       }
-      updatedUser = fallbackUser;
-    } else if (error || !updatedUser) {
+      delete fallbackUser.password_hash;
+      return parseUserWithMetadata(fallbackUser);
+    }
+
+    if (error || !updatedUser) {
       throw new BadRequestException(error?.message || 'Không thể cập nhật hồ sơ');
     }
 
     delete updatedUser.password_hash;
+    return parseUserWithMetadata(updatedUser);
+  }
+
+  async uploadAvatar(userId: string, file: Express.Multer.File) {
+    if (!file || !file.buffer) {
+      throw new BadRequestException('Vui lòng chọn tệp ảnh đại diện hợp lệ');
+    }
+
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+    if (file.size > MAX_SIZE) {
+      throw new BadRequestException('Dung lượng ảnh đại diện không được vượt quá 5MB');
+    }
+
+    let publicUrl = '';
+    const ext = file.originalname?.split('.').pop() || 'png';
+    const filePath = `users/${userId}/avatar-${Date.now()}.${ext}`;
+
+    try {
+      const { data: buckets } = await this.supabase.client.storage.listBuckets();
+      if (!buckets?.some((b) => b.name === 'attachments')) {
+        await this.supabase.client.storage.createBucket('attachments', { public: true });
+      }
+
+      const { error: uploadError } = await this.supabase.client.storage
+        .from('attachments')
+        .upload(filePath, file.buffer, {
+          contentType: file.mimetype || 'image/png',
+          upsert: true,
+        });
+
+      if (uploadError) {
+        publicUrl = `data:${file.mimetype || 'image/png'};base64,${file.buffer.toString('base64')}`;
+      } else {
+        const { data: urlData } = this.supabase.client.storage
+          .from('attachments')
+          .getPublicUrl(filePath);
+        publicUrl = urlData.publicUrl;
+      }
+    } catch {
+      publicUrl = `data:${file.mimetype || 'image/png'};base64,${file.buffer.toString('base64')}`;
+    }
+
+    await this.updateProfile(userId, { avatar: publicUrl });
 
     return {
-      id: updatedUser.id,
-      name: updatedUser.name,
-      email: updatedUser.email,
-      avatar: updatedUser.avatar || null,
-      bio: updatedUser.bio || dto.bio || '',
-      timezone: updatedUser.timezone || dto.timezone || 'Asia/Ho_Chi_Minh',
-      language: updatedUser.language || dto.language || 'vi',
-      phone: updatedUser.phone || dto.phone || '',
-      theme: updatedUser.theme || dto.theme || 'system',
-      status: updatedUser.status,
-      created_at: updatedUser.created_at,
+      success: true,
+      url: publicUrl,
+    };
+  }
+
+  async uploadCover(userId: string, file: Express.Multer.File) {
+    if (!file || !file.buffer) {
+      throw new BadRequestException('Vui lòng chọn tệp ảnh bìa hợp lệ');
+    }
+
+    const MAX_SIZE = 15 * 1024 * 1024; // 15MB
+    if (file.size > MAX_SIZE) {
+      throw new BadRequestException('Dung lượng ảnh bìa không được vượt quá 15MB');
+    }
+
+    let publicUrl = '';
+    const ext = file.originalname?.split('.').pop() || 'jpg';
+    const filePath = `users/${userId}/cover-${Date.now()}.${ext}`;
+
+    try {
+      const { data: buckets } = await this.supabase.client.storage.listBuckets();
+      if (!buckets?.some((b) => b.name === 'attachments')) {
+        await this.supabase.client.storage.createBucket('attachments', { public: true });
+      }
+
+      const { error: uploadError } = await this.supabase.client.storage
+        .from('attachments')
+        .upload(filePath, file.buffer, {
+          contentType: file.mimetype || 'image/jpeg',
+          upsert: true,
+        });
+
+      if (uploadError) {
+        publicUrl = `data:${file.mimetype || 'image/jpeg'};base64,${file.buffer.toString('base64')}`;
+      } else {
+        const { data: urlData } = this.supabase.client.storage
+          .from('attachments')
+          .getPublicUrl(filePath);
+        publicUrl = urlData.publicUrl;
+      }
+    } catch {
+      publicUrl = `data:${file.mimetype || 'image/jpeg'};base64,${file.buffer.toString('base64')}`;
+    }
+
+    await this.updateProfile(userId, { cover_image: publicUrl });
+
+    return {
+      success: true,
+      url: publicUrl,
     };
   }
 
