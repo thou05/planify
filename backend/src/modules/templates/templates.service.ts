@@ -589,7 +589,7 @@ export class TemplatesService {
         if (ckIds.length > 0) {
           const { data: itData } = await this.supabase
             .from('checklist_items')
-            .select('id, checklist_id, title, is_completed, position')
+            .select('id, checklist_id, content, is_completed, position')
             .in('checklist_id', ckIds)
             .order('position', { ascending: true });
           items = itData || [];
@@ -613,7 +613,7 @@ export class TemplatesService {
               .map((ck) => ({
                 title: ck.title,
                 items: (ck.items || []).map((it: any) => ({
-                  title: it.title,
+                  title: it.content || it.title || 'Mục công việc',
                   is_completed: false,
                 })),
               })),
@@ -810,7 +810,7 @@ export class TemplatesService {
                     for (const [itIdx, tIt] of tCk.items.entries()) {
                       const { error: itError } = await this.supabase.from('checklist_items').insert({
                         checklist_id: createdCk.id,
-                        title: tIt.title || 'Mục công việc',
+                        content: tIt.content || tIt.title || 'Mục công việc',
                         is_completed: tIt.is_completed ?? false,
                         position: itIdx,
                       });
@@ -888,10 +888,14 @@ export class TemplatesService {
   private async verifyWorkspaceAccess(workspaceId: string, userId: string) {
     const { data: member } = await this.supabase
       .from('workspace_members')
-      .select('id')
+      .select('id, role')
       .eq('workspace_id', workspaceId)
       .eq('user_id', userId)
       .maybeSingle();
+
+    if (member && member.role === 'GUEST') {
+      throw new ForbiddenException('Khách (Guest) không có quyền tạo Board trong Không gian làm việc này');
+    }
 
     if (!member) {
       const { data: workspace } = await this.supabase

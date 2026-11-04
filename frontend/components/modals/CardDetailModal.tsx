@@ -4,6 +4,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
+import { canComment } from '@/lib/permissions';
+import ColorPicker from '@/components/ui/ColorPicker';
+import { getContrastTextColor } from '@/lib/color-utils';
 import {
   X,
   Eye,
@@ -311,6 +314,8 @@ export default function CardDetailModal({
   }, [cardId]);
 
   const [card, setCard] = useState<any>(null);
+  const isArchived = Boolean(card?.list?.board?.is_archived);
+  const allowComment = !isArchived && canComment({ isArchived });
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -1524,6 +1529,19 @@ export default function CardDetailModal({
   };
 
   // --- ATTACHMENT HELPERS & HANDLERS ---
+  const sanitizeAttachmentUrl = (url?: string | null): string => {
+    if (!url) return '#';
+    const trimmed = url.trim();
+    if (
+      trimmed.startsWith('http://') ||
+      trimmed.startsWith('https://') ||
+      trimmed.startsWith('/') ||
+      trimmed.startsWith('data:image/')
+    ) {
+      return trimmed;
+    }
+    return '#';
+  };
   const formatFileSize = (bytes?: number | null) => {
     if (!bytes || bytes <= 0) return '';
     if (bytes < 1024) return `${bytes} B`;
@@ -1669,7 +1687,7 @@ export default function CardDetailModal({
           const sep = att.file_url.includes('?') ? '&' : '?';
           downloadUrl = `${att.file_url}${sep}download=${encodeURIComponent(fileName)}`;
         } else {
-          const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+          const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
           downloadUrl = `${baseUrl.replace(/\/$/, '')}/attachments/${att.id}/download`;
         }
 
@@ -2337,7 +2355,7 @@ export default function CardDetailModal({
 
   const handleSubmitComment = async () => {
     const content = commentText.trim();
-    if (!content || !cardId || isSubmittingComment) return;
+    if (!content || !cardId || isSubmittingComment || !allowComment) return;
 
     try {
       setIsSubmittingComment(true);
@@ -2951,10 +2969,13 @@ export default function CardDetailModal({
                               setEditingLabel(null);
                               setLabelSearchQuery('');
                             } : undefined}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-bold text-white shadow-2xs transition-all ${
+                            className={`px-2.5 py-1 rounded-lg text-xs font-bold shadow-2xs transition-all ${
                               canEdit ? 'hover:opacity-90 cursor-pointer' : 'cursor-default'
                             }`}
-                            style={{ backgroundColor: cl.label?.color || '#3b82f6' }}
+                            style={{
+                              backgroundColor: cl.label?.color || '#3b82f6',
+                              color: getContrastTextColor(cl.label?.color || '#3b82f6'),
+                            }}
                             title={`${cl.label?.name}${canEdit ? ' - Bấm để thay đổi' : ''}`}
                           >
                             {cl.label?.name}
@@ -3574,7 +3595,7 @@ export default function CardDetailModal({
                                 <div className="flex items-center gap-2">
                                   {(!att.file_size && !att.file_url?.includes('/attachments/') && !att.file_url?.startsWith('data:')) ? (
                                     <a
-                                      href={att.file_url || '#'}
+                                      href={sanitizeAttachmentUrl(att.file_url)}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="text-xs font-bold text-slate-900 hover:underline truncate"
@@ -3603,7 +3624,7 @@ export default function CardDetailModal({
                                   )}
                                   {att.file_url && (!att.file_size && !att.file_url?.includes('/attachments/') && !att.file_url?.startsWith('data:')) && (
                                     <a
-                                      href={att.file_url}
+                                      href={sanitizeAttachmentUrl(att.file_url)}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="text-slate-400 hover:text-slate-900 shrink-0"
@@ -3637,7 +3658,7 @@ export default function CardDetailModal({
                                 {att.file_url && (
                                   (!att.file_size && !att.file_url?.includes('/attachments/') && !att.file_url?.startsWith('data:')) ? (
                                     <a
-                                      href={att.file_url}
+                                      href={sanitizeAttachmentUrl(att.file_url)}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="hover:text-slate-900 hover:underline cursor-pointer flex items-center gap-1 text-[11px]"
@@ -4523,7 +4544,7 @@ export default function CardDetailModal({
 
               {/* Top Comment Composer (Visible on 'comments' tab) */}
               {activityTab === 'comments' && (
-                canEdit ? (
+                allowComment ? (
                   <div className="p-3.5 sm:p-4 border-b border-slate-200 bg-white shrink-0">
                     <div className="flex items-start gap-2.5 relative">
                       {/* Current User Avatar */}
@@ -4770,7 +4791,7 @@ export default function CardDetailModal({
                             </div>
 
                             {/* Comment Actions (Edit / Delete) */}
-                            {canEdit && isAuthor && !isEditing && (
+                            {allowComment && isAuthor && !isEditing && (
                               <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
                                   type="button"
@@ -5594,8 +5615,11 @@ export default function CardDetailModal({
                   <div className="p-3 bg-slate-50 rounded-md border border-slate-200 flex flex-col items-center justify-center gap-1.5">
                     <span className="text-[11px] font-semibold text-slate-500">Xem trước nhãn</span>
                     <div
-                      className="px-3 py-1 rounded-xs text-xs font-bold text-white uppercase tracking-wider"
-                      style={{ backgroundColor: formLabelColor }}
+                      className="px-3 py-1 rounded-xs text-xs font-bold uppercase tracking-wider shadow-2xs"
+                      style={{
+                        backgroundColor: formLabelColor,
+                        color: getContrastTextColor(formLabelColor),
+                      }}
                     >
                       {formLabelName.trim() || 'Tên nhãn'}
                     </div>
@@ -5614,27 +5638,14 @@ export default function CardDetailModal({
                     />
                   </div>
 
-                  {/* Color palette */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold text-slate-700">Chọn màu sắc</label>
-                    <div className="grid grid-cols-5 gap-2">
-                      {LABEL_COLOR_PALETTE.map((item) => {
-                        const isSelected = formLabelColor === item.color;
-                        return (
-                          <button
-                            key={item.color}
-                            type="button"
-                            onClick={() => setFormLabelColor(item.color)}
-                            title={item.name}
-                            className={`h-8 rounded-md transition-all cursor-pointer flex items-center justify-center ${isSelected ? 'ring-2 ring-offset-2 ring-[#f28d8d]' : 'hover:opacity-90'
-                              }`}
-                            style={{ backgroundColor: item.color }}
-                          >
-                            {isSelected && <Check className="w-4 h-4 text-white" />}
-                          </button>
-                        );
-                      })}
-                    </div>
+                  {/* Color picker with full spectrum */}
+                  <div className="pt-1">
+                    <ColorPicker
+                      value={formLabelColor}
+                      onChange={setFormLabelColor}
+                      label="Bảng màu sắc nhãn"
+                      previewText={formLabelName.trim() || 'Tên nhãn'}
+                    />
                   </div>
 
                   {/* Actions */}
@@ -5701,8 +5712,11 @@ export default function CardDetailModal({
                               className="flex-1 p-1.5 rounded-md hover:bg-slate-50 flex items-center justify-between gap-2 transition-colors cursor-pointer"
                             >
                               <div
-                                className="px-2.5 py-1 rounded-xs text-xs font-bold text-white uppercase tracking-wider flex-1 text-left truncate"
-                                style={{ backgroundColor: l.color }}
+                                className="px-2.5 py-1 rounded-xs text-xs font-bold uppercase tracking-wider flex-1 text-left truncate shadow-2xs"
+                                style={{
+                                  backgroundColor: l.color,
+                                  color: getContrastTextColor(l.color),
+                                }}
                               >
                                 {l.name}
                               </div>
@@ -6709,8 +6723,8 @@ export default function CardDetailModal({
 
         {/* Dropdown Options Quick Manager Modal */}
         {managingDropdownField && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-60 animate-in fade-in duration-150">
-            <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-5 max-w-md w-full space-y-4">
+          <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-60 animate-in fade-in duration-150">
+            <div className="bg-white rounded-lg shadow-md border border-slate-300 p-5 max-w-md w-full space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center">

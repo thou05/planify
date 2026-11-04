@@ -15,6 +15,7 @@ export interface BoardPermissionContext {
   canInviteMembers?: boolean;
   canDelete?: boolean;
   canChangeVisibility?: boolean;
+  isArchived?: boolean;
 }
 
 // Workspace Permissions
@@ -78,5 +79,7 @@ export function canAssignCard(ctx?: BoardPermissionContext | null): boolean {
 }
 
 export function canComment(ctx?: BoardPermissionContext | null): boolean {
-  return Boolean(ctx);
+  if (!ctx) return false;
+  if (ctx.isArchived) return false;
+  return true;
 }

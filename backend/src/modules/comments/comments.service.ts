@@ -172,7 +172,7 @@ export class CommentsService {
 
         const { data: ws } = await this.supabase
           .from('workspaces')
-          .select('owner_id, owner:users!workspaces_owner_id_fkey (id, name)')
+          .select('owner_id, owner:users!fk_workspace_owner (id, name)')
           .eq('id', workspaceId)
           .maybeSingle();
 

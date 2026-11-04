@@ -125,8 +125,14 @@ export class CustomFieldsService {
       .maybeSingle();
 
     if (wsMember) {
+      if (wsMember.role === 'GUEST') {
+        throw new ForbiddenException('Khách (Guest) không có quyền truy cập Bảng này');
+      }
       if (board.visibility === 'PRIVATE') {
         throw new ForbiddenException('Bảng này ở chế độ Riêng tư (Private), bạn không có quyền truy cập');
+      }
+      if (requireEdit) {
+        throw new ForbiddenException('Bạn cần tham gia Bảng với quyền Biên tập viên (Editor) hoặc Quản trị viên (Admin) để chỉnh sửa trường tùy chỉnh');
       }
       return board;
     }

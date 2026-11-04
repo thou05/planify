@@ -4,6 +4,7 @@ import React, { useState, useEffect, use, useRef } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
+import { canManageBoard, canEditBoardContent, BoardPermissionContext } from '@/lib/permissions';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import { useShell } from '@/components/layout/ShellContext';
@@ -185,20 +186,24 @@ export default function BoardDetailPage({
   const [isVisibilityMenuOpen, setIsVisibilityMenuOpen] = useState(false);
   const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
   const visibilityMenuRef = useRef<HTMLDivElement>(null);
+  const boardMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (visibilityMenuRef.current && !visibilityMenuRef.current.contains(e.target as Node)) {
         setIsVisibilityMenuOpen(false);
       }
+      if (boardMenuRef.current && !boardMenuRef.current.contains(e.target as Node)) {
+        setIsBoardMenuOpen(false);
+      }
     };
-    if (isVisibilityMenuOpen) {
+    if (isVisibilityMenuOpen || isBoardMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isVisibilityMenuOpen]);
+  }, [isVisibilityMenuOpen, isBoardMenuOpen]);
 
   const isBoardMember = Boolean(
     board?.isBoardMember ||
@@ -217,12 +222,21 @@ export default function BoardDetailPage({
       (!isBoardMember && !board?.isWorkspaceOwner && board?.currentUserBoardRole !== 'ADMIN')
   );
 
-  const canEditBoard = !isViewer && Boolean(board?.canEdit !== false);
+  const boardPermCtx: BoardPermissionContext = {
+    boardRole: board?.currentUserBoardRole || null,
+    isWorkspaceOwner: Boolean(board?.isWorkspaceOwner),
+    canEdit: board?.canEdit,
+    canManageMembers: board?.canManageMembers,
+    canInviteMembers: board?.canInviteMembers,
+    canDelete: board?.canDelete,
+    canChangeVisibility: board?.canChangeVisibility,
+  };
+
+  const canEditBoard = !isViewer && canEditBoardContent(boardPermCtx) && !board?.is_archived;
 
   const canChangeVisibility = Boolean(
-    !isGuest &&
-      (board?.canChangeVisibility ??
-        (board?.currentUserBoardRole === 'ADMIN' || board?.isWorkspaceOwner || board?.canManageMembers))
+    board?.canChangeVisibility ??
+      (canManageBoard(boardPermCtx) || Boolean(board?.canManageMembers))
   );
 
   const [confirmingVisibility, setConfirmingVisibility] = useState<'WORKSPACE' | 'PRIVATE' | 'PUBLIC' | null>(null);
@@ -1518,6 +1532,7 @@ export default function BoardDetailPage({
   };
 
   const handleDeleteCard = async (cardId: string) => {
+    if (!canEditBoard) return;
     if (!confirm('Bạn có chắc chắn muốn xóa thẻ này?')) return;
     try {
       await apiClient(`/cards/${cardId}`, { method: 'DELETE' });
@@ -1771,7 +1786,7 @@ export default function BoardDetailPage({
 
         {/* Board Top Navigation Bar */}
         <div
-          className={`h-14 px-6 border-b flex items-center justify-between shrink-0 select-none transition-colors duration-200 ${
+          className={`h-14 px-6 border-b flex items-center justify-between shrink-0 select-none transition-colors duration-200 relative z-40 ${
             board?.background
               ? 'bg-white/85 backdrop-blur-md border-white/20 shadow-xs'
               : 'bg-white border-slate-200'
@@ -1791,7 +1806,7 @@ export default function BoardDetailPage({
 
             <div className="flex items-center gap-2 min-w-0">
               {/* Quick Board Icon / Favicon Button */}
-              {canEditBoard && !isGuest && !board?.is_archived ? (
+              {canEditBoard && !board?.is_archived ? (
                 <button
                   type="button"
                   onClick={() => setIsAppearanceOpen(true)}
@@ -2091,7 +2106,7 @@ export default function BoardDetailPage({
             ))}
 
             {/* Automation Button */}
-            {canEditBoard && !isGuest && (
+            {canEditBoard && (
               <button
                 type="button"
                 onClick={() => setIsAutomationModalOpen(true)}
@@ -2123,7 +2138,7 @@ export default function BoardDetailPage({
             </button>
 
             {/* Board Settings & Options Dropdown Menu */}
-            <div className="relative">
+            <div className="relative" ref={boardMenuRef}>
               <button
                 onClick={() => setIsBoardMenuOpen(!isBoardMenuOpen)}
                 className="p-1.5 rounded-md hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer border border-slate-200"
@@ -2180,7 +2195,7 @@ export default function BoardDetailPage({
                     <span>Lịch sử hoạt động Bảng</span>
                   </button>
 
-                  {board?.canEdit && !isGuest && (
+                  {canEditBoard && (
                     <button
                       onClick={() => {
                         setIsBoardMenuOpen(false);
@@ -2193,7 +2208,7 @@ export default function BoardDetailPage({
                     </button>
                   )}
 
-                  {board?.canEdit && !isGuest && (
+                  {canEditBoard && (
                     <button
                       onClick={() => {
                         setIsBoardMenuOpen(false);
@@ -2206,7 +2221,7 @@ export default function BoardDetailPage({
                     </button>
                   )}
 
-                  {board?.canEdit && !isGuest && !board?.is_archived && (
+                  {canEditBoard && !board?.is_archived && (
                     <>
                       <button
                         onClick={() => {
@@ -2256,7 +2271,7 @@ export default function BoardDetailPage({
                     </button>
                   )}
 
-                  {board?.canEdit && !isGuest && (
+                  {canEditBoard && (
                     <button
                       onClick={() => {
                         setIsBoardMenuOpen(false);
@@ -2351,11 +2366,11 @@ export default function BoardDetailPage({
 
         {/* Multi-view Container */}
         {activeView === 'kanban' && (
-          <div className="flex-1 overflow-x-auto overflow-y-hidden p-6">
+          <div className="flex-1 overflow-x-auto overflow-y-hidden p-6 relative z-10">
             {isLoading ? (
               <div className="flex gap-4">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="w-72 h-96 glass-weak animate-pulse rounded-2xl shrink-0" />
+                  <div key={i} className="w-72 h-96 rounded-lg bg-slate-100/80 border border-slate-200 animate-pulse shrink-0" />
                 ))}
               </div>
             ) : (
@@ -3110,7 +3125,7 @@ export default function BoardDetailPage({
       {/* Floating AI Copilot Trigger */}
       <button
         onClick={() => setIsCopilotOpen(true)}
-        className="fixed bottom-6 right-6 z-40 px-3.5 py-2 rounded-md bg-[#f28d8d] hover:bg-[#e57a7a] text-white shadow-lg shadow-[#f28d8d]/25 border border-[#d86969] transition-colors flex items-center gap-2 cursor-pointer group"
+        className="fixed bottom-6 right-6 z-40 px-3.5 py-2 rounded-md bg-[#f28d8d] hover:bg-[#e57a7a] text-white shadow-sm border border-[#d86969] transition-colors flex items-center gap-2 cursor-pointer group"
         title="Mở Trợ lý AI Copilot"
       >
         <Sparkles className="w-4 h-4 text-amber-300" />

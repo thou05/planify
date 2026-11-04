@@ -24,7 +24,7 @@ export default function InviteMemberModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successInfo, setSuccessInfo] = useState<{
-    type: 'ADDED_DIRECTLY' | 'INVITE_CREATED' | 'INVITE_EXISTS';
+    type?: string;
     message: string;
     inviteLink?: string;
   } | null>(null);
@@ -46,7 +46,6 @@ export default function InviteMemberModal({
         data: {
           email: email.trim().toLowerCase(),
           role,
-          directAdd: true,
         },
       });
 
@@ -61,7 +60,9 @@ export default function InviteMemberModal({
 
         setSuccessInfo({
           type: data.type,
-          message: data.message || 'Thao tác thành công!',
+          message:
+            data.message ||
+            'Đã gửi lời mời tham gia Không gian làm việc thành công! Lời mời đang ở trạng thái chờ.',
           inviteLink,
         });
 
@@ -92,8 +93,8 @@ export default function InviteMemberModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
-      <div className="w-full max-w-lg bg-white border border-slate-300 rounded-lg p-6 sm:p-7 relative shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 animate-fade-in">
+      <div className="w-full max-w-lg bg-white border border-slate-300 rounded-lg p-6 sm:p-7 relative shadow-sm">
         <button
           onClick={handleClose}
           className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
@@ -102,13 +103,13 @@ export default function InviteMemberModal({
         </button>
 
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-9 h-9 rounded-md bg-[#f28d8d] flex items-center justify-center text-white shadow-2xs">
+          <div className="w-9 h-9 rounded-md bg-[#f28d8d] border border-[#d86969] flex items-center justify-center text-white">
             <UserPlus className="w-4 h-4" />
           </div>
           <div>
             <h2 className="text-base font-bold text-slate-900">Mời thành viên</h2>
             <p className="text-xs text-slate-500">
-              Thêm cộng tác viên vào {workspaceName ? <strong>{workspaceName}</strong> : 'Workspace'}
+              Gửi lời mời cộng tác vào {workspaceName ? <strong>{workspaceName}</strong> : 'Không gian làm việc'}
             </p>
           </div>
         </div>
@@ -141,11 +142,11 @@ export default function InviteMemberModal({
                     type="text"
                     readOnly
                     value={successInfo.inviteLink}
-                    className="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md text-slate-800 font-mono select-all focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
+                    className="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md text-slate-800 font-mono select-all focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]"
                   />
                   <button
                     onClick={handleCopyLink}
-                    className="px-3.5 py-1.5 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold flex items-center gap-1.5 shrink-0 cursor-pointer transition-colors shadow-2xs"
+                    className="px-3.5 py-1.5 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold flex items-center gap-1.5 shrink-0 cursor-pointer border border-[#d86969] transition-colors"
                   >
                     {copied ? (
                       <>
@@ -174,7 +175,7 @@ export default function InviteMemberModal({
               <button
                 type="button"
                 onClick={handleClose}
-                className="px-4 py-2 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold cursor-pointer transition-colors shadow-2xs"
+                className="px-4 py-2 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold cursor-pointer border border-[#d86969] transition-colors"
               >
                 Hoàn tất
               </button>
@@ -194,11 +195,11 @@ export default function InviteMemberModal({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="nhanvien@example.com"
-                  className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-md placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
+                  className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-md placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]"
                 />
               </div>
               <p className="text-[11px] text-slate-500 mt-1">
-                Nếu người dùng đã có tài khoản, họ sẽ được thêm ngay. Nếu chưa, hệ thống sẽ tạo link mời.
+                Lời mời sẽ được gửi tới người dùng và hiển thị trong mục &apos;Lời mời chờ&apos; cho tới khi người dùng chấp thuận.
               </p>
             </div>
 
@@ -254,7 +255,7 @@ export default function InviteMemberModal({
               <button
                 type="submit"
                 disabled={isLoading || !email.trim()}
-                className="px-4 py-2 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
+                className="px-4 py-2 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-50 border border-[#d86969] transition-colors"
               >
                 {isLoading ? (
                   <>

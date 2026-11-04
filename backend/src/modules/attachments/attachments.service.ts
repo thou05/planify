@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -47,7 +48,74 @@ export class AttachmentsService {
     }
   }
 
-  async findByCardId(cardId: string) {
+  async verifyCardAccess(cardId: string, userId: string, requireEdit = true) {
+    const { data: card, error: cError } = await this.supabase
+      .from('cards')
+      .select('id, list_id, list:lists (board_id, board:boards (id, name, visibility, workspace_id, workspace:workspaces (owner_id)))')
+      .eq('id', cardId)
+      .maybeSingle();
+
+    if (cError || !card) {
+      throw new NotFoundException('Không tìm thấy thẻ (Card)');
+    }
+
+    const board = (card.list as any)?.board;
+    if (!board) {
+      throw new NotFoundException('Không tìm thấy Bảng chứa thẻ này');
+    }
+
+    const isWorkspaceOwner = board.workspace?.owner_id === userId;
+    if (isWorkspaceOwner) {
+      return { card, board, canEdit: true };
+    }
+
+    const { data: boardMember } = await this.supabase
+      .from('board_members')
+      .select('id, role')
+      .eq('board_id', board.id)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (boardMember) {
+      const canEdit = boardMember.role === 'ADMIN' || boardMember.role === 'EDITOR' || boardMember.role === 'MEMBER';
+      if (requireEdit && !canEdit) {
+        throw new ForbiddenException('Bạn chỉ có quyền xem (Viewer), không thể chỉnh sửa tệp đính kèm');
+      }
+      return { card, board, canEdit };
+    }
+
+    if (requireEdit) {
+      throw new ForbiddenException('Bạn chưa tham gia vào Bảng này hoặc không có quyền chỉnh sửa');
+    }
+
+    const { data: wsMember } = await this.supabase
+      .from('workspace_members')
+      .select('id, role')
+      .eq('workspace_id', board.workspace_id)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (wsMember) {
+      if (wsMember.role === 'GUEST') {
+        throw new ForbiddenException('Khách (Guest) không có quyền truy cập Bảng này');
+      }
+      if (board.visibility === 'PRIVATE') {
+        throw new ForbiddenException('Bảng này ở chế độ Riêng tư (Private), bạn không có quyền truy cập');
+      }
+      return { card, board, canEdit: false };
+    }
+
+    if (board.visibility === 'PUBLIC') {
+      return { card, board, canEdit: false };
+    }
+
+    throw new ForbiddenException('Bạn không có quyền thao tác trên thẻ này');
+  }
+
+  async findByCardId(cardId: string, userId?: string) {
+    if (userId) {
+      await this.verifyCardAccess(cardId, userId, false);
+    }
     const { data, error } = await this.supabase
       .from('attachments')
       .select('*')
@@ -62,6 +130,9 @@ export class AttachmentsService {
   }
 
   async uploadFile(cardId: string, file: UploadedFileType, userId?: string) {
+    if (userId) {
+      await this.verifyCardAccess(cardId, userId, true);
+    }
     if (!file || !file.originalname || !file.buffer) {
       throw new BadRequestException('Vui lòng chọn tệp tin hợp lệ để tải lên');
     }
@@ -144,9 +215,23 @@ export class AttachmentsService {
   }
 
   async createLink(cardId: string, dto: CreateLinkAttachmentDto, userId?: string) {
-    let url = dto.file_url.trim();
+    if (userId) {
+      await this.verifyCardAccess(cardId, userId, true);
+    }
+    let url = (dto.file_url || '').trim();
+    if (!url) {
+      throw new BadRequestException('Vui lòng cung cấp liên kết URL');
+    }
     if (!/^https?:\/\//i.test(url)) {
       url = `https://${url}`;
+    }
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        throw new BadRequestException('Chỉ hỗ trợ liên kết HTTP hoặc HTTPS');
+      }
+    } catch {
+      throw new BadRequestException('Định dạng URL không hợp lệ');
     }
 
     const { data, error } = await this.supabase
@@ -188,7 +273,21 @@ export class AttachmentsService {
     return data;
   }
 
-  async update(id: string, dto: UpdateAttachmentDto) {
+  async update(id: string, dto: UpdateAttachmentDto, userId?: string) {
+    const { data: existing } = await this.supabase
+      .from('attachments')
+      .select('id, card_id')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (!existing) {
+      throw new NotFoundException('Không tìm thấy tệp đính kèm');
+    }
+
+    if (userId) {
+      await this.verifyCardAccess(existing.card_id, userId, true);
+    }
+
     const { data, error } = await this.supabase
       .from('attachments')
       .update({
@@ -225,6 +324,10 @@ export class AttachmentsService {
 
     if (!att) {
       return { success: true };
+    }
+
+    if (userId && att.card_id) {
+      await this.verifyCardAccess(att.card_id, userId, true);
     }
 
     if (att.card_id) {

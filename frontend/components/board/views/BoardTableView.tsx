@@ -34,6 +34,7 @@ export default function BoardTableView({
   onRefreshBoard,
   onDeleteCard,
 }: BoardTableViewProps) {
+  const canEdit = Boolean(board?.canEdit && !board?.is_archived);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedListFilter, setSelectedListFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'in_progress' | 'overdue'>('all');
@@ -115,6 +116,7 @@ export default function BoardTableView({
   // Toggle card completion
   const handleToggleComplete = async (card: any, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!canEdit) return;
     try {
       await apiClient(`/cards/${card.id}`, {
         method: 'PATCH',
@@ -129,6 +131,7 @@ export default function BoardTableView({
   // Move card to a different list
   const handleChangeList = async (cardId: string, newListId: string, e: React.ChangeEvent<HTMLSelectElement>) => {
     e.stopPropagation();
+    if (!canEdit) return;
     try {
       await apiClient(`/cards/${cardId}/move`, {
         method: 'PATCH',
@@ -451,8 +454,9 @@ export default function BoardTableView({
                   {/* Completed Checkbox */}
                   <td className="py-2.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
                     <button
+                      disabled={!canEdit}
                       onClick={(e) => handleToggleComplete(card, e)}
-                      className="text-slate-400 hover:text-emerald-600 transition-colors cursor-pointer"
+                      className="text-slate-400 hover:text-emerald-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       title={card.is_due_date_completed ? 'Đánh dấu chưa hoàn thành' : 'Đánh dấu đã hoàn thành'}
                     >
                       {card.is_due_date_completed ? (
@@ -500,9 +504,10 @@ export default function BoardTableView({
                   {/* List Selector Dropdown */}
                   <td className="py-2.5 px-3" onClick={(e) => e.stopPropagation()}>
                     <select
+                      disabled={!canEdit}
                       value={card.listId}
                       onChange={(e) => handleChangeList(card.id, e.target.value, e)}
-                      className="px-2 py-1 rounded-md text-xs font-medium bg-slate-50 hover:bg-white border border-slate-200 text-slate-700 cursor-pointer focus:outline-none transition-colors"
+                      className="px-2 py-1 rounded-md text-xs font-medium bg-slate-50 hover:bg-white border border-slate-200 text-slate-700 cursor-pointer focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {board?.lists?.map((l: any) => (
                         <option key={l.id} value={l.id}>
@@ -586,13 +591,15 @@ export default function BoardTableView({
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
                       </button>
-                      <button
-                        onClick={() => onDeleteCard(card.id)}
-                        className="p-1 rounded-md hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-                        title="Xóa thẻ"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {canEdit && (
+                        <button
+                          onClick={() => onDeleteCard(card.id)}
+                          className="p-1 rounded-md hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                          title="Xóa thẻ"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

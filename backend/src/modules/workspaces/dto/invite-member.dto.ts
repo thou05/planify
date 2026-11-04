@@ -20,14 +20,14 @@ export class InviteMemberDto {
   @IsEnum(['ADMIN', 'MEMBER'], {
     message: 'Vai trò chỉ có thể là ADMIN hoặc MEMBER',
   })
-  role?: 'ADMIN' | 'MEMBER';
+  role?: 'ADMIN' | 'MEMBER' = 'MEMBER';
 
   @ApiProperty({
-    description: 'Nếu người dùng đã có tài khoản thì thêm trực tiếp vào Workspace',
-    default: true,
+    description: 'Tương thích ngược (không còn tự động thêm trực tiếp)',
+    default: false,
     required: false,
   })
   @IsOptional()
   @IsBoolean()
-  directAdd?: boolean;
+  directAdd?: boolean = false;
 }

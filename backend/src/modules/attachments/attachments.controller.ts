@@ -26,8 +26,8 @@ export class AttachmentsController {
   constructor(private readonly attachmentsService: AttachmentsService) { }
 
   @Get('cards/:cardId/attachments')
-  async findByCardId(@Param('cardId') cardId: string) {
-    return this.attachmentsService.findByCardId(cardId);
+  async findByCardId(@Param('cardId') cardId: string, @CurrentUser('id') userId: string) {
+    return this.attachmentsService.findByCardId(cardId, userId);
   }
 
   @Public()
@@ -65,8 +65,9 @@ export class AttachmentsController {
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateAttachmentDto,
+    @CurrentUser('id') userId: string,
   ) {
-    return this.attachmentsService.update(id, dto);
+    return this.attachmentsService.update(id, dto, userId);
   }
 
   @Delete('attachments/:id')

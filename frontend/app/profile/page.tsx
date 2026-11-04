@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth, User } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
+import ColorPicker from '@/components/ui/ColorPicker';
 import {
   User as UserIcon,
   Shield,
@@ -295,7 +296,8 @@ export default function ProfilePage() {
 
   // Helper lấy background style chuẩn DESIGN.md (Technical Grid hoặc Solid hoặc Image)
   const getCoverStyle = (coverVal: string): React.CSSProperties => {
-    if (!coverVal) {
+    const trimmed = coverVal?.trim() || '';
+    if (!trimmed) {
       return {
         backgroundColor: '#f8fafc',
         backgroundImage:
@@ -303,13 +305,25 @@ export default function ProfilePage() {
         backgroundSize: '24px 24px',
       };
     }
-    if (coverVal.startsWith('solid:')) {
-      return {
-        backgroundColor: coverVal.replace('solid:', ''),
-      };
+    if (trimmed.startsWith('solid:')) {
+      const color = trimmed.replace('solid:', '').trim();
+      if (/^#[0-9a-fA-F]{3,8}$/.test(color) || /^(rgb|hsl)a?\([0-9,\s.%+-]+\)$/.test(color)) {
+        return { backgroundColor: color };
+      }
+      return { backgroundColor: '#f8fafc' };
     }
+    const isAllowedUrl =
+      trimmed.startsWith('http://') ||
+      trimmed.startsWith('https://') ||
+      trimmed.startsWith('/') ||
+      trimmed.startsWith('blob:') ||
+      trimmed.startsWith('data:image/');
+    if (!isAllowedUrl) {
+      return { backgroundColor: '#f8fafc' };
+    }
+    const safeUrl = trimmed.replace(/["\\()\r\n]/g, (ch) => `\\${ch}`);
     return {
-      backgroundImage: `url("${coverVal}")`,
+      backgroundImage: `url("${safeUrl}")`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
     };
@@ -327,6 +341,7 @@ export default function ProfilePage() {
       return;
     }
 
+    const previousAvatar = avatar;
     setIsUploadingAvatar(true);
     setStatusMessage(null);
 
@@ -347,11 +362,14 @@ export default function ProfilePage() {
         updateUser({ avatar: res.data.url });
         setStatusMessage({ type: 'success', text: 'Tải ảnh đại diện lên thành công!' });
       } else {
+        setAvatar(previousAvatar);
         setStatusMessage({ type: 'error', text: res.message || 'Không thể tải ảnh đại diện lên' });
       }
     } catch (err: any) {
+      setAvatar(previousAvatar);
       setStatusMessage({ type: 'error', text: err?.message || 'Lỗi khi tải ảnh đại diện lên máy chủ' });
     } finally {
+      URL.revokeObjectURL(objectUrl);
       setIsUploadingAvatar(false);
     }
   };
@@ -368,6 +386,7 @@ export default function ProfilePage() {
       return;
     }
 
+    const previousCover = coverImage;
     setIsUploadingCover(true);
     setStatusMessage(null);
 
@@ -388,13 +407,87 @@ export default function ProfilePage() {
         updateUser({ cover_image: res.data.url });
         setStatusMessage({ type: 'success', text: 'Tải ảnh bìa lên thành công!' });
       } else {
+        setCoverImage(previousCover);
         setStatusMessage({ type: 'error', text: res.message || 'Không thể tải ảnh bìa lên' });
       }
     } catch (err: any) {
+      setCoverImage(previousCover);
       setStatusMessage({ type: 'error', text: err?.message || 'Lỗi khi tải ảnh bìa lên máy chủ' });
     } finally {
+      URL.revokeObjectURL(objectUrl);
       setIsUploadingCover(false);
     }
+  };
+
+  // Quick remove cover
+  const handleQuickRemoveCover = async () => {
+    const previousCover = coverImage;
+    setCoverImage('');
+    setStatusMessage(null);
+    try {
+      const res = await apiClient<User>('/users/profile', {
+        method: 'PATCH',
+        data: { cover_image: null },
+      });
+      if (res.success && res.data) {
+        updateUser(res.data);
+        setStatusMessage({ type: 'success', text: 'Đã gỡ ảnh bìa và khôi phục nền mặc định!' });
+      } else {
+        setCoverImage(previousCover);
+        setStatusMessage({ type: 'error', text: res.message || 'Không thể gỡ ảnh bìa' });
+      }
+    } catch (err: any) {
+      setCoverImage(previousCover);
+      setStatusMessage({ type: 'error', text: err?.message || 'Không thể gỡ ảnh bìa' });
+    }
+  };
+
+  // Apply button in Avatar Modal
+  const handleApplyAvatarModal = async () => {
+    if (isUploadingAvatar) return;
+    if (!avatar.startsWith('blob:')) {
+      try {
+        const res = await apiClient<User>('/users/profile', {
+          method: 'PATCH',
+          data: { avatar: avatar.trim() || null },
+        });
+        if (res.success && res.data) {
+          updateUser(res.data);
+          setStatusMessage({ type: 'success', text: 'Cập nhật ảnh đại diện thành công!' });
+        } else {
+          setStatusMessage({ type: 'error', text: res.message || 'Không thể lưu ảnh đại diện' });
+          return;
+        }
+      } catch (err: any) {
+        setStatusMessage({ type: 'error', text: err?.message || 'Lỗi khi lưu ảnh đại diện' });
+        return;
+      }
+    }
+    setIsAvatarModalOpen(false);
+  };
+
+  // Apply button in Cover Modal
+  const handleApplyCoverModal = async () => {
+    if (isUploadingCover) return;
+    if (!coverImage.startsWith('blob:')) {
+      try {
+        const res = await apiClient<User>('/users/profile', {
+          method: 'PATCH',
+          data: { cover_image: coverImage.trim() || null },
+        });
+        if (res.success && res.data) {
+          updateUser(res.data);
+          setStatusMessage({ type: 'success', text: 'Cập nhật ảnh bìa thành công!' });
+        } else {
+          setStatusMessage({ type: 'error', text: res.message || 'Không thể lưu ảnh bìa' });
+          return;
+        }
+      } catch (err: any) {
+        setStatusMessage({ type: 'error', text: err?.message || 'Lỗi khi lưu ảnh bìa' });
+        return;
+      }
+    }
+    setIsCoverModalOpen(false);
   };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -610,10 +703,7 @@ export default function ProfilePage() {
               {coverImage && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setCoverImage('');
-                    updateUser({ cover_image: null });
-                  }}
+                  onClick={handleQuickRemoveCover}
                   className="p-1 text-xs bg-white/95 hover:bg-rose-50 hover:text-rose-600 text-slate-500 border border-slate-200 rounded-md backdrop-blur-xs cursor-pointer transition-colors"
                   title="Gỡ ảnh bìa (Quay lại nền lưới kỹ thuật mặc định)"
                 >
@@ -1758,6 +1848,7 @@ export default function ProfilePage() {
                   })}
                 </div>
               </div>
+
             </div>
 
             {/* Modal Footer */}
@@ -1771,7 +1862,7 @@ export default function ProfilePage() {
               </button>
               <button
                 type="button"
-                onClick={() => setIsAvatarModalOpen(false)}
+                onClick={handleApplyAvatarModal}
                 className="px-4 py-1.5 text-xs font-semibold rounded-md bg-[#f28d8d] hover:bg-[#e57a7a] text-white cursor-pointer transition-colors shadow-2xs"
               >
                 Áp dụng
@@ -1913,6 +2004,16 @@ export default function ProfilePage() {
                   })}
                 </div>
               </div>
+
+              {/* Custom Solid Color Picker */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                <ColorPicker
+                  value={coverImage.startsWith('solid:') ? coverImage.replace('solid:', '') : '#f28d8d'}
+                  onChange={(hex) => setCoverImage(`solid:${hex}`)}
+                  label="Tự chọn màu phẳng cá nhân (Custom Solid Color)"
+                  previewText="Ảnh bìa cá nhân"
+                />
+              </div>
             </div>
 
             {/* Modal Footer */}
@@ -1926,7 +2027,7 @@ export default function ProfilePage() {
               </button>
               <button
                 type="button"
-                onClick={() => setIsCoverModalOpen(false)}
+                onClick={handleApplyCoverModal}
                 className="px-4 py-1.5 text-xs font-semibold rounded-md bg-[#f28d8d] hover:bg-[#e57a7a] text-white cursor-pointer transition-colors shadow-2xs"
               >
                 Áp dụng

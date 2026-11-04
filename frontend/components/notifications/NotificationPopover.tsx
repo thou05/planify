@@ -244,14 +244,31 @@ export default function NotificationPopover({
       handleMarkAsRead(n.id);
     }
 
-    // Tách targetUrl nếu có
+    // Tách targetUrl nếu có từ cấu trúc "message||/target-url"
     const parts = (n.message || '').split('||');
-    const targetUrl = parts[1];
+    let targetUrl = parts[1]?.trim();
+
+    // Nếu không có targetUrl từ || nhưng message hoặc type chứa URL dạng /invite/:token
+    if (!targetUrl) {
+      const inviteMatch = n.message?.match(/\/invite\/[a-zA-Z0-9_\-]+/);
+      if (inviteMatch) {
+        targetUrl = inviteMatch[0];
+      }
+    }
 
     onClose();
 
     if (targetUrl) {
-      router.push(targetUrl);
+      if (targetUrl.startsWith('http://') || targetUrl.startsWith('https://')) {
+        try {
+          const parsed = new URL(targetUrl);
+          router.push(parsed.pathname + parsed.search);
+        } catch {
+          router.push(targetUrl);
+        }
+      } else {
+        router.push(targetUrl);
+      }
     }
   };
 

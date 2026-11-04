@@ -77,8 +77,14 @@ export class CardRelationsService {
       .maybeSingle();
 
     if (wsMember) {
+      if (wsMember.role === 'GUEST') {
+        throw new ForbiddenException('Khách (Guest) không có quyền truy cập Bảng này');
+      }
       if (board.visibility === 'PRIVATE') {
         throw new ForbiddenException('Bảng này ở chế độ Riêng tư (Private), bạn không có quyền truy cập');
+      }
+      if (requireEdit) {
+        throw new ForbiddenException('Bạn cần tham gia Bảng với quyền Biên tập viên (Editor) hoặc Quản trị viên (Admin) để chỉnh sửa liên kết thẻ');
       }
       return board;
     }
@@ -90,7 +96,7 @@ export class CardRelationsService {
     throw new ForbiddenException('Bạn không có quyền truy cập bảng này');
   }
 
-  private async verifyCardAccess(cardId: string, userId: string) {
+  private async verifyCardAccess(cardId: string, userId: string, requireEdit = false) {
     const { data: card, error: cError } = await this.supabase
       .from('cards')
       .select('id, title, list:lists (id, title, board_id, board:boards (id, name, workspace_id))')
@@ -104,7 +110,7 @@ export class CardRelationsService {
     const boardId = (card.list as any)?.board_id;
     let workspaceId = '';
     if (boardId) {
-      const b = await this.verifyBoardAccess(boardId, userId);
+      const b = await this.verifyBoardAccess(boardId, userId, requireEdit);
       workspaceId = b.workspace_id;
     }
 

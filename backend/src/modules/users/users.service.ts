@@ -155,13 +155,23 @@ export class UsersService {
       throw new BadRequestException('Vui lòng chọn tệp ảnh đại diện hợp lệ');
     }
 
+    const ALLOWED_MIMES: Record<string, string> = {
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp',
+      'image/gif': 'gif',
+    };
+    if (!file.mimetype || !ALLOWED_MIMES[file.mimetype]) {
+      throw new BadRequestException('Định dạng ảnh không hợp lệ. Chỉ chấp nhận JPEG, PNG, WEBP, GIF');
+    }
+
     const MAX_SIZE = 5 * 1024 * 1024; // 5MB
     if (file.size > MAX_SIZE) {
       throw new BadRequestException('Dung lượng ảnh đại diện không được vượt quá 5MB');
     }
 
     let publicUrl = '';
-    const ext = file.originalname?.split('.').pop() || 'png';
+    const ext = ALLOWED_MIMES[file.mimetype];
     const filePath = `users/${userId}/avatar-${Date.now()}.${ext}`;
 
     try {
@@ -202,13 +212,23 @@ export class UsersService {
       throw new BadRequestException('Vui lòng chọn tệp ảnh bìa hợp lệ');
     }
 
+    const ALLOWED_MIMES: Record<string, string> = {
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp',
+      'image/gif': 'gif',
+    };
+    if (!file.mimetype || !ALLOWED_MIMES[file.mimetype]) {
+      throw new BadRequestException('Định dạng ảnh không hợp lệ. Chỉ chấp nhận JPEG, PNG, WEBP, GIF');
+    }
+
     const MAX_SIZE = 15 * 1024 * 1024; // 15MB
     if (file.size > MAX_SIZE) {
       throw new BadRequestException('Dung lượng ảnh bìa không được vượt quá 15MB');
     }
 
     let publicUrl = '';
-    const ext = file.originalname?.split('.').pop() || 'jpg';
+    const ext = ALLOWED_MIMES[file.mimetype];
     const filePath = `users/${userId}/cover-${Date.now()}.${ext}`;
 
     try {
@@ -284,32 +304,93 @@ export class UsersService {
     const email = user.email.toLowerCase().trim();
     const now = new Date().toISOString();
 
-    // 1. Lời mời Workspace
-    const { data: wsInvites } = await this.supabase
-      .from('workspace_invites')
-      .select(`
-        id,
-        workspace_id,
-        email,
-        role,
-        token,
-        expired_at,
-        workspace:workspaces (
+    // 1. Lời mời Workspace (lấy status = 'PENDING' hoặc null, kèm workspace & inviter)
+    let workspaceInvites: any[] = [];
+    try {
+      const { data: wsInvites, error: wsError } = await this.supabase
+        .from('workspace_invites')
+        .select(`
           id,
-          name,
-          description,
-          owner:users!fk_workspace_owner (
+          workspace_id,
+          inviter_id,
+          email,
+          role,
+          token,
+          status,
+          created_at,
+          expired_at,
+          workspace:workspaces (
+            id,
+            name,
+            description
+          ),
+          inviter:users (
             id,
             name,
             email,
             avatar
           )
-        )
-      `)
-      .eq('email', email)
-      .gte('expired_at', now);
+        `)
+        .eq('email', email)
+        .or('status.eq.PENDING,status.is.null')
+        .gte('expired_at', now);
 
-    // 2. Lời mời Board
+      if (wsError) {
+        // Fallback query nếu quan hệ join inviter gặp lỗi
+        const { data: rawWsInvites } = await this.supabase
+          .from('workspace_invites')
+          .select(`
+            id,
+            workspace_id,
+            inviter_id,
+            email,
+            role,
+            token,
+            status,
+            created_at,
+            expired_at,
+            workspace:workspaces (
+              id,
+              name,
+              description
+            )
+          `)
+          .eq('email', email)
+          .gte('expired_at', now);
+
+        const filtered = (rawWsInvites || []).filter(
+          (inv: any) => !inv.status || inv.status === 'PENDING'
+        );
+
+        const inviterIds = [...new Set(filtered.map((i: any) => i.inviter_id).filter(Boolean))];
+        const userMap = new Map();
+        if (inviterIds.length > 0) {
+          const { data: users } = await this.supabase
+            .from('users')
+            .select('id, name, email, avatar')
+            .in('id', inviterIds);
+          (users || []).forEach((u: any) => userMap.set(u.id, u));
+        }
+
+        workspaceInvites = filtered.map((inv: any) => ({
+          ...inv,
+          status: inv.status || 'PENDING',
+          workspace: Array.isArray(inv.workspace) ? inv.workspace[0] : inv.workspace,
+          inviter: inv.inviter_id ? (userMap.get(inv.inviter_id) || null) : null,
+        }));
+      } else if (wsInvites) {
+        workspaceInvites = wsInvites.map((inv: any) => ({
+          ...inv,
+          status: inv.status || 'PENDING',
+          workspace: Array.isArray(inv.workspace) ? inv.workspace[0] : inv.workspace,
+          inviter: Array.isArray(inv.inviter) ? inv.inviter[0] : inv.inviter,
+        }));
+      }
+    } catch {
+      workspaceInvites = [];
+    }
+
+    // 2. Lời mời Board (giữ nguyên logic hiện tại)
     let boardInvites: any[] = [];
     try {
       const { data: bInvites } = await this.supabase
@@ -356,8 +437,8 @@ export class UsersService {
     }
 
     return {
-      workspaceInvites: wsInvites || [],
-      boardInvites: boardInvites || [],
+      workspaceInvites,
+      boardInvites,
     };
   }
 

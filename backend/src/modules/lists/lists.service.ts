@@ -475,12 +475,11 @@ export class ListsService {
       .maybeSingle();
 
     if (wsMember) {
+      if (wsMember.role === 'GUEST') {
+        throw new ForbiddenException('Khách (Guest) không có quyền truy cập Bảng này');
+      }
       if (board.visibility === 'PRIVATE') {
         throw new ForbiddenException('Bảng này ở chế độ Riêng tư (Private), bạn không có quyền truy cập');
-      }
-
-      if (wsMember.role === 'ADMIN') {
-        return { role: 'ADMIN', canEdit: true };
       }
 
       if (requireEdit) {

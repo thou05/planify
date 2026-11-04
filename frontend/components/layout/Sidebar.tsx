@@ -49,6 +49,7 @@ export default function Sidebar({
   const pathname = usePathname();
   const [isWsDropdownOpen, setIsWsDropdownOpen] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
+  const wsDropdownRef = useRef<HTMLDivElement>(null);
 
   // References to DOM elements for smooth sliding indicator tracking
   const navItemRefs = useRef<{ [key: string]: HTMLElement | null }>({});
@@ -166,6 +167,17 @@ export default function Sidebar({
     }
   }, [isOpen, updateActiveRects]);
 
+  useEffect(() => {
+    if (!isWsDropdownOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (wsDropdownRef.current && !wsDropdownRef.current.contains(event.target as Node)) {
+        setIsWsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isWsDropdownOpen]);
+
   // Click handlers to instantly trigger glide animation with 0ms delay
   const handleNavClick = (key: string) => {
     const el = navItemRefs.current[key];
@@ -210,7 +222,7 @@ export default function Sidebar({
         >
           {/* Workspace Switcher + Collapse Button */}
           <div className="flex items-center gap-1.5 mb-4">
-            <div className="relative flex-1 min-w-0">
+            <div ref={wsDropdownRef} className="relative flex-1 min-w-0">
               <button
                 onClick={() => setIsWsDropdownOpen(!isWsDropdownOpen)}
                 className="w-full flex items-center justify-between p-2 rounded-md bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors text-left group cursor-pointer"
