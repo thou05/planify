@@ -20,6 +20,12 @@ import {
   Calendar,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import {
+  canManageBoard,
+  canInviteBoardMember,
+  canManageBoardMembers,
+  BoardPermissionContext,
+} from '@/lib/permissions';
 
 interface ShareBoardModalProps {
   isOpen: boolean;
@@ -72,26 +78,24 @@ export default function ShareBoardModal({
       (board && !board?.isWorkspaceOwner && !board?.isWorkspaceMember && board?.currentUserBoardRole !== 'ADMIN')
   );
 
+  const permCtx: BoardPermissionContext = {
+    boardRole: board?.currentUserBoardRole || null,
+    isWorkspaceOwner: Boolean(board?.isWorkspaceOwner),
+    canEdit: board?.canEdit,
+    canManageMembers: board?.canManageMembers,
+    canInviteMembers: board?.canInviteMembers,
+    canDelete: board?.canDelete,
+    canChangeVisibility: board?.canChangeVisibility,
+  };
+
   const canChangeVisibility = Boolean(
-    !isGuest &&
-      (board?.canChangeVisibility ??
-        (board?.currentUserBoardRole === 'ADMIN' || board?.isWorkspaceOwner || board?.canManageMembers))
+    board?.canChangeVisibility ??
+      (canManageBoard(permCtx) || canManageBoardMembers(permCtx))
   );
 
-  const canManageMembers = Boolean(
-    !isGuest &&
-      (board?.canManageMembers ??
-        (board?.currentUserBoardRole === 'ADMIN' || board?.isWorkspaceOwner))
-  );
+  const canManageMembers = canManageBoardMembers(permCtx);
 
-  const canInviteMembers = Boolean(
-    !isGuest &&
-      (board?.canInviteMembers ??
-        (board?.currentUserBoardRole === 'ADMIN' ||
-          board?.currentUserBoardRole === 'EDITOR' ||
-          board?.isWorkspaceOwner ||
-          board?.canManageMembers))
-  );
+  const canInviteMembers = canInviteBoardMember(permCtx);
 
   const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
   const boardUrl = `${origin}/boards/${board?.id}`;
@@ -475,7 +479,7 @@ export default function ShareBoardModal({
               </div>
 
               {/* Add Member from Workspace */}
-              {!isGuest && canInviteMembers && availableWsMembers.length > 0 && (
+              {canInviteMembers && availableWsMembers.length > 0 && (
                 <form onSubmit={handleAddMember} className="p-3.5 rounded-md bg-slate-50 border border-slate-200 space-y-2">
                   <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
                     <UserPlus className="w-3.5 h-3.5 text-slate-600" />
@@ -732,7 +736,7 @@ export default function ShareBoardModal({
                             <Copy className="w-3.5 h-3.5" />
                           </button>
 
-                          {board.canManageMembers && (
+                          {canManageMembers && (
                             <button
                               type="button"
                               onClick={() => handleRevokeInvite(inv.id)}

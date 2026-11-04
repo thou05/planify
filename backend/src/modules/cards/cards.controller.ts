@@ -98,10 +98,21 @@ export class CardsController {
     @CurrentUser('id') userId: string,
     @Body() dto: AssignMemberDto,
   ) {
-    const targetId = dto.user_id || dto.board_member_id;
+    const targetId = dto.user_id || dto.board_member_id || dto.memberId;
     if (!targetId) {
-      throw new BadRequestException('Vui lòng cung cấp user_id hoặc board_member_id');
+      throw new BadRequestException('Vui lòng cung cấp user_id, board_member_id hoặc memberId');
     }
     return this.cardsService.toggleAssignMember(id, userId, targetId);
+  }
+
+  @Post('cards/:id/members')
+  @ApiOperation({ summary: 'Gán hoặc hủy gán thành viên vào thẻ (Alias endpoint theo spec)' })
+  @ApiResponse({ status: 200, description: 'Thao tác gán thành viên thành công' })
+  async assignMemberAlias(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: AssignMemberDto,
+  ) {
+    return this.toggleAssignMember(id, userId, dto);
   }
 }

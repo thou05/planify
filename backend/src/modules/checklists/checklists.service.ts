@@ -61,8 +61,14 @@ export class ChecklistsService {
             .maybeSingle();
 
           if (wsMember) {
+            if (wsMember.role === 'GUEST') {
+              throw new ForbiddenException('Khách (Guest) không có quyền truy cập Bảng này');
+            }
             if (board?.visibility === 'PRIVATE') {
               throw new ForbiddenException('Bảng này ở chế độ Riêng tư (Private), bạn không có quyền truy cập');
+            }
+            if (requireEdit) {
+              throw new ForbiddenException('Bạn cần tham gia Bảng với quyền Biên tập viên (Editor) hoặc Quản trị viên (Admin) để chỉnh sửa danh sách công việc');
             }
           } else {
             if (board?.visibility === 'PUBLIC' && !requireEdit) {
@@ -243,19 +249,8 @@ export class ChecklistsService {
       throw new BadRequestException('Bảng này là bảng Riêng tư. Chỉ có thể phân công thành viên đã tham gia bảng.');
     }
 
-    // 3. Kiểm tra xem người dùng có thuộc workspace không
-    const { data: wsMember } = await this.supabase
-      .from('workspace_members')
-      .select('user_id')
-      .eq('workspace_id', board.workspace_id)
-      .or(`id.eq.${memberIdOrUserId},user_id.eq.${memberIdOrUserId}`)
-      .maybeSingle();
-
-    if (wsMember) {
-      return wsMember.user_id;
-    }
-
-    throw new BadRequestException('Người dùng này không thuộc Không gian làm việc.');
+    // 3. Chỉ cho phép phân công cho thành viên đã tham gia Bảng (hoặc Chủ sở hữu Workspace)
+    throw new BadRequestException('Chỉ có thể phân công công việc cho thành viên (Editor/Admin) đã tham gia Bảng này.');
   }
 
   async createItem(checklistId: string, userId: string, dto: CreateChecklistItemDto) {

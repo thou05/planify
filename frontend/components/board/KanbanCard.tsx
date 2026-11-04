@@ -1,5 +1,7 @@
 'use client';
 
+import { getContrastTextColor } from '@/lib/color-utils';
+
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -361,8 +363,11 @@ export default function KanbanCard({
             {card.card_labels.map((cl: any) => (
               <span
                 key={cl.label?.id || Math.random()}
-                className="px-1.5 py-0.5 rounded-xs text-[10px] font-semibold text-white tracking-wide"
-                style={{ backgroundColor: cl.label?.color || '#3b82f6' }}
+                className="px-1.5 py-0.5 rounded-xs text-[10px] font-semibold tracking-wide shadow-2xs"
+                style={{
+                  backgroundColor: cl.label?.color || '#3b82f6',
+                  color: getContrastTextColor(cl.label?.color || '#3b82f6'),
+                }}
               >
                 {cl.label?.name}
               </span>

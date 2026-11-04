@@ -1,5 +1,63 @@
 [
   {
+    "id": "d6af5b70-3a46-4acb-86c6-206b6fb4c5f9",
+    "automation_id": "31eb6fef-7e8d-48e6-b32b-55f5de820d8e",
+    "automation_name": "Đánh dấu hoàn thành khi chuyển sang Đã xong",
+    "board_id": "33333333-3333-3333-3333-333333333333",
+    "trigger_event": "MANUAL_TRIGGER",
+    "actor_id": "11111111-1111-1111-1111-111111111111",
+    "actor_name": "Nguyễn Công Thắng",
+    "card_id": null,
+    "card_title": null,
+    "status": "SUCCESS",
+    "actions_total": 2,
+    "actions_succeeded": 2,
+    "error_message": null,
+    "details": {
+      "actionDetails": [
+        {
+          "type": "MARK_COMPLETED",
+          "status": "SUCCESS"
+        },
+        {
+          "type": "ADD_COMMENT",
+          "status": "SUCCESS"
+        }
+      ]
+    },
+    "started_at": "2026-11-04T16:17:55.635Z",
+    "finished_at": "2026-11-04T16:17:55.739Z"
+  },
+  {
+    "id": "b91ea297-c858-40a2-b00c-2335d3e53222",
+    "automation_id": "31eb6fef-7e8d-48e6-b32b-55f5de820d8e",
+    "automation_name": "Đánh dấu hoàn thành khi chuyển sang Đã xong",
+    "board_id": "33333333-3333-3333-3333-333333333333",
+    "trigger_event": "MANUAL_TRIGGER",
+    "actor_id": "11111111-1111-1111-1111-111111111111",
+    "actor_name": "Nguyễn Công Thắng",
+    "card_id": null,
+    "card_title": null,
+    "status": "SUCCESS",
+    "actions_total": 2,
+    "actions_succeeded": 2,
+    "error_message": null,
+    "details": {
+      "actionDetails": [
+        {
+          "type": "MARK_COMPLETED",
+          "status": "SUCCESS"
+        },
+        {
+          "type": "ADD_COMMENT",
+          "status": "SUCCESS"
+        }
+      ]
+    },
+    "started_at": "2026-11-04T16:17:36.345Z",
+    "finished_at": "2026-11-04T16:17:36.456Z"
+  },
+  {
     "id": "601cf3ca-0bea-43d9-889f-0ef3dd6e2005",
     "automation_id": "31eb6fef-7e8d-48e6-b32b-55f5de820d8e",
     "automation_name": "Đánh dấu hoàn thành khi chuyển sang Đã xong",

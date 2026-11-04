@@ -68,13 +68,13 @@ body {
   background-image: 
     linear-gradient(to right, rgba(15, 23, 42, 0.035) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(15, 23, 42, 0.035) 1px, transparent 1px);
-  background-size: 40px 40px;
+  background-size: 24px 24px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", Helvetica, Arial, sans-serif;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Technical Grid Canvas Utility (Nền lưới thưa 40px dịu mắt cho tất cả các trang) */
+/* Technical Grid Canvas Utility (Nền lưới thưa 24px dịu mắt cho tất cả các trang) */
 .bg-grid-pattern,
 .app-canvas,
 .grid-canvas {
@@ -82,7 +82,7 @@ body {
   background-image: 
     linear-gradient(to right, rgba(15, 23, 42, 0.035) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(15, 23, 42, 0.035) 1px, transparent 1px);
-  background-size: 40px 40px;
+  background-size: 24px 24px;
 }
 
 /* Dot Matrix / Dot Grid Pattern (Nền chấm mặc định thoáng mắt cho Board) */

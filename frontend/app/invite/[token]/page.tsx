@@ -12,11 +12,10 @@ import {
   AlertCircle,
   ArrowRight,
   Shield,
-  Users,
   Loader2,
   Calendar,
   XCircle,
-  Sparkles,
+  AlertTriangle,
 } from 'lucide-react';
 
 export default function AcceptInvitePage({
@@ -97,6 +96,10 @@ export default function AcceptInvitePage({
           method: 'POST',
         });
         if (res.success && res.data) {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('workspace-list-updated'));
+            window.dispatchEvent(new CustomEvent('workspaces-changed'));
+          }
           const workspaceId = res.data.workspaceId || inviteData?.workspace?.id;
           router.push(`/workspaces/${workspaceId}`);
         }
@@ -151,11 +154,22 @@ export default function AcceptInvitePage({
     }
   };
 
+  const isEmailMismatch = Boolean(
+    user?.email &&
+    inviteData?.email &&
+    user.email.toLowerCase() !== inviteData.email.toLowerCase()
+  );
+
+  const inviterName =
+    inviteType === 'BOARD'
+      ? inviteData?.inviter?.name || 'Thành viên'
+      : inviteData?.inviter?.name || inviteData?.workspace?.owner?.name || 'Quản trị viên';
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative bg-grid-pattern">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-300 p-8 sm:p-10 relative text-center">
+    <div className="min-h-screen flex items-center justify-center p-4 relative bg-[#f8fafc]">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-sm border border-slate-300 p-8 sm:p-10 relative text-center">
         <div className="flex justify-center mb-5">
-          <div className="w-12 h-12 rounded-md bg-slate-900 text-white flex items-center justify-center shadow-2xs">
+          <div className="w-12 h-12 rounded-md bg-[#f28d8d] text-white flex items-center justify-center border border-[#d86969]">
             {inviteType === 'BOARD' ? (
               <LayoutGrid className="w-6 h-6" />
             ) : (
@@ -174,17 +188,21 @@ export default function AcceptInvitePage({
         ) : rejectedSuccess ? (
           <div className="space-y-5">
             <div className="w-10 h-10 mx-auto rounded-md bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5" />
+              <CheckCircle2 className="w-5 h-5 text-slate-600" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900">Đã từ chối lời mời</h2>
+              <h2 className="text-base font-bold text-slate-900">
+                {inviteType === 'BOARD'
+                  ? 'Bạn đã từ chối lời mời tham gia Bảng công việc này'
+                  : 'Bạn đã từ chối lời mời tham gia Không gian làm việc này'}
+              </h2>
               <p className="text-xs text-slate-500 mt-1">
-                Bạn đã từ chối tham gia dự án này. Lời mời đã được đóng.
+                Lời mời đã được đóng. Bạn có thể quay về Bảng điều khiển để tiếp tục làm việc.
               </p>
             </div>
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-2xs transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-[#f28d8d] hover:bg-[#e57a7a] text-white text-xs font-semibold border border-[#d86969] transition-colors"
             >
               <span>Về Bảng điều khiển</span>
               <ArrowRight className="w-4 h-4" />
@@ -201,7 +219,7 @@ export default function AcceptInvitePage({
             </div>
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-2xs transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-[#f28d8d] hover:bg-[#e57a7a] text-white text-xs font-semibold border border-[#d86969] transition-colors"
             >
               <span>Về Bảng điều khiển</span>
               <ArrowRight className="w-4 h-4" />
@@ -236,9 +254,7 @@ export default function AcceptInvitePage({
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-500">Người gửi lời mời:</span>
                 <span className="font-semibold text-slate-800">
-                  {inviteType === 'BOARD'
-                    ? inviteData.inviter?.name || 'Thành viên'
-                    : inviteData.workspace?.owner?.name || 'Admin'}
+                  {inviterName}
                 </span>
               </div>
               <div className="flex items-center justify-between text-xs">
@@ -256,6 +272,18 @@ export default function AcceptInvitePage({
                 </span>
               </div>
             </div>
+
+            {isEmailMismatch && (
+              <div className="p-3.5 rounded-md bg-amber-50 border border-amber-200 text-left space-y-1">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-800">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>Email đăng nhập không trùng khớp</span>
+                </div>
+                <p className="text-[11px] text-amber-700 leading-relaxed">
+                  Lời mời này được gửi riêng cho <strong>{inviteData.email}</strong>, nhưng bạn đang đăng nhập với tài khoản <strong>{user?.email}</strong>. Vui lòng đăng nhập đúng tài khoản được mời để chấp nhận.
+                </p>
+              </div>
+            )}
 
             {user ? (
               <div className="space-y-3">
@@ -275,14 +303,14 @@ export default function AcceptInvitePage({
                     ) : (
                       <XCircle className="w-4 h-4" />
                     )}
-                    <span>Từ chối</span>
+                    <span>Từ chối lời mời</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleAccept}
-                    disabled={isAccepting || isRejecting}
-                    className="w-full py-2.5 px-3 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
+                    disabled={isAccepting || isRejecting || isEmailMismatch}
+                    className="w-full py-2.5 px-3 rounded-md bg-[#f28d8d] hover:bg-[#e57a7a] text-white text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 border border-[#d86969] transition-colors"
                   >
                     {isAccepting ? (
                       <>
@@ -292,7 +320,7 @@ export default function AcceptInvitePage({
                     ) : (
                       <>
                         <CheckCircle2 className="w-4 h-4" />
-                        <span>Chấp nhận</span>
+                        <span>Chấp nhận lời mời</span>
                       </>
                     )}
                   </button>
@@ -306,7 +334,7 @@ export default function AcceptInvitePage({
                 <div className="flex flex-col gap-2">
                   <Link
                     href={`/login?redirect=/invite/${token}`}
-                    className="w-full py-2.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs transition-colors"
+                    className="w-full py-2.5 rounded-md bg-[#f28d8d] hover:bg-[#e57a7a] text-white text-xs font-semibold flex items-center justify-center gap-1.5 border border-[#d86969] transition-colors"
                   >
                     <span>Đăng nhập ngay</span>
                     <ArrowRight className="w-3.5 h-3.5" />

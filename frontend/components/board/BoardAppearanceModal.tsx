@@ -15,6 +15,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import ColorPicker from '@/components/ui/ColorPicker';
 
 export interface BoardAppearanceModalProps {
   isOpen: boolean;
@@ -185,6 +186,8 @@ export default function BoardAppearanceModal({
     setError('');
 
     // Xem trước cục bộ ngay tức khắc: Tự động lấy ảnh nền làm Favicon & Biểu tượng
+    const prevBg = selectedBg;
+    const prevIcon = selectedIcon;
     const objectUrl = URL.createObjectURL(file);
     setSelectedBg(objectUrl);
     setSelectedIcon(objectUrl);
@@ -204,11 +207,16 @@ export default function BoardAppearanceModal({
         setSelectedIcon(res.data.icon || res.data.url);
         onUpdated();
       } else {
+        setSelectedBg(prevBg);
+        setSelectedIcon(prevIcon);
         setError(res.message || 'Không thể tải ảnh lên máy chủ, vui lòng thử lại');
       }
     } catch (err: any) {
+      setSelectedBg(prevBg);
+      setSelectedIcon(prevIcon);
       setError(err?.message || 'Lỗi khi tải ảnh lên từ thiết bị');
     } finally {
+      URL.revokeObjectURL(objectUrl);
       setIsUploadingBg(false);
     }
   };
@@ -227,6 +235,7 @@ export default function BoardAppearanceModal({
     setIsUploadingIcon(true);
     setError('');
 
+    const prevIcon = selectedIcon;
     const objectUrl = URL.createObjectURL(file);
     setSelectedIcon(objectUrl);
 
@@ -243,11 +252,14 @@ export default function BoardAppearanceModal({
         setSelectedIcon(res.data.url);
         onUpdated();
       } else {
+        setSelectedIcon(prevIcon);
         setError(res.message || 'Không thể tải biểu tượng lên');
       }
     } catch (err: any) {
+      setSelectedIcon(prevIcon);
       setError(err?.message || 'Lỗi khi tải ảnh biểu tượng từ thiết bị');
     } finally {
+      URL.revokeObjectURL(objectUrl);
       setIsUploadingIcon(false);
     }
   };
@@ -290,9 +302,11 @@ export default function BoardAppearanceModal({
       (selectedIcon.startsWith('http') || selectedIcon.startsWith('data:') || selectedIcon.startsWith('blob:'))
   );
 
+  const safePreviewBgUrl = isPhoto && selectedBg ? encodeURI(selectedBg).replace(/["'()\\]/g, '\\$&') : '';
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
-      <div className="w-full max-w-xl bg-white rounded-xl border border-slate-300 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/45 animate-fade-in">
+      <div className="w-full max-w-xl bg-white rounded-lg border border-slate-300 shadow-md overflow-hidden flex flex-col max-h-[90vh]">
         {/* Modal Header */}
         <div className="px-6 py-4.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
           <div className="flex items-center gap-3">
@@ -324,7 +338,7 @@ export default function BoardAppearanceModal({
             className="relative h-24 rounded-lg overflow-hidden border border-slate-300 shadow-inner flex flex-col justify-between p-3 transition-all duration-300 bg-dot-pattern"
             style={{
               background: isPhoto ? undefined : selectedBg || undefined,
-              backgroundImage: isPhoto ? `url("${selectedBg}")` : undefined,
+              backgroundImage: isPhoto ? `url("${safePreviewBgUrl}")` : undefined,
               backgroundSize: isPhoto ? 'cover' : undefined,
               backgroundPosition: isPhoto ? 'center' : undefined,
             }}
@@ -549,7 +563,7 @@ export default function BoardAppearanceModal({
                         }}
                         title={p.name}
                       >
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                        <div className="absolute inset-0 bg-slate-900/65" />
                         {isSelected && (
                           <div className="absolute inset-0 flex items-center justify-center bg-black/25">
                             <Check className="w-4 h-4 text-white stroke-[3]" />
@@ -565,36 +579,48 @@ export default function BoardAppearanceModal({
               </div>
 
               {/* 4. Colors */}
-              <div>
-                <label className="block text-xs font-bold text-slate-800 mb-2">
-                  Màu sắc đơn sắc hiện đại
-                </label>
-                <div className="grid grid-cols-6 gap-2">
-                  {PRESET_COLORS.map((c) => {
-                    const isSelected = selectedBg === c.value;
-                    return (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => handleSelectGradient(c.value)}
-                        className={`relative h-10 rounded-md border-2 transition-all cursor-pointer shadow-2xs hover:scale-105 flex items-center justify-center ${
-                          isSelected
-                            ? 'border-[#d86969] ring-2 ring-[#f28d8d]/50'
-                            : 'border-slate-200 hover:border-slate-300'
-                        }`}
-                        style={{ backgroundColor: c.value }}
-                        title={c.name}
-                      >
-                        {isSelected && (
-                          <Check
-                            className={`w-3.5 h-3.5 stroke-[3] ${
-                              c.value === '#f8fafc' ? 'text-slate-800' : 'text-white'
-                            }`}
-                          />
-                        )}
-                      </button>
-                    );
-                  })}
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 mb-2">
+                    Màu sắc mẫu chọn nhanh
+                  </label>
+                  <div className="grid grid-cols-6 gap-2">
+                    {PRESET_COLORS.map((c) => {
+                      const isSelected = selectedBg === c.value;
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => handleSelectGradient(c.value)}
+                          className={`relative h-10 rounded-md border-2 transition-all cursor-pointer shadow-2xs hover:scale-105 flex items-center justify-center ${
+                            isSelected
+                              ? 'border-[#d86969] ring-2 ring-[#f28d8d]/50'
+                              : 'border-slate-200 hover:border-slate-300'
+                          }`}
+                          style={{ backgroundColor: c.value }}
+                          title={c.name}
+                        >
+                          {isSelected && (
+                            <Check
+                              className={`w-3.5 h-3.5 stroke-[3] ${
+                                c.value === '#f8fafc' ? 'text-slate-800' : 'text-white'
+                              }`}
+                            />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Bảng màu tùy chọn hoàn chỉnh */}
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                  <ColorPicker
+                    value={selectedBg?.startsWith('#') ? selectedBg : '#f28d8d'}
+                    onChange={(hex) => handleSelectGradient(hex)}
+                    label="Tự chọn màu nền Bảng (Custom Background Color)"
+                    showPreview={false}
+                  />
                 </div>
               </div>
 

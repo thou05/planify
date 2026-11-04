@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, User } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
+import ColorPicker from '@/components/ui/ColorPicker';
 import {
   X,
   User as UserIcon,
@@ -13,6 +14,10 @@ import {
   Globe,
   Clock,
   Key,
+  Camera,
+  Upload,
+  ImageIcon,
+  RotateCcw,
   CheckCircle2,
   AlertCircle,
   Loader2,
@@ -58,7 +63,12 @@ export default function ProfileModal({
   // Profile Form State
   const [name, setName] = useState('');
   const [avatar, setAvatar] = useState('');
+  const [coverImage, setCoverImage] = useState('');
   const [bio, setBio] = useState('');
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const [phone, setPhone] = useState('');
   const [timezone, setTimezone] = useState('Asia/Ho_Chi_Minh');
   const [language, setLanguage] = useState('vi');
@@ -101,6 +111,7 @@ export default function ProfileModal({
     if (user) {
       setName(user.name || '');
       setAvatar(user.avatar || '');
+      setCoverImage(user.cover_image || '');
       setBio(user.bio || '');
       setPhone(user.phone || '');
       setTimezone(user.timezone || 'Asia/Ho_Chi_Minh');
@@ -176,6 +187,96 @@ export default function ProfileModal({
   const totalInvites =
     (invitations.workspaceInvites?.length || 0) + (invitations.boardInvites?.length || 0);
 
+  // Upload Avatar từ thiết bị
+  const handleUploadAvatar = async (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setStatusMessage({ type: 'error', text: 'Vui lòng chọn tệp hình ảnh hợp lệ (PNG, JPG, WEBP)' });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setStatusMessage({ type: 'error', text: 'Dung lượng ảnh đại diện không được vượt quá 5MB' });
+      return;
+    }
+
+    const previousAvatar = avatar;
+    setIsUploadingAvatar(true);
+    setStatusMessage(null);
+
+    const objectUrl = URL.createObjectURL(file);
+    setAvatar(objectUrl);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await apiClient<{ url: string }>('/users/upload-avatar', {
+        method: 'POST',
+        data: formData,
+      });
+
+      if (res.success && res.data?.url) {
+        setAvatar(res.data.url);
+        updateUser({ avatar: res.data.url });
+        setStatusMessage({ type: 'success', text: 'Tải ảnh đại diện lên thành công!' });
+      } else {
+        setAvatar(previousAvatar);
+        setStatusMessage({ type: 'error', text: res.message || 'Không thể tải ảnh đại diện lên' });
+      }
+    } catch (err: any) {
+      setAvatar(previousAvatar);
+      setStatusMessage({ type: 'error', text: err?.message || 'Lỗi khi tải ảnh đại diện lên máy chủ' });
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  // Upload Cover Image từ thiết bị
+  const handleUploadCover = async (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setStatusMessage({ type: 'error', text: 'Vui lòng chọn tệp hình ảnh hợp lệ (PNG, JPG, WEBP)' });
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      setStatusMessage({ type: 'error', text: 'Dung lượng ảnh bìa không được vượt quá 15MB' });
+      return;
+    }
+
+    const previousCover = coverImage;
+    setIsUploadingCover(true);
+    setStatusMessage(null);
+
+    const objectUrl = URL.createObjectURL(file);
+    setCoverImage(objectUrl);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await apiClient<{ url: string }>('/users/upload-cover', {
+        method: 'POST',
+        data: formData,
+      });
+
+      if (res.success && res.data?.url) {
+        setCoverImage(res.data.url);
+        updateUser({ cover_image: res.data.url });
+        setStatusMessage({ type: 'success', text: 'Tải ảnh bìa lên thành công!' });
+      } else {
+        setCoverImage(previousCover);
+        setStatusMessage({ type: 'error', text: res.message || 'Không thể tải ảnh bìa lên' });
+      }
+    } catch (err: any) {
+      setCoverImage(previousCover);
+      setStatusMessage({ type: 'error', text: err?.message || 'Lỗi khi tải ảnh bìa lên máy chủ' });
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+      setIsUploadingCover(false);
+    }
+  };
+
   // Save profile handler
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,6 +294,7 @@ export default function ProfileModal({
         data: {
           name: name.trim(),
           avatar: avatar.trim() || null,
+          cover_image: coverImage.trim() || null,
           bio: bio.trim(),
           phone: phone.trim(),
           timezone,
@@ -264,9 +366,25 @@ export default function ProfileModal({
         method: 'POST',
       });
       if (res.success) {
+        // Loại bỏ ngay lập tức để cập nhật UI & badge tức thì
+        setInvitations((prev) => ({
+          ...prev,
+          workspaceInvites: prev.workspaceInvites.filter((inv) => inv.token !== token),
+        }));
+
+        // Phát sự kiện làm mới danh sách workspace toàn cục
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('workspace-list-updated'));
+          window.dispatchEvent(new CustomEvent('workspaces-changed'));
+          window.dispatchEvent(new CustomEvent('planify:refresh-workspaces'));
+        }
+
         fetchInvitations();
         onClose();
-        router.push(`/workspaces/${workspaceId}`);
+        const targetWsId = res.data?.workspaceId || workspaceId;
+        if (targetWsId) {
+          router.push(`/workspaces/${targetWsId}`);
+        }
       }
     } catch (err: any) {
       alert(err.message || 'Không thể chấp nhận lời mời');
@@ -284,6 +402,10 @@ export default function ProfileModal({
         method: 'POST',
       });
       if (res.success) {
+        setInvitations((prev) => ({
+          ...prev,
+          workspaceInvites: prev.workspaceInvites.filter((inv) => inv.token !== token),
+        }));
         fetchInvitations();
       }
     } catch (err: any) {
@@ -446,11 +568,31 @@ export default function ProfileModal({
             <form onSubmit={handleSaveProfile} className="space-y-4">
               {/* Avatar Selector */}
               <div>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleUploadAvatar(file);
+                  }}
+                />
+                <input
+                  ref={coverInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleUploadCover(file);
+                  }}
+                />
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-2">
                   Ảnh đại diện (Avatar)
                 </label>
                 <div className="flex flex-wrap items-center gap-4">
-                  <div className="w-14 h-14 rounded-md bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                  <div className="w-14 h-14 rounded-md bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0 relative group">
                     {avatar ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={avatar} alt="Avatar" className="w-full h-full object-cover" />
@@ -462,13 +604,24 @@ export default function ProfileModal({
                   </div>
 
                   <div className="flex-1 min-w-[200px] space-y-2">
-                    <input
-                      type="url"
-                      value={avatar}
-                      onChange={(e) => setAvatar(e.target.value)}
-                      placeholder="Dán link ảnh đại diện (URL)..."
-                      className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
-                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="url"
+                        value={avatar}
+                        onChange={(e) => setAvatar(e.target.value)}
+                        placeholder="Dán link ảnh đại diện (URL)..."
+                        className="flex-1 px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
+                      />
+                      <button
+                        type="button"
+                        disabled={isUploadingAvatar}
+                        onClick={() => avatarInputRef.current?.click()}
+                        className="px-2.5 py-1.5 text-xs font-medium rounded-md border border-slate-300 hover:bg-slate-50 text-slate-700 flex items-center gap-1.5 shrink-0 cursor-pointer"
+                      >
+                        {isUploadingAvatar ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                        <span>Tải ảnh</span>
+                      </button>
+                    </div>
                     <div className="flex items-center gap-2">
                       <span className="text-[11px] text-slate-500 font-medium">Gợi ý mẫu:</span>
                       <div className="flex items-center gap-1.5">
@@ -488,6 +641,51 @@ export default function ProfileModal({
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Cover Image Selector */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-2">
+                  Ảnh bìa hồ sơ (Cover Image)
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="url"
+                    value={coverImage}
+                    onChange={(e) => setCoverImage(e.target.value)}
+                    placeholder="Dán link ảnh bìa (URL)..."
+                    className="flex-1 px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
+                  />
+                  <button
+                    type="button"
+                    disabled={isUploadingCover}
+                    onClick={() => coverInputRef.current?.click()}
+                    className="px-2.5 py-1.5 text-xs font-medium rounded-md border border-slate-300 hover:bg-slate-50 text-slate-700 flex items-center gap-1.5 shrink-0 cursor-pointer"
+                  >
+                    {isUploadingCover ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                    <span>Tải ảnh</span>
+                  </button>
+                  {coverImage && (
+                    <button
+                      type="button"
+                      onClick={() => setCoverImage('')}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md border border-slate-200 hover:bg-rose-50 cursor-pointer"
+                      title="Gỡ ảnh bìa"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Custom Solid Color Picker */}
+                <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                  <ColorPicker
+                    value={coverImage.startsWith('solid:') ? coverImage.replace('solid:', '') : '#f28d8d'}
+                    onChange={(hex) => setCoverImage(`solid:${hex}`)}
+                    label="Tự chọn màu phẳng cho ảnh bìa (Custom Solid Color)"
+                    previewText="Ảnh bìa hồ sơ"
+                  />
                 </div>
               </div>
 
@@ -750,7 +948,7 @@ export default function ProfileModal({
                       className="p-3.5 rounded-md border border-slate-200 bg-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-md bg-slate-100 border border-slate-200 text-slate-800 flex items-center justify-center shrink-0">
+                        <div className="w-9 h-9 rounded-md bg-[#ffc0cb]/30 border border-[#ffc0cb]/80 text-[#d86969] flex items-center justify-center shrink-0">
                           <Layers className="w-4 h-4" />
                         </div>
                         <div>
@@ -759,11 +957,11 @@ export default function ProfileModal({
                               {inv.workspace?.name || 'Không gian làm việc'}
                             </span>
                             <span className="px-1.5 py-0.2 rounded-xs bg-slate-100 border border-slate-200 text-slate-700 font-semibold text-[10px]">
-                              Workspace • {inv.role}
+                              Workspace • {inv.role === 'ADMIN' ? 'Quản trị viên' : 'Thành viên'}
                             </span>
                           </div>
                           <p className="text-[11px] text-slate-500 mt-0.5">
-                            Người mời: {inv.workspace?.owner?.name || 'Admin'} • Hết hạn:{' '}
+                            Người mời: {inv.inviter?.name || inv.workspace?.owner?.name || 'Quản trị viên'} • Hết hạn:{' '}
                             {new Date(inv.expired_at).toLocaleDateString('vi-VN')}
                           </p>
                         </div>
@@ -774,7 +972,7 @@ export default function ProfileModal({
                           type="button"
                           disabled={processingToken === inv.token}
                           onClick={() => handleRejectWorkspace(inv.token)}
-                          className="px-3 py-1.5 rounded-md border border-rose-200 text-rose-700 hover:bg-rose-50 text-xs font-semibold cursor-pointer transition-colors"
+                          className="px-3 py-1.5 rounded-md border border-rose-300 text-rose-700 hover:bg-rose-50 text-xs font-semibold cursor-pointer transition-colors disabled:opacity-50"
                         >
                           Từ chối
                         </button>
@@ -782,7 +980,7 @@ export default function ProfileModal({
                           type="button"
                           disabled={processingToken === inv.token}
                           onClick={() => handleAcceptWorkspace(inv.token, inv.workspace?.id)}
-                          className="px-4 py-1.5 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                          className="px-4 py-1.5 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer border border-[#d86969] transition-colors disabled:opacity-50"
                         >
                           {processingToken === inv.token ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />

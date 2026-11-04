@@ -155,6 +155,7 @@ export class BoardsService {
         visibility,
         is_archived,
         background,
+        icon,
         lists (id),
         members:board_members (id, user_id, role)
       `)
@@ -231,6 +232,7 @@ export class BoardsService {
         visibility,
         is_archived,
         background,
+        icon,
         workspace:workspaces (id, name, owner_id),
         lists (
           id,
@@ -388,8 +390,8 @@ export class BoardsService {
       throw new ForbiddenException('Bạn không có quyền chỉnh sửa thông tin Board này');
     }
 
-    if (board.isGuest && (dto.name !== undefined || dto.description !== undefined || dto.visibility !== undefined || dto.background !== undefined || dto.is_archived !== undefined)) {
-      throw new ForbiddenException('Khách của Bảng không có quyền thay đổi thông tin hoặc cấu hình của Bảng này');
+    if ((dto.name !== undefined || dto.description !== undefined) && !board.canManageMembers && !board.isWorkspaceOwner) {
+      throw new ForbiddenException('Chỉ Quản trị viên Bảng (Admin) hoặc Chủ sở hữu Workspace mới có quyền đổi tên hoặc mô tả Bảng');
     }
 
     if (dto.visibility !== undefined && !board.canChangeVisibility) {
@@ -595,7 +597,10 @@ export class BoardsService {
   async copyBoard(boardId: string, userId: string, dto: CopyBoardDto) {
     const sourceBoard = await this.findById(boardId, userId);
     const targetWorkspaceId = dto.targetWorkspaceId || sourceBoard.workspace_id;
-    await this.verifyWorkspaceAccess(targetWorkspaceId, userId);
+    const wsAccess = await this.verifyWorkspaceAccess(targetWorkspaceId, userId);
+    if (wsAccess.role === 'GUEST') {
+      throw new ForbiddenException('Khách (Guest) không có quyền sao chép hoặc tạo Bảng trong Không gian làm việc này');
+    }
 
     // 1. Tạo board mới
     const { data: newBoard, error: bErr } = await this.supabase
@@ -1378,23 +1383,7 @@ export class BoardsService {
       }
     }
 
-    // 2. Đảm bảo user cũng có trong Workspace của Board
-    if (board?.workspace_id) {
-      const { data: wsMember } = await this.supabase
-        .from('workspace_members')
-        .select('id')
-        .eq('workspace_id', board.workspace_id)
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (!wsMember) {
-        await this.supabase.from('workspace_members').insert({
-          workspace_id: board.workspace_id,
-          user_id: userId,
-          role: 'MEMBER',
-        });
-      }
-    }
+    // 2. Người dùng truy cập Không gian làm việc với tư cách Khách (Guest) thông qua board_members, không tự ý gán MEMBER toàn Workspace.
 
     // 3. Cập nhật trạng thái lời mời thành ACCEPTED
     await this.supabase
@@ -1502,12 +1491,22 @@ export class BoardsService {
 
   async uploadBackground(boardId: string, file: Express.Multer.File, userId: string) {
     const board = await this.findById(boardId, userId);
-    if (!board.canEdit || board.isGuest) {
+    if (!board.canEdit) {
       throw new ForbiddenException('Bạn không có quyền thay đổi hình nền của Bảng này');
     }
 
     if (!file || !file.buffer) {
       throw new BadRequestException('Vui lòng chọn tệp ảnh hợp lệ để tải lên');
+    }
+
+    const ALLOWED_BG_MIMES: Record<string, string> = {
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp',
+      'image/gif': 'gif',
+    };
+    if (!file.mimetype || !ALLOWED_BG_MIMES[file.mimetype]) {
+      throw new BadRequestException('Định dạng ảnh không hợp lệ. Chỉ chấp nhận JPEG, PNG, WEBP, GIF');
     }
 
     const MAX_SIZE = 15 * 1024 * 1024; // 15MB
@@ -1516,7 +1515,7 @@ export class BoardsService {
     }
 
     let publicUrl = '';
-    const ext = file.originalname?.split('.').pop() || 'jpg';
+    const ext = ALLOWED_BG_MIMES[file.mimetype];
     const filePath = `boards/${boardId}/background-${Date.now()}.${ext}`;
 
     try {
@@ -1556,12 +1555,24 @@ export class BoardsService {
 
   async uploadIcon(boardId: string, file: Express.Multer.File, userId: string) {
     const board = await this.findById(boardId, userId);
-    if (!board.canEdit || board.isGuest) {
+    if (!board.canEdit) {
       throw new ForbiddenException('Bạn không có quyền thay đổi biểu tượng của Bảng này');
     }
 
     if (!file || !file.buffer) {
       throw new BadRequestException('Vui lòng chọn tệp ảnh biểu tượng hợp lệ');
+    }
+
+    const ALLOWED_ICON_MIMES: Record<string, string> = {
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp',
+      'image/gif': 'gif',
+      'image/x-icon': 'ico',
+      'image/vnd.microsoft.icon': 'ico',
+    };
+    if (!file.mimetype || !ALLOWED_ICON_MIMES[file.mimetype]) {
+      throw new BadRequestException('Định dạng ảnh biểu tượng không hợp lệ. Chỉ chấp nhận JPEG, PNG, WEBP, GIF, ICO');
     }
 
     const MAX_SIZE = 5 * 1024 * 1024; // 5MB
@@ -1570,7 +1581,7 @@ export class BoardsService {
     }
 
     let publicUrl = '';
-    const ext = file.originalname?.split('.').pop() || 'png';
+    const ext = ALLOWED_ICON_MIMES[file.mimetype];
     const filePath = `boards/${boardId}/icon-${Date.now()}.${ext}`;
 
     try {

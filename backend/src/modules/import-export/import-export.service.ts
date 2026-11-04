@@ -134,8 +134,10 @@ export class ImportExportService {
       .eq('user_id', userId)
       .maybeSingle();
 
-    if (!member && ws.owner_id !== userId) {
-      throw new ForbiddenException('Bạn không có quyền thao tác trong Không gian làm việc này');
+    if (ws.owner_id !== userId) {
+      if (!member || member.role === 'GUEST') {
+        throw new ForbiddenException('Khách (Guest) không có quyền thao tác hoặc tạo Bảng trong Không gian làm việc này');
+      }
     }
 
     return ws;

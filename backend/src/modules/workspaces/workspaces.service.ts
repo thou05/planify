@@ -264,7 +264,7 @@ export class WorkspacesService {
         .in('board_id', boardIds);
 
       if (boardMembers && boardMembers.length > 0) {
-        const wsMemberUserIds = new Set((workspace.members || []).map((m: any) => m.user_id));
+        const wsMemberUserIds = new Set((workspace.members || []).filter((m: any) => m.role !== 'GUEST').map((m: any) => m.user_id));
         wsMemberUserIds.add(workspace.owner_id);
 
         const guestMap = new Map<string, {
@@ -687,73 +687,40 @@ export class WorkspacesService {
       if (existingMember) {
         throw new ConflictException('Người dùng đã là thành viên của Workspace này');
       }
-
-      if (dto.directAdd !== false) {
-        // Thêm trực tiếp vào Workspace
-        const { data: member, error } = await this.supabase
-          .from('workspace_members')
-          .insert({
-            workspace_id: workspaceId,
-            user_id: targetUser.id,
-            role: dto.role || 'MEMBER',
-          })
-          .select(`
-            id,
-            role,
-            user_id,
-            joined_at,
-            user:users (id, name, email, avatar)
-          `)
-          .single();
-
-        if (error) throw new BadRequestException(error.message);
-
-        // Gửi thông báo cho thành viên vừa được thêm trực tiếp
-        this.notificationsService
-          .createNotification({
-            userId: targetUser.id,
-            title: 'Thành viên Không gian làm việc mới',
-            message: `${inviterName} đã thêm bạn vào không gian làm việc "${workspace.name}".`,
-            type: 'WORKSPACE_INVITE',
-          })
-          .catch(() => {});
-
-        return {
-          type: 'ADDED_DIRECTLY',
-          message: 'Người dùng đã có tài khoản và được thêm trực tiếp vào Workspace!',
-          member,
-        };
-      }
     }
 
-    // 2. Tạo lời mời lưu vào bảng workspace_invites
-    // Kiểm tra xem đã có lời mời chưa hết hạn cho email này hay chưa
+    // 2. Tạo lời mời lưu vào bảng workspace_invites (KHÔNG thêm trực tiếp)
+    // Kiểm tra xem đã có lời mời còn hạn cho email này hay chưa
     const { data: existingInvite } = await this.supabase
       .from('workspace_invites')
       .select('*')
       .eq('workspace_id', workspaceId)
       .eq('email', normalizedEmail)
+      .or('status.eq.PENDING,status.is.null')
       .gt('expired_at', new Date().toISOString())
       .maybeSingle();
 
     if (existingInvite) {
       return {
         type: 'INVITE_EXISTS',
-        message: 'Đã có lời mời hợp lệ cho email này',
+        message: 'Đã có lời mời hợp lệ cho email này đang ở trạng thái chờ',
         invite: existingInvite,
       };
     }
 
     const token = randomUUID();
     const expiredAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 ngày
+    const role = dto.role || 'MEMBER';
 
     const { data: invite, error } = await this.supabase
       .from('workspace_invites')
       .insert({
         workspace_id: workspaceId,
+        inviter_id: currentUserId,
         email: normalizedEmail,
-        role: dto.role || 'MEMBER',
+        role,
         token,
+        status: 'PENDING',
         expired_at: expiredAt,
       })
       .select()
@@ -770,13 +737,14 @@ export class WorkspacesService {
       targetType: `workspace:${workspaceId}`,
     });
 
-    // Nếu người được mời qua email đã có tài khoản, gửi thông báo in-app
+    // Nếu người được mời qua email đã có tài khoản, gửi thông báo in-app kèm URL format chuẩn
     if (targetUser) {
+      const roleLabel = role === 'ADMIN' ? 'Quản trị viên' : 'Thành viên';
       this.notificationsService
         .createNotification({
           userId: targetUser.id,
           title: 'Lời mời tham gia Không gian làm việc',
-          message: `${inviterName} đã mời bạn tham gia không gian làm việc "${workspace.name}".`,
+          message: `${inviterName} đã mời bạn tham gia Không gian làm việc "${workspace.name}" với vai trò ${roleLabel}.||/invite/${token}`,
           type: 'WORKSPACE_INVITE',
         })
         .catch(() => {});
@@ -788,26 +756,72 @@ export class WorkspacesService {
 
     return {
       type: 'INVITE_CREATED',
-      message: 'Tạo lời mời thành công',
+      message: 'Lời mời đã được gửi thành công và đang ở trạng thái chờ người dùng chấp thuận.',
       invite,
     };
   }
 
   async getPendingInvites(workspaceId: string, currentUserId: string) {
     await this.checkAdminOrOwner(workspaceId, currentUserId);
+    const now = new Date().toISOString();
 
     const { data: invites, error } = await this.supabase
       .from('workspace_invites')
-      .select('*')
+      .select(`
+        id,
+        workspace_id,
+        inviter_id,
+        email,
+        role,
+        token,
+        status,
+        created_at,
+        expired_at,
+        inviter:users (
+          id,
+          name,
+          email,
+          avatar
+        )
+      `)
       .eq('workspace_id', workspaceId)
-      .gt('expired_at', new Date().toISOString())
-      .order('expired_at', { ascending: false });
+      .or('status.eq.PENDING,status.is.null')
+      .gte('expired_at', now)
+      .order('created_at', { ascending: false });
 
     if (error) {
-      throw new BadRequestException(error.message);
+      // Fallback nếu quan hệ inviter:users chưa reload schema cache
+      const { data: fallbackInvites } = await this.supabase
+        .from('workspace_invites')
+        .select('*')
+        .eq('workspace_id', workspaceId)
+        .gte('expired_at', now);
+
+      if (!fallbackInvites) return [];
+
+      const filtered = fallbackInvites.filter((inv: any) => !inv.status || inv.status === 'PENDING');
+      const inviterIds = [...new Set(filtered.map((i: any) => i.inviter_id).filter(Boolean))];
+      const userMap = new Map();
+      if (inviterIds.length > 0) {
+        const { data: users } = await this.supabase
+          .from('users')
+          .select('id, name, email, avatar')
+          .in('id', inviterIds);
+        (users || []).forEach((u: any) => userMap.set(u.id, u));
+      }
+
+      return filtered.map((inv: any) => ({
+        ...inv,
+        status: inv.status || 'PENDING',
+        inviter: inv.inviter_id ? (userMap.get(inv.inviter_id) || null) : null,
+      }));
     }
 
-    return invites || [];
+    return (invites || []).map((inv: any) => ({
+      ...inv,
+      status: inv.status || 'PENDING',
+      inviter: Array.isArray(inv.inviter) ? (inv.inviter[0] || null) : (inv.inviter || null),
+    }));
   }
 
   async revokeInvite(workspaceId: string, currentUserId: string, inviteId: string) {
@@ -830,56 +844,122 @@ export class WorkspacesService {
     return { message: 'Đã thu hồi lời mời thành công' };
   }
 
-  async getInviteByToken(token: string) {
+  async getInviteByToken(token: string): Promise<any> {
     const { data: invite, error } = await this.supabase
       .from('workspace_invites')
       .select(`
         id,
+        workspace_id,
+        inviter_id,
         email,
         role,
         token,
+        status,
+        created_at,
         expired_at,
         workspace:workspaces (
           id,
           name,
           description,
-          owner:users!fk_workspace_owner (name, avatar)
+          owner_id
+        ),
+        inviter:users (
+          id,
+          name,
+          email,
+          avatar
         )
       `)
       .eq('token', token)
       .maybeSingle();
 
-    if (error || !invite) {
-      throw new NotFoundException('Lời mời không tồn tại hoặc đã bị thu hồi');
-    }
+    let resultInvite: any = invite;
 
-    if (new Date(invite.expired_at) < new Date()) {
-      throw new BadRequestException('Lời mời này đã hết hạn');
-    }
-
-    return invite;
-  }
-
-  async acceptInvite(token: string, userId: string) {
-    const invite = await this.getInviteByToken(token);
-    const workspaceId = (invite.workspace as any).id;
-
-    // Xác thực email người nhận nếu lời mời có chỉ định email
-    if (invite.email) {
-      const { data: currentUser } = await this.supabase
-        .from('users')
-        .select('email')
-        .eq('id', userId)
+    if (error || !resultInvite) {
+      // Fallback query nếu join relation gặp vấn đề
+      const { data: fallbackInvite } = await this.supabase
+        .from('workspace_invites')
+        .select(`
+          id,
+          workspace_id,
+          inviter_id,
+          email,
+          role,
+          token,
+          status,
+          created_at,
+          expired_at,
+          workspace:workspaces (
+            id,
+            name,
+            description,
+            owner_id
+          )
+        `)
+        .eq('token', token)
         .maybeSingle();
 
-      if (currentUser?.email && currentUser.email.toLowerCase() !== invite.email.toLowerCase()) {
-        throw new ForbiddenException(
-          `Lời mời này được gửi riêng cho email "${invite.email}". Bạn đang đăng nhập bằng "${currentUser.email}". Vui lòng đăng nhập đúng tài khoản để chấp nhận.`
-        );
+      if (!fallbackInvite) {
+        throw new NotFoundException('Lời mời không tồn tại hoặc đã bị thu hồi');
+      }
+
+      resultInvite = fallbackInvite;
+      if (resultInvite.inviter_id) {
+        const { data: inviterUser } = await this.supabase
+          .from('users')
+          .select('id, name, email, avatar')
+          .eq('id', resultInvite.inviter_id)
+          .maybeSingle();
+        (resultInvite as any).inviter = inviterUser || null;
       }
     }
 
-    // Kiểm tra xem user đã là member chưa
+    if (Array.isArray((resultInvite as any).inviter)) {
+      (resultInvite as any).inviter = (resultInvite as any).inviter[0] || null;
+    }
+    if (Array.isArray((resultInvite as any).workspace)) {
+      (resultInvite as any).workspace = (resultInvite as any).workspace[0] || null;
+    }
+
+    const status = resultInvite.status || 'PENDING';
+    if (status === 'ACCEPTED') {
+      throw new BadRequestException('Lời mời này đã được chấp nhận trước đó');
+    }
+    if (status === 'DECLINED' || status === 'REJECTED' || status === 'REVOKED') {
+      throw new BadRequestException('Lời mời này không còn khả dụng hoặc đã bị từ chối');
+    }
+
+    if (new Date(resultInvite.expired_at) < new Date()) {
+      throw new BadRequestException('Lời mời này đã hết hạn sử dụng');
+    }
+
+    return resultInvite;
+  }
+
+  async acceptInvite(token: string, userId: string) {
+    const invite: any = await this.getInviteByToken(token);
+    const workspace = invite.workspace as any;
+    const workspaceId = workspace.id;
+
+    // 1. Lấy thông tin người dùng đang đăng nhập
+    const { data: currentUser } = await this.supabase
+      .from('users')
+      .select('id, name, email')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (!currentUser) {
+      throw new NotFoundException('Không tìm thấy thông tin người dùng');
+    }
+
+    // 2. Xác thực email người nhận nếu lời mời có chỉ định email
+    if (invite.email && currentUser.email && currentUser.email.toLowerCase() !== invite.email.toLowerCase()) {
+      throw new ForbiddenException(
+        `Lời mời này được gửi riêng cho email "${invite.email}". Bạn đang đăng nhập bằng "${currentUser.email}". Vui lòng đăng nhập đúng tài khoản để chấp nhận.`
+      );
+    }
+
+    // 3. Kiểm tra xem user đã là member chưa
     const { data: existingMember } = await this.supabase
       .from('workspace_members')
       .select('id')
@@ -893,7 +973,7 @@ export class WorkspacesService {
         .insert({
           workspace_id: workspaceId,
           user_id: userId,
-          role: invite.role,
+          role: invite.role || 'MEMBER',
         });
 
       if (insertError) {
@@ -901,11 +981,32 @@ export class WorkspacesService {
       }
     }
 
-    // Xóa lời mời sau khi chấp nhận
+    // 4. Cập nhật trạng thái lời mời sang ACCEPTED
     await this.supabase
       .from('workspace_invites')
-      .delete()
+      .update({ status: 'ACCEPTED' })
       .eq('id', invite.id);
+
+    // 5. Gửi thông báo cho inviter_id (nếu có)
+    const userName = currentUser.name || currentUser.email || 'Người dùng';
+    if (invite.inviter_id && invite.inviter_id !== userId) {
+      this.notificationsService
+        .createNotification({
+          userId: invite.inviter_id,
+          title: 'Lời mời đã được chấp nhận',
+          message: `${userName} đã chấp nhận lời mời tham gia Không gian làm việc "${workspace.name}".||/workspaces/${workspaceId}`,
+          type: 'WORKSPACE_INVITE_ACCEPTED',
+        })
+        .catch(() => {});
+    }
+
+    // 6. Ghi log hoạt động
+    await this.activitiesService.logActivity({
+      workspaceId,
+      userId,
+      action: `đã chấp nhận lời mời và gia nhập Không gian làm việc`,
+      targetType: `workspace:${workspaceId}`,
+    });
 
     this.supabase.emitWorkspaceEvent(workspaceId, 'WORKSPACE_MEMBERS_CHANGED', {
       senderId: userId,
@@ -913,38 +1014,61 @@ export class WorkspacesService {
     this.supabase.emitUserEvent(userId, 'USER_WORKSPACES_CHANGED', {});
 
     return {
-      message: 'Gia nhập Workspace thành công!',
+      success: true,
+      message: 'Gia nhập Không gian làm việc thành công!',
       workspaceId,
     };
   }
 
   async rejectInvite(token: string, userId: string) {
-    const invite = await this.getInviteByToken(token);
+    const invite: any = await this.getInviteByToken(token);
+    const workspace = invite.workspace as any;
+    const workspaceId = workspace?.id;
 
-    // Xác thực người từ chối phải là người nhận lời mời
-    if (invite.email) {
-      const { data: currentUser } = await this.supabase
-        .from('users')
-        .select('email')
-        .eq('id', userId)
-        .maybeSingle();
+    // 1. Lấy thông tin user
+    const { data: currentUser } = await this.supabase
+      .from('users')
+      .select('id, name, email')
+      .eq('id', userId)
+      .maybeSingle();
 
-      if (currentUser?.email && currentUser.email.toLowerCase() !== invite.email.toLowerCase()) {
-        throw new ForbiddenException('Bạn không phải là người nhận của lời mời này');
-      }
+    // 2. Xác thực người từ chối phải là người nhận lời mời
+    if (invite.email && currentUser?.email && currentUser.email.toLowerCase() !== invite.email.toLowerCase()) {
+      throw new ForbiddenException('Bạn không phải là người nhận của lời mời này');
     }
 
+    // 3. Cập nhật trạng thái thành DECLINED
     const { error } = await this.supabase
       .from('workspace_invites')
-      .delete()
+      .update({ status: 'DECLINED' })
       .eq('id', invite.id);
 
     if (error) {
       throw new BadRequestException(error.message);
     }
 
+    // 4. Gửi thông báo cho inviter_id (nếu có)
+    const userName = currentUser?.name || currentUser?.email || 'Người dùng';
+    if (invite.inviter_id && invite.inviter_id !== userId) {
+      this.notificationsService
+        .createNotification({
+          userId: invite.inviter_id,
+          title: 'Lời mời bị từ chối',
+          message: `${userName} đã từ chối lời mời tham gia Không gian làm việc "${workspace?.name || 'Workspace'}".`,
+          type: 'WORKSPACE_INVITE_DECLINED',
+        })
+        .catch(() => {});
+    }
+
+    if (workspaceId) {
+      this.supabase.emitWorkspaceEvent(workspaceId, 'WORKSPACE_MEMBERS_CHANGED', {
+        senderId: userId,
+      });
+    }
+
     return {
-      message: 'Đã từ chối lời mời tham gia Workspace',
+      success: true,
+      message: 'Đã từ chối lời mời tham gia Không gian làm việc',
     };
   }
 
@@ -1060,6 +1184,8 @@ export class WorkspacesService {
       .maybeSingle();
 
     const targetName = targetUser?.name || targetUser?.email || 'khách';
+
+    await this.cleanupUserFromWorkspaceBoards(workspaceId, guestUserId);
 
     const { error } = await this.supabase
       .from('board_members')

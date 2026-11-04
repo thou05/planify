@@ -53,8 +53,14 @@ export class LabelsService {
       .maybeSingle();
 
     if (wsMember) {
+      if (wsMember.role === 'GUEST') {
+        throw new ForbiddenException('Khách (Guest) không có quyền truy cập Bảng này');
+      }
       if (board.visibility === 'PRIVATE') {
         throw new ForbiddenException('Bảng này ở chế độ Riêng tư (Private), bạn không có quyền truy cập');
+      }
+      if (requireEdit) {
+        throw new ForbiddenException('Bạn cần tham gia Bảng với quyền Biên tập viên (Editor) hoặc Quản trị viên (Admin) để chỉnh sửa nhãn');
       }
       return board;
     }
@@ -66,7 +72,7 @@ export class LabelsService {
     throw new ForbiddenException('Bạn không có quyền truy cập bảng này');
   }
 
-  private async verifyCardAccess(cardId: string, userId: string) {
+  private async verifyCardAccess(cardId: string, userId: string, requireEdit = false) {
     const { data: card, error: cError } = await this.supabase
       .from('cards')
       .select('id, list:lists (board_id)')
@@ -79,7 +85,7 @@ export class LabelsService {
 
     const boardId = (card.list as any)?.board_id;
     if (boardId) {
-      await this.verifyBoardAccess(boardId, userId);
+      await this.verifyBoardAccess(boardId, userId, requireEdit);
     }
 
     return { card, boardId };
@@ -88,7 +94,7 @@ export class LabelsService {
   // --- BOARD LABELS CRUD ---
 
   async getBoardLabels(boardId: string, userId: string) {
-    await this.verifyBoardAccess(boardId, userId);
+    await this.verifyBoardAccess(boardId, userId, false);
 
     const { data: labels, error } = await this.supabase
       .from('labels')
@@ -104,7 +110,7 @@ export class LabelsService {
   }
 
   async createLabel(boardId: string, userId: string, dto: CreateLabelDto) {
-    await this.verifyBoardAccess(boardId, userId);
+    await this.verifyBoardAccess(boardId, userId, true);
 
     const { data: label, error } = await this.supabase
       .from('labels')
@@ -192,7 +198,7 @@ export class LabelsService {
   // --- CARD LABELS TOGGLE ---
 
   async toggleCardLabel(cardId: string, userId: string, labelId: string) {
-    const { card, boardId } = await this.verifyCardAccess(cardId, userId);
+    const { card, boardId } = await this.verifyCardAccess(cardId, userId, true);
 
     // Verify label belongs to the board
     const { data: label, error: lError } = await this.supabase

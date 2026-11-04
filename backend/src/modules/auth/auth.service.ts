@@ -103,13 +103,25 @@ export class AuthService {
   }
 
   async getMe(userId: string) {
-    const { data: user, error } = await this.supabase
+    let user: any = null;
+    const { data, error } = await this.supabase
       .from('users')
-      .select('id, name, email, avatar, status, created_at')
+      .select('id, name, email, avatar, status, created_at, cover_image, phone, job_title, department, location, website, social_links, work_status, bio, timezone, language')
       .eq('id', userId)
       .maybeSingle();
 
-    if (error || !user) {
+    if (error || !data) {
+      const fallback = await this.supabase
+        .from('users')
+        .select('id, name, email, avatar, status, created_at')
+        .eq('id', userId)
+        .maybeSingle();
+      user = fallback.data;
+    } else {
+      user = data;
+    }
+
+    if (!user) {
       throw new NotFoundException('Không tìm thấy người dùng');
     }
 
