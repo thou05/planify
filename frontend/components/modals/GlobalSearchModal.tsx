@@ -53,6 +53,7 @@ type FlattenedItem =
 export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModalProps) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [searchError, setSearchError] = useState('');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<GlobalSearchResult>({
     workspaces: [],
@@ -104,29 +105,32 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
   // Debounced API search
   useEffect(() => {
     if (!query.trim()) {
+      setSearchError('');
       setResults({ workspaces: [], boards: [], cards: [] });
       setIsLoading(false);
       return;
     }
 
+    const controller = new AbortController();
+    setSearchError('');
     setIsLoading(true);
     const timer = setTimeout(async () => {
       try {
         const res = await apiClient<GlobalSearchResult>(
-          `/search?q=${encodeURIComponent(query.trim())}`
+          `/search?q=${encodeURIComponent(query.trim())}`, { signal: controller.signal }
         );
-        if (res.success && res.data) {
+        if (!controller.signal.aborted && res.success && res.data) {
           setResults(res.data);
           setSelectedIndex(0);
         }
       } catch (err) {
-        console.error('Lỗi tìm kiếm:', err);
+        if (!controller.signal.aborted) { setResults({ workspaces: [], boards: [], cards: [] }); setSearchError('Không thể tìm kiếm. Hãy thử lại.'); }
       } finally {
-        setIsLoading(false);
+        if (!controller.signal.aborted) setIsLoading(false);
       }
     }, 250);
 
-    return () => clearTimeout(timer);
+    return () => { clearTimeout(timer); controller.abort(); };
   }, [query]);
 
   // Keyboard navigation (ArrowUp, ArrowDown, Enter, Escape)
@@ -174,6 +178,7 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
       className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in"
       onClick={onClose}
     >
+      {searchError && <p role="alert" className="bg-white p-3 text-red-700">{searchError}</p>}
       <div
         className="w-full max-w-2xl bg-white border border-slate-300 rounded-lg shadow-xl overflow-hidden flex flex-col max-h-[80vh] animate-scale-up"
         onClick={(e) => e.stopPropagation()}

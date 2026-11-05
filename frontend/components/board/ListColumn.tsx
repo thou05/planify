@@ -21,6 +21,10 @@ import KanbanCard from './KanbanCard';
 
 interface ListColumnProps {
   list: any;
+  listShift?: number;
+  isDraggingList?: boolean;
+  isListDragActive?: boolean;
+  onListHover?: (id: string) => void;
   boardLists: any[];
   onOpenCardDetail: (cardId: string) => void;
   onRefreshBoard: () => void;
@@ -41,6 +45,7 @@ interface ListColumnProps {
   onListDragStart: (e: React.DragEvent, listId: string) => void;
   onListDragEnd: (e: React.DragEvent) => void;
   onListDrop: (e: React.DragEvent, targetListId: string) => void;
+  draggedCardId?: string | null;
   draggedSourceListId?: string | null;
   canEdit?: boolean;
   activeUserIds?: Set<string>;
@@ -48,6 +53,10 @@ interface ListColumnProps {
 
 export default function ListColumn({
   list,
+  listShift = 0,
+  isDraggingList = false,
+  isListDragActive = false,
+  onListHover,
   boardLists,
   canEdit = true,
   onOpenCardDetail,
@@ -69,6 +78,7 @@ export default function ListColumn({
   onListDragStart,
   onListDragEnd,
   onListDrop,
+  draggedCardId = null,
   draggedSourceListId = null,
   activeUserIds,
 }: ListColumnProps) {
@@ -177,16 +187,18 @@ export default function ListColumn({
   const isDropDisabled = Boolean(isLimitReached && draggedSourceListId !== null && draggedSourceListId !== list.id);
 
   return (
+    <div data-list-slot={list.id} className="w-72 shrink-0 h-full min-h-0 flex flex-col">
     <div
+      style={{ transform: `translateX(${listShift}px)`, opacity: isDraggingList ? 0.3 : 1, transitionProperty: isListDragActive ? undefined : 'none' }}
       draggable={canEdit && !isEditingTitle && !isAddingCard}
       onDragStart={(e) => {
-        if (!canEdit) {
+        if (!canEdit || (e.target as HTMLElement).closest('button, input, textarea, select, a')) {
           e.preventDefault();
           return;
         }
         onListDragStart(e, list.id);
       }}
-      onDragEnd={onListDragEnd}
+      onDragEnd={(e) => { if (e.target === e.currentTarget) onListDragEnd(e); }}
       onDragOver={(e) => {
         if (!canEdit || isDropDisabled) {
           e.dataTransfer.dropEffect = 'none';
@@ -199,6 +211,7 @@ export default function ListColumn({
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
         setIsDragOverList(true);
+        if (isListDragActive) onListHover?.(list.id);
       }}
       onDragLeave={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget as Node)) {
@@ -216,7 +229,7 @@ export default function ListColumn({
         onListDrop(e, list.id);
         onCardDrop(e, list.id, list.cards?.length || 0);
       }}
-      className={`w-72 max-h-full kanban-list flex flex-col shrink-0 p-3 transition-colors duration-150 cursor-default bg-[#f1f5f9] border border-slate-200 rounded-lg ${
+      className={`w-72 max-h-full min-h-0 overflow-hidden kanban-list flex flex-col shrink-0 p-3 transition-[transform,opacity,background-color] duration-200 motion-reduce:transition-none cursor-default bg-[#f1f5f9] border border-slate-200 rounded-lg ${
         isShakeError
           ? '!border-rose-500 !ring-1 !ring-rose-500 !bg-rose-50/50 animate-shake'
           : isDragOverList
@@ -225,7 +238,7 @@ export default function ListColumn({
       }`}
     >
       {/* List Header */}
-      <div className="flex items-center justify-between pb-2 mb-2 px-1 border-b border-slate-200/80 group/header">
+      <div className="shrink-0 flex items-center justify-between pb-2 mb-2 px-1 border-b border-slate-200/80 group/header">
         <div className="flex items-center gap-1.5 flex-1 min-w-0 mr-2">
           {/* List Drag handle icon */}
           {canEdit && (
@@ -427,7 +440,7 @@ export default function ListColumn({
       </div>
 
       {/* Cards Scroll Container */}
-      <div className="flex-1 overflow-y-auto space-y-2.5 pr-0.5 min-h-[30px]">
+      <div data-card-scroll className="flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-2.5 pr-0.5">
         {list.cards?.length > 0 ? (
           list.cards.map((card: any, idx: number) => (
             <KanbanCard
@@ -446,6 +459,8 @@ export default function ListColumn({
               onDragStart={onCardDragStart}
               onDragEnd={onCardDragEnd}
               onDropOnCard={onCardDrop}
+              isDraggingCard={draggedCardId === card.id}
+              isCardDragActive={draggedSourceListId !== null}
               isDropDisabled={isDropDisabled}
               onShakeError={triggerShake}
               activeUserIds={activeUserIds}
@@ -508,6 +523,7 @@ export default function ListColumn({
           )}
         </div>
       )}
+    </div>
     </div>
   );
 }

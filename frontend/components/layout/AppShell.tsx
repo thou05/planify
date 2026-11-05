@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
-import { supabase } from '@/lib/supabase';
+import { createRealtimeClient } from '@/lib/supabase';
 import TopBar from './TopBar';
 import Sidebar, { WorkspaceItem } from './Sidebar';
 import CreateWorkspaceModal from '../modals/CreateWorkspaceModal';
@@ -199,7 +199,8 @@ export default function AppShell({
     }
 
     if (!user?.id) return;
-    const channel = supabase.channel(`shell-user:${user.id}`, {
+    const realtime = createRealtimeClient();
+    const channel = realtime.channel(`user:${user.id}`, {
       config: { broadcast: { self: false } },
     });
 
@@ -210,7 +211,7 @@ export default function AppShell({
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      realtime.removeChannel(channel);
     };
   }, [user, isLoading]);
 

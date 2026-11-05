@@ -1,3 +1,4 @@
+import { assertBoardWritable } from '../../common/board-access';
 import {
   Injectable,
   NotFoundException,
@@ -35,6 +36,7 @@ export class ChecklistsService {
     const boardId = (card.list as any)?.board_id || board?.id;
     const workspaceId = board?.workspace_id;
 
+    if (requireEdit && boardId) await assertBoardWritable(this.supabase, boardId);
     if (boardId) {
       const isWorkspaceOwner = (board?.workspace as any)?.owner_id === userId;
       if (!isWorkspaceOwner) {

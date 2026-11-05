@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth-context';
-import { supabase } from '@/lib/supabase';
+import { createRealtimeClient } from '@/lib/supabase';
 import {
   Bell,
   Check,
@@ -109,7 +109,8 @@ export default function NotificationPopover({
   useEffect(() => {
     if (!isOpen || !user?.id) return;
 
-    const channel = supabase.channel(`popover-notifications:${user.id}`, {
+    const realtime = createRealtimeClient();
+    const channel = realtime.channel(`user:${user.id}`, {
       config: { broadcast: { self: false } },
     });
 
@@ -141,7 +142,7 @@ export default function NotificationPopover({
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      realtime.removeChannel(channel);
     };
   }, [isOpen, user?.id]);
 

@@ -1,6 +1,10 @@
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
 
+export class ApiError extends Error {
+  constructor(message: string, public status: number) { super(message); }
+}
+
 interface RequestOptions extends RequestInit {
   data?: any;
 }
@@ -57,16 +61,8 @@ export async function apiClient<T = any>(
   const responseData = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    const errorMessage =
-      responseData?.message ||
-      (Array.isArray(responseData?.message)
-        ? responseData.message.join(', ')
-        : 'Yêu cầu không thành công');
-    throw new Error(
-      typeof errorMessage === 'string'
-        ? errorMessage
-        : 'Có lỗi xảy ra, vui lòng thử lại',
-    );
+    const message = responseData?.message;
+    throw new ApiError(Array.isArray(message) ? message.join(', ') : (typeof message === 'string' ? message : 'Yêu cầu không thành công'), response.status);
   }
 
   return responseData as ApiResponse<T>;

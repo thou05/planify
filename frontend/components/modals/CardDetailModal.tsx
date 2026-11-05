@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth-context';
-import { supabase } from '@/lib/supabase';
+import { createRealtimeClient } from '@/lib/supabase';
 import { canComment } from '@/lib/permissions';
 import ColorPicker from '@/components/ui/ColorPicker';
 import { getContrastTextColor } from '@/lib/color-utils';
@@ -291,7 +291,13 @@ function removeVietnameseTones(str: string): string {
     .replace(/Đ/g, 'D');
 }
 
-export default function CardDetailModal({
+export default function CardDetailModal(props: CardDetailModalProps) {
+  // Each opened card owns its drafts, loading state and in-flight callbacks.
+  if (!props.isOpen || !props.cardId) return null;
+  return <CardDetailSession key={props.cardId} {...props} />;
+}
+
+function CardDetailSession({
   cardId,
   boardId,
   boardVisibility: boardVisibilityProp,
@@ -313,6 +319,10 @@ export default function CardDetailModal({
     setActiveCardId(cardId);
   }, [cardId]);
 
+  const currentCardRef = useRef(activeCardId || cardId);
+  currentCardRef.current = activeCardId || cardId;
+  const detailRequestVersion = useRef(0);
+  const [loadError, setLoadError] = useState('');
   const [card, setCard] = useState<any>(null);
   const isArchived = Boolean(card?.list?.board?.is_archived);
   const allowComment = !isArchived && canComment({ isArchived });
@@ -342,6 +352,10 @@ export default function CardDetailModal({
   });
 
   // Editable card fields
+  const textSaveQueue = useRef<Promise<void>>(Promise.resolve());
+  const [textSaveStatus, setTextSaveStatus] = useState('');
+  const [textSaveError, setTextSaveError] = useState('');
+  const failedTextSave = useRef<(() => void) | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
@@ -692,6 +706,7 @@ export default function CardDetailModal({
       if (!silent) setIsLoadingActivities(true);
       setCardActivitiesPage(1);
       const res = await apiClient<ActivityItem[]>(`/cards/${cId}/activities?limit=15&page=1`);
+      if (cId !== currentCardRef.current) return;
       if (res.success && Array.isArray(res.data)) {
         setActivities(res.data);
         setHasMoreCardActivities(res.data.length >= 15);
@@ -730,6 +745,7 @@ export default function CardDetailModal({
     try {
       if (!silent) setIsLoadingRelations(true);
       const res = await apiClient<CardRelationItem[]>(`/cards/${cId}/relations`);
+      if (cId !== currentCardRef.current) return;
       if (res.success && Array.isArray(res.data)) {
         setRelations(res.data);
       }
@@ -820,10 +836,13 @@ export default function CardDetailModal({
     if (onSelectCard) {
       onSelectCard(targetCardId);
     }
+    currentCardRef.current = targetCardId;
     setActiveCardId(targetCardId);
-    fetchCardDetails(targetCardId);
-    fetchCardActivities(targetCardId);
-    fetchCardRelations(targetCardId);
+    setCard(null);
+    setTitle('');
+    setDescription('');
+    setActivities([]);
+    setRelations([]);
   };
 
   const fetchWorkspaceMembers = async (wsId: string) => {
@@ -1023,9 +1042,13 @@ export default function CardDetailModal({
   };
 
   const fetchCardDetails = async (id: string, silent = false) => {
+    if (id !== currentCardRef.current) return;
+    const requestVersion = ++detailRequestVersion.current;
+    setLoadError('');
     try {
       if (!silent) setIsLoading(true);
       const res = await apiClient<any>(`/cards/${id}`);
+      if (id !== currentCardRef.current || requestVersion !== detailRequestVersion.current) return;
       if (res.success && res.data) {
         const c = res.data;
         setCard(c);
@@ -1096,10 +1119,10 @@ export default function CardDetailModal({
           fetchWorkspaceMembers(effectiveWsId);
         }
       }
-    } catch {
-      // Failed to load card
+    } catch (error) {
+      if (id === currentCardRef.current && requestVersion === detailRequestVersion.current) setLoadError(error instanceof Error ? error.message : 'Không thể tải thẻ');
     } finally {
-      if (!silent) setIsLoading(false);
+      if (!silent && id === currentCardRef.current && requestVersion === detailRequestVersion.current) setIsLoading(false);
     }
   };
 
@@ -1172,14 +1195,14 @@ export default function CardDetailModal({
     const effectiveBoardId = boardId || card?.list?.board_id;
     if (!isOpen || !currentId || !effectiveBoardId) return;
 
-    const channelName = `card-modal-sub:${effectiveBoardId}:${currentId}`;
-    const channel = supabase.channel(channelName, {
+    const channelName = `board:${effectiveBoardId}`;
+    const realtime = createRealtimeClient();
+    const channel = realtime.channel(channelName, {
       config: { broadcast: { self: false } },
     });
 
     channel
       .on('broadcast', { event: 'CARD_UPDATED' }, ({ payload }) => {
-        if (payload?.senderId && currentUser?.id && payload.senderId === currentUser.id) return;
         if (payload?.cardId === currentId) {
           fetchCardDetails(currentId, true);
           fetchCardActivities(currentId, true);
@@ -1189,7 +1212,7 @@ export default function CardDetailModal({
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      realtime.removeChannel(channel);
     };
   }, [isOpen, activeCardId, cardId, boardId, card?.list?.board_id, currentUser?.id]);
 
@@ -1792,37 +1815,42 @@ export default function CardDetailModal({
 
   if (!isOpen || !cardId) return null;
 
+  if (!card || card.id !== (activeCardId || cardId)) {
+    return (
+      <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50">
+        <div role="dialog" aria-modal="true" aria-label="Chi tiết thẻ" aria-busy={!loadError} className="bg-white rounded-lg border border-slate-300 w-full max-w-5xl h-[88vh] max-h-[850px] flex flex-col">
+          <div className="p-4 border-b border-slate-200 flex justify-end"><button onClick={onClose} aria-label="Đóng" className="p-2"><X className="w-5 h-5" /></button></div>
+          <div className="flex-1 flex items-center justify-center gap-3 p-6 text-sm text-slate-500">
+            {loadError ? <div role="alert">{loadError}<button className="ml-3 underline" onClick={() => void fetchCardDetails(activeCardId || cardId!)}>Thử lại</button></div> : <span role="status">Đang tải thông tin thẻ…</span>}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+
   // --- CARD SAVE ---
-  const handleSaveAll = async () => {
-    if (!title?.trim() || isSaving) return;
-    if (isCompleted) {
-      const activeBlockers = relations.filter(
-        (r) => r.type === 'BLOCKED_BY' && !r.related_card?.is_due_date_completed && r.related_card?.status !== 'DONE'
-      );
-      if (activeBlockers.length > 0) {
-        setBlockedPopup({ isOpen: true, blockers: activeBlockers });
-        return;
-      }
-    }
-    try {
-      setIsSaving(true);
-      await apiClient(`/cards/${cardId}`, {
-        method: 'PATCH',
-        data: {
-          title: title.trim(),
-          description: description?.trim() || null,
-          due_date: dueDate ? new Date(dueDate).toISOString() : null,
-          start_date: startDate ? new Date(startDate).toISOString() : null,
-          reminder_at: reminderAt,
-          is_due_date_completed: isCompleted,
-        },
+  const handleSaveText = (field: 'title' | 'description') => {
+    const id = activeCardId || cardId;
+    const value = field === 'title' ? title.trim() : description.trim();
+    if (field === 'title' && !value) { setTextSaveError('Tiêu đề không được để trống'); return; }
+    const save = () => {
+      setTextSaveStatus('Đang lưu…');
+      textSaveQueue.current = textSaveQueue.current.then(async () => {
+        try {
+          setIsSaving(true);
+          await apiClient(`/cards/${id}`, { method: 'PATCH', data: { [field]: value || null } });
+          if (failedTextSave.current === save) { failedTextSave.current = null; setTextSaveError(''); }
+          setTextSaveStatus('Đã lưu');
+          onCardUpdated();
+        } catch (error) {
+          failedTextSave.current = save;
+          setTextSaveError(error instanceof Error ? error.message : 'Không thể lưu. Vui lòng thử lại.');
+          setTextSaveStatus('Chưa lưu');
+        } finally { setIsSaving(false); }
       });
-      onCardUpdated();
-    } catch (err: any) {
-      alert(err.message || 'Không thể lưu thay đổi');
-    } finally {
-      setIsSaving(false);
-    }
+    };
+    save();
   };
 
   const handleToggleCompleted = async () => {
@@ -2597,7 +2625,7 @@ export default function CardDetailModal({
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                onBlur={handleSaveAll}
+                onBlur={() => handleSaveText('title')}
                 className="w-full text-base sm:text-lg font-bold text-slate-900 bg-transparent hover:bg-slate-50 focus:bg-white border border-transparent hover:border-slate-200 focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 rounded-md px-2 py-1 -ml-2 focus:outline-none transition-all"
                 placeholder="Tiêu đề thẻ..."
               />
@@ -2609,7 +2637,7 @@ export default function CardDetailModal({
           </div>
 
           <button
-            onClick={onClose}
+            disabled={isSaving} onClick={onClose}
             className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
@@ -3474,7 +3502,7 @@ export default function CardDetailModal({
                     rows={4}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    onBlur={handleSaveAll}
+                    onBlur={() => handleSaveText('description')}
                     placeholder="Thêm mô tả chi tiết hơn về công việc này..."
                     className="w-full text-xs text-slate-900 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 rounded-md p-3 focus:outline-none transition-all resize-y"
                   />
@@ -4956,18 +4984,13 @@ export default function CardDetailModal({
         {/* Modal Footer */}
         <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
           <button
-            onClick={onClose}
+            disabled={isSaving} onClick={onClose}
             className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-md transition-colors cursor-pointer"
           >
             Đóng
           </button>
-          <button
-            onClick={handleSaveAll}
-            disabled={isSaving}
-            className="px-4 py-2 text-xs font-semibold text-white bg-[#f28d8d] hover:bg-[#e57a7a] disabled:opacity-50 rounded-md shadow-2xs transition-colors cursor-pointer"
-          >
-            {isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}
-          </button>
+          <span role="status" aria-live="polite" className="text-xs text-slate-500">{textSaveStatus || 'Tự lưu khi rời ô nhập'}</span>
+          {textSaveError && <span role="alert" className="text-xs text-red-600">{textSaveError} <button className="underline" onClick={() => failedTextSave.current?.()}>Thử lại</button></span>}
         </div>
 
         {/* AI TASK BREAKDOWN MODAL */}

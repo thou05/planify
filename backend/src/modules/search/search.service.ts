@@ -54,8 +54,11 @@ export class SearchService {
         .map((m: any) => m.workspace_id)
     );
 
+    const { data: joined } = await this.supabase.from('board_members').select('board:boards(workspace_id)').eq('user_id', userId);
+    const joinedWorkspaceIds = (joined || []).map((m: any) => m.board?.workspace_id).filter(Boolean);
     const allAccessibleWsIds = Array.from(
       new Set([
+        ...joinedWorkspaceIds,
         ...Array.from(ownedWsIds),
         ...Array.from(regularMemberWsIds),
         ...(memberWorkspaces || []).map((m: any) => m.workspace_id),

@@ -1,3 +1,4 @@
+import { assertBoardWritable } from '../../common/board-access';
 import {
   BadRequestException,
   ForbiddenException,
@@ -64,6 +65,7 @@ export class AttachmentsService {
       throw new NotFoundException('Không tìm thấy Bảng chứa thẻ này');
     }
 
+    if (requireEdit) await assertBoardWritable(this.supabase, board.id);
     const isWorkspaceOwner = board.workspace?.owner_id === userId;
     if (isWorkspaceOwner) {
       return { card, board, canEdit: true };

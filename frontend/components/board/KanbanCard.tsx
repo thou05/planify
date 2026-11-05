@@ -79,6 +79,8 @@ interface KanbanCardProps {
   onDragEnd: (e: React.DragEvent) => void;
   onDropOnCard?: (e: React.DragEvent, targetListId: string, targetIndex: number) => void;
   isDropDisabled?: boolean;
+  isDraggingCard?: boolean;
+  isCardDragActive?: boolean;
   onShakeError?: () => void;
   canEdit?: boolean;
   activeUserIds?: Set<string>;
@@ -99,6 +101,8 @@ export default function KanbanCard({
   onDragEnd,
   onDropOnCard,
   isDropDisabled = false,
+  isDraggingCard = false,
+  isCardDragActive = false,
   onShakeError,
   canEdit = true,
   activeUserIds,
@@ -114,6 +118,7 @@ export default function KanbanCard({
   const [titleValue, setTitleValue] = useState(card.title || '');
   const [copySuccess, setCopySuccess] = useState(false);
   const [dropPosition, setDropPosition] = useState<'top' | 'bottom' | null>(null);
+  useEffect(() => { if (!isCardDragActive || isDraggingCard) setDropPosition(null); }, [isCardDragActive, isDraggingCard]);
   const [mounted, setMounted] = useState(false);
   const [isCoverError, setIsCoverError] = useState(false);
 
@@ -271,7 +276,8 @@ export default function KanbanCard({
 
   // Handle Drag Over relative to card height (top half vs bottom half)
   const handleCardDragOver = (e: React.DragEvent) => {
-    if (!canEdit || isMenuOpen || isEditingTitle) return;
+    if (isDraggingCard || !isCardDragActive || !canEdit || isMenuOpen || isEditingTitle) return;
+    if (e.dataTransfer.getData('application/x-planify-card') === card.id) return;
     if (isDropDisabled) {
       e.dataTransfer.dropEffect = 'none';
       onShakeError?.();
@@ -292,12 +298,13 @@ export default function KanbanCard({
   };
 
   const handleCardDragLeave = (e: React.DragEvent) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
     e.stopPropagation();
     setDropPosition(null);
   };
 
   const handleCardDrop = (e: React.DragEvent) => {
-    if (!canEdit || isMenuOpen || isEditingTitle) return;
+    if (isDraggingCard || !isCardDragActive || !canEdit || isMenuOpen || isEditingTitle) return;
     e.preventDefault();
     e.stopPropagation();
     setDropPosition(null);
@@ -314,13 +321,14 @@ export default function KanbanCard({
   };
 
   return (
-    <div className="relative">
+    <div onDragOver={handleCardDragOver} onDragLeave={handleCardDragLeave} onDrop={handleCardDrop} className="relative transition-[padding] duration-150 motion-reduce:transition-none" style={{ paddingTop: dropPosition === 'top' ? 48 : 0, paddingBottom: dropPosition === 'bottom' ? 48 : 0 }}>
       {/* Top drop insertion indicator line */}
       {dropPosition === 'top' && (
         <div className="absolute -top-1 left-0 right-0 h-0.5 bg-[#87ceeb] rounded-xs z-20" />
       )}
 
       <div
+        data-kanban-card={card.id}
         ref={cardRef}
         draggable={canEdit && !isEditingTitle && !isMenuOpen}
         onDragStart={(e) => {
@@ -328,15 +336,13 @@ export default function KanbanCard({
             e.preventDefault();
             return;
           }
+          if ((e.target as HTMLElement).closest('button, input, textarea, select, a')) { e.preventDefault(); return; }
           onDragStart(e, card.id, listId);
         }}
         onDragEnd={(e) => {
           setDropPosition(null);
           onDragEnd(e);
         }}
-        onDragOver={handleCardDragOver}
-        onDragLeave={handleCardDragLeave}
-        onDrop={handleCardDrop}
         onClick={() => {
           if (!isEditingTitle && !isMenuOpen) onOpenDetail(card.id);
         }}
@@ -347,7 +353,7 @@ export default function KanbanCard({
         {/* Trello-like Card Cover Image */}
         {coverImage && !isCoverError && (
           <div className="-mx-3 -mt-3 mb-2.5 max-h-44 w-[calc(100%+1.5rem)] overflow-hidden bg-slate-100/90 border-b border-slate-200/60 flex items-center justify-center relative">
-            <img
+            <img draggable={false}
               src={coverImage.file_url}
               alt={coverImage.file_name || 'Ảnh bìa thẻ'}
               onError={() => setIsCoverError(true)}
@@ -620,7 +626,7 @@ export default function KanbanCard({
                     title={`${uName}${isOnline ? ' (🟢 Đang hoạt động)' : ''}`}
                   >
                     {uAvatar ? (
-                      <img
+                      <img draggable={false}
                         src={uAvatar}
                         alt={uName}
                         className="w-5 h-5 rounded-full object-cover border border-white shrink-0"

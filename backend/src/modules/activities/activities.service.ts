@@ -1,3 +1,4 @@
+import { assertBoardRead } from '../../common/board-access';
 import { Injectable, Logger, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../../integrations/supabase/supabase.service';
 import { CreateActivityDto } from './dto/create-activity.dto';
@@ -164,6 +165,7 @@ export class ActivitiesService {
       const board = (card.lists as any)?.boards;
       const wsOwnerId = board?.workspaces?.owner_id;
       const boardId = board?.id;
+      await assertBoardRead(this.supabase, boardId, userId);
       const workspaceId = board?.workspace_id;
 
       if (wsOwnerId !== userId) {
@@ -226,6 +228,7 @@ export class ActivitiesService {
    */
   async getBoardActivities(boardId: string, userId?: string, limit = 15, page = 1): Promise<ActivityLogItem[]> {
     try {
+      if (userId) await assertBoardRead(this.supabase, boardId, userId);
       if (userId) {
         const { data: board, error: bError } = await this.supabase
           .from('boards')
@@ -335,7 +338,7 @@ export class ActivitiesService {
       if (ws.owner_id !== userId) {
         const { data: member } = await this.supabase
           .from('workspace_members')
-          .select('id')
+          .select('id, role')
           .eq('workspace_id', workspaceId)
           .eq('user_id', userId)
           .maybeSingle();
@@ -346,6 +349,17 @@ export class ActivitiesService {
       }
     }
 
+    const { data: candidateBoards } = await this.supabase.from('boards').select('id').eq('workspace_id', workspaceId);
+    const allowedTargets: string[] = [];
+    for (const candidate of candidateBoards || []) {
+      try {
+        await assertBoardRead(this.supabase, candidate.id, userId!);
+        allowedTargets.push(`board:${candidate.id}`);
+        const { data: lists } = await this.supabase.from('lists').select('cards(id)').eq('board_id', candidate.id);
+        for (const list of lists || []) for (const card of (list as any).cards || []) allowedTargets.push(`card:${card.id}`);
+      } catch (error) { if (!(error instanceof ForbiddenException)) throw error; }
+    }
+    allowedTargets.push(`workspace:${workspaceId}`);
     const safeLimit = Math.min(Math.max(1, Number(limit) || 15), 50);
     const safePage = Math.max(1, Number(page) || 1);
     const from = (safePage - 1) * safeLimit;
@@ -363,6 +377,7 @@ export class ActivitiesService {
         user:users (id, name, avatar, email)
       `)
       .eq('workspace_id', workspaceId)
+      .in('target_type', allowedTargets)
       .order('created_at', { ascending: false })
       .range(from, to);
 

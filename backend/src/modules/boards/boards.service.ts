@@ -316,7 +316,7 @@ export class BoardsService {
       .maybeSingle();
 
     // Cho phép nếu là Workspace Owner, Workspace Member, Board Member HOẶC Board ở chế độ PUBLIC
-    if (!isWorkspaceOwner && !wsMember && !currentMember) {
+    if (!isWorkspaceOwner && (!wsMember || wsMember.role === 'GUEST') && !currentMember) {
       if (b.visibility !== 'PUBLIC') {
         throw new ForbiddenException('Bạn không có quyền truy cập Bảng này hoặc đã bị xóa');
       }

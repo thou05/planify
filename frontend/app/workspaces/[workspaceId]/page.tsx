@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/lib/auth-context';
-import { supabase } from '@/lib/supabase';
+import { createRealtimeClient } from '@/lib/supabase';
 import { useShell } from '@/components/layout/ShellContext';
 import CreateBoardModal from '@/components/modals/CreateBoardModal';
 import EditWorkspaceModal from '@/components/modals/EditWorkspaceModal';
@@ -207,7 +207,8 @@ export default function WorkspaceDetailPage({
   useEffect(() => {
     if (!workspaceId) return;
 
-    const channel = supabase.channel(`workspace-sync:${workspaceId}`, {
+    const realtime = createRealtimeClient();
+    const channel = realtime.channel(`workspace:${workspaceId}`, {
       config: { broadcast: { self: false } },
     });
 
@@ -291,7 +292,7 @@ export default function WorkspaceDetailPage({
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      realtime.removeChannel(channel);
     };
   }, [workspaceId, user?.id]);
 

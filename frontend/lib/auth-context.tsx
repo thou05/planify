@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { apiClient } from './api-client';
+import { apiClient, ApiError } from './api-client';
 
 export interface User {
   id: string;
@@ -42,11 +42,13 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [sessionError, setSessionError] = useState('');
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const refreshUser = async () => {
+    setSessionError('');
     const savedToken = localStorage.getItem('planify_token');
     if (!savedToken) {
       setUser(null);
@@ -70,8 +72,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           logout();
         }
       }
-    } catch {
-      logout();
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) logout();
+      else { setToken(savedToken); setSessionError('Không thể kết nối máy chủ. Vui lòng thử lại.'); }
     } finally {
       setIsLoading(false);
     }
@@ -131,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         updateUser,
       }}
     >
-      {children}
+      {sessionError ? <div role="alert" className="m-6 rounded border border-amber-300 bg-amber-50 p-4 text-sm text-slate-900">{sessionError}<button className="ml-4 underline" onClick={() => { void refreshUser(); }}>Thử lại</button></div> : children}
     </AuthContext.Provider>
   );
 }

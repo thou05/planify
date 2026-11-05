@@ -1,3 +1,4 @@
+import { assertBoardRead } from '../../common/board-access';
 import {
   Injectable,
   NotFoundException,
@@ -134,6 +135,7 @@ export class AnalyticsService {
   }
 
   private async verifyBoardAccess(boardId: string, userId: string) {
+    await assertBoardRead(this.supabase, boardId, userId);
     const { data: board, error: bError } = await this.supabase
       .from('boards')
       .select('id, name, description, workspace_id')

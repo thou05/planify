@@ -1,3 +1,4 @@
+import { assertBoardWritable } from '../../common/board-access';
 import {
   Injectable,
   NotFoundException,
@@ -37,6 +38,7 @@ export class CardRelationsService {
   ) {}
 
   private async verifyBoardAccess(boardId: string, userId: string, requireEdit = false) {
+    if (requireEdit) await assertBoardWritable(this.supabase, boardId);
     const { data: board, error } = await this.supabase
       .from('boards')
       .select('id, workspace_id, visibility, workspace:workspaces (owner_id)')

@@ -1,5 +1,6 @@
 'use client';
 
+import { useModalAccessibility } from '@/lib/use-modal-accessibility';
 import React, { useState, useEffect } from 'react';
 import { X, Kanban, Loader2, Star, Upload, Users, Lock, Globe, Check } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
@@ -29,6 +30,7 @@ export default function CreateBoardModal({
   const [isFavorite, setIsFavorite] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const dialogRef = useModalAccessibility(isOpen, () => { if (!isLoading) onClose(); });
 
   useEffect(() => {
     if (workspaceId) {
@@ -83,10 +85,10 @@ export default function CreateBoardModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-2xs animate-fade-in">
+    <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Tạo bảng" tabIndex={-1} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-2xs animate-fade-in">
       <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-300 p-6 sm:p-7 relative">
         <button
-          onClick={onClose}
+          disabled={isLoading} onClick={onClose}
           className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
         >
           <X className="w-4 h-4" />
@@ -235,7 +237,9 @@ export default function CreateBoardModal({
             {onOpenImport ? (
               <button
                 type="button"
+                disabled={isLoading}
                 onClick={() => {
+                  if (isLoading) return;
                   onClose();
                   onOpenImport(currentSelectedWsId);
                 }}
@@ -252,7 +256,7 @@ export default function CreateBoardModal({
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={onClose}
+                disabled={isLoading} onClick={onClose}
                 className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 rounded-md hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 Hủy

@@ -1,12 +1,13 @@
 'use client';
 
+import { DragSaveQueue } from '@/lib/drag-save-queue';
 import React, { useState, useEffect, use, useRef } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
 import { canManageBoard, canEditBoardContent, BoardPermissionContext } from '@/lib/permissions';
 import { useAuth } from '@/lib/auth-context';
-import { supabase } from '@/lib/supabase';
+import { createRealtimeClient } from '@/lib/supabase';
 import { useShell } from '@/components/layout/ShellContext';
 import ListColumn from '@/components/board/ListColumn';
 import CreateListModal from '@/components/modals/CreateListModal';
@@ -398,8 +399,81 @@ export default function BoardDetailPage({
 
   // Drag and Drop refs & state
   const draggedCardRef = useRef<{ cardId: string; sourceListId: string } | null>(null);
+  const boardViewportRef = useRef<HTMLDivElement>(null);
+  const dragPointerRef = useRef<{ x: number; y: number } | null>(null);
+  const [draggedListId, setDraggedListId] = useState<string | null>(null);
+  const [listInsertTarget, setListInsertTarget] = useState<string | null>(null);
+  const boardReadVersion = useRef(0);
+  const pendingDragSaves = useRef(0);
+  const [isPersistingDrag, setIsPersistingDrag] = useState(false);
+  const [dragSaveError, setDragSaveError] = useState('');
+  const dragSaveQueueRef = useRef<DragSaveQueue | null>(null);
+  const reconcileDragRef = useRef<() => void>(() => {});
+  if (!dragSaveQueueRef.current) dragSaveQueueRef.current = new DragSaveQueue({
+    changed: pending => { pendingDragSaves.current = pending; setIsPersistingDrag(pending > 0); },
+    failed: error => setDragSaveError(error instanceof Error ? error.message : 'Không thể lưu vị trí'),
+    idle: () => { setDragSaveError(''); boardReadVersion.current++; reconcileDragRef.current(); },
+  });
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent) => {
+      if (pendingDragSaves.current > 0) { event.preventDefault(); event.returnValue = ''; }
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, []);
+  const listInsertTargetRef = useRef<string | null>(null);
   const draggedListIdRef = useRef<string | null>(null);
+  const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
   const [draggedSourceListId, setDraggedSourceListId] = useState<string | null>(null);
+  // Hit-test layout slots, never the columns animated inside them.
+  const updateListInsertion = (x: number) => {
+    const viewport = boardViewportRef.current;
+    if (!viewport || !draggedListIdRef.current) return;
+    const slots = Array.from(viewport.querySelectorAll<HTMLElement>('[data-list-slot]'));
+    let closest: HTMLElement | undefined;
+    let distance = Infinity;
+    for (const slot of slots) {
+      const rect = slot.getBoundingClientRect();
+      const d = Math.abs(x - (rect.left + rect.width / 2));
+      if (d < distance) { closest = slot; distance = d; }
+    }
+    const id = closest?.dataset.listSlot;
+    if (id && listInsertTargetRef.current !== id) {
+      listInsertTargetRef.current = id;
+      setListInsertTarget(id);
+    }
+  };
+  useEffect(() => {
+    if (!draggedListId && !draggedSourceListId) return;
+    let frame = 0;
+    let previousTime = 0;
+    const track = (event: DragEvent) => { dragPointerRef.current = { x: event.clientX, y: event.clientY }; };
+    const stop = () => { dragPointerRef.current = null; };
+    const tick = (time: number) => {
+      const viewport = boardViewportRef.current;
+      const pointer = dragPointerRef.current;
+      const dt = previousTime ? Math.min(time - previousTime, 32) / 16.67 : 1;
+      previousTime = time;
+      if (viewport && pointer) {
+        const rect = viewport.getBoundingClientRect();
+        const speed = (value: number, start: number, end: number) => value < start + 64 ? -Math.min(14, (start + 64 - value) / 5) : value > end - 64 ? Math.min(14, (value - end + 64) / 5) : 0;
+        if (pointer.y >= rect.top && pointer.y <= rect.bottom) {
+          viewport.scrollLeft += speed(pointer.x, rect.left, rect.right) * dt;
+          if (draggedListIdRef.current) updateListInsertion(pointer.x);
+          else for (const scroller of viewport.querySelectorAll<HTMLElement>('[data-card-scroll]')) {
+            const bounds = scroller.getBoundingClientRect();
+            if (pointer.x >= bounds.left && pointer.x <= bounds.right) scroller.scrollTop += speed(pointer.y, bounds.top, bounds.bottom) * dt;
+          }
+        }
+      }
+      frame = requestAnimationFrame(tick);
+    };
+    document.addEventListener('dragover', track, true);
+    document.addEventListener('drop', stop, true);
+    document.addEventListener('dragend', stop, true);
+    frame = requestAnimationFrame(tick);
+    return () => { cancelAnimationFrame(frame); stop(); document.removeEventListener('dragover', track, true); document.removeEventListener('drop', stop, true); document.removeEventListener('dragend', stop, true); };
+  }, [draggedListId, draggedSourceListId]);
   const realtimeChannelRef = useRef<any>(null);
   const userRef = useRef(user);
   useEffect(() => {
@@ -655,9 +729,11 @@ export default function BoardDetailPage({
   }, [board, filteredLists]);
 
   const fetchBoard = async (silent = false) => {
+    const version = boardReadVersion.current;
     try {
       if (!silent) setIsLoading(true);
       const res = await apiClient<any>(`/boards/${boardId}`);
+      if (version !== boardReadVersion.current || pendingDragSaves.current > 0 || draggedListIdRef.current || draggedCardRef.current) return;
       if (res.success && res.data) {
         setBoard(res.data);
         setAccessDenied(null);
@@ -669,11 +745,14 @@ export default function BoardDetailPage({
         setAccessDenied(res.message || 'Không tìm thấy hoặc bạn không có quyền truy cập vào Bảng này.');
       }
     } catch (err: any) {
+      if (version !== boardReadVersion.current || pendingDragSaves.current > 0 || draggedListIdRef.current || draggedCardRef.current) return;
       setAccessDenied(err?.message || 'Bạn không có quyền truy cập vào Bảng này hoặc đã bị xóa khỏi nhóm.');
     } finally {
       if (!silent) setIsLoading(false);
     }
   };
+
+  reconcileDragRef.current = () => { void fetchBoard(true); };
 
   const fetchWorkspaceData = async (workspaceId: string) => {
     try {
@@ -824,7 +903,8 @@ export default function BoardDetailPage({
     const currentGuest = !userRef.current?.id ? getGuestSessionUser() : null;
     const presenceKey = userRef.current?.id || currentGuest?.id || 'guest_' + Math.random().toString(36).substring(2, 8);
 
-    const channel = supabase.channel(`board:${boardId}`, {
+    const realtime = createRealtimeClient();
+    const channel = realtime.channel(`board:${boardId}`, {
       config: {
         broadcast: { self: false },
         presence: {
@@ -998,8 +1078,9 @@ export default function BoardDetailPage({
         setActiveUsersList((prev) => prev.filter((u) => u.id !== payload.user_id));
       })
       .on('broadcast', { event: 'CARD_MOVED' }, ({ payload }) => {
+        if (draggedListIdRef.current || draggedCardRef.current || pendingDragSaves.current > 0) return;
         const currentU = userRef.current;
-        if (payload?.senderId && currentU?.id && payload.senderId === currentU.id) return;
+        if (payload?.senderId && currentU?.id && payload.senderId === currentU.id) { void fetchBoard(true); return; }
         if (!payload?.cardId) return;
         setBoard((prev: any) =>
           applyCardMove(
@@ -1012,8 +1093,9 @@ export default function BoardDetailPage({
         );
       })
       .on('broadcast', { event: 'CARD_DELETED' }, ({ payload }) => {
+        if (draggedListIdRef.current || draggedCardRef.current || pendingDragSaves.current > 0) return;
         const currentU = userRef.current;
-        if (payload?.senderId && currentU?.id && payload.senderId === currentU.id) return;
+        if (payload?.senderId && currentU?.id && payload.senderId === currentU.id) { void fetchBoard(true); return; }
         if (!payload?.cardId) return;
         setBoard((prev: any) => {
           if (!prev?.lists) return prev;
@@ -1027,8 +1109,9 @@ export default function BoardDetailPage({
         });
       })
       .on('broadcast', { event: 'CARD_CREATED' }, ({ payload }) => {
+        if (draggedListIdRef.current || draggedCardRef.current || pendingDragSaves.current > 0) return;
         const currentU = userRef.current;
-        if (payload?.senderId && currentU?.id && payload.senderId === currentU.id) return;
+        if (payload?.senderId && currentU?.id && payload.senderId === currentU.id) { void fetchBoard(true); return; }
         if (!payload?.card) {
           fetchBoard(true);
           return;
@@ -1053,8 +1136,9 @@ export default function BoardDetailPage({
         });
       })
       .on('broadcast', { event: 'CARD_UPDATED' }, ({ payload }) => {
+        if (draggedListIdRef.current || draggedCardRef.current || pendingDragSaves.current > 0) return;
         const currentU = userRef.current;
-        if (payload?.senderId && currentU?.id && payload.senderId === currentU.id) return;
+        if (payload?.senderId && currentU?.id && payload.senderId === currentU.id) { void fetchBoard(true); return; }
         if (payload?.cardId) {
           setRealtimeUpdatedCardId({ id: payload.cardId, timestamp: Date.now() });
           setBoard((prev: any) => {
@@ -1075,8 +1159,9 @@ export default function BoardDetailPage({
         }
       })
       .on('broadcast', { event: 'LIST_CREATED' }, ({ payload }) => {
+        if (draggedListIdRef.current || draggedCardRef.current || pendingDragSaves.current > 0) return;
         const currentU = userRef.current;
-        if (payload?.senderId && currentU?.id && payload.senderId === currentU.id) return;
+        if (payload?.senderId && currentU?.id && payload.senderId === currentU.id) { void fetchBoard(true); return; }
         if (!payload?.list) {
           fetchBoard(true);
           return;
@@ -1092,8 +1177,9 @@ export default function BoardDetailPage({
         });
       })
       .on('broadcast', { event: 'LIST_UPDATED' }, ({ payload }) => {
+        if (draggedListIdRef.current || draggedCardRef.current || pendingDragSaves.current > 0) return;
         const currentU = userRef.current;
-        if (payload?.senderId && currentU?.id && payload.senderId === currentU.id) return;
+        if (payload?.senderId && currentU?.id && payload.senderId === currentU.id) { void fetchBoard(true); return; }
         if (!payload?.list) {
           fetchBoard(true);
           return;
@@ -1109,8 +1195,9 @@ export default function BoardDetailPage({
         });
       })
       .on('broadcast', { event: 'LIST_DELETED' }, ({ payload }) => {
+        if (draggedListIdRef.current || draggedCardRef.current || pendingDragSaves.current > 0) return;
         const currentU = userRef.current;
-        if (payload?.senderId && currentU?.id && payload.senderId === currentU.id) return;
+        if (payload?.senderId && currentU?.id && payload.senderId === currentU.id) { void fetchBoard(true); return; }
         if (!payload?.listId) return;
         setBoard((prev: any) => {
           if (!prev?.lists) return prev;
@@ -1121,8 +1208,9 @@ export default function BoardDetailPage({
         });
       })
       .on('broadcast', { event: 'LISTS_REORDERED' }, ({ payload }) => {
+        if (draggedListIdRef.current || draggedCardRef.current || pendingDragSaves.current > 0) return;
         const currentU = userRef.current;
-        if (payload?.senderId && currentU?.id && payload.senderId === currentU.id) return;
+        if (payload?.senderId && currentU?.id && payload.senderId === currentU.id) { void fetchBoard(true); return; }
         if (!payload?.listIds) {
           fetchBoard(true);
           return;
@@ -1218,7 +1306,7 @@ export default function BoardDetailPage({
           channel.untrack();
         } catch {}
       }
-      supabase.removeChannel(channel);
+      realtime.removeChannel(channel);
       if (realtimeChannelRef.current === channel) {
         realtimeChannelRef.current = null;
       }
@@ -1561,21 +1649,30 @@ export default function BoardDetailPage({
       e.preventDefault();
       return;
     }
+    boardReadVersion.current++;
+    listInsertTargetRef.current = listId;
     draggedListIdRef.current = listId;
+    setDraggedListId(listId);
+    setListInsertTarget(listId);
     e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'list', listId }));
     e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleListDragEnd = () => {
     draggedListIdRef.current = null;
+    setDraggedListId(null);
+    setListInsertTarget(null);
   };
 
   const handleListDrop = async (e: React.DragEvent, targetListId: string) => {
     if (!canEditBoard) return;
     const sourceListId = draggedListIdRef.current;
-    if (!sourceListId || sourceListId === targetListId) return;
+    targetListId = listInsertTargetRef.current || targetListId;
+    if (!sourceListId || sourceListId === targetListId) { handleListDragEnd(); return; }
 
     draggedListIdRef.current = null;
+    setDraggedListId(null);
+    setListInsertTarget(null);
 
     const currentLists = [...(board?.lists || [])];
     const sourceIndex = currentLists.findIndex((l) => l.id === sourceListId);
@@ -1592,25 +1689,10 @@ export default function BoardDetailPage({
       lists: currentLists,
     }));
 
-    // Broadcast sắp xếp danh sách tức thì cho các thành viên khác
-    realtimeChannelRef.current?.send({
-      type: 'broadcast',
-      event: 'LISTS_REORDERED',
-      payload: {
-        listIds: currentLists.map((l) => l.id),
-        senderId: user?.id,
-      },
-    });
 
-    try {
+    boardReadVersion.current++;
       const listIds = currentLists.map((l) => l.id);
-      await apiClient(`/boards/${boardId}/lists/reorder`, {
-        method: 'PATCH',
-        data: { listIds },
-      });
-    } catch {
-      await fetchBoard();
-    }
+      dragSaveQueueRef.current!.enqueue('lists', () => apiClient(`/boards/${boardId}/lists/reorder`, { method: 'PATCH', data: { listIds } }));
   };
 
   // 4. CARD DRAG & DROP HANDLERS (Both inside same list and across lists)
@@ -1624,15 +1706,19 @@ export default function BoardDetailPage({
       e.preventDefault();
       return;
     }
+    boardReadVersion.current++;
     draggedCardRef.current = { cardId, sourceListId };
     setDraggedSourceListId(sourceListId);
+    setDraggedCardId(cardId);
     e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'card', cardId, sourceListId }));
+    e.dataTransfer.setData('application/x-planify-card', cardId);
     e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleCardDragEnd = () => {
     draggedCardRef.current = null;
     setDraggedSourceListId(null);
+    setDraggedCardId(null);
   };
 
   const handleCardDrop = async (
@@ -1644,6 +1730,7 @@ export default function BoardDetailPage({
     const data = draggedCardRef.current;
     draggedCardRef.current = null;
     setDraggedSourceListId(null);
+    setDraggedCardId(null);
     if (!data) return;
 
     const { cardId, sourceListId } = data;
@@ -1678,30 +1765,9 @@ export default function BoardDetailPage({
     // Optimistic UI update for manual sorting
     setBoard((prev: any) => applyCardMove(prev, cardId, sourceListId, targetListId, finalTargetPosition));
 
-    // Zero-latency broadcast tức thì tới mọi tab khác ngay lúc nhả chuột (<5ms)
-    realtimeChannelRef.current?.send({
-      type: 'broadcast',
-      event: 'CARD_MOVED',
-      payload: {
-        cardId,
-        sourceListId,
-        targetListId,
-        position: finalTargetPosition,
-        senderId: user?.id,
-      },
-    });
 
-    try {
-      await apiClient(`/cards/${cardId}/move`, {
-        method: 'PATCH',
-        data: {
-          targetListId,
-          position: finalTargetPosition,
-        },
-      });
-    } catch {
-      await fetchBoard();
-    }
+    boardReadVersion.current++;
+      dragSaveQueueRef.current!.enqueue(`card:${cardId}`, () => apiClient(`/cards/${cardId}/move`, { method: 'PATCH', data: { targetListId, position: finalTargetPosition } }));
   };
 
   const targetWorkspaceId =
@@ -1745,7 +1811,7 @@ export default function BoardDetailPage({
   return (
     <>
       <div
-        className="h-full flex flex-col relative bg-dot-pattern"
+        className="h-full min-h-0 flex flex-col overflow-hidden relative bg-dot-pattern"
         style={{
           background: isPhotoBg ? undefined : board?.background || undefined,
           backgroundImage: isPhotoBg ? `url("${board.background}")` : undefined,
@@ -2366,7 +2432,43 @@ export default function BoardDetailPage({
 
         {/* Multi-view Container */}
         {activeView === 'kanban' && (
-          <div className="flex-1 overflow-x-auto overflow-y-hidden p-6 relative z-10">
+          <div ref={boardViewportRef} className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden p-6 relative z-10"
+            onDragOverCapture={(e) => {
+              if (!draggedListIdRef.current && !draggedCardRef.current) return;
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'move';
+              dragPointerRef.current = { x: e.clientX, y: e.clientY };
+              if (draggedListIdRef.current) { e.stopPropagation(); updateListInsertion(e.clientX); }
+            }}
+            onDropCapture={(e) => {
+              if (draggedListIdRef.current) {
+                e.preventDefault(); e.stopPropagation();
+                updateListInsertion(e.clientX);
+                void handleListDrop(e, listInsertTargetRef.current || draggedListIdRef.current);
+                return;
+              }
+              if (!draggedCardRef.current) return;
+              e.preventDefault(); e.stopPropagation();
+              const slots = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('[data-list-slot]'));
+              const slot = slots.reduce<HTMLElement | null>((best, candidate) => {
+                const rect = candidate.getBoundingClientRect();
+                const distance = Math.abs(e.clientX - (rect.left + rect.width / 2));
+                if (!best) return candidate;
+                const previous = best.getBoundingClientRect();
+                return distance < Math.abs(e.clientX - (previous.left + previous.width / 2)) ? candidate : best;
+              }, null);
+              const targetId = slot?.dataset.listSlot;
+              if (!slot || !targetId) return;
+              const hoveredCard = Array.from(slot.querySelectorAll<HTMLElement>('[data-kanban-card]')).find(el => {
+                const rect = el.getBoundingClientRect(); return e.clientY < rect.top + rect.height / 2;
+              });
+              const targetList = board?.lists?.find((list: any) => list.id === targetId);
+              const position = hoveredCard ? targetList?.cards?.findIndex((card: any) => card.id === hoveredCard.dataset.kanbanCard) : targetList?.cards?.length;
+              void handleCardDrop(e, targetId, position >= 0 ? position : targetList?.cards?.length);
+            }}
+          >
+            {dragSaveError && <div role="alert" className="absolute left-6 top-1 z-30 rounded border border-red-200 bg-white px-3 py-2 text-xs text-red-700">Chưa đồng bộ: {dragSaveError}. Vị trí đang giữ trên máy này. <button className="underline" onClick={() => { setDragSaveError(''); dragSaveQueueRef.current?.retry(); }}>Thử lại</button></div>}
+            {isPersistingDrag && <div role="status" className="absolute right-6 top-1 z-30 rounded bg-white px-2 py-1 text-xs text-slate-500">Đang đồng bộ… Bạn có thể kéo tiếp.</div>}
             {isLoading ? (
               <div className="flex gap-4">
                 {[1, 2, 3].map((i) => (
@@ -2380,6 +2482,17 @@ export default function BoardDetailPage({
                   <ListColumn
                     key={list.id}
                     list={list}
+                    isListDragActive={draggedListId !== null}
+                    isDraggingList={draggedListId === list.id}
+                    listShift={(() => {
+                      const source = filteredLists.findIndex((l: any) => l.id === draggedListId);
+                      const target = filteredLists.findIndex((l: any) => l.id === listInsertTarget);
+                      const index = filteredLists.findIndex((l: any) => l.id === list.id);
+                      if (source < 0 || target < 0 || index === source) return 0;
+                      if (source < target && index > source && index <= target) return -308;
+                      if (source > target && index >= target && index < source) return 308;
+                      return 0;
+                    })()}
                     boardLists={board.lists}
                     canEdit={canEditBoard}
                     onOpenCardDetail={handleOpenCardDetail}
@@ -2401,6 +2514,7 @@ export default function BoardDetailPage({
                     onListDragStart={handleListDragStart}
                     onListDragEnd={handleListDragEnd}
                     onListDrop={handleListDrop}
+                    draggedCardId={draggedCardId}
                     draggedSourceListId={draggedSourceListId}
                     activeUserIds={activeUserIds}
                   />
