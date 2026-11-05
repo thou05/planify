@@ -1,11 +1,19 @@
 'use client';
 
+import { confirmDialog, alertDialog } from '@/components/ui/AppDialog';
 import { DragSaveQueue } from '@/lib/drag-save-queue';
 import React, { useState, useEffect, use, useRef } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
-import { canManageBoard, canEditBoardContent, BoardPermissionContext } from '@/lib/permissions';
+import {
+  canManageBoard,
+  canEditBoardContent,
+  BoardPermissionContext,
+  EditorJoinMode,
+  canClaimEditor,
+  canRequestEditor,
+} from '@/lib/permissions';
 import { useAuth } from '@/lib/auth-context';
 import { createRealtimeClient } from '@/lib/supabase';
 import { useShell } from '@/components/layout/ShellContext';
@@ -190,6 +198,12 @@ export default function BoardDetailPage({
   const visibilityMenuRef = useRef<HTMLDivElement>(null);
   const boardMenuRef = useRef<HTMLDivElement>(null);
 
+  // Board Editor Join Mode states
+  const [editorJoinMode, setEditorJoinMode] = useState<EditorJoinMode>('REQUEST');
+  const [hasPendingEditorRequest, setHasPendingEditorRequest] = useState<boolean>(false);
+  const [isSubmittingEditorAction, setIsSubmittingEditorAction] = useState<boolean>(false);
+  const [editorActionMessage, setEditorActionMessage] = useState<string | null>(null);
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (visibilityMenuRef.current && !visibilityMenuRef.current.contains(e.target as Node)) {
@@ -223,6 +237,16 @@ export default function BoardDetailPage({
         ))
   );
 
+  const isWorkspaceMember = Boolean(
+    board?.isWorkspaceMember ||
+      (user?.id &&
+        workspaceMembers.some(
+          (wm: any) =>
+            (wm.user_id === user.id || wm.user?.id === user.id) &&
+            wm.role !== 'GUEST'
+        ))
+  );
+
   const isGuest = Boolean(
     board?.isGuest ||
       (board && !board?.isWorkspaceOwner && !isWorkspaceAdmin && !board?.isWorkspaceMember && board?.currentUserBoardRole !== 'ADMIN')
@@ -245,6 +269,58 @@ export default function BoardDetailPage({
     canInviteMembers: board?.canInviteMembers,
     canDelete: board?.canDelete,
     canChangeVisibility: board?.canChangeVisibility,
+    editor_join_mode: (board?.editor_join_mode as EditorJoinMode) || editorJoinMode,
+  };
+
+  const handleClaimEditor = async () => {
+    if (!boardId || isSubmittingEditorAction) return;
+    try {
+      setIsSubmittingEditorAction(true);
+      setEditorActionMessage(null);
+      const res = await apiClient<any>(`/boards/${boardId}/claim-editor`, {
+        method: 'POST',
+      });
+      if (res.success || res.data) {
+        setBoard((prev: any) => ({
+          ...prev,
+          currentUserBoardRole: 'EDITOR',
+          canEdit: true,
+          canInviteMembers: true,
+          isBoardMember: true,
+        }));
+        setEditorActionMessage('Bạn đã trở thành Biên tập viên của Bảng!');
+        setTimeout(() => setEditorActionMessage(null), 5000);
+        void fetchBoard(true);
+      } else {
+        setEditorActionMessage(res.message || 'Không thể tham gia làm Biên tập viên');
+      }
+    } catch (err: any) {
+      setEditorActionMessage(err?.message || 'Có lỗi xảy ra khi tham gia làm Biên tập viên');
+    } finally {
+      setIsSubmittingEditorAction(false);
+    }
+  };
+
+  const handleRequestEditor = async () => {
+    if (!boardId || isSubmittingEditorAction) return;
+    try {
+      setIsSubmittingEditorAction(true);
+      setEditorActionMessage(null);
+      const res = await apiClient<any>(`/boards/${boardId}/request-editor`, {
+        method: 'POST',
+      });
+      if (res.success || res.data) {
+        setHasPendingEditorRequest(true);
+        setEditorActionMessage('Đã gửi yêu cầu cấp quyền tới Quản trị viên Bảng!');
+        setTimeout(() => setEditorActionMessage(null), 5000);
+      } else {
+        setEditorActionMessage(res.message || 'Không thể gửi yêu cầu');
+      }
+    } catch (err: any) {
+      setEditorActionMessage(err?.message || 'Có lỗi xảy ra khi gửi yêu cầu quyền');
+    } finally {
+      setIsSubmittingEditorAction(false);
+    }
   };
 
   const canEditBoard = !board?.is_archived && (isWorkspaceAdmin || (!isViewer && canEditBoardContent(boardPermCtx)));
@@ -815,6 +891,10 @@ export default function BoardDetailPage({
       if (res.success && res.data) {
         setBoard(res.data);
         setAccessDenied(null);
+        setEditorJoinMode(res.data.editor_join_mode || 'REQUEST');
+        setHasPendingEditorRequest(
+          Boolean(res.data.hasPendingEditorRequest ?? res.data.has_pending_editor_request ?? false)
+        );
         if (res.data.workspace_id) {
           fetchWorkspaceData(res.data.workspace_id);
           shell?.setCurrentWorkspaceId(res.data.workspace_id);
@@ -1309,6 +1389,66 @@ export default function BoardDetailPage({
       .on('broadcast', { event: 'AUTOMATION_CREATED' }, () => fetchBoardButtons())
       .on('broadcast', { event: 'AUTOMATION_UPDATED' }, () => fetchBoardButtons())
       .on('broadcast', { event: 'AUTOMATION_DELETED' }, () => fetchBoardButtons())
+      .on('broadcast', { event: 'BOARD_MEMBERS_CHANGED' }, ({ payload }) => {
+        const currentU = userRef.current;
+        if (payload?.targetUserId && currentU?.id && payload.targetUserId === currentU.id) {
+          if (payload.role === 'EDITOR' || payload.role === 'ADMIN') {
+            setBoard((prev: any) => ({
+              ...prev,
+              currentUserBoardRole: payload.role,
+              canEdit: true,
+              canInviteMembers: true,
+              isBoardMember: true,
+            }));
+            setHasPendingEditorRequest(false);
+          }
+        }
+        void fetchBoard(true);
+      })
+      .on('broadcast', { event: 'MEMBER_ROLE_CHANGED' }, ({ payload }) => {
+        const currentU = userRef.current;
+        const targetId = payload?.userId || payload?.user_id || payload?.targetUserId;
+        if (targetId && currentU?.id && targetId === currentU.id) {
+          const newRole = payload?.role;
+          if (newRole) {
+            setBoard((prev: any) => ({
+              ...prev,
+              currentUserBoardRole: newRole,
+              canEdit: newRole === 'ADMIN' || newRole === 'EDITOR' || newRole === 'MEMBER',
+              canInviteMembers: newRole === 'ADMIN' || newRole === 'EDITOR' || newRole === 'MEMBER',
+              isBoardMember: true,
+            }));
+            if (newRole === 'EDITOR' || newRole === 'ADMIN') {
+              setHasPendingEditorRequest(false);
+            }
+          }
+        }
+        void fetchBoard(true);
+      })
+      .on('broadcast', { event: 'EDITOR_REQUEST_APPROVED' }, ({ payload }) => {
+        const currentU = userRef.current;
+        const targetId = payload?.userId || payload?.user_id || payload?.targetUserId;
+        if (!targetId || (currentU?.id && targetId === currentU.id)) {
+          setBoard((prev: any) => ({
+            ...prev,
+            currentUserBoardRole: 'EDITOR',
+            canEdit: true,
+            canInviteMembers: true,
+            isBoardMember: true,
+          }));
+          setHasPendingEditorRequest(false);
+        }
+        void fetchBoard(true);
+      })
+      .on('broadcast', { event: 'EDITOR_REQUEST_REJECTED' }, ({ payload }) => {
+        const currentU = userRef.current;
+        const targetId = payload?.userId || payload?.user_id || payload?.targetUserId;
+        if (!targetId || (currentU?.id && targetId === currentU.id)) {
+          setHasPendingEditorRequest(false);
+        }
+        void fetchBoard(true);
+      })
+      .on('broadcast', { event: 'MEMBER_JOINED' }, () => fetchBoard(true))
       .subscribe(async (status) => {
         if (!isSubscribed) return;
         console.log(`[Planify Realtime] Kênh board:${boardId} trạng thái:`, status);
@@ -1463,7 +1603,7 @@ export default function BoardDetailPage({
       setIsAddingListInline(false);
       await fetchBoard();
     } catch (err: any) {
-      alert(err.message || 'Không thể tạo danh sách');
+      void alertDialog({ message: err.message || 'Không thể tạo danh sách', variant: 'error' });
     } finally {
       setIsSubmittingList(false);
     }
@@ -1477,15 +1617,18 @@ export default function BoardDetailPage({
       });
       await fetchBoard();
     } catch (err: any) {
-      alert(err.message || 'Không thể đổi tên danh sách');
+      void alertDialog({ message: err.message || 'Không thể đổi tên danh sách', variant: 'error' });
     }
   };
 
   const handleArchiveBoard = async () => {
     if (
-      !confirm(
-        'Bạn có chắc muốn lưu trữ Bảng này? Bảng sẽ chuyển sang chế độ Chỉ xem (Read-only) và ẩn khỏi danh sách chính.'
-      )
+      !(await confirmDialog({
+        title: 'Lưu trữ Bảng',
+        variant: 'warning',
+        confirmText: 'Lưu trữ',
+        message: 'Bạn có chắc muốn lưu trữ Bảng này? Bảng sẽ chuyển sang chế độ Chỉ xem (Read-only) và ẩn khỏi danh sách chính.',
+      }))
     ) {
       return;
     }
@@ -1499,7 +1642,7 @@ export default function BoardDetailPage({
         fetchBoard();
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể lưu trữ Bảng');
+      void alertDialog({ message: err.message || 'Không thể lưu trữ Bảng', variant: 'error' });
     }
   };
 
@@ -1512,15 +1655,18 @@ export default function BoardDetailPage({
         fetchBoard();
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể khôi phục Bảng');
+      void alertDialog({ message: err.message || 'Không thể khôi phục Bảng', variant: 'error' });
     }
   };
 
   const handleDeleteBoard = async () => {
     if (
-      !confirm(
-        `Bạn có CHẮC CHẮN muốn xóa vĩnh viễn Bảng "${board?.name}" cùng toàn bộ thẻ công việc? Hành động này KHÔNG thể hoàn tác.`
-      )
+      !(await confirmDialog({
+        title: 'Xóa vĩnh viễn Bảng',
+        variant: 'danger',
+        confirmText: 'Xóa vĩnh viễn',
+        message: `Bạn có CHẮC CHẮN muốn xóa vĩnh viễn Bảng "${board?.name}" cùng toàn bộ thẻ công việc? Hành động này KHÔNG thể hoàn tác.`,
+      }))
     ) {
       return;
     }
@@ -1533,12 +1679,12 @@ export default function BoardDetailPage({
         router.push(board?.workspace_id ? `/workspaces/${board.workspace_id}` : '/dashboard');
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể xóa Bảng');
+      void alertDialog({ message: err.message || 'Không thể xóa Bảng', variant: 'error' });
     }
   };
 
   const handleLeaveBoard = async () => {
-    if (!confirm('Bạn có chắc muốn rời khỏi Bảng này?')) return;
+    if (!(await confirmDialog({ title: 'Rời khỏi Bảng', message: 'Bạn có chắc muốn rời khỏi Bảng này?', variant: 'danger', confirmText: 'Rời khỏi' }))) return;
 
     try {
       const res = await apiClient(`/boards/${boardId}/leave`, {
@@ -1548,12 +1694,12 @@ export default function BoardDetailPage({
         router.push(board?.workspace_id ? `/workspaces/${board.workspace_id}` : '/dashboard');
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể rời Bảng');
+      void alertDialog({ message: err.message || 'Không thể rời Bảng', variant: 'error' });
     }
   };
 
   const handleDeleteList = async (listId: string) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa danh sách này cùng tất cả các thẻ bên trong?')) {
+    if (!(await confirmDialog({ title: 'Xóa danh sách', message: 'Bạn có chắc chắn muốn xóa danh sách này cùng tất cả các thẻ bên trong?', variant: 'danger', confirmText: 'Xóa' }))) {
       return;
     }
 
@@ -1561,7 +1707,7 @@ export default function BoardDetailPage({
       await apiClient(`/lists/${listId}`, { method: 'DELETE' });
       await fetchBoard();
     } catch (err: any) {
-      alert(err.message || 'Không thể xóa danh sách');
+      void alertDialog({ message: err.message || 'Không thể xóa danh sách', variant: 'error' });
     }
   };
 
@@ -1577,7 +1723,7 @@ export default function BoardDetailPage({
       });
       await fetchBoard();
     } catch (err: any) {
-      alert(err.message || 'Không thể sắp xếp thẻ');
+      void alertDialog({ message: err.message || 'Không thể sắp xếp thẻ', variant: 'error' });
     }
   };
 
@@ -1699,7 +1845,7 @@ export default function BoardDetailPage({
 
   const handleDeleteCard = async (cardId: string) => {
     if (!canEditBoard) return;
-    if (!confirm('Bạn có chắc chắn muốn xóa thẻ này?')) return;
+    if (!(await confirmDialog({ title: 'Xóa thẻ', message: 'Bạn có chắc chắn muốn xóa thẻ này?', variant: 'danger', confirmText: 'Xóa' }))) return;
     try {
       await apiClient(`/cards/${cardId}`, { method: 'DELETE' });
       await fetchBoard();
@@ -2511,6 +2657,72 @@ export default function BoardDetailPage({
             </div>
           </div>
         </div>
+
+        {/* Viewer Action Bar */}
+        {isViewer && !board?.is_archived && (
+          <div className="bg-gradient-to-r from-blue-50/95 via-indigo-50/90 to-sky-50/95 border-b border-blue-200/60 px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 z-15 backdrop-blur-xs transition-all shadow-2xs">
+            <div className="flex items-center gap-2.5 text-xs text-slate-700">
+              <div className="w-6 h-6 rounded-md bg-blue-100 flex items-center justify-center shrink-0 text-blue-600">
+                <Eye className="w-3.5 h-3.5" />
+              </div>
+              <div>
+                <span className="font-semibold text-slate-900">Chế độ xem:</span>{' '}
+                <span className="text-slate-600">
+                  Bạn đang xem bảng này với quyền Chỉ xem (Viewer).
+                </span>
+                {editorActionMessage && (
+                  <span className="ml-2 font-medium text-emerald-600 animate-in fade-in">
+                    • {editorActionMessage}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {canClaimEditor({
+                editor_join_mode: editorJoinMode,
+                boardRole: 'VIEWER',
+                isWorkspaceMember,
+                isGuest,
+              }) ? (
+                <button
+                  type="button"
+                  onClick={handleClaimEditor}
+                  disabled={isSubmittingEditorAction}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 active:scale-98 transition-all shadow-xs hover:shadow-sm cursor-pointer disabled:opacity-60"
+                  title="Tự động gia nhập bảng với quyền Biên tập viên"
+                >
+                  {isSubmittingEditorAction ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Zap className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
+                  )}
+                  <span>Tham gia làm Biên tập viên</span>
+                </button>
+              ) : hasPendingEditorRequest ? (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-amber-800 bg-amber-100/80 border border-amber-300/70 select-none">
+                  <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+                  <span>Đã gửi yêu cầu quyền Biên tập (Đang chờ Admin duyệt)</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleRequestEditor}
+                  disabled={isSubmittingEditorAction}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 active:scale-98 transition-all shadow-2xs hover:shadow-xs cursor-pointer disabled:opacity-60"
+                  title="Gửi yêu cầu tới Quản trị viên Bảng để được cấp quyền Biên tập viên"
+                >
+                  {isSubmittingEditorAction ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-500" />
+                  ) : (
+                    <Edit3 className="w-3.5 h-3.5 text-slate-600" />
+                  )}
+                  <span>Yêu cầu quyền Biên tập viên</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Multi-view Container */}
         {activeView === 'kanban' && (

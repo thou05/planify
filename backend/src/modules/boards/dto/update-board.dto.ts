@@ -28,6 +28,16 @@ export class UpdateBoardDto {
   })
   visibility?: 'WORKSPACE' | 'PRIVATE' | 'PUBLIC';
 
+  @ApiPropertyOptional({
+    description: 'Chế độ gia nhập quyền Biên tập viên (Editor)',
+    enum: ['REQUEST', 'AUTO_WORKSPACE'],
+  })
+  @IsOptional()
+  @IsEnum(['REQUEST', 'AUTO_WORKSPACE'], {
+    message: 'editor_join_mode phải là REQUEST hoặc AUTO_WORKSPACE',
+  })
+  editor_join_mode?: 'REQUEST' | 'AUTO_WORKSPACE';
+
   @ApiPropertyOptional({ example: false, description: 'Trạng thái lưu trữ của Board' })
   @IsOptional()
   @IsBoolean()

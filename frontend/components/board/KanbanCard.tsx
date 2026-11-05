@@ -1,5 +1,6 @@
 'use client';
 
+import { alertDialog } from '@/components/ui/AppDialog';
 import { getContrastTextColor } from '@/lib/color-utils';
 import { apiClient } from '@/lib/api-client';
 
@@ -139,7 +140,7 @@ export default function KanbanCard({
       });
       onCardUpdated();
     } catch (err: any) {
-      alert(err.message || 'Không thể cập nhật trạng thái hoàn thành của thẻ');
+      void alertDialog({ message: err.message || 'Không thể cập nhật trạng thái hoàn thành của thẻ', variant: 'error' });
     } finally {
       setIsTogglingComplete(false);
     }

@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmDialog, alertDialog } from '@/components/ui/AppDialog';
 import React, { useState, useEffect } from 'react';
 import {
   X,
@@ -18,8 +19,12 @@ import {
   CheckCircle2,
   AlertCircle,
   Calendar,
+  ShieldCheck,
+  Zap,
+  Clock,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import CustomSelect from '@/components/ui/CustomSelect';
 import {
   canManageBoard,
   canInviteBoardMember,
@@ -61,6 +66,17 @@ export default function ShareBoardModal({
   const [confirmingVisibility, setConfirmingVisibility] = useState<'WORKSPACE' | 'PRIVATE' | 'PUBLIC' | null>(
     null
   );
+
+  // Editor Join Mode State
+  const [editorJoinMode, setEditorJoinMode] = useState<'REQUEST' | 'AUTO_WORKSPACE'>(
+    board?.editor_join_mode || 'REQUEST'
+  );
+  const [isUpdatingEditorMode, setIsUpdatingEditorMode] = useState(false);
+
+  // Editor Requests State
+  const [editorRequests, setEditorRequests] = useState<any[]>([]);
+  const [loadingEditorRequests, setLoadingEditorRequests] = useState(false);
+  const [processingRequestId, setProcessingRequestId] = useState<string | null>(null);
 
   // Invites Tab State
   const [inviteEmail, setInviteEmail] = useState('');
@@ -112,8 +128,30 @@ export default function ShareBoardModal({
 
   const canInviteMembers = isWsAdminUser || canInviteBoardMember(permCtx);
 
+  const canManageEditorJoinMode = Boolean(
+    isWsAdminUser ||
+      board?.currentUserBoardRole === 'ADMIN' ||
+      board?.isWorkspaceOwner ||
+      canManageBoard(permCtx)
+  );
+
   const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
   const boardUrl = `${origin}/boards/${board?.id}`;
+
+  const fetchEditorRequests = async () => {
+    if (!board?.id) return;
+    setLoadingEditorRequests(true);
+    try {
+      const res = await apiClient<any[]>(`/boards/${board.id}/editor-requests`);
+      if (res.success && res.data) {
+        setEditorRequests(res.data);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoadingEditorRequests(false);
+    }
+  };
 
   const fetchPendingInvites = async () => {
     if (!board?.id) return;
@@ -134,7 +172,10 @@ export default function ShareBoardModal({
     if (board?.visibility) {
       setCurrentVisibility(board.visibility);
     }
-  }, [board?.visibility]);
+    if (board?.editor_join_mode) {
+      setEditorJoinMode(board.editor_join_mode);
+    }
+  }, [board?.visibility, board?.editor_join_mode]);
 
   useEffect(() => {
     if (isOpen && board?.id) {
@@ -144,12 +185,18 @@ export default function ShareBoardModal({
       if (board.visibility) {
         setCurrentVisibility(board.visibility);
       }
+      if (board.editor_join_mode) {
+        setEditorJoinMode(board.editor_join_mode);
+      }
       setLatestInviteLink(null);
+      if (canManageEditorJoinMode) {
+        fetchEditorRequests();
+      }
       if (activeTab === 'invites') {
         fetchPendingInvites();
       }
     }
-  }, [isOpen, board?.id, activeTab]);
+  }, [isOpen, board?.id, activeTab, canManageEditorJoinMode]);
 
   if (!isOpen || !board) return null;
 
@@ -201,6 +248,76 @@ export default function ShareBoardModal({
       setError(err.message || 'Không thể cập nhật quyền hiển thị');
     } finally {
       setIsUpdatingVisibility(false);
+    }
+  };
+
+  const handleUpdateEditorJoinMode = async (nextMode: 'REQUEST' | 'AUTO_WORKSPACE') => {
+    if (!canManageEditorJoinMode || nextMode === editorJoinMode || !board?.id) return;
+    const prevMode = editorJoinMode;
+    setEditorJoinMode(nextMode);
+    setIsUpdatingEditorMode(true);
+    setError('');
+
+    try {
+      const res = await apiClient(`/boards/${board.id}`, {
+        method: 'PATCH',
+        data: { editor_join_mode: nextMode },
+      });
+      if (res.success) {
+        onUpdated?.();
+      } else {
+        setEditorJoinMode(prevMode);
+        setError(res.message || 'Không thể cập nhật chế độ tham gia biên tập');
+      }
+    } catch (err: any) {
+      setEditorJoinMode(prevMode);
+      setError(err.message || 'Không thể cập nhật chế độ tham gia biên tập');
+    } finally {
+      setIsUpdatingEditorMode(false);
+    }
+  };
+
+  const handleApproveEditorRequest = async (targetUserId: string) => {
+    if (!board?.id || !targetUserId) return;
+    setProcessingRequestId(targetUserId);
+    setError('');
+    try {
+      const res = await apiClient(`/boards/${board.id}/editor-requests/${targetUserId}/approve`, {
+        method: 'POST',
+      });
+      if (res.success) {
+        setSuccessMsg(res.message || 'Đã duyệt quyền Biên tập viên thành công!');
+        await fetchEditorRequests();
+        onUpdated();
+      } else {
+        setError(res.message || 'Không thể duyệt yêu cầu');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Không thể duyệt yêu cầu');
+    } finally {
+      setProcessingRequestId(null);
+    }
+  };
+
+  const handleRejectEditorRequest = async (targetUserId: string) => {
+    if (!board?.id || !targetUserId) return;
+    if (!(await confirmDialog({ title: 'Từ chối yêu cầu', message: 'Bạn có chắc muốn từ chối yêu cầu trở thành Biên tập viên này?', variant: 'danger', confirmText: 'Từ chối' }))) return;
+    setProcessingRequestId(targetUserId);
+    setError('');
+    try {
+      const res = await apiClient(`/boards/${board.id}/editor-requests/${targetUserId}/reject`, {
+        method: 'POST',
+      });
+      if (res.success) {
+        setSuccessMsg(res.message || 'Đã từ chối yêu cầu biên tập');
+        await fetchEditorRequests();
+      } else {
+        setError(res.message || 'Không thể từ chối yêu cầu');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Không thể từ chối yêu cầu');
+    } finally {
+      setProcessingRequestId(null);
     }
   };
 
@@ -265,7 +382,7 @@ export default function ShareBoardModal({
   };
 
   const handleRevokeInvite = async (inviteId: string) => {
-    if (!confirm('Bạn có chắc muốn thu hồi lời mời này?')) return;
+    if (!(await confirmDialog({ title: 'Thu hồi lời mời', message: 'Bạn có chắc muốn thu hồi lời mời này?', variant: 'danger', confirmText: 'Thu hồi' }))) return;
     try {
       const res = await apiClient(`/boards/${board.id}/invites/${inviteId}`, {
         method: 'DELETE',
@@ -274,7 +391,7 @@ export default function ShareBoardModal({
         fetchPendingInvites();
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể thu hồi lời mời');
+      void alertDialog({ message: err.message || 'Không thể thu hồi lời mời', variant: 'error' });
     }
   };
 
@@ -288,12 +405,12 @@ export default function ShareBoardModal({
         onUpdated();
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể đổi vai trò');
+      void alertDialog({ message: err.message || 'Không thể đổi vai trò', variant: 'error' });
     }
   };
 
   const handleRemoveMember = async (targetUserId: string) => {
-    if (!confirm('Bạn có chắc muốn xóa thành viên này khỏi Board?')) return;
+    if (!(await confirmDialog({ title: 'Xóa thành viên', message: 'Bạn có chắc muốn xóa thành viên này khỏi Board?', variant: 'danger', confirmText: 'Xóa' }))) return;
     try {
       const res = await apiClient(`/boards/${board.id}/members/${targetUserId}`, {
         method: 'DELETE',
@@ -302,7 +419,7 @@ export default function ShareBoardModal({
         onUpdated();
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể xóa thành viên');
+      void alertDialog({ message: err.message || 'Không thể xóa thành viên', variant: 'error' });
     }
   };
 
@@ -343,6 +460,11 @@ export default function ShareBoardModal({
           >
             <Users className="w-3.5 h-3.5" />
             <span>Thành viên ({board.members?.length || 0})</span>
+            {canManageEditorJoinMode && editorRequests.length > 0 && (
+              <span className="px-1.5 py-0.5 rounded-xs bg-amber-500 text-white text-[10px] font-mono leading-none">
+                {editorRequests.length}
+              </span>
+            )}
           </button>
 
           <button
@@ -493,6 +615,69 @@ export default function ShareBoardModal({
                 )}
               </div>
 
+              {/* Editor Join Mode Setting */}
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-slate-700">
+                  Chế độ tham gia Biên tập (Editor Join Mode)
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    disabled={isUpdatingEditorMode || !canManageEditorJoinMode}
+                    onClick={() => handleUpdateEditorJoinMode('REQUEST')}
+                    className={`p-2.5 rounded-md text-left border transition-all ${
+                      !canManageEditorJoinMode
+                        ? 'opacity-65 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-500'
+                        : editorJoinMode === 'REQUEST'
+                        ? 'bg-blue-50 border-blue-300 text-blue-700 ring-1 ring-blue-200 font-semibold cursor-pointer'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 cursor-pointer'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between text-xs font-semibold mb-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Yêu cầu phê duyệt (Mặc định)</span>
+                      </div>
+                      {editorJoinMode === 'REQUEST' && <Check className="w-3.5 h-3.5 text-blue-600" />}
+                    </div>
+                    <div className="text-[10px] text-slate-500 leading-tight">
+                      Người xem gửi yêu cầu và đợi Quản trị viên duyệt để làm Biên tập viên
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={isUpdatingEditorMode || !canManageEditorJoinMode}
+                    onClick={() => handleUpdateEditorJoinMode('AUTO_WORKSPACE')}
+                    className={`p-2.5 rounded-md text-left border transition-all ${
+                      !canManageEditorJoinMode
+                        ? 'opacity-65 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-500'
+                        : editorJoinMode === 'AUTO_WORKSPACE'
+                        ? 'bg-emerald-50 border-emerald-300 text-emerald-700 ring-1 ring-emerald-200 font-semibold cursor-pointer'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 cursor-pointer'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between text-xs font-semibold mb-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <Zap className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Tự động duyệt cho Workspace</span>
+                      </div>
+                      {editorJoinMode === 'AUTO_WORKSPACE' && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                    </div>
+                    <div className="text-[10px] text-slate-500 leading-tight">
+                      Thành viên Workspace tự động chuyển lên Biên tập viên ngay lập tức
+                    </div>
+                  </button>
+                </div>
+
+                {!canManageEditorJoinMode && (
+                  <div className="p-2 rounded-md bg-amber-50 border border-amber-200/80 text-amber-800 text-[11px] font-medium flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span>Chỉ Quản trị viên Bảng hoặc Quản trị viên Workspace mới có quyền đổi chế độ này.</span>
+                  </div>
+                )}
+              </div>
+
               {/* Add Member from Workspace */}
               {canInviteMembers && availableWsMembers.length > 0 && (
                 <form onSubmit={handleAddMember} className="p-3.5 rounded-md bg-slate-50 border border-slate-200 space-y-2">
@@ -500,30 +685,34 @@ export default function ShareBoardModal({
                     <UserPlus className="w-3.5 h-3.5 text-slate-600" />
                     Thêm trực tiếp thành viên từ Không gian làm việc
                   </span>
-                  <div className="flex gap-2">
-                    <select
-                      value={selectedWsUserId}
-                      onChange={(e) => setSelectedWsUserId(e.target.value)}
-                      className="flex-1 px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md font-medium text-slate-800 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
-                    >
-                      <option value="">-- Chọn thành viên Workspace --</option>
-                      {availableWsMembers.map((m: any) => (
-                        <option key={m.user_id} value={m.user_id}>
-                          {m.user?.name || 'Thành viên'} ({m.user?.email})
-                        </option>
-                      ))}
-                    </select>
+                  <div className="flex gap-2 items-center">
+                    <div className="flex-1 min-w-0">
+                      <CustomSelect
+                        value={selectedWsUserId}
+                        onChange={(val) => setSelectedWsUserId(val)}
+                        options={availableWsMembers.map((m: any) => ({
+                          value: m.user_id,
+                          label: m.user?.name || 'Thành viên',
+                          extra: m.user?.email ? `(${m.user.email})` : undefined,
+                        }))}
+                        placeholder="-- Chọn thành viên Workspace --"
+                        size="sm"
+                      />
+                    </div>
 
                     {canManageMembers ? (
-                      <select
-                        value={selectedRole}
-                        onChange={(e) => setSelectedRole(e.target.value as any)}
-                        className="w-28 px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-md font-semibold text-slate-800 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
-                      >
-                        <option value="EDITOR">Biên tập</option>
-                        <option value="VIEWER">Chỉ xem</option>
-                        <option value="ADMIN">Admin</option>
-                      </select>
+                      <div className="w-32 shrink-0">
+                        <CustomSelect
+                          value={selectedRole}
+                          onChange={(val) => setSelectedRole(val as any)}
+                          options={[
+                            { value: 'EDITOR', label: 'Biên tập' },
+                            { value: 'VIEWER', label: 'Chỉ xem' },
+                            { value: 'ADMIN', label: 'Admin' },
+                          ]}
+                          size="sm"
+                        />
+                      </div>
                     ) : (
                       <span className="w-28 px-2.5 py-1.5 text-xs bg-slate-100 border border-slate-200 rounded-md font-semibold text-slate-700 flex items-center justify-center">
                         Biên tập
@@ -533,12 +722,75 @@ export default function ShareBoardModal({
                     <button
                       type="submit"
                       disabled={isAdding || !selectedWsUserId}
-                      className="px-3.5 py-1.5 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold shrink-0 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs"
+                      className="px-3.5 py-1.5 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold shrink-0 cursor-pointer disabled:opacity-50 transition-colors shadow-2xs h-8"
                     >
                       {isAdding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Thêm'}
                     </button>
                   </div>
                 </form>
+              )}
+
+              {/* Pending Editor Requests Section */}
+              {canManageEditorJoinMode && editorRequests.length > 0 && (
+                <div className="p-3.5 rounded-md bg-amber-50/70 border border-amber-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-amber-600" />
+                      Yêu cầu cấp quyền Biên tập viên đang chờ duyệt ({editorRequests.length})
+                    </span>
+                    {loadingEditorRequests && <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600" />}
+                  </div>
+
+                  <div className="space-y-2">
+                    {editorRequests.map((req) => (
+                      <div
+                        key={req.id}
+                        className="p-2.5 rounded-md bg-white border border-amber-200 flex items-center justify-between gap-3 shadow-2xs"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {req.user?.avatar ? (
+                            <img src={req.user.avatar} alt="" className="w-7 h-7 rounded-full object-cover shrink-0" />
+                          ) : (
+                            <div className="w-7 h-7 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold shrink-0">
+                              {req.user?.name?.charAt(0) || '?'}
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <div className="text-xs font-semibold text-slate-900 truncate">
+                              {req.user?.name || req.user?.email || 'Người dùng'}
+                            </div>
+                            <div className="text-[10px] text-slate-500 truncate">
+                              {req.user?.email} {req.note ? `• "${req.note}"` : ''}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            disabled={processingRequestId === req.user_id}
+                            onClick={() => handleApproveEditorRequest(req.user_id)}
+                            className="px-2.5 py-1 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors cursor-pointer disabled:opacity-50"
+                          >
+                            {processingRequestId === req.user_id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              'Duyệt làm Editor'
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={processingRequestId === req.user_id}
+                            onClick={() => handleRejectEditorRequest(req.user_id)}
+                            className="px-2.5 py-1 text-xs font-medium text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors cursor-pointer disabled:opacity-50"
+                          >
+                            Từ chối
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
 
               {/* Members List in Board */}
@@ -588,15 +840,18 @@ export default function ShareBoardModal({
 
                         <div className="flex items-center gap-2">
                           {canEditRole ? (
-                            <select
-                              value={m.role === 'MEMBER' ? 'EDITOR' : m.role}
-                              onChange={(e) => handleUpdateRole(m.user_id, e.target.value as any)}
-                              className="px-2 py-1 text-[11px] bg-white border border-slate-300 rounded-md font-semibold text-slate-800 focus:outline-none"
-                            >
-                              <option value="ADMIN">Quản trị viên</option>
-                              <option value="EDITOR">Thành viên (Biên tập)</option>
-                              <option value="VIEWER">Chỉ xem</option>
-                            </select>
+                            <div className="w-36">
+                              <CustomSelect
+                                value={m.role === 'MEMBER' ? 'EDITOR' : m.role}
+                                onChange={(val) => handleUpdateRole(m.user_id, val as any)}
+                                options={[
+                                  { value: 'ADMIN', label: 'Quản trị viên' },
+                                  { value: 'EDITOR', label: 'Biên tập' },
+                                  { value: 'VIEWER', label: 'Chỉ xem' },
+                                ]}
+                                size="sm"
+                              />
+                            </div>
                           ) : (
                             <span className="text-[10px] px-2 py-0.5 rounded-xs bg-slate-100 text-slate-700 font-semibold border border-slate-200">
                               {m.role === 'ADMIN' ? 'Quản trị viên' : m.role === 'VIEWER' ? 'Chỉ xem' : 'Thành viên'}
@@ -632,26 +887,29 @@ export default function ShareBoardModal({
                     <span>Gửi lời mời tham gia Bảng qua email</span>
                   </span>
 
-                  <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2 items-center">
                     <input
                       type="email"
                       required
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
                       placeholder="Nhập email đồng nghiệp..."
-                      className="flex-1 px-3 py-2 text-xs bg-white border border-slate-300 rounded-md placeholder:text-slate-400 text-slate-900 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
+                      className="w-full sm:flex-1 px-3 py-2 text-xs bg-white border border-slate-300 rounded-md placeholder:text-slate-400 text-slate-900 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
                     />
 
                     {canManageMembers ? (
-                      <select
-                        value={inviteRole}
-                        onChange={(e) => setInviteRole(e.target.value as any)}
-                        className="w-full sm:w-36 px-3 py-2 text-xs bg-white border border-slate-300 rounded-md font-semibold text-slate-800 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
-                      >
-                        <option value="EDITOR">Biên tập viên</option>
-                        <option value="VIEWER">Chỉ xem</option>
-                        <option value="ADMIN">Quản trị viên</option>
-                      </select>
+                      <div className="w-full sm:w-40 shrink-0">
+                        <CustomSelect
+                          value={inviteRole}
+                          onChange={(val) => setInviteRole(val as any)}
+                          options={[
+                            { value: 'EDITOR', label: 'Biên tập viên' },
+                            { value: 'VIEWER', label: 'Chỉ xem' },
+                            { value: 'ADMIN', label: 'Quản trị viên' },
+                          ]}
+                          size="sm"
+                        />
+                      </div>
                     ) : (
                       <span className="w-full sm:w-36 px-3 py-2 text-xs bg-slate-100 border border-slate-200 rounded-md font-semibold text-slate-700 flex items-center justify-center">
                         Biên tập viên
@@ -661,7 +919,7 @@ export default function ShareBoardModal({
                     <button
                       type="submit"
                       disabled={isSendingInvite || !inviteEmail.trim()}
-                      className="px-4 py-2 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0 transition-colors shadow-2xs"
+                      className="w-full sm:w-auto px-4 py-2 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0 transition-colors shadow-2xs h-9"
                     >
                       {isSendingInvite ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -743,7 +1001,7 @@ export default function ShareBoardModal({
                             onClick={() => {
                               const link = `${origin}/invite/${inv.token}`;
                               navigator.clipboard.writeText(link);
-                              alert('Đã sao chép liên kết mời!');
+                              void alertDialog({ message: 'Đã sao chép liên kết mời!', variant: 'success' });
                             }}
                             className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
                             title="Sao chép liên kết"

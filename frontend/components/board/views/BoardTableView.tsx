@@ -1,5 +1,6 @@
 'use client';
 
+import { alertDialog } from '@/components/ui/AppDialog';
 import React, { useState, useMemo } from 'react';
 import {
   Search,
@@ -20,6 +21,7 @@ import {
   ArrowUpDown,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import CustomSelect from '@/components/ui/CustomSelect';
 
 interface BoardTableViewProps {
   board: any;
@@ -130,13 +132,13 @@ export default function BoardTableView({
       });
       await onRefreshBoard();
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : 'Không thể đổi trạng thái thẻ');
+      void alertDialog({ message: err instanceof Error ? err.message : 'Không thể đổi trạng thái thẻ', variant: 'error' });
     }
   };
 
   // Move card to a different list
-  const handleChangeList = async (cardId: string, newListId: string, e: React.ChangeEvent<HTMLSelectElement>) => {
-    e.stopPropagation();
+  const handleChangeList = async (cardId: string, newListId: string, e?: React.SyntheticEvent) => {
+    if (e) e.stopPropagation();
     if (!canEdit) return;
     try {
       await apiClient(`/cards/${cardId}/move`, {
@@ -145,7 +147,7 @@ export default function BoardTableView({
       });
       await onRefreshBoard();
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : 'Không thể chuyển thẻ');
+      void alertDialog({ message: err instanceof Error ? err.message : 'Không thể chuyển thẻ', variant: 'error' });
     }
   };
 
@@ -241,20 +243,21 @@ export default function BoardTableView({
           </div>
 
           {/* Filter by List */}
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-            <Filter className="w-3.5 h-3.5 text-slate-500" />
-            <select
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 min-w-44">
+            <Filter className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            <CustomSelect
               value={selectedListFilter}
-              onChange={(e) => setSelectedListFilter(e.target.value)}
-              className="px-2.5 py-1.5 rounded-md border border-slate-300 text-xs font-medium text-slate-800 cursor-pointer focus:outline-none bg-white"
-            >
-              <option value="all">Tất cả danh sách ({board?.lists?.length || 0})</option>
-              {board?.lists?.map((list: any) => (
-                <option key={list.id} value={list.id}>
-                  {list.title} ({list.cards?.length || 0})
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setSelectedListFilter(val)}
+              options={[
+                { value: 'all', label: `Tất cả danh sách (${board?.lists?.length || 0})` },
+                ...(board?.lists || []).map((list: any) => ({
+                  value: list.id,
+                  label: list.title,
+                  extra: `(${list.cards?.length || 0})`,
+                })),
+              ]}
+              size="sm"
+            />
           </div>
 
           {/* Filter by Status */}
@@ -392,18 +395,16 @@ export default function BoardTableView({
                     />
                   </form>
                 </td>
-                <td className="py-2 px-3">
-                  <select
+                <td className="py-2 px-3 min-w-36">
+                  <CustomSelect
                     value={newCardListId}
-                    onChange={(e) => setNewCardListId(e.target.value)}
-                    className="w-full text-xs font-medium text-slate-900 bg-white border border-slate-300 rounded-md px-2 py-1.5"
-                  >
-                    {board?.lists?.map((l: any) => (
-                      <option key={l.id} value={l.id}>
-                        {l.title}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setNewCardListId(val)}
+                    options={(board?.lists || []).map((l: any) => ({
+                      value: l.id,
+                      label: l.title,
+                    }))}
+                    size="sm"
+                  />
                 </td>
                 <td colSpan={4} className="py-2 px-3 text-right">
                   <div className="flex items-center justify-end gap-2">
@@ -510,19 +511,17 @@ export default function BoardTableView({
                   </td>
 
                   {/* List Selector Dropdown */}
-                  <td className="py-2.5 px-3" onClick={(e) => e.stopPropagation()}>
-                    <select
+                  <td className="py-2.5 px-3 min-w-36" onClick={(e) => e.stopPropagation()}>
+                    <CustomSelect
                       disabled={!canEdit}
                       value={card.listId}
-                      onChange={(e) => handleChangeList(card.id, e.target.value, e)}
-                      className="px-2 py-1 rounded-md text-xs font-medium bg-slate-50 hover:bg-white border border-slate-200 text-slate-700 cursor-pointer focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {board?.lists?.map((l: any) => (
-                        <option key={l.id} value={l.id}>
-                          {l.title}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(val) => handleChangeList(card.id, val)}
+                      options={(board?.lists || []).map((l: any) => ({
+                        value: l.id,
+                        label: l.title,
+                      }))}
+                      size="sm"
+                    />
                   </td>
 
                   {/* Members / Assignees */}

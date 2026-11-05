@@ -1,5 +1,6 @@
 'use client';
 
+import { alertDialog } from '@/components/ui/AppDialog';
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { X, Copy } from 'lucide-react';
@@ -41,7 +42,7 @@ export default function CopyListModal({
       onCopied();
       onClose();
     } catch (err: any) {
-      alert(err.message || 'Không thể sao chép danh sách');
+      void alertDialog({ message: err.message || 'Không thể sao chép danh sách', variant: 'error' });
     } finally {
       setIsLoading(false);
     }

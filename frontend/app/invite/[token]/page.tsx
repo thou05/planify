@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, use } from 'react';
+import { confirmDialog } from '@/components/ui/AppDialog';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
@@ -116,7 +117,7 @@ export default function AcceptInvitePage({
       return;
     }
 
-    if (!confirm('Bạn có chắc chắn muốn từ chối lời mời này?')) return;
+    if (!(await confirmDialog({ title: 'Từ chối lời mời', message: 'Bạn có chắc chắn muốn từ chối lời mời này?', variant: 'danger', confirmText: 'Từ chối' }))) return;
 
     setIsRejecting(true);
     setError('');

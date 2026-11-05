@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth-context';
 import AppLayoutClient from '@/components/layout/AppLayoutClient';
+import AppDialogHost from '@/components/ui/AppDialog';
 
 export const metadata: Metadata = {
   title: 'Planify — Collaborative Work Management',
@@ -20,6 +21,7 @@ export default function RootLayout({
         <AuthProvider>
           <AppLayoutClient>{children}</AppLayoutClient>
         </AuthProvider>
+        <AppDialogHost />
       </body>
     </html>
   );

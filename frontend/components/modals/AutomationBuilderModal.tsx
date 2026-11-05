@@ -1,5 +1,6 @@
 'use client';
 
+import { alertDialog } from '@/components/ui/AppDialog';
 import React, { useState, useEffect } from 'react';
 import {
   X,
@@ -177,7 +178,7 @@ export default function AutomationBuilderModal({
         setQuickCreateTarget(null);
       }
     } catch (err: any) {
-      alert(err?.message || 'Không thể tạo nhãn mới');
+      void alertDialog({ message: err?.message || 'Không thể tạo nhãn mới', variant: 'error' });
     } finally {
       setIsSubmittingLabel(false);
     }

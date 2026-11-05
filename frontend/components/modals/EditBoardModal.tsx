@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Edit3, Loader2, Users, Lock, Globe, Check, AlertCircle } from 'lucide-react';
+import { X, Edit3, Loader2, Users, Lock, Globe, Check, AlertCircle, ShieldCheck, Zap } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 
 interface EditBoardModalProps {
@@ -22,6 +22,7 @@ export default function EditBoardModal({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [visibility, setVisibility] = useState<'WORKSPACE' | 'PRIVATE' | 'PUBLIC'>('WORKSPACE');
+  const [editorJoinMode, setEditorJoinMode] = useState<'REQUEST' | 'AUTO_WORKSPACE'>('REQUEST');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -46,6 +47,7 @@ export default function EditBoardModal({
       setName(board.name || '');
       setDescription(board.description || '');
       setVisibility(board.visibility || 'WORKSPACE');
+      setEditorJoinMode(board.editor_join_mode || 'REQUEST');
       setError('');
     }
   }, [board]);
@@ -65,6 +67,7 @@ export default function EditBoardModal({
     };
     if (canChangeVisibility) {
       payload.visibility = visibility;
+      payload.editor_join_mode = editorJoinMode;
     }
 
     try {
@@ -259,6 +262,57 @@ export default function EditBoardModal({
                 <span>Chỉ Quản trị viên (Admin) hoặc Chủ sở hữu Workspace mới có quyền thay đổi quyền hiển thị của Board.</span>
               </div>
             )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Chế độ tham gia Biên tập (Editor Join Mode)
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                disabled={!canChangeVisibility}
+                onClick={() => setEditorJoinMode('REQUEST')}
+                className={`p-2.5 rounded-md text-left border transition-all ${
+                  !canChangeVisibility
+                    ? 'opacity-65 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-500'
+                    : editorJoinMode === 'REQUEST'
+                    ? 'bg-blue-50 border-blue-300 text-blue-700 ring-1 ring-blue-200 font-semibold cursor-pointer'
+                    : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 cursor-pointer'
+                }`}
+              >
+                <div className="flex items-center justify-between text-xs font-semibold mb-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Yêu cầu duyệt</span>
+                  </div>
+                  {editorJoinMode === 'REQUEST' && <Check className="w-3.5 h-3.5 text-blue-600" />}
+                </div>
+                <div className="text-[10px] text-slate-500">Mặc định: Phải có Admin duyệt</div>
+              </button>
+
+              <button
+                type="button"
+                disabled={!canChangeVisibility}
+                onClick={() => setEditorJoinMode('AUTO_WORKSPACE')}
+                className={`p-2.5 rounded-md text-left border transition-all ${
+                  !canChangeVisibility
+                    ? 'opacity-65 cursor-not-allowed bg-slate-50 border-slate-200 text-slate-500'
+                    : editorJoinMode === 'AUTO_WORKSPACE'
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-700 ring-1 ring-emerald-200 font-semibold cursor-pointer'
+                    : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 cursor-pointer'
+                }`}
+              >
+                <div className="flex items-center justify-between text-xs font-semibold mb-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Tự động duyệt</span>
+                  </div>
+                  {editorJoinMode === 'AUTO_WORKSPACE' && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                </div>
+                <div className="text-[10px] text-slate-500">Thành viên WS tự lên Editor</div>
+              </button>
+            </div>
           </div>
 
           <div className="pt-2 flex items-center justify-end gap-2.5">

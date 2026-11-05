@@ -1,8 +1,10 @@
 'use client';
 
+import { alertDialog } from '@/components/ui/AppDialog';
 import React, { useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { X, Layers } from 'lucide-react';
+import CustomSelect from '@/components/ui/CustomSelect';
 
 interface MoveCardsModalProps {
   sourceList: any;
@@ -40,16 +42,22 @@ export default function MoveCardsModal({
       onMoved();
       onClose();
     } catch (err: any) {
-      alert(err.message || 'Không thể di chuyển các thẻ');
+      void alertDialog({ message: err.message || 'Không thể di chuyển các thẻ', variant: 'error' });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const listOptions = availableLists.map((l) => ({
+    value: l.id,
+    label: l.title,
+    extra: `(${l.cards?.length || 0} thẻ)`,
+  }));
+
   return (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-70 animate-fade-in">
-      <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-md overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+      <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-md">
+        <div className="p-4 border-b border-slate-200 flex items-center justify-between rounded-t-lg">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-md bg-[#87ceeb] text-slate-900 flex items-center justify-center shadow-2xs">
               <Layers className="w-4 h-4" />
@@ -71,18 +79,12 @@ export default function MoveCardsModal({
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
               Chọn danh sách đích để chuyển {sourceList.cards?.length || 0} thẻ tới:
             </label>
-            <select
+            <CustomSelect
               value={targetListId}
-              onChange={(e) => setTargetListId(e.target.value)}
-              className="w-full text-xs text-slate-900 bg-white border border-slate-300 focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 rounded-md px-3 py-2 focus:outline-none transition-all font-medium cursor-pointer"
-            >
-              <option value="">-- Chọn danh sách đích --</option>
-              {availableLists.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.title} ({l.cards?.length || 0} thẻ)
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setTargetListId(val)}
+              options={listOptions}
+              placeholder="-- Chọn danh sách đích --"
+            />
           </div>
 
           <div className="flex items-center justify-end gap-2.5 pt-2">

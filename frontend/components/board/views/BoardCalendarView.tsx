@@ -15,6 +15,7 @@ import {
   ListTodo,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import CustomSelect from '@/components/ui/CustomSelect';
 
 interface BoardCalendarViewProps {
   board: any;
@@ -253,20 +254,20 @@ export default function BoardCalendarView({
         {/* Filter & Unscheduled Toggle */}
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Filter by List */}
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-            <Filter className="w-3.5 h-3.5 text-slate-500" />
-            <select
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 min-w-40">
+            <Filter className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            <CustomSelect
               value={selectedListFilter}
-              onChange={(e) => setSelectedListFilter(e.target.value)}
-              className="px-2.5 py-1.5 rounded-md border border-slate-300 text-xs font-medium text-slate-800 cursor-pointer focus:outline-none bg-white"
-            >
-              <option value="all">Tất cả danh sách</option>
-              {board?.lists?.map((list: any) => (
-                <option key={list.id} value={list.id}>
-                  {list.title}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setSelectedListFilter(val)}
+              options={[
+                { value: 'all', label: 'Tất cả danh sách' },
+                ...(board?.lists || []).map((list: any) => ({
+                  value: list.id,
+                  label: list.title,
+                })),
+              ]}
+              size="sm"
+            />
           </div>
 
           {/* Toggle Unscheduled Drawer */}
@@ -457,17 +458,15 @@ export default function BoardCalendarView({
                 <label className="block text-[11px] font-semibold text-slate-700 mb-1">
                   Thêm vào danh sách
                 </label>
-                <select
+                <CustomSelect
                   value={quickAddListId}
-                  onChange={(e) => setQuickAddListId(e.target.value)}
-                  className="w-full text-xs font-medium text-slate-900 bg-white border border-slate-300 rounded-md px-3 py-1.5 focus:outline-none"
-                >
-                  {board?.lists?.map((l: any) => (
-                    <option key={l.id} value={l.id}>
-                      {l.title}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setQuickAddListId(val)}
+                  options={(board?.lists || []).map((l: any) => ({
+                    value: l.id,
+                    label: l.title,
+                  }))}
+                  size="sm"
+                />
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">

@@ -12,6 +12,7 @@ import { CopyBoardDto } from './dto/copy-board.dto';
 import { AddBoardMemberDto } from './dto/add-board-member.dto';
 import { UpdateBoardMemberRoleDto } from './dto/update-board-member-role.dto';
 import { InviteBoardMemberDto } from './dto/invite-board-member.dto';
+import { RequestEditorDto } from './dto/request-editor.dto';
 import { ActivitiesService } from '../activities/activities.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import * as crypto from 'crypto';
@@ -153,6 +154,7 @@ export class BoardsService {
         description,
         is_favorite,
         visibility,
+        editor_join_mode,
         is_archived,
         background,
         icon,
@@ -231,6 +233,7 @@ export class BoardsService {
         description,
         is_favorite,
         visibility,
+        editor_join_mode,
         is_archived,
         background,
         icon,
@@ -369,8 +372,25 @@ export class BoardsService {
 
     const { background, icon } = extractBoardAppearance(b.background, b.icon);
 
+    let hasPendingEditorRequest = false;
+    try {
+      const { data: pendingReq } = await this.supabase
+        .from('board_editor_requests')
+        .select('id')
+        .eq('board_id', boardId)
+        .eq('user_id', userId)
+        .eq('status', 'PENDING')
+        .maybeSingle();
+
+      hasPendingEditorRequest = Boolean(pendingReq);
+    } catch {
+      hasPendingEditorRequest = false;
+    }
+
     return {
       ...b,
+      editor_join_mode: b.editor_join_mode || 'REQUEST',
+      hasPendingEditorRequest,
       is_archived: b.is_archived ?? false,
       visibility: b.visibility || 'WORKSPACE',
       background,
@@ -405,6 +425,10 @@ export class BoardsService {
       );
     }
 
+    if (dto.editor_join_mode !== undefined && !board.canManageMembers && !board.isWorkspaceAdmin && !board.isWorkspaceOwner) {
+      throw new ForbiddenException('Chỉ Quản trị viên Bảng (Admin) hoặc Quản trị viên Workspace mới có quyền đổi chế độ gia nhập của Board');
+    }
+
     if (dto.is_archived !== undefined && !board.canDelete && !board.isWorkspaceOwner && !board.isWorkspaceAdmin) {
       throw new ForbiddenException('Chỉ Quản trị viên Board hoặc Quản trị viên Workspace mới có quyền lưu trữ');
     }
@@ -414,6 +438,7 @@ export class BoardsService {
     if (dto.description !== undefined) updateData.description = dto.description ? dto.description.trim() : null;
     if (dto.is_favorite !== undefined) updateData.is_favorite = dto.is_favorite;
     if (dto.visibility !== undefined) updateData.visibility = dto.visibility;
+    if (dto.editor_join_mode !== undefined) updateData.editor_join_mode = dto.editor_join_mode;
     if (dto.is_archived !== undefined) updateData.is_archived = dto.is_archived;
     if (dto.background !== undefined) updateData.background = dto.background;
     if (dto.icon !== undefined) updateData.icon = dto.icon;
@@ -436,6 +461,7 @@ export class BoardsService {
           updateData.background = JSON.stringify({ bg: currentBg || null, icon: targetIcon || null });
         }
         if (error.message?.includes('visibility')) delete updateData.visibility;
+        if (error.message?.includes('editor_join_mode')) delete updateData.editor_join_mode;
         if (error.message?.includes('is_archived')) delete updateData.is_archived;
 
         const { data: retryData, error: retryErr } = await this.supabase
@@ -1620,6 +1646,365 @@ export class BoardsService {
     return {
       success: true,
       url: publicUrl,
+    };
+  }
+
+  // --- BOARD EDITOR JOIN MODE & REQUESTS METHODS ---
+
+  async requestEditor(boardId: string, userId: string, dto?: RequestEditorDto) {
+    const board = await this.findById(boardId, userId);
+
+    if (board.currentUserBoardRole === 'ADMIN' || board.currentUserBoardRole === 'EDITOR') {
+      throw new BadRequestException('Bạn đã có quyền Biên tập viên hoặc Quản trị viên trong Bảng này');
+    }
+
+    const { data: existingReq } = await this.supabase
+      .from('board_editor_requests')
+      .select('id, status, created_at')
+      .eq('board_id', boardId)
+      .eq('user_id', userId)
+      .eq('status', 'PENDING')
+      .maybeSingle();
+
+    if (existingReq) {
+      return {
+        message: 'Yêu cầu cấp quyền Biên tập viên của bạn đã được gửi trước đó và đang chờ phê duyệt',
+        request: existingReq,
+      };
+    }
+
+    const { data: newRequest, error: reqErr } = await this.supabase
+      .from('board_editor_requests')
+      .insert({
+        board_id: boardId,
+        user_id: userId,
+        note: dto?.note?.trim() || null,
+        status: 'PENDING',
+      })
+      .select()
+      .single();
+
+    if (reqErr) {
+      throw new BadRequestException(reqErr.message || 'Không thể gửi yêu cầu cấp quyền Biên tập viên');
+    }
+
+    const { data: senderUser } = await this.supabase
+      .from('users')
+      .select('id, name')
+      .eq('id', userId)
+      .maybeSingle();
+    const senderName = senderUser?.name || 'Một thành viên';
+
+    const recipientIds = new Set<string>();
+
+    (board.members || []).forEach((m: any) => {
+      if (m.role === 'ADMIN' && m.user_id !== userId) {
+        recipientIds.add(m.user_id);
+      }
+    });
+
+    const wsOwnerId = (board.workspace as any)?.owner_id;
+    if (wsOwnerId && wsOwnerId !== userId) {
+      recipientIds.add(wsOwnerId);
+    }
+
+    const { data: wsAdmins } = await this.supabase
+      .from('workspace_members')
+      .select('user_id')
+      .eq('workspace_id', board.workspace_id)
+      .eq('role', 'ADMIN');
+
+    (wsAdmins || []).forEach((wa: any) => {
+      if (wa.user_id !== userId) {
+        recipientIds.add(wa.user_id);
+      }
+    });
+
+    const notifTitle = 'Yêu cầu quyền Biên tập viên';
+    const notifMessage = `${senderName} đã gửi yêu cầu cấp quyền Biên tập viên trong Bảng ${board.name}||/boards/${boardId}`;
+
+    await Promise.all(
+      Array.from(recipientIds).map((targetId) =>
+        this.notificationsService.createNotification({
+          userId: targetId,
+          title: notifTitle,
+          message: notifMessage,
+          type: 'BOARD_EDITOR_REQUEST',
+        }).catch(() => {})
+      )
+    );
+
+    await this.activitiesService.logActivity({
+      workspaceId: board.workspace_id,
+      userId,
+      action: `đã gửi yêu cầu cấp quyền Biên tập viên trong Bảng "${board.name}"`,
+      targetType: `board:${boardId}`,
+    });
+
+    this.supabase.emitBoardEvent(boardId, 'EDITOR_REQUEST_CREATED', {
+      boardId,
+      requestId: newRequest.id,
+      userId,
+      senderName,
+    });
+
+    return {
+      message: 'Gửi yêu cầu cấp quyền Biên tập viên thành công. Vui lòng chờ Quản trị viên phê duyệt.',
+      request: newRequest,
+    };
+  }
+
+  async claimEditor(boardId: string, userId: string) {
+    const board = await this.findById(boardId, userId);
+
+    if (board.editor_join_mode !== 'AUTO_WORKSPACE') {
+      throw new BadRequestException('Bảng này không cho phép tự động nhận quyền Biên tập viên. Vui lòng gửi yêu cầu phê duyệt.');
+    }
+
+    if (board.isGuest || !board.isWorkspaceMember) {
+      throw new ForbiddenException('Chỉ thành viên chính thức của Không gian làm việc mới có quyền tự nhận làm Biên tập viên');
+    }
+
+    const { data: existingMember } = await this.supabase
+      .from('board_members')
+      .select('id, role')
+      .eq('board_id', boardId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    let memberResult: any;
+    if (existingMember) {
+      if (existingMember.role === 'ADMIN') {
+        memberResult = existingMember;
+      } else {
+        const { data: updated, error: uErr } = await this.supabase
+          .from('board_members')
+          .update({ role: 'EDITOR' })
+          .eq('id', existingMember.id)
+          .select(`
+            id,
+            board_id,
+            user_id,
+            role,
+            joined_at,
+            user:users (id, name, email, avatar)
+          `)
+          .single();
+        if (uErr) throw new BadRequestException(uErr.message);
+        memberResult = updated;
+      }
+    } else {
+      const { data: inserted, error: iErr } = await this.supabase
+        .from('board_members')
+        .insert({
+          board_id: boardId,
+          user_id: userId,
+          role: 'EDITOR',
+        })
+        .select(`
+          id,
+          board_id,
+          user_id,
+          role,
+          joined_at,
+          user:users (id, name, email, avatar)
+        `)
+        .single();
+      if (iErr) throw new BadRequestException(iErr.message);
+      memberResult = inserted;
+    }
+
+    await this.supabase
+      .from('board_editor_requests')
+      .update({ status: 'APPROVED', updated_at: new Date().toISOString() })
+      .eq('board_id', boardId)
+      .eq('user_id', userId)
+      .eq('status', 'PENDING');
+
+    await this.activitiesService.logActivity({
+      workspaceId: board.workspace_id,
+      userId,
+      action: `đã tham gia Bảng "${board.name}" với vai trò Biên tập viên (Tự động)`,
+      targetType: `board:${boardId}`,
+    });
+
+    this.supabase.emitBoardEvent(boardId, 'MEMBER_JOINED', {
+      boardId,
+      userId,
+      role: 'EDITOR',
+    });
+
+    return {
+      message: 'Nhận quyền Biên tập viên thành công',
+      member: memberResult,
+    };
+  }
+
+  async getEditorRequests(boardId: string, userId: string) {
+    const board = await this.findById(boardId, userId);
+
+    if (!board.canManageMembers && !board.isWorkspaceAdmin && !board.isWorkspaceOwner) {
+      throw new ForbiddenException('Chỉ Quản trị viên Bảng hoặc Quản trị viên Workspace mới có quyền xem danh sách yêu cầu Biên tập viên');
+    }
+
+    const { data: requests, error } = await this.supabase
+      .from('board_editor_requests')
+      .select(`
+        id,
+        board_id,
+        user_id,
+        note,
+        status,
+        created_at,
+        updated_at,
+        user:users (id, name, email, avatar)
+      `)
+      .eq('board_id', boardId)
+      .eq('status', 'PENDING')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      return [];
+    }
+
+    return requests || [];
+  }
+
+  async approveEditorRequest(boardId: string, targetUserId: string, actorId: string) {
+    const board = await this.findById(boardId, actorId);
+
+    if (!board.canManageMembers && !board.isWorkspaceAdmin && !board.isWorkspaceOwner) {
+      throw new ForbiddenException('Chỉ Quản trị viên Bảng hoặc Quản trị viên Workspace mới có quyền phê duyệt yêu cầu');
+    }
+
+    const { data: updatedReq, error: reqErr } = await this.supabase
+      .from('board_editor_requests')
+      .update({ status: 'APPROVED', updated_at: new Date().toISOString() })
+      .eq('board_id', boardId)
+      .eq('user_id', targetUserId)
+      .eq('status', 'PENDING')
+      .select()
+      .maybeSingle();
+
+    if (reqErr) throw new BadRequestException(reqErr.message);
+
+    const { data: existingMember } = await this.supabase
+      .from('board_members')
+      .select('id, role')
+      .eq('board_id', boardId)
+      .eq('user_id', targetUserId)
+      .maybeSingle();
+
+    let memberResult: any;
+    if (existingMember) {
+      if (existingMember.role !== 'ADMIN') {
+        const { data: updated, error: uErr } = await this.supabase
+          .from('board_members')
+          .update({ role: 'EDITOR' })
+          .eq('id', existingMember.id)
+          .select(`
+            id,
+            board_id,
+            user_id,
+            role,
+            joined_at,
+            user:users (id, name, email, avatar)
+          `)
+          .single();
+        if (uErr) throw new BadRequestException(uErr.message);
+        memberResult = updated;
+      } else {
+        memberResult = existingMember;
+      }
+    } else {
+      const { data: inserted, error: iErr } = await this.supabase
+        .from('board_members')
+        .insert({
+          board_id: boardId,
+          user_id: targetUserId,
+          role: 'EDITOR',
+        })
+        .select(`
+          id,
+          board_id,
+          user_id,
+          role,
+          joined_at,
+          user:users (id, name, email, avatar)
+        `)
+        .single();
+      if (iErr) throw new BadRequestException(iErr.message);
+      memberResult = inserted;
+    }
+
+    await this.notificationsService.createNotification({
+      userId: targetUserId,
+      title: 'Yêu cầu được phê duyệt',
+      message: `Yêu cầu cấp quyền Biên tập viên trong Bảng "${board.name}" của bạn đã được phê duyệt||/boards/${boardId}`,
+      type: 'BOARD_EDITOR_APPROVED',
+    }).catch(() => {});
+
+    await this.activitiesService.logActivity({
+      workspaceId: board.workspace_id,
+      userId: actorId,
+      action: `đã phê duyệt quyền Biên tập viên cho thành viên trong Bảng "${board.name}"`,
+      targetType: `board:${boardId}`,
+    });
+
+    this.supabase.emitBoardEvent(boardId, 'EDITOR_REQUEST_APPROVED', {
+      boardId,
+      targetUserId,
+      actorId,
+    });
+
+    return {
+      message: 'Đã phê duyệt yêu cầu cấp quyền Biên tập viên thành công',
+      member: memberResult,
+      request: updatedReq,
+    };
+  }
+
+  async rejectEditorRequest(boardId: string, targetUserId: string, actorId: string) {
+    const board = await this.findById(boardId, actorId);
+
+    if (!board.canManageMembers && !board.isWorkspaceAdmin && !board.isWorkspaceOwner) {
+      throw new ForbiddenException('Chỉ Quản trị viên Bảng hoặc Quản trị viên Workspace mới có quyền từ chối yêu cầu');
+    }
+
+    const { data: updatedReq, error: reqErr } = await this.supabase
+      .from('board_editor_requests')
+      .update({ status: 'REJECTED', updated_at: new Date().toISOString() })
+      .eq('board_id', boardId)
+      .eq('user_id', targetUserId)
+      .eq('status', 'PENDING')
+      .select()
+      .maybeSingle();
+
+    if (reqErr) throw new BadRequestException(reqErr.message);
+
+    await this.notificationsService.createNotification({
+      userId: targetUserId,
+      title: 'Yêu cầu bị từ chối',
+      message: `Yêu cầu cấp quyền Biên tập viên trong Bảng "${board.name}" của bạn đã bị từ chối||/boards/${boardId}`,
+      type: 'BOARD_EDITOR_REJECTED',
+    }).catch(() => {});
+
+    await this.activitiesService.logActivity({
+      workspaceId: board.workspace_id,
+      userId: actorId,
+      action: `đã từ chối yêu cầu cấp quyền Biên tập viên trong Bảng "${board.name}"`,
+      targetType: `board:${boardId}`,
+    });
+
+    this.supabase.emitBoardEvent(boardId, 'EDITOR_REQUEST_REJECTED', {
+      boardId,
+      targetUserId,
+      actorId,
+    });
+
+    return {
+      message: 'Đã từ chối yêu cầu cấp quyền Biên tập viên',
+      request: updatedReq,
     };
   }
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { alertDialog } from '@/components/ui/AppDialog';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
@@ -203,7 +204,7 @@ export default function MyActivitiesPage() {
       act.action.toLowerCase().includes('xóa thành viên');
 
     if (isRemovalAction) {
-      alert('Không thể chuyển tiếp: Hoạt động này ghi nhận thao tác xóa hoặc rời khỏi dự án.');
+      void alertDialog({ title: 'Không thể chuyển tiếp', message: 'Không thể chuyển tiếp: Hoạt động này ghi nhận thao tác xóa hoặc rời khỏi dự án.', variant: 'info' });
       return;
     }
 

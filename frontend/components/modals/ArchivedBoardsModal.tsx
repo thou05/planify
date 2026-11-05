@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmDialog, alertDialog } from '@/components/ui/AppDialog';
 import React, { useState, useEffect } from 'react';
 import { X, Archive, RotateCcw, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
@@ -54,14 +55,14 @@ export default function ArchivedBoardsModal({
         onRestored();
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể khôi phục Bảng');
+      void alertDialog({ message: err.message || 'Không thể khôi phục Bảng', variant: 'error' });
     } finally {
       setActionLoadingId(null);
     }
   };
 
   const handleDeletePermanently = async (boardId: string, boardName: string) => {
-    if (!confirm(`Hành động này sẽ XÓA VĨNH VIỄN Bảng "${boardName}" cùng toàn bộ thẻ công việc. Bạn có chắc chắn muốn xóa?`)) {
+    if (!(await confirmDialog({ title: 'Xóa vĩnh viễn Bảng', message: `Hành động này sẽ XÓA VĨNH VIỄN Bảng "${boardName}" cùng toàn bộ thẻ công việc. Bạn có chắc chắn muốn xóa?`, variant: 'danger', confirmText: 'Xóa vĩnh viễn' }))) {
       return;
     }
 
@@ -74,7 +75,7 @@ export default function ArchivedBoardsModal({
         fetchArchived();
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể xóa Bảng');
+      void alertDialog({ message: err.message || 'Không thể xóa Bảng', variant: 'error' });
     } finally {
       setActionLoadingId(null);
     }
