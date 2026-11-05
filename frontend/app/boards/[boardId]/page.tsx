@@ -693,7 +693,7 @@ export default function BoardDetailPage({
         }
 
         // 4. Card Status check
-        const isDone = !!card.is_due_date_completed || card.status === 'DONE' || card.status === 'COMPLETED';
+        const isDone = Boolean(card.is_due_date_completed || card.status === 'DONE' || card.status === 'COMPLETED');
         if (boardFilters.cardStatus.length > 0) {
           const statusMatch = boardFilters.cardStatus.some((st) => {
             if (st === 'completed') return isDone;

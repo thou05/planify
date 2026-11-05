@@ -368,7 +368,7 @@ export default function BoardFilterModal({
       });
 
       // 3. Status
-      const isDone = !!card.is_due_date_completed || card.status === 'DONE' || card.status === 'COMPLETED';
+      const isDone = Boolean(card.is_due_date_completed || card.status === 'DONE' || card.status === 'COMPLETED');
       if (isDone) {
         c.completed++;
       } else {

@@ -85,12 +85,13 @@ export default function BoardTableView({
     // Filter by status
     const now = Date.now();
     if (statusFilter === 'completed') {
-      result = result.filter((c) => c.is_due_date_completed);
+      result = result.filter((c) => Boolean(c.is_due_date_completed || c.status === 'DONE' || c.status === 'COMPLETED'));
     } else if (statusFilter === 'in_progress') {
-      result = result.filter((c) => !c.is_due_date_completed);
+      result = result.filter((c) => !Boolean(c.is_due_date_completed || c.status === 'DONE' || c.status === 'COMPLETED'));
     } else if (statusFilter === 'overdue') {
       result = result.filter((c) => {
-        if (!c.due_date || c.is_due_date_completed) return false;
+        const isDone = Boolean(c.is_due_date_completed || c.status === 'DONE' || c.status === 'COMPLETED');
+        if (!c.due_date || isDone) return false;
         return new Date(c.due_date).getTime() < now;
       });
     }
@@ -117,10 +118,15 @@ export default function BoardTableView({
   const handleToggleComplete = async (card: any, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!canEdit) return;
+    const isDone = Boolean(card.is_due_date_completed || card.status === 'DONE' || card.status === 'COMPLETED');
+    const nextStatus = !isDone;
     try {
       await apiClient(`/cards/${card.id}`, {
         method: 'PATCH',
-        data: { is_due_date_completed: !card.is_due_date_completed },
+        data: {
+          is_due_date_completed: nextStatus,
+          status: nextStatus ? 'DONE' : 'TODO',
+        },
       });
       await onRefreshBoard();
     } catch (err) {
@@ -177,8 +183,9 @@ export default function BoardTableView({
     const dueTime = new Date(card.due_date).getTime();
     const now = Date.now();
     const diffHours = (dueTime - now) / (1000 * 60 * 60);
+    const isDone = Boolean(card.is_due_date_completed || card.status === 'DONE' || card.status === 'COMPLETED');
 
-    if (card.is_due_date_completed) {
+    if (isDone) {
       return (
         <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-xs text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
           <CheckCircle2 className="w-3 h-3 text-emerald-600" />
@@ -433,6 +440,7 @@ export default function BoardTableView({
 
             {/* Card Rows */}
             {filteredCards.map((card) => {
+              const isCardDone = Boolean(card.is_due_date_completed || card.status === 'DONE' || card.status === 'COMPLETED');
               // Checklist calculation
               const totalItems = card.checklists?.reduce(
                 (acc: number, cl: any) => acc + (cl.items?.length || 0),
@@ -457,9 +465,9 @@ export default function BoardTableView({
                       disabled={!canEdit}
                       onClick={(e) => handleToggleComplete(card, e)}
                       className="text-slate-400 hover:text-emerald-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                      title={card.is_due_date_completed ? 'Đánh dấu chưa hoàn thành' : 'Đánh dấu đã hoàn thành'}
+                      title={isCardDone ? 'Đánh dấu chưa hoàn thành' : 'Đánh dấu đã hoàn thành'}
                     >
-                      {card.is_due_date_completed ? (
+                      {isCardDone ? (
                         <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                       ) : (
                         <Circle className="w-4 h-4 text-slate-300" />
@@ -472,7 +480,7 @@ export default function BoardTableView({
                     <div className="flex items-center gap-2">
                       <span
                         className={`font-medium text-xs transition-colors ${
-                          card.is_due_date_completed
+                          isCardDone
                             ? 'line-through text-slate-400'
                             : 'text-slate-900 group-hover:text-blue-600'
                         }`}
