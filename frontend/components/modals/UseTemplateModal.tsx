@@ -16,6 +16,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import CustomSelect from '@/components/ui/CustomSelect';
 
 interface UseTemplateModalProps {
   isOpen: boolean;
@@ -102,7 +103,7 @@ export default function UseTemplateModal({
 
   return (
     <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
-      <div className="w-full max-w-lg bg-white rounded-lg shadow-xl border border-slate-300 p-6 sm:p-7 relative overflow-hidden flex flex-col">
+      <div className="w-full max-w-lg bg-white rounded-lg shadow-xl border border-slate-300 p-6 sm:p-7 relative flex flex-col">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
@@ -144,17 +145,15 @@ export default function UseTemplateModal({
                 Bạn chưa có Không gian làm việc nào. Vui lòng tạo Workspace trước.
               </div>
             ) : (
-              <select
+              <CustomSelect
                 value={selectedWorkspaceId}
-                onChange={(e) => setSelectedWorkspaceId(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white font-medium text-slate-900 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 cursor-pointer"
-              >
-                {workspaces.map((ws) => (
-                  <option key={ws.id} value={ws.id}>
-                    {ws.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setSelectedWorkspaceId(val)}
+                options={workspaces.map((ws) => ({
+                  value: ws.id,
+                  label: ws.name,
+                }))}
+                placeholder="Chọn không gian làm việc..."
+              />
             )}
           </div>
 

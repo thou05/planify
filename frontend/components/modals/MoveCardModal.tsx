@@ -1,9 +1,11 @@
 'use client';
 
+import { alertDialog } from '@/components/ui/AppDialog';
 import { useModalAccessibility } from '@/lib/use-modal-accessibility';
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { X, ArrowRightLeft } from 'lucide-react';
+import CustomSelect from '@/components/ui/CustomSelect';
 
 interface MoveCardModalProps {
   card: any;
@@ -38,6 +40,20 @@ export default function MoveCardModal({
   const cardCountInSelectedList = selectedList?.cards?.length || 0;
   const isSameList = card.list_id === targetListId;
   const maxPosition = isSameList ? cardCountInSelectedList - 1 : cardCountInSelectedList;
+  const isLimitReached = !isSameList && Boolean(selectedList?.limit && cardCountInSelectedList >= selectedList.limit);
+
+  const listOptions = (boardLists || []).map((l) => ({
+    value: l.id,
+    label: l.title,
+    badge: l.id === card.list_id ? 'Hiện tại' : undefined,
+    extra: l.limit ? `(${l.cards?.length || 0}/${l.limit})` : undefined,
+  }));
+
+  const positionOptions = Array.from({ length: Math.max(1, maxPosition + 1) }).map((_, idx) => ({
+    value: idx,
+    label: `Vị trí ${idx + 1}`,
+    badge: idx === card.position && isSameList ? 'Hiện tại' : undefined,
+  }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,7 +71,7 @@ export default function MoveCardModal({
       onMoved();
       onClose();
     } catch (err: any) {
-      alert(err.message || 'Không thể di chuyển thẻ');
+      void alertDialog({ message: err.message || 'Không thể di chuyển thẻ', variant: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -63,8 +79,8 @@ export default function MoveCardModal({
 
   return (
     <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Di chuyển thẻ" tabIndex={-1} className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-80 animate-in fade-in duration-150">
-      <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-md overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+      <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-md">
+        <div className="p-4 border-b border-slate-200 flex items-center justify-between rounded-t-lg">
           <div className="flex items-center gap-2.5">
             <div className="p-1.5 bg-[#87ceeb] text-slate-900 rounded-md shadow-2xs">
               <ArrowRightLeft className="w-4 h-4" />
@@ -82,7 +98,7 @@ export default function MoveCardModal({
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
             <div className="text-xs text-slate-500 mb-1">Thẻ được chọn:</div>
-            <div className="text-xs font-bold text-slate-900 p-2 bg-slate-50 rounded-md border border-slate-200 truncate">
+            <div className="text-xs font-bold text-slate-900 p-2.5 bg-slate-50 rounded-md border border-slate-200 truncate">
               {card.title}
             </div>
           </div>
@@ -91,23 +107,19 @@ export default function MoveCardModal({
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               Danh sách đích
             </label>
-            <select
+            <CustomSelect
               value={targetListId}
-              onChange={(e) => {
-                setTargetListId(e.target.value);
+              onChange={(val) => {
+                setTargetListId(val);
                 setPosition(0);
               }}
-              className="w-full text-xs text-slate-900 bg-white border border-slate-300 rounded-md p-2.5 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 font-medium cursor-pointer"
-            >
-              {(boardLists || []).map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.title} {l.id === card.list_id ? '(Hiện tại)' : ''} {l.limit ? `(${l.cards?.length || 0}/${l.limit})` : ''}
-                </option>
-              ))}
-            </select>
-            {!isSameList && selectedList?.limit && cardCountInSelectedList >= selectedList.limit && (
+              options={listOptions}
+              placeholder="Chọn danh sách đích..."
+              error={isLimitReached}
+            />
+            {isLimitReached && (
               <p className="mt-1.5 text-xs text-red-600 font-semibold">
-                ⚠️ Danh sách này đã đạt giới hạn tối đa ({selectedList.limit} thẻ). Vui lòng chọn danh sách khác.
+                ⚠️ Danh sách này đã đạt giới hạn tối đa ({selectedList?.limit} thẻ). Vui lòng chọn danh sách khác.
               </p>
             )}
           </div>
@@ -116,18 +128,12 @@ export default function MoveCardModal({
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               Vị trí thứ tự trong danh sách (Bắt đầu từ 1)
             </label>
-            <select
+            <CustomSelect
               value={position}
-              onChange={(e) => setPosition(Number(e.target.value))}
-              disabled={!isSameList && selectedList?.limit && cardCountInSelectedList >= selectedList.limit}
-              className="w-full text-xs text-slate-900 bg-white border border-slate-300 rounded-md p-2.5 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 disabled:opacity-50 font-medium cursor-pointer"
-            >
-              {Array.from({ length: Math.max(1, maxPosition + 1) }).map((_, idx) => (
-                <option key={idx} value={idx}>
-                  Vị trí {idx + 1}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setPosition(Number(val))}
+              options={positionOptions}
+              disabled={isLimitReached}
+            />
           </div>
 
           <div className="flex items-center justify-end gap-2.5 pt-2">
@@ -140,7 +146,7 @@ export default function MoveCardModal({
             </button>
             <button
               type="submit"
-              disabled={isLoading || (!isSameList && Boolean(selectedList?.limit && cardCountInSelectedList >= selectedList.limit))}
+              disabled={isLoading || isLimitReached}
               className="px-4 py-2 text-xs font-semibold text-white bg-[#f28d8d] hover:bg-[#e57a7a] disabled:opacity-50 rounded-md transition-colors cursor-pointer shadow-2xs"
             >
               {isLoading ? 'Đang di chuyển...' : 'Di chuyển'}

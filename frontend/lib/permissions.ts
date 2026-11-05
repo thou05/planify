@@ -1,5 +1,6 @@
 export type WorkspaceRole = 'OWNER' | 'ADMIN' | 'MEMBER' | 'GUEST';
 export type BoardRole = 'ADMIN' | 'EDITOR' | 'VIEWER' | 'MEMBER';
+export type EditorJoinMode = 'REQUEST' | 'AUTO_WORKSPACE';
 
 export interface WorkspacePermissionContext {
   role?: WorkspaceRole | null;
@@ -17,6 +18,7 @@ export interface BoardPermissionContext {
   canDelete?: boolean;
   canChangeVisibility?: boolean;
   isArchived?: boolean;
+  editor_join_mode?: EditorJoinMode;
 }
 
 // Workspace Permissions
@@ -87,4 +89,25 @@ export function canComment(ctx?: BoardPermissionContext | null): boolean {
   if (!ctx) return false;
   if (ctx.isArchived) return false;
   return true;
+}
+
+export function canClaimEditor(context: {
+  editor_join_mode?: EditorJoinMode;
+  boardRole?: string;
+  isWorkspaceMember?: boolean;
+  isGuest?: boolean;
+}): boolean {
+  return (
+    context.boardRole === 'VIEWER' &&
+    context.editor_join_mode === 'AUTO_WORKSPACE' &&
+    context.isWorkspaceMember === true &&
+    context.isGuest !== true
+  );
+}
+
+export function canRequestEditor(context: {
+  boardRole?: string;
+  hasPendingEditorRequest?: boolean;
+}): boolean {
+  return context.boardRole === 'VIEWER' && !context.hasPendingEditorRequest;
 }

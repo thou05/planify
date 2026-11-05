@@ -30,10 +30,11 @@ model User {
   status        String            @default("ACTIVE") @db.VarChar(20)
   created_at    DateTime          @default(now()) @db.Timestamptz
 
-  workspaces        Workspace[]
-  workspace_members WorkspaceMember[]
-  board_members     BoardMember[]
-  notifications     Notification[]
+  workspaces            Workspace[]
+  workspace_members     WorkspaceMember[]
+  board_members         BoardMember[]
+  board_editor_requests BoardEditorRequest[]
+  notifications         Notification[]
   activity_logs     ActivityLog[]
   created_cards     Card[]
   comments          Comment[]
@@ -128,9 +129,11 @@ model Board {
   is_favorite      Boolean           @default(false)
   background       String?           @db.Text
   icon             String?           @db.Text
+  editor_join_mode String            @default("REQUEST") @db.VarChar(30)
 
   workspace        Workspace         @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
   members          BoardMember[]
+  editor_requests  BoardEditorRequest[]
   lists            List[]
   labels           Label[]
   custom_fields    CustomField[]
@@ -152,6 +155,23 @@ model BoardMember {
 
   @@unique([board_id, user_id])
   @@map("board_members")
+}
+
+// 8.1. BOARD EDITOR REQUESTS
+model BoardEditorRequest {
+  id         String   @id @default(uuid()) @db.Uuid
+  board_id   String   @db.Uuid
+  user_id    String   @db.Uuid
+  note       String?  @db.Text
+  status     String   @default("PENDING") @db.VarChar(20)
+  created_at DateTime @default(now()) @db.Timestamptz
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz
+
+  board      Board    @relation(fields: [board_id], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([board_id, status])
+  @@map("board_editor_requests")
 }
 
 // 9. LISTS

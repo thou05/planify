@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, use } from 'react';
+import { confirmDialog, alertDialog } from '@/components/ui/AppDialog';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
@@ -13,6 +14,7 @@ import InviteMemberModal from '@/components/modals/InviteMemberModal';
 import TransferOwnershipModal from '@/components/modals/TransferOwnershipModal';
 import ArchivedBoardsModal from '@/components/modals/ArchivedBoardsModal';
 import ImportBoardModal from '@/components/modals/ImportBoardModal';
+import CustomSelect from '@/components/ui/CustomSelect';
 import { canCreateBoard } from '@/lib/permissions';
 import {
   Layers,
@@ -306,12 +308,12 @@ export default function WorkspaceDetailPage({
         fetchWorkspace();
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể thay đổi vai trò thành viên');
+      void alertDialog({ message: err.message || 'Không thể thay đổi vai trò thành viên', variant: 'error' });
     }
   };
 
   const handleRemoveMember = async (targetUserId: string, memberName: string) => {
-    if (!confirm(`Bạn có chắc muốn xóa thành viên "${memberName}" khỏi Workspace này?`)) return;
+    if (!(await confirmDialog({ title: 'Xóa thành viên', message: `Bạn có chắc muốn xóa thành viên "${memberName}" khỏi Workspace này?`, variant: 'danger', confirmText: 'Xóa' }))) return;
 
     try {
       await apiClient(`/workspaces/${workspaceId}/members/${targetUserId}`, {
@@ -319,12 +321,12 @@ export default function WorkspaceDetailPage({
       });
       fetchWorkspace();
     } catch (err: any) {
-      alert(err.message || 'Không thể xóa thành viên');
+      void alertDialog({ message: err.message || 'Không thể xóa thành viên', variant: 'error' });
     }
   };
 
   const handleRevokeInvite = async (inviteId: string) => {
-    if (!confirm('Bạn có chắc muốn thu hồi lời mời này?')) return;
+    if (!(await confirmDialog({ title: 'Thu hồi lời mời', message: 'Bạn có chắc muốn thu hồi lời mời này?', variant: 'danger', confirmText: 'Thu hồi' }))) return;
 
     // Cập nhật giao diện tức thì (Optimistic UI)
     setPendingInvites((prev) => prev.filter((i) => i.id !== inviteId));
@@ -335,7 +337,7 @@ export default function WorkspaceDetailPage({
       });
       fetchInvites();
     } catch (err: any) {
-      alert(err.message || 'Không thể thu hồi lời mời');
+      void alertDialog({ message: err.message || 'Không thể thu hồi lời mời', variant: 'error' });
       fetchInvites();
     }
   };
@@ -351,7 +353,7 @@ export default function WorkspaceDetailPage({
         await fetchWorkspace();
       }
     } catch (err: any) {
-      alert(err?.message || 'Không thể chuyển đổi khách thành thành viên');
+      void alertDialog({ message: err?.message || 'Không thể chuyển đổi khách thành thành viên', variant: 'error' });
     } finally {
       setActionGuestId(null);
     }
@@ -359,7 +361,7 @@ export default function WorkspaceDetailPage({
 
   const handleRemoveGuest = async (guestUserId: string, guestName?: string) => {
     const confirmMsg = `Bạn có chắc chắn muốn xóa khách "${guestName || 'này'}" khỏi toàn bộ các Bảng trong Không gian làm việc không?`;
-    if (!confirm(confirmMsg)) return;
+    if (!(await confirmDialog({ title: 'Xóa khách', message: confirmMsg, variant: 'danger', confirmText: 'Xóa' }))) return;
 
     try {
       setActionGuestId(guestUserId);
@@ -370,7 +372,7 @@ export default function WorkspaceDetailPage({
         await fetchWorkspace();
       }
     } catch (err: any) {
-      alert(err?.message || 'Không thể xóa khách');
+      void alertDialog({ message: err?.message || 'Không thể xóa khách', variant: 'error' });
     } finally {
       setActionGuestId(null);
     }
@@ -387,7 +389,7 @@ export default function WorkspaceDetailPage({
         await fetchWorkspace();
       }
     } catch (err: any) {
-      alert(err?.message || 'Không thể thay đổi vai trò trong Bảng');
+      void alertDialog({ message: err?.message || 'Không thể thay đổi vai trò trong Bảng', variant: 'error' });
     } finally {
       setActionGuestId(null);
     }
@@ -433,16 +435,16 @@ export default function WorkspaceDetailPage({
     if (workspace?.isOwner) {
       const memberCount = workspace?.members?.length || 1;
       if (memberCount > 1) {
-        alert('Bạn là Chủ sở hữu của Workspace này. Vui lòng chuyển giao quyền Chủ sở hữu cho thành viên khác trước khi rời đi.');
+        void alertDialog({ title: 'Không thể rời Workspace', message: 'Bạn là Chủ sở hữu của Workspace này. Vui lòng chuyển giao quyền Chủ sở hữu cho thành viên khác trước khi rời đi.', variant: 'warning' });
         setIsTransferOpen(true);
         return;
       } else {
-        alert('Bạn là thành viên duy nhất. Vui lòng chọn Xóa Workspace nếu không còn sử dụng.');
+        void alertDialog({ title: 'Không thể rời Workspace', message: 'Bạn là thành viên duy nhất. Vui lòng chọn Xóa Workspace nếu không còn sử dụng.', variant: 'warning' });
         return;
       }
     }
 
-    if (!confirm('Bạn có chắc chắn muốn rời khỏi Không gian làm việc này?')) return;
+    if (!(await confirmDialog({ title: 'Rời Không gian làm việc', message: 'Bạn có chắc chắn muốn rời khỏi Không gian làm việc này?', variant: 'danger', confirmText: 'Rời khỏi' }))) return;
 
     setIsLeaving(true);
     try {
@@ -453,7 +455,7 @@ export default function WorkspaceDetailPage({
         router.push('/dashboard');
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể rời Workspace');
+      void alertDialog({ message: err.message || 'Không thể rời Workspace', variant: 'error' });
       setIsLeaving(false);
     }
   };
@@ -883,14 +885,17 @@ export default function WorkspaceDetailPage({
                         <div className="flex items-center gap-2 self-end sm:self-center">
                           {canManageThisUser && !isCurrent && !isItemOwner ? (
                             <>
-                              <select
-                                value={m.role}
-                                onChange={(e) => handleUpdateRole(m.user_id, e.target.value as any)}
-                                className="px-2 py-1 text-xs rounded-md border border-slate-200 bg-white font-medium text-slate-700 cursor-pointer focus:outline-none focus:border-slate-400"
-                              >
-                                <option value="MEMBER">Thành viên</option>
-                                <option value="ADMIN">Quản trị viên</option>
-                              </select>
+                              <div className="w-32">
+                                <CustomSelect
+                                  value={m.role}
+                                  onChange={(val) => handleUpdateRole(m.user_id, val as any)}
+                                  options={[
+                                    { value: 'MEMBER', label: 'Thành viên' },
+                                    { value: 'ADMIN', label: 'Quản trị viên' },
+                                  ]}
+                                  size="sm"
+                                />
+                              </div>
 
                               <button
                                 onClick={() => handleRemoveMember(m.user_id, m.user?.name)}
@@ -990,17 +995,19 @@ export default function WorkspaceDetailPage({
                                         </Link>
 
                                         {workspace?.isAdmin ? (
-                                          <select
-                                            value={b.role === 'MEMBER' ? 'EDITOR' : b.role || 'EDITOR'}
-                                            disabled={isProcessing}
-                                            onChange={(e) => handleUpdateBoardGuestRole(b.id, g.user_id, e.target.value)}
-                                            className="text-[10px] font-medium bg-white border border-slate-200 rounded px-1 py-0.5 cursor-pointer text-slate-700"
-                                            title="Thay đổi quyền trong Bảng này"
-                                          >
-                                            <option value="EDITOR">Editor (Biên tập)</option>
-                                            <option value="ADMIN">Admin (Quản trị Bảng)</option>
-                                            <option value="VIEWER">Viewer (Chỉ xem)</option>
-                                          </select>
+                                          <div className="w-28">
+                                            <CustomSelect
+                                              value={b.role === 'MEMBER' ? 'EDITOR' : b.role || 'EDITOR'}
+                                              disabled={isProcessing}
+                                              onChange={(val) => handleUpdateBoardGuestRole(b.id, g.user_id, val)}
+                                              options={[
+                                                { value: 'EDITOR', label: 'Editor' },
+                                                { value: 'ADMIN', label: 'Admin' },
+                                                { value: 'VIEWER', label: 'Viewer' },
+                                              ]}
+                                              size="sm"
+                                            />
+                                          </div>
                                         ) : (
                                           <span className="text-[9px] px-1 py-0.2 rounded-xs bg-slate-200 text-slate-700 font-semibold">
                                             {b.role === 'ADMIN' ? 'Admin' : b.role === 'VIEWER' ? 'Viewer' : 'Editor'}

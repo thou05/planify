@@ -11,6 +11,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import CustomSelect from '@/components/ui/CustomSelect';
 
 interface SaveAsTemplateModalProps {
   isOpen: boolean;
@@ -97,7 +98,7 @@ export default function SaveAsTemplateModal({
 
   return (
     <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-300 p-6 relative overflow-hidden flex flex-col">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-300 p-6 relative flex flex-col">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
@@ -151,17 +152,15 @@ export default function SaveAsTemplateModal({
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
                 Danh mục phân loại
               </label>
-              <select
+              <CustomSelect
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white font-medium text-slate-900 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 cursor-pointer"
-              >
-                {TEMPLATE_CATEGORIES.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setCategory(val)}
+                options={TEMPLATE_CATEGORIES.map((c) => ({
+                  value: c.id,
+                  label: c.label,
+                }))}
+                placeholder="Chọn danh mục phân loại..."
+              />
             </div>
 
             <div>

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, Copy, Loader2, Layers, CheckSquare } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import CustomSelect from '@/components/ui/CustomSelect';
 
 interface CopyBoardModalProps {
   isOpen: boolean;
@@ -63,9 +64,15 @@ export default function CopyBoardModal({
     }
   };
 
+  const workspaceOptions = workspaces.map((ws) => ({
+    value: ws.id,
+    label: ws.name,
+    badge: ws.id === board.workspace_id ? 'Hiện tại' : undefined,
+  }));
+
   return (
     <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-300 p-6 sm:p-7 relative overflow-hidden">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-300 p-6 sm:p-7 relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
@@ -108,17 +115,12 @@ export default function CopyBoardModal({
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
               Không gian làm việc đích
             </label>
-            <select
+            <CustomSelect
               value={targetWorkspaceId}
-              onChange={(e) => setTargetWorkspaceId(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-800 font-semibold focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-all cursor-pointer"
-            >
-              {workspaces.map((ws) => (
-                <option key={ws.id} value={ws.id}>
-                  {ws.name} {ws.id === board.workspace_id ? '(Hiện tại)' : ''}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setTargetWorkspaceId(val)}
+              options={workspaceOptions}
+              placeholder="Chọn không gian làm việc..."
+            />
           </div>
 
           <div className="pt-1">

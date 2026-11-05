@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { X, Crown, AlertTriangle, Loader2, Check } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import CustomSelect from '@/components/ui/CustomSelect';
 
 interface TransferOwnershipModalProps {
   isOpen: boolean;
@@ -67,7 +68,7 @@ export default function TransferOwnershipModal({
 
   return (
     <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-300 p-6 sm:p-7 relative overflow-hidden">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-300 p-6 sm:p-7 relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
@@ -116,17 +117,17 @@ export default function TransferOwnershipModal({
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
                 Chọn thành viên nhận quyền Owner
               </label>
-              <select
+              <CustomSelect
                 value={selectedUserId}
-                onChange={(e) => setSelectedUserId(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-md border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-all"
-              >
-                {eligibleMembers.map((m) => (
-                  <option key={m.user_id} value={m.user_id}>
-                    {m.user?.name || 'Thành viên'} ({m.user?.email}) - Hiện tại: {m.role}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setSelectedUserId(val)}
+                options={eligibleMembers.map((m) => ({
+                  value: m.user_id,
+                  label: m.user?.name || 'Thành viên',
+                  extra: m.user?.email ? `(${m.user.email})` : undefined,
+                  badge: m.role,
+                }))}
+                placeholder="Chọn thành viên..."
+              />
             </div>
 
             <div>

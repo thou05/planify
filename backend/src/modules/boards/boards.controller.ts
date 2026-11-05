@@ -19,6 +19,7 @@ import { CopyBoardDto } from './dto/copy-board.dto';
 import { AddBoardMemberDto } from './dto/add-board-member.dto';
 import { UpdateBoardMemberRoleDto } from './dto/update-board-member-role.dto';
 import { InviteBoardMemberDto } from './dto/invite-board-member.dto';
+import { RequestEditorDto } from './dto/request-editor.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
@@ -291,5 +292,59 @@ export class BoardsController {
     @CurrentUser('id') currentUserId: string,
   ) {
     return this.boardsService.revokeBoardInvite(boardId, currentUserId, inviteId);
+  }
+
+  // --- BOARD EDITOR JOIN MODE & REQUESTS ---
+  @Post('boards/:id/request-editor')
+  @ApiOperation({ summary: 'Gửi yêu cầu xin cấp quyền Biên tập viên (Editor)' })
+  @ApiResponse({ status: 201, description: 'Gửi yêu cầu thành công' })
+  async requestEditor(
+    @Param('id') boardId: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: RequestEditorDto,
+  ) {
+    return this.boardsService.requestEditor(boardId, userId, dto);
+  }
+
+  @Post('boards/:id/claim-editor')
+  @ApiOperation({ summary: 'Tự động nhận quyền Biên tập viên khi Bảng ở chế độ AUTO_WORKSPACE' })
+  @ApiResponse({ status: 200, description: 'Nhận quyền Biên tập viên thành công' })
+  async claimEditor(
+    @Param('id') boardId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.boardsService.claimEditor(boardId, userId);
+  }
+
+  @Get('boards/:id/editor-requests')
+  @ApiOperation({ summary: 'Lấy danh sách các yêu cầu cấp quyền Biên tập viên đang chờ phê duyệt (Admin)' })
+  @ApiResponse({ status: 200, description: 'Danh sách yêu cầu Biên tập viên' })
+  async getEditorRequests(
+    @Param('id') boardId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.boardsService.getEditorRequests(boardId, userId);
+  }
+
+  @Post('boards/:id/editor-requests/:targetUserId/approve')
+  @ApiOperation({ summary: 'Phê duyệt yêu cầu cấp quyền Biên tập viên' })
+  @ApiResponse({ status: 200, description: 'Phê duyệt thành công' })
+  async approveEditorRequest(
+    @Param('id') boardId: string,
+    @Param('targetUserId') targetUserId: string,
+    @CurrentUser('id') actorId: string,
+  ) {
+    return this.boardsService.approveEditorRequest(boardId, targetUserId, actorId);
+  }
+
+  @Post('boards/:id/editor-requests/:targetUserId/reject')
+  @ApiOperation({ summary: 'Từ chối yêu cầu cấp quyền Biên tập viên' })
+  @ApiResponse({ status: 200, description: 'Từ chối thành công' })
+  async rejectEditorRequest(
+    @Param('id') boardId: string,
+    @Param('targetUserId') targetUserId: string,
+    @CurrentUser('id') actorId: string,
+  ) {
+    return this.boardsService.rejectEditorRequest(boardId, targetUserId, actorId);
   }
 }

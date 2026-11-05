@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { alertDialog } from '@/components/ui/AppDialog';
 import { apiClient } from '@/lib/api-client';
 import {
   X,
@@ -168,7 +169,7 @@ export default function MyActivityModal({
       act.action.toLowerCase().includes('xóa thành viên');
 
     if (isRemovalAction) {
-      alert('Không thể chuyển tiếp: Hoạt động này ghi nhận thao tác xóa hoặc rời khỏi dự án.');
+      void alertDialog({ title: 'Không thể chuyển tiếp', message: 'Không thể chuyển tiếp: Hoạt động này ghi nhận thao tác xóa hoặc rời khỏi dự án.', variant: 'info' });
       return;
     }
 

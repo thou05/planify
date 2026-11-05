@@ -1,8 +1,10 @@
 'use client';
 
+import { alertDialog } from '@/components/ui/AppDialog';
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { X, ArrowRightLeft } from 'lucide-react';
+import CustomSelect from '@/components/ui/CustomSelect';
 
 interface MoveListModalProps {
   list: any;
@@ -58,16 +60,23 @@ export default function MoveListModal({
       onMoved();
       onClose();
     } catch (err: any) {
-      alert(err.message || 'Không thể di chuyển danh sách');
+      void alertDialog({ message: err.message || 'Không thể di chuyển danh sách', variant: 'error' });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const currentListIndex = (boardLists || []).findIndex((l) => l.id === list.id);
+  const positionOptions = (boardLists || []).map((_, idx) => ({
+    value: idx,
+    label: `Vị trí ${idx + 1}`,
+    badge: idx === currentListIndex ? 'Hiện tại' : undefined,
+  }));
+
   return (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-70 animate-in fade-in duration-150">
-      <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-md overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+      <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-md">
+        <div className="p-4 border-b border-slate-200 flex items-center justify-between rounded-t-lg">
           <div className="flex items-center gap-2.5">
             <div className="p-1.5 bg-[#87ceeb] text-slate-900 rounded-md shadow-2xs">
               <ArrowRightLeft className="w-4 h-4" />
@@ -85,7 +94,7 @@ export default function MoveListModal({
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
             <div className="text-xs text-slate-500 mb-1">Danh sách:</div>
-            <div className="text-xs font-bold text-slate-900 p-2 bg-slate-50 rounded-md border border-slate-200">
+            <div className="text-xs font-bold text-slate-900 p-2.5 bg-slate-50 rounded-md border border-slate-200">
               {list.title}
             </div>
           </div>
@@ -94,17 +103,11 @@ export default function MoveListModal({
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               Vị trí thứ tự mới trên bảng (Bắt đầu từ 1)
             </label>
-            <select
+            <CustomSelect
               value={position}
-              onChange={(e) => setPosition(Number(e.target.value))}
-              className="w-full text-xs text-slate-900 bg-white border border-slate-300 rounded-md p-2.5 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 font-medium cursor-pointer"
-            >
-              {(boardLists || []).map((_, idx) => (
-                <option key={idx} value={idx}>
-                  Vị trí {idx + 1} {idx === boardLists.findIndex((l) => l.id === list.id) ? '(Hiện tại)' : ''}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setPosition(Number(val))}
+              options={positionOptions}
+            />
           </div>
 
           <div className="flex items-center justify-end gap-2.5 pt-2">

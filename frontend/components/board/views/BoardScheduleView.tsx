@@ -14,6 +14,7 @@ import {
   X,
   ChevronDown,
 } from 'lucide-react';
+import CustomSelect from '@/components/ui/CustomSelect';
 
 interface BoardScheduleViewProps {
   board: any;
@@ -264,20 +265,20 @@ export default function BoardScheduleView({
           </div>
 
           {/* Filter by List */}
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-            <Filter className="w-3.5 h-3.5 text-slate-500" />
-            <select
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 min-w-40">
+            <Filter className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            <CustomSelect
               value={selectedListFilter}
-              onChange={(e) => setSelectedListFilter(e.target.value)}
-              className="px-2.5 py-1.5 rounded-md border border-slate-300 text-xs font-medium text-slate-800 cursor-pointer focus:outline-none bg-white"
-            >
-              <option value="all">Tất cả danh sách</option>
-              {board?.lists?.map((list: any) => (
-                <option key={list.id} value={list.id}>
-                  {list.title}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setSelectedListFilter(val)}
+              options={[
+                { value: 'all', label: 'Tất cả danh sách' },
+                ...(board?.lists || []).map((list: any) => ({
+                  value: list.id,
+                  label: list.title,
+                })),
+              ]}
+              size="sm"
+            />
           </div>
 
           {/* Toggle Unscheduled Drawer */}

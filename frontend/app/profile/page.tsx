@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { confirmDialog, alertDialog } from '@/components/ui/AppDialog';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth, User } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
 import ColorPicker from '@/components/ui/ColorPicker';
+import CustomSelect from '@/components/ui/CustomSelect';
 import {
   User as UserIcon,
   Shield,
@@ -591,14 +593,14 @@ export default function ProfilePage() {
         router.push(`/workspaces/${workspaceId}`);
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể chấp nhận lời mời');
+      void alertDialog({ message: err.message || 'Không thể chấp nhận lời mời', variant: 'error' });
     } finally {
       setProcessingToken(null);
     }
   };
 
   const handleRejectWorkspace = async (token: string) => {
-    if (!confirm('Bạn có chắc muốn từ chối lời mời này?')) return;
+    if (!(await confirmDialog({ title: 'Từ chối lời mời', message: 'Bạn có chắc muốn từ chối lời mời này?', variant: 'danger', confirmText: 'Từ chối' }))) return;
     setProcessingToken(token);
     try {
       const res = await apiClient<any>(`/workspaces/invites/${token}/reject`, {
@@ -608,7 +610,7 @@ export default function ProfilePage() {
         fetchInvitations();
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể từ chối lời mời');
+      void alertDialog({ message: err.message || 'Không thể từ chối lời mời', variant: 'error' });
     } finally {
       setProcessingToken(null);
     }
@@ -625,14 +627,14 @@ export default function ProfilePage() {
         router.push(`/boards/${boardId}`);
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể chấp nhận lời mời');
+      void alertDialog({ message: err.message || 'Không thể chấp nhận lời mời', variant: 'error' });
     } finally {
       setProcessingToken(null);
     }
   };
 
   const handleRejectBoard = async (token: string) => {
-    if (!confirm('Bạn có chắc muốn từ chối lời mời vào Board này?')) return;
+    if (!(await confirmDialog({ title: 'Từ chối lời mời', message: 'Bạn có chắc muốn từ chối lời mời vào Board này?', variant: 'danger', confirmText: 'Từ chối' }))) return;
     setProcessingToken(token);
     try {
       const res = await apiClient<any>(`/boards/invites/${token}/reject`, {
@@ -642,7 +644,7 @@ export default function ProfilePage() {
         fetchInvitations();
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể từ chối lời mời');
+      void alertDialog({ message: err.message || 'Không thể từ chối lời mời', variant: 'error' });
     } finally {
       setProcessingToken(null);
     }
@@ -1188,17 +1190,19 @@ export default function ProfilePage() {
                       <Clock className="w-3.5 h-3.5 text-slate-400" />
                       <span>Múi giờ làm việc</span>
                     </label>
-                    <select
+                    <CustomSelect
                       value={timezone}
-                      onChange={(e) => setTimezone(e.target.value)}
-                      className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-800 cursor-pointer focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
-                    >
-                      <option value="Asia/Ho_Chi_Minh">GMT+7 (Hà Nội, TP.HCM)</option>
-                      <option value="Asia/Bangkok">GMT+7 (Bangkok)</option>
-                      <option value="Asia/Singapore">GMT+8 (Singapore)</option>
-                      <option value="Asia/Tokyo">GMT+9 (Tokyo, Seoul)</option>
-                      <option value="UTC">UTC (Giờ phối hợp quốc tế)</option>
-                    </select>
+                      onChange={(val) => setTimezone(val)}
+                      options={[
+                        { value: 'Asia/Ho_Chi_Minh', label: 'GMT+7 (Hà Nội, TP.HCM)' },
+                        { value: 'Asia/Bangkok', label: 'GMT+7 (Bangkok)' },
+                        { value: 'Asia/Singapore', label: 'GMT+8 (Singapore)' },
+                        { value: 'Asia/Tokyo', label: 'GMT+9 (Tokyo, Seoul)' },
+                        { value: 'UTC', label: 'UTC (Giờ phối hợp quốc tế)' },
+                      ]}
+                      placeholder="Chọn múi giờ..."
+                      size="sm"
+                    />
                   </div>
 
                   <div>
@@ -1206,14 +1210,16 @@ export default function ProfilePage() {
                       <Globe className="w-3.5 h-3.5 text-slate-400" />
                       <span>Ngôn ngữ giao diện</span>
                     </label>
-                    <select
+                    <CustomSelect
                       value={language}
-                      onChange={(e) => setLanguage(e.target.value)}
-                      className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 bg-white text-slate-800 cursor-pointer focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40"
-                    >
-                      <option value="vi">Tiếng Việt (VI)</option>
-                      <option value="en">English (EN)</option>
-                    </select>
+                      onChange={(val) => setLanguage(val)}
+                      options={[
+                        { value: 'vi', label: 'Tiếng Việt (VI)' },
+                        { value: 'en', label: 'English (EN)' },
+                      ]}
+                      placeholder="Chọn ngôn ngữ..."
+                      size="sm"
+                    />
                   </div>
                 </div>
               </div>

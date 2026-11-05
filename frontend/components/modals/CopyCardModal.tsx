@@ -1,9 +1,11 @@
 'use client';
 
+import { alertDialog } from '@/components/ui/AppDialog';
 import { useModalAccessibility } from '@/lib/use-modal-accessibility';
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { X, Copy } from 'lucide-react';
+import CustomSelect from '@/components/ui/CustomSelect';
 
 interface CopyCardModalProps {
   card: any;
@@ -38,6 +40,13 @@ export default function CopyCardModal({
   const cardCountInSelectedList = selectedList?.cards?.length || 0;
   const isTargetLimitReached = Boolean(selectedList?.limit && cardCountInSelectedList >= selectedList.limit);
 
+  const listOptions = (boardLists || []).map((l) => ({
+    value: l.id,
+    label: l.title,
+    badge: l.id === card.list_id ? 'Hiện tại' : undefined,
+    extra: l.limit ? `(${l.cards?.length || 0}/${l.limit})` : undefined,
+  }));
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !targetListId || isLoading || isTargetLimitReached) return;
@@ -54,7 +63,7 @@ export default function CopyCardModal({
       onCopied();
       onClose();
     } catch (err: any) {
-      alert(err.message || 'Không thể sao chép thẻ');
+      void alertDialog({ message: err.message || 'Không thể sao chép thẻ', variant: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -62,8 +71,8 @@ export default function CopyCardModal({
 
   return (
     <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Sao chép thẻ" tabIndex={-1} className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-80 animate-fade-in">
-      <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-md overflow-hidden">
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+      <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-md">
+        <div className="p-4 border-b border-slate-200 flex items-center justify-between rounded-t-lg">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-md bg-[#87ceeb] flex items-center justify-center text-slate-900 shadow-2xs">
               <Copy className="w-4 h-4" />
@@ -89,7 +98,7 @@ export default function CopyCardModal({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Nhập tiêu đề thẻ..."
               autoFocus
-              className="w-full text-xs text-slate-900 bg-white border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-all font-medium"
+              className="w-full text-xs text-slate-900 bg-white border border-slate-300 rounded-md px-3 py-2.5 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-all font-medium"
             />
           </div>
 
@@ -97,17 +106,13 @@ export default function CopyCardModal({
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
               Danh sách đích
             </label>
-            <select
+            <CustomSelect
               value={targetListId}
-              onChange={(e) => setTargetListId(e.target.value)}
-              className="w-full text-xs text-slate-900 bg-white border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-all font-medium cursor-pointer"
-            >
-              {(boardLists || []).map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.title} {l.id === card.list_id ? '(Hiện tại)' : ''} {l.limit ? `(${l.cards?.length || 0}/${l.limit})` : ''}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setTargetListId(val)}
+              options={listOptions}
+              placeholder="Chọn danh sách đích..."
+              error={isTargetLimitReached}
+            />
             {isTargetLimitReached && (
               <p className="mt-1.5 text-xs text-rose-600 font-medium">
                 ⚠️ Danh sách này đã đạt giới hạn tối đa ({selectedList?.limit} thẻ). Vui lòng chọn danh sách khác.

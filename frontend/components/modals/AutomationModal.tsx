@@ -1,5 +1,6 @@
 'use client';
 
+import { confirmDialog } from '@/components/ui/AppDialog';
 import React, { useState, useEffect } from 'react';
 import {
   X,
@@ -175,7 +176,7 @@ export default function AutomationModal({
 
   // Delete Rule
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Bạn có chắc chắn muốn xóa quy tắc tự động hóa "${name}"?`)) return;
+    if (!(await confirmDialog({ title: 'Xóa quy tắc', message: `Bạn có chắc chắn muốn xóa quy tắc tự động hóa "${name}"?`, variant: 'danger', confirmText: 'Xóa' }))) return;
     try {
       await apiClient(`/automations/${id}`, { method: 'DELETE' });
       setAutomations((prev) => prev.filter((a) => a.id !== id));

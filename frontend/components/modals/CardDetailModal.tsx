@@ -6,6 +6,8 @@ import { useAuth } from '@/lib/auth-context';
 import { createRealtimeClient } from '@/lib/supabase';
 import { canComment } from '@/lib/permissions';
 import ColorPicker from '@/components/ui/ColorPicker';
+import CustomSelect from '@/components/ui/CustomSelect';
+import { alertDialog } from '@/components/ui/AppDialog';
 import { getContrastTextColor } from '@/lib/color-utils';
 import {
   X,
@@ -424,10 +426,10 @@ function CardDetailSession({
         await fetchBoardMembers(effectiveBoardId);
         onCardUpdated();
       } else {
-        alert(res.error || res.message || 'Không thể thêm thành viên vào bảng');
+        void alertDialog({ message: res.error || res.message || 'Không thể thêm thành viên vào bảng', variant: 'error' });
       }
     } catch (err: any) {
-      alert(err.message || 'Lỗi khi thêm thành viên vào bảng');
+      void alertDialog({ message: err.message || 'Lỗi khi thêm thành viên vào bảng', variant: 'error' });
     } finally {
       setAddingBoardMemberId(null);
     }
@@ -560,7 +562,7 @@ function CardDetailSession({
     if (!activeCardId || !aiBreakdownResult) return;
     const selectedItems = (aiBreakdownResult.items || []).filter((i) => i.selected);
     if (selectedItems.length === 0) {
-      alert('Vui lòng chọn ít nhất 1 đầu việc để áp dụng');
+      void alertDialog({ message: 'Vui lòng chọn ít nhất 1 đầu việc để áp dụng', variant: 'warning' });
       return;
     }
 
@@ -585,10 +587,10 @@ function CardDetailSession({
         setAiCustomPrompt('');
         onCardUpdated();
       } else {
-        alert(res.error || res.message || 'Không thể áp dụng checklist');
+        void alertDialog({ message: res.error || res.message || 'Không thể áp dụng checklist', variant: 'error' });
       }
     } catch (err: any) {
-      alert(err.message || 'Lỗi khi áp dụng checklist');
+      void alertDialog({ message: err.message || 'Lỗi khi áp dụng checklist', variant: 'error' });
     } finally {
       setIsApplyingAiBreakdown(false);
     }
@@ -1261,7 +1263,7 @@ function CardDetailSession({
       setIsDatesModalOpen(false);
       onCardUpdated();
     } catch (err: any) {
-      alert(err.message || 'Không thể lưu thời hạn');
+      void alertDialog({ message: err.message || 'Không thể lưu thời hạn', variant: 'error' });
     } finally {
       setIsSaving(false);
     }
@@ -1289,7 +1291,7 @@ function CardDetailSession({
       setIsDatesModalOpen(false);
       onCardUpdated();
     } catch (err: any) {
-      alert(err.message || 'Không thể gỡ bỏ thời hạn');
+      void alertDialog({ message: err.message || 'Không thể gỡ bỏ thời hạn', variant: 'error' });
     } finally {
       setIsSaving(false);
     }
@@ -1309,12 +1311,12 @@ function CardDetailSession({
     let targetUser: any = null;
 
     if (!bMember) {
-      alert('Chỉ có thể phân công thành viên đã tham gia Bảng này với vai trò Quản trị viên hoặc Biên tập viên.');
+      void alertDialog({ message: 'Chỉ có thể phân công thành viên đã tham gia Bảng này với vai trò Quản trị viên hoặc Biên tập viên.', variant: 'warning' });
       return;
     }
 
     if (bMember.role === 'VIEWER') {
-      alert('Thành viên có vai trò Người xem (Viewer) không thể nhận nhiệm vụ.');
+      void alertDialog({ message: 'Thành viên có vai trò Người xem (Viewer) không thể nhận nhiệm vụ.', variant: 'warning' });
       return;
     }
 
@@ -1389,7 +1391,7 @@ function CardDetailSession({
         onCardUpdated();
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể thay đổi thành viên gán');
+      void alertDialog({ message: err.message || 'Không thể thay đổi thành viên gán', variant: 'error' });
       fetchCardDetails(currentCardId, true);
     }
   };
@@ -1440,7 +1442,7 @@ function CardDetailSession({
         onCardUpdated();
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể thay đổi nhãn thẻ');
+      void alertDialog({ message: err.message || 'Không thể thay đổi nhãn thẻ', variant: 'error' });
       fetchCardDetails(cardId!, true);
     }
   };
@@ -1490,7 +1492,7 @@ function CardDetailSession({
         }
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể lưu nhãn');
+      void alertDialog({ message: err.message || 'Không thể lưu nhãn', variant: 'error' });
     }
   };
 
@@ -1507,7 +1509,7 @@ function CardDetailSession({
       }
       onCardUpdated();
     } catch (err: any) {
-      alert(err.message || 'Không thể xóa nhãn');
+      void alertDialog({ message: err.message || 'Không thể xóa nhãn', variant: 'error' });
     }
   };
 
@@ -1655,7 +1657,7 @@ function CardDetailSession({
       }
     } catch (err: any) {
       setUploadFileError(err.message || 'Không thể tải tệp lên');
-      alert(err.message || 'Không thể tải tệp lên');
+      void alertDialog({ message: err.message || 'Không thể tải tệp lên', variant: 'error' });
     } finally {
       setIsUploadingAttachment(false);
     }
@@ -1754,7 +1756,7 @@ function CardDetailSession({
         onCardUpdated();
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể đính kèm liên kết');
+      void alertDialog({ message: err.message || 'Không thể đính kèm liên kết', variant: 'error' });
     } finally {
       setIsAttachingLink(false);
     }
@@ -1782,7 +1784,7 @@ function CardDetailSession({
         onCardUpdated();
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể cập nhật tên đính kèm');
+      void alertDialog({ message: err.message || 'Không thể cập nhật tên đính kèm', variant: 'error' });
     } finally {
       setIsUpdatingAttachment(false);
     }
@@ -1799,7 +1801,7 @@ function CardDetailSession({
         onCardUpdated();
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể xóa tệp đính kèm');
+      void alertDialog({ message: err.message || 'Không thể xóa tệp đính kèm', variant: 'error' });
     }
   };
 
@@ -1889,7 +1891,7 @@ function CardDetailSession({
       if (activeBlockers.length > 0) {
         setBlockedPopup({ isOpen: true, blockers: activeBlockers });
       } else {
-        alert(err.message || 'Không thể cập nhật trạng thái hoàn thành');
+        void alertDialog({ message: err.message || 'Không thể cập nhật trạng thái hoàn thành', variant: 'error' });
       }
     }
   };
@@ -1907,7 +1909,7 @@ function CardDetailSession({
       onCardUpdated();
       onClose();
     } catch (err: any) {
-      alert(err.message || 'Không thể xóa thẻ');
+      void alertDialog({ message: err.message || 'Không thể xóa thẻ', variant: 'error' });
     }
   };
 
@@ -1987,7 +1989,7 @@ function CardDetailSession({
         onCardUpdated();
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể tạo danh sách việc cần làm');
+      void alertDialog({ message: err.message || 'Không thể tạo danh sách việc cần làm', variant: 'error' });
     }
   };
 
@@ -2009,7 +2011,7 @@ function CardDetailSession({
       });
       onCardUpdated();
     } catch (err: any) {
-      alert(err.message || 'Không thể cập nhật tiêu đề checklist');
+      void alertDialog({ message: err.message || 'Không thể cập nhật tiêu đề checklist', variant: 'error' });
     }
   };
 
@@ -2019,7 +2021,7 @@ function CardDetailSession({
       await apiClient(`/checklists/${checklistId}`, { method: 'DELETE' });
       onCardUpdated();
     } catch (err: any) {
-      alert(err.message || 'Không thể xóa checklist');
+      void alertDialog({ message: err.message || 'Không thể xóa checklist', variant: 'error' });
       fetchCardDetails(cardId, true);
     }
   };
@@ -2046,7 +2048,7 @@ function CardDetailSession({
         onCardUpdated();
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể thêm mục công việc');
+      void alertDialog({ message: err.message || 'Không thể thêm mục công việc', variant: 'error' });
     }
   };
 
@@ -2118,7 +2120,7 @@ function CardDetailSession({
       });
       onCardUpdated();
     } catch (err: any) {
-      alert(err.message || 'Không thể cập nhật mục công việc');
+      void alertDialog({ message: err.message || 'Không thể cập nhật mục công việc', variant: 'error' });
     }
   };
 
@@ -2135,7 +2137,7 @@ function CardDetailSession({
       await apiClient(`/checklist-items/${itemId}`, { method: 'DELETE' });
       onCardUpdated();
     } catch (err: any) {
-      alert(err.message || 'Không thể xóa mục công việc');
+      void alertDialog({ message: err.message || 'Không thể xóa mục công việc', variant: 'error' });
       fetchCardDetails(cardId, true);
     }
   };
@@ -2169,7 +2171,7 @@ function CardDetailSession({
       });
       onCardUpdated();
     } catch (err: any) {
-      alert(err.message || 'Không thể lưu thời hạn mục');
+      void alertDialog({ message: err.message || 'Không thể lưu thời hạn mục', variant: 'error' });
       fetchCardDetails(cardId!, true);
     }
   };
@@ -2188,11 +2190,11 @@ function CardDetailSession({
         (m) => m.id === boardMemberId || m.user_id === boardMemberId || m.user?.id === boardMemberId,
       );
       if (!targetMember) {
-        alert('Thành viên không thuộc Không gian làm việc này.');
+        void alertDialog({ message: 'Thành viên không thuộc Không gian làm việc này.', variant: 'warning' });
         return;
       }
       if (targetMember.role === 'VIEWER') {
-        alert('Thành viên có vai trò Người xem (Viewer) không thể nhận nhiệm vụ.');
+        void alertDialog({ message: 'Thành viên có vai trò Người xem (Viewer) không thể nhận nhiệm vụ.', variant: 'warning' });
         return;
       }
       effectiveMemberId = targetMember.user?.id || targetMember.user_id || targetMember.id;
@@ -2241,7 +2243,7 @@ function CardDetailSession({
       });
       onCardUpdated();
     } catch (err: any) {
-      alert(err.message || 'Không thể phân công thành viên cho mục');
+      void alertDialog({ message: err.message || 'Không thể phân công thành viên cho mục', variant: 'error' });
       if (currentCardId) fetchCardDetails(currentCardId, true);
     }
   };
@@ -2410,7 +2412,7 @@ function CardDetailSession({
         fetchCardActivities(cardId);
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể gửi bình luận');
+      void alertDialog({ message: err.message || 'Không thể gửi bình luận', variant: 'error' });
     } finally {
       setIsSubmittingComment(false);
     }
@@ -2545,7 +2547,7 @@ function CardDetailSession({
         setIsEditMentionOpen(false);
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể cập nhật bình luận');
+      void alertDialog({ message: err.message || 'Không thể cập nhật bình luận', variant: 'error' });
     } finally {
       setIsUpdatingComment(false);
     }
@@ -2563,7 +2565,7 @@ function CardDetailSession({
         onCardUpdated();
       }
     } catch (err: any) {
-      alert(err.message || 'Không thể xóa bình luận');
+      void alertDialog({ message: err.message || 'Không thể xóa bình luận', variant: 'error' });
     } finally {
       setDeletingCommentId(null);
     }
@@ -3360,28 +3362,26 @@ function CardDetailSession({
                                 field.options && field.options.length > 0
                                   ? field.options
                                   : getDropdownOptionsForField(field.name);
+                              const dropdownOpts = [
+                                ...options.map((opt: string) => ({ value: opt, label: opt })),
+                                ...(hasValue && !options.includes(curVal)
+                                  ? [{ value: curVal, label: `${curVal} (Tùy chỉnh)` }]
+                                  : []),
+                              ];
                               return (
-                                <div className="flex items-center gap-1.5">
-                                  <select
-                                    value={curVal || ''}
-                                    disabled={!canEdit}
-                                    onChange={canEdit ? (e) => {
-                                      handleSaveCustomFieldValue(field.id, e.target.value);
-                                    } : undefined}
-                                    className={`flex-1 min-w-0 px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800 font-semibold shadow-2xs ${
-                                      canEdit ? 'hover:bg-white focus:bg-white focus:border-[#87ceeb] cursor-pointer' : 'cursor-default opacity-80'
-                                    }`}
-                                  >
-                                    <option value="">-- {curVal || `Chọn ${field.name}`} --</option>
-                                    {options.map((opt) => (
-                                      <option key={opt} value={opt}>
-                                        {opt}
-                                      </option>
-                                    ))}
-                                    {hasValue && !options.includes(curVal) && (
-                                      <option value={curVal}>{curVal} (Tùy chỉnh)</option>
-                                    )}
-                                  </select>
+                                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                  <div className="flex-1 min-w-0">
+                                    <CustomSelect
+                                      value={curVal || ''}
+                                      disabled={!canEdit}
+                                      onChange={(val) => {
+                                        if (canEdit) handleSaveCustomFieldValue(field.id, val);
+                                      }}
+                                      options={dropdownOpts}
+                                      placeholder={`-- Chọn ${field.name} --`}
+                                      size="sm"
+                                    />
+                                  </div>
 
                                   {canEdit && (
                                     <button
@@ -5499,11 +5499,11 @@ function CardDetailSession({
             onClick={() => setIsDatesModalOpen(false)}
           >
             <div
-              className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-150"
+              className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-sm animate-in zoom-in-95 duration-150"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+              <div className="p-4 border-b border-slate-200 flex items-center justify-between rounded-t-lg">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
                   <Calendar className="w-4 h-4 text-slate-700" />
                   <span>Thời hạn thực hiện & Nhắc nhở</span>
@@ -5578,17 +5578,15 @@ function CardDetailSession({
                       <Bell className="w-3.5 h-3.5 text-slate-600" />
                       <span>Đặt lời nhắc nhở</span>
                     </label>
-                    <select
+                    <CustomSelect
                       value={tempReminderMinutes}
-                      onChange={(e) => setTempReminderMinutes(Number(e.target.value))}
-                      className="w-full text-xs text-slate-900 bg-white border border-slate-300 rounded-md p-2.5 focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 cursor-pointer font-medium"
-                    >
-                      {REMINDER_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(val) => setTempReminderMinutes(Number(val))}
+                      options={REMINDER_OPTIONS.map((opt) => ({
+                        value: opt.value,
+                        label: opt.label,
+                      }))}
+                      placeholder="Chọn thời gian nhắc nhở..."
+                    />
                   </div>
                 )}
               </div>
