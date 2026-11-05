@@ -212,21 +212,34 @@ export default function BoardDetailPage({
       board?.members?.some((m: any) => (m.user_id && m.user_id === user?.id) || (m.user?.id && m.user?.id === user?.id))
   );
 
+  const isWorkspaceAdmin = Boolean(
+    board?.isWorkspaceAdmin ||
+      board?.isWorkspaceOwner ||
+      (user?.id &&
+        workspaceMembers.some(
+          (wm: any) =>
+            (wm.user_id === user.id || wm.user?.id === user.id) &&
+            (wm.role === 'ADMIN' || wm.role === 'OWNER')
+        ))
+  );
+
   const isGuest = Boolean(
     board?.isGuest ||
-      (board && !board?.isWorkspaceOwner && !board?.isWorkspaceMember && board?.currentUserBoardRole !== 'ADMIN')
+      (board && !board?.isWorkspaceOwner && !isWorkspaceAdmin && !board?.isWorkspaceMember && board?.currentUserBoardRole !== 'ADMIN')
   );
 
   // Người dùng ở chế độ chỉ xem (VIEWER) hoặc không tham gia vào bảng (không phải board member & không phải workspace admin/owner)
   const isViewer = Boolean(
-    board?.currentUserBoardRole === 'VIEWER' ||
-      board?.canEdit === false ||
-      (!isBoardMember && !board?.isWorkspaceOwner && board?.currentUserBoardRole !== 'ADMIN')
+    !isWorkspaceAdmin &&
+      !board?.isWorkspaceOwner &&
+      board?.currentUserBoardRole !== 'ADMIN' &&
+      (board?.currentUserBoardRole === 'VIEWER' || board?.canEdit === false || !isBoardMember)
   );
 
   const boardPermCtx: BoardPermissionContext = {
     boardRole: board?.currentUserBoardRole || null,
     isWorkspaceOwner: Boolean(board?.isWorkspaceOwner),
+    isWorkspaceAdmin,
     canEdit: board?.canEdit,
     canManageMembers: board?.canManageMembers,
     canInviteMembers: board?.canInviteMembers,
@@ -234,11 +247,14 @@ export default function BoardDetailPage({
     canChangeVisibility: board?.canChangeVisibility,
   };
 
-  const canEditBoard = !isViewer && canEditBoardContent(boardPermCtx) && !board?.is_archived;
+  const canEditBoard = !board?.is_archived && (isWorkspaceAdmin || (!isViewer && canEditBoardContent(boardPermCtx)));
 
   const canChangeVisibility = Boolean(
-    board?.canChangeVisibility ??
-      (canManageBoard(boardPermCtx) || Boolean(board?.canManageMembers))
+    board?.canChangeVisibility ||
+      isWorkspaceAdmin ||
+      board?.isWorkspaceOwner ||
+      canManageBoard(boardPermCtx) ||
+      Boolean(board?.canManageMembers)
   );
 
   const [confirmingVisibility, setConfirmingVisibility] = useState<'WORKSPACE' | 'PRIVATE' | 'PUBLIC' | null>(null);
@@ -2038,7 +2054,7 @@ export default function BoardDetailPage({
                   title={
                     canChangeVisibility
                       ? 'Nhấp để thay đổi quyền hiển thị Bảng'
-                      : 'Quyền hiển thị Bảng (Chỉ Quản trị viên Board hoặc Chủ sở hữu Workspace mới có quyền đổi)'
+                      : 'Quyền hiển thị Bảng (Chỉ Quản trị viên Board hoặc Quản trị viên / Chủ sở hữu Workspace mới có quyền đổi)'
                   }
                 >
                   {board?.visibility === 'PRIVATE' ? (

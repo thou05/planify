@@ -176,6 +176,7 @@ export class BoardsService {
       .maybeSingle();
 
     const isWsOwner = workspace?.owner_id === userId;
+    const isWsAdmin = isWsOwner || wsAccess.role === 'ADMIN';
     const isGuest = wsAccess.role === 'GUEST';
 
     return (boards || [])
@@ -189,10 +190,10 @@ export class BoardsService {
           return (b.members || []).some((m: any) => m.user_id === userId);
         }
 
-        // Nếu là private, chỉ hiển thị nếu là member hoặc WS owner
+        // Nếu là private, chỉ hiển thị nếu là member hoặc WS owner / WS admin
         if (b.visibility === 'PRIVATE') {
           const isMember = (b.members || []).some((m: any) => m.user_id === userId);
-          return isMember || isWsOwner;
+          return isMember || isWsAdmin;
         }
         return true;
       })
@@ -316,15 +317,17 @@ export class BoardsService {
       .eq('user_id', userId)
       .maybeSingle();
 
-    // Cho phép nếu là Workspace Owner, Workspace Member, Board Member HOẶC Board ở chế độ PUBLIC
-    if (!isWorkspaceOwner && (!wsMember || wsMember.role === 'GUEST') && !currentMember) {
+    const isWorkspaceAdmin = Boolean(isWorkspaceOwner || wsMember?.role === 'ADMIN');
+
+    // Cho phép nếu là Workspace Owner, Workspace Admin, Workspace Member, Board Member HOẶC Board ở chế độ PUBLIC
+    if (!isWorkspaceOwner && !isWorkspaceAdmin && (!wsMember || wsMember.role === 'GUEST') && !currentMember) {
       if (b.visibility !== 'PUBLIC') {
         throw new ForbiddenException('Bạn không có quyền truy cập Bảng này hoặc đã bị xóa');
       }
     }
 
-    // Kiểm tra private access: nếu PRIVATE, chỉ Board Member hoặc Workspace Owner được truy cập
-    if (b.visibility === 'PRIVATE' && !currentMember && !isWorkspaceOwner) {
+    // Kiểm tra private access: nếu PRIVATE, chỉ Board Member, Workspace Admin hoặc Workspace Owner được truy cập
+    if (b.visibility === 'PRIVATE' && !currentMember && !isWorkspaceOwner && !isWorkspaceAdmin) {
       throw new ForbiddenException('Bảng này ở chế độ Riêng tư (Private), chỉ thành viên được mời mới có quyền truy cập');
     }
 
@@ -338,21 +341,21 @@ export class BoardsService {
         // 'EDITOR' hoặc 'MEMBER' đều là người biên tập/thực thi
         currentUserBoardRole = 'EDITOR';
       }
-    } else if (isWorkspaceOwner) {
+    } else if (isWorkspaceOwner || isWorkspaceAdmin) {
       currentUserBoardRole = 'ADMIN';
     } else {
       currentUserBoardRole = 'VIEWER';
     }
 
-    const isGuest = !isWorkspaceOwner && (!wsMember || wsMember.role === 'GUEST');
-    const isWorkspaceMember = Boolean(isWorkspaceOwner || (wsMember && wsMember.role !== 'GUEST'));
+    const isGuest = !isWorkspaceOwner && !isWorkspaceAdmin && (!wsMember || wsMember.role === 'GUEST');
+    const isWorkspaceMember = Boolean(isWorkspaceOwner || isWorkspaceAdmin || (wsMember && wsMember.role !== 'GUEST'));
     const isBoardMember = Boolean(currentMember);
 
-    const canEdit = currentUserBoardRole === 'ADMIN' || currentUserBoardRole === 'EDITOR';
-    const canManageMembers = currentUserBoardRole === 'ADMIN';
-    const canInviteMembers = currentUserBoardRole === 'ADMIN' || currentUserBoardRole === 'EDITOR';
-    const canDelete = currentUserBoardRole === 'ADMIN';
-    const canChangeVisibility = currentUserBoardRole === 'ADMIN';
+    const canEdit = isWorkspaceAdmin || currentUserBoardRole === 'ADMIN' || currentUserBoardRole === 'EDITOR';
+    const canManageMembers = isWorkspaceAdmin || currentUserBoardRole === 'ADMIN';
+    const canInviteMembers = isWorkspaceAdmin || currentUserBoardRole === 'ADMIN' || currentUserBoardRole === 'EDITOR';
+    const canDelete = isWorkspaceAdmin || currentUserBoardRole === 'ADMIN';
+    const canChangeVisibility = isWorkspaceAdmin || currentUserBoardRole === 'ADMIN';
 
     // Sắp xếp lists và cards theo position
     if (b.lists) {
@@ -374,6 +377,7 @@ export class BoardsService {
       icon,
       currentUserBoardRole,
       isWorkspaceOwner,
+      isWorkspaceAdmin,
       isWorkspaceMember,
       isBoardMember,
       isGuest,
@@ -391,18 +395,18 @@ export class BoardsService {
       throw new ForbiddenException('Bạn không có quyền chỉnh sửa thông tin Board này');
     }
 
-    if ((dto.name !== undefined || dto.description !== undefined) && !board.canManageMembers && !board.isWorkspaceOwner) {
-      throw new ForbiddenException('Chỉ Quản trị viên Bảng (Admin) hoặc Chủ sở hữu Workspace mới có quyền đổi tên hoặc mô tả Bảng');
+    if ((dto.name !== undefined || dto.description !== undefined) && !board.canManageMembers && !board.isWorkspaceOwner && !board.isWorkspaceAdmin) {
+      throw new ForbiddenException('Chỉ Quản trị viên Bảng (Admin) hoặc Quản trị viên Workspace mới có quyền đổi tên hoặc mô tả Bảng');
     }
 
-    if (dto.visibility !== undefined && !board.canChangeVisibility) {
+    if (dto.visibility !== undefined && !board.canChangeVisibility && !board.isWorkspaceAdmin && !board.isWorkspaceOwner) {
       throw new ForbiddenException(
         'Chỉ Quản trị viên (Admin) hoặc Chủ sở hữu Workspace mới có quyền thay đổi quyền hiển thị của Board',
       );
     }
 
-    if (dto.is_archived !== undefined && !board.canDelete && !board.isWorkspaceOwner) {
-      throw new ForbiddenException('Chỉ Quản trị viên Board hoặc Chủ sở hữu Workspace mới có quyền lưu trữ');
+    if (dto.is_archived !== undefined && !board.canDelete && !board.isWorkspaceOwner && !board.isWorkspaceAdmin) {
+      throw new ForbiddenException('Chỉ Quản trị viên Board hoặc Quản trị viên Workspace mới có quyền lưu trữ');
     }
 
     const updateData: Record<string, any> = {};
@@ -567,8 +571,8 @@ export class BoardsService {
 
   async restoreBoard(boardId: string, userId: string) {
     const board = await this.findById(boardId, userId);
-    if (!board.canDelete && !board.isWorkspaceOwner) {
-      throw new ForbiddenException('Chỉ Quản trị viên Board hoặc Chủ sở hữu Workspace mới có quyền khôi phục');
+    if (!board.canDelete && !board.isWorkspaceOwner && !board.isWorkspaceAdmin) {
+      throw new ForbiddenException('Chỉ Quản trị viên Board hoặc Quản trị viên Workspace mới có quyền khôi phục');
     }
 
     const { error } = await this.supabase
@@ -746,8 +750,8 @@ export class BoardsService {
 
   async delete(boardId: string, userId: string) {
     const board = await this.findById(boardId, userId);
-    if (!board.canDelete && !board.isWorkspaceOwner) {
-      throw new ForbiddenException('Chỉ Quản trị viên Board hoặc Chủ sở hữu Workspace mới có quyền xóa Board');
+    if (!board.canDelete && !board.isWorkspaceOwner && !board.isWorkspaceAdmin) {
+      throw new ForbiddenException('Chỉ Quản trị viên Board hoặc Quản trị viên Workspace mới có quyền xóa Board');
     }
 
     const { error } = await this.supabase
@@ -914,8 +918,8 @@ export class BoardsService {
   ) {
     const board = await this.findById(boardId, currentUserId);
     // Nghiệp vụ TC05C & Section 8.1: Chỉ Board ADMIN mới có quyền thay đổi Board Role
-    if (board.currentUserBoardRole !== 'ADMIN') {
-      throw new ForbiddenException('Chỉ Quản trị viên Board (Admin) mới có quyền thay đổi vai trò thành viên');
+    if (board.currentUserBoardRole !== 'ADMIN' && !board.isWorkspaceAdmin && !board.isWorkspaceOwner) {
+      throw new ForbiddenException('Chỉ Quản trị viên Board (Admin) hoặc Quản trị viên Workspace mới có quyền thay đổi vai trò thành viên');
     }
 
     // Nếu hạ quyền Admin, kiểm tra xem còn Admin nào khác không
@@ -1007,8 +1011,8 @@ export class BoardsService {
   async removeBoardMember(boardId: string, currentUserId: string, targetUserId: string) {
     const board = await this.findById(boardId, currentUserId);
     // Nghiệp vụ TC05B & Section 8.1: Chỉ Board ADMIN mới có quyền xóa thành viên khỏi Board
-    if (board.currentUserBoardRole !== 'ADMIN') {
-      throw new ForbiddenException('Chỉ Quản trị viên Board (Admin) mới có quyền xóa thành viên khỏi Board này');
+    if (board.currentUserBoardRole !== 'ADMIN' && !board.isWorkspaceAdmin && !board.isWorkspaceOwner) {
+      throw new ForbiddenException('Chỉ Quản trị viên Board (Admin) hoặc Quản trị viên Workspace mới có quyền xóa thành viên khỏi Board này');
     }
 
     // Kiểm tra nếu là Admin cuối cùng

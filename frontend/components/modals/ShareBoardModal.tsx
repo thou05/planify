@@ -73,14 +73,26 @@ export default function ShareBoardModal({
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  const isWsAdminUser = Boolean(
+    board?.isWorkspaceAdmin ||
+      board?.isWorkspaceOwner ||
+      (currentUserId &&
+        workspaceMembers.some(
+          (wm) =>
+            (wm.user_id === currentUserId || wm.user?.id === currentUserId) &&
+            (wm.role === 'ADMIN' || wm.role === 'OWNER')
+        ))
+  );
+
   const isGuest = Boolean(
     board?.isGuest ||
-      (board && !board?.isWorkspaceOwner && !board?.isWorkspaceMember && board?.currentUserBoardRole !== 'ADMIN')
+      (board && !board?.isWorkspaceOwner && !isWsAdminUser && !board?.isWorkspaceMember && board?.currentUserBoardRole !== 'ADMIN')
   );
 
   const permCtx: BoardPermissionContext = {
     boardRole: board?.currentUserBoardRole || null,
     isWorkspaceOwner: Boolean(board?.isWorkspaceOwner),
+    isWorkspaceAdmin: isWsAdminUser,
     canEdit: board?.canEdit,
     canManageMembers: board?.canManageMembers,
     canInviteMembers: board?.canInviteMembers,
@@ -89,13 +101,16 @@ export default function ShareBoardModal({
   };
 
   const canChangeVisibility = Boolean(
-    board?.canChangeVisibility ??
-      (canManageBoard(permCtx) || canManageBoardMembers(permCtx))
+    board?.canChangeVisibility ||
+      isWsAdminUser ||
+      board?.isWorkspaceOwner ||
+      canManageBoard(permCtx) ||
+      canManageBoardMembers(permCtx)
   );
 
-  const canManageMembers = canManageBoardMembers(permCtx);
+  const canManageMembers = isWsAdminUser || canManageBoardMembers(permCtx);
 
-  const canInviteMembers = canInviteBoardMember(permCtx);
+  const canInviteMembers = isWsAdminUser || canInviteBoardMember(permCtx);
 
   const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
   const boardUrl = `${origin}/boards/${board?.id}`;
