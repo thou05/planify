@@ -175,7 +175,7 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in"
+      className="fixed inset-0 z-70 flex items-start justify-center pt-16 sm:pt-24 p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in"
       onClick={onClose}
     >
       {searchError && <p role="alert" className="bg-white p-3 text-red-700">{searchError}</p>}

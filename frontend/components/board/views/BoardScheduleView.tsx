@@ -299,7 +299,7 @@ export default function BoardScheduleView({
       <div className="flex-1 flex gap-4 overflow-hidden">
         <div className="flex-1 flex rounded-lg bg-white border border-slate-300 shadow-2xs overflow-hidden">
           {/* Left Column: Fixed List & Card Titles */}
-          <div className="w-56 sm:w-64 border-r border-slate-200 bg-slate-50/50 flex flex-col shrink-0 z-20">
+          <div className="w-56 sm:w-64 border-r border-slate-200 bg-slate-50/50 flex flex-col shrink-0 z-10">
             {/* Header placeholder matching timeline header height */}
             <div className="h-14 border-b border-slate-200 px-4 flex items-center font-semibold text-xs text-slate-700 uppercase tracking-wider bg-slate-50">
               Danh sách & Thẻ

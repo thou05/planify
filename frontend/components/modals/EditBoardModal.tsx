@@ -80,7 +80,7 @@ export default function EditBoardModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
+    <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
       <div className="w-full max-w-md bg-white rounded-lg border border-slate-300 shadow-xl p-6 sm:p-7 relative">
         <button
           onClick={onClose}

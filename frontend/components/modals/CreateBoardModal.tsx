@@ -85,7 +85,7 @@ export default function CreateBoardModal({
   };
 
   return (
-    <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Tạo bảng" tabIndex={-1} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-2xs animate-fade-in">
+    <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Tạo bảng" tabIndex={-1} className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-2xs animate-fade-in">
       <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-300 p-6 sm:p-7 relative">
         <button
           disabled={isLoading} onClick={onClose}

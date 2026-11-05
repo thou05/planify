@@ -104,7 +104,7 @@ export default function BoardViewSwitcher({
         {isOpen && (
           <div
             ref={dropdownRef}
-            className="absolute left-0 top-full mt-1.5 w-80 bg-white rounded-lg shadow-xl border border-slate-300 z-50 p-2 text-xs animate-fade-in"
+            className="absolute left-0 top-full mt-1.5 w-80 bg-white rounded-lg shadow-xl border border-slate-300 z-30 p-2 text-xs animate-fade-in"
           >
             {/* Modal Header */}
             <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-slate-200 mb-1.5">

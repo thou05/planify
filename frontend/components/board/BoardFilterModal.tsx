@@ -43,6 +43,131 @@ export function getActiveFilterCount(filters: BoardFilterState): number {
   return count;
 }
 
+export const getAssigneeUserId = (ca: any): string | undefined => {
+  return ca?.user_id || ca?.user?.id || ca?.board_member?.user_id || ca?.board_member?.user?.id;
+};
+
+/**
+ * Universal Bidirectional Member Matching Helper
+ * Kiểm tra xem một card assignee (ca) có khớp với targetId hay không.
+ * targetId có thể là:
+ * - 'assigned_to_me'
+ * - User ID
+ * - Board Member ID
+ */
+export function checkAssigneeMatchesTarget(
+  ca: any,
+  targetId: string,
+  currentUserId?: string,
+  currentMemberId?: string,
+  memberIdToUserIdMap?: Map<string, string>,
+  userIdToMemberIdMap?: Map<string, string>,
+  targetEmail?: string
+): boolean {
+  if (!ca || !targetId) return false;
+
+  // 1. Target là 'assigned_to_me'
+  if (targetId === 'assigned_to_me') {
+    if (currentUserId) {
+      if (
+        ca.user_id === currentUserId ||
+        ca.user?.id === currentUserId ||
+        ca.board_member?.user_id === currentUserId ||
+        ca.board_member?.user?.id === currentUserId
+      ) {
+        return true;
+      }
+      if (memberIdToUserIdMap) {
+        const memId = ca.board_member_id || ca.member_id || ca.id;
+        if (memId && memberIdToUserIdMap.get(memId) === currentUserId) return true;
+      }
+    }
+
+    if (currentMemberId) {
+      if (
+        ca.board_member_id === currentMemberId ||
+        ca.member_id === currentMemberId ||
+        ca.board_member?.id === currentMemberId
+      ) {
+        return true;
+      }
+      if (userIdToMemberIdMap) {
+        const uId = ca.user_id || ca.user?.id;
+        if (uId && userIdToMemberIdMap.get(uId) === currentMemberId) return true;
+      }
+    }
+
+    if (targetEmail) {
+      const email = ca.user?.email || ca.board_member?.user?.email;
+      if (email && email.toLowerCase() === targetEmail.toLowerCase()) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  // 2. So khớp trực tiếp targetId
+  if (
+    ca.user_id === targetId ||
+    ca.user?.id === targetId ||
+    ca.board_member_id === targetId ||
+    ca.member_id === targetId ||
+    ca.board_member?.id === targetId ||
+    ca.board_member?.user_id === targetId ||
+    ca.board_member?.user?.id === targetId
+  ) {
+    return true;
+  }
+
+  // 3. Tra cứu ánh xạ qua memberIdToUserIdMap
+  if (memberIdToUserIdMap) {
+    const memId = ca.board_member_id || ca.member_id || ca.id;
+    if (memId && memberIdToUserIdMap.get(memId) === targetId) {
+      return true;
+    }
+    // Nếu targetId là memberId -> ánh xạ ra userId và so sánh
+    const mappedUserId = memberIdToUserIdMap.get(targetId);
+    if (
+      mappedUserId &&
+      (ca.user_id === mappedUserId ||
+        ca.user?.id === mappedUserId ||
+        ca.board_member?.user_id === mappedUserId ||
+        ca.board_member?.user?.id === mappedUserId)
+    ) {
+      return true;
+    }
+  }
+
+  // 4. Tra cứu ánh xạ qua userIdToMemberIdMap
+  if (userIdToMemberIdMap) {
+    const uId = ca.user_id || ca.user?.id;
+    if (uId && userIdToMemberIdMap.get(uId) === targetId) {
+      return true;
+    }
+    // Nếu targetId là userId -> ánh xạ ra memberId và so sánh
+    const mappedMemberId = userIdToMemberIdMap.get(targetId);
+    if (
+      mappedMemberId &&
+      (ca.board_member_id === mappedMemberId ||
+        ca.member_id === mappedMemberId ||
+        ca.board_member?.id === mappedMemberId)
+    ) {
+      return true;
+    }
+  }
+
+  // 5. So sánh fallback qua email nếu có
+  if (targetEmail) {
+    const caEmail = ca.user?.email || ca.board_member?.user?.email;
+    if (caEmail && caEmail.toLowerCase() === targetEmail.toLowerCase()) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 interface BoardFilterModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -52,6 +177,7 @@ interface BoardFilterModalProps {
   boardMembers?: Array<{
     id: string;
     role?: string;
+    user_id?: string;
     user?: { id: string; name: string; email: string; avatar?: string | null };
   }>;
   boardLabels?: Array<{
@@ -109,6 +235,40 @@ export default function BoardFilterModal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  // Maps tra cứu 2 chiều giữa board_member.id và user_id
+  const { memberIdToUserIdMap, userIdToMemberIdMap, memberEmailMap, currentMemberId } = useMemo(() => {
+    const mToU = new Map<string, string>();
+    const uToM = new Map<string, string>();
+    const emails = new Map<string, string>();
+    let currMemId: string | undefined = undefined;
+
+    (boardMembers || []).forEach((m) => {
+      const uId = m.user_id || m.user?.id;
+      const email = m.user?.email;
+      if (m.id && uId) {
+        mToU.set(m.id, uId);
+        uToM.set(uId, m.id);
+      }
+      if (email) {
+        if (uId) emails.set(uId, email);
+        if (m.id) emails.set(m.id, email);
+      }
+      if (currentUser?.id && uId === currentUser.id) {
+        currMemId = m.id;
+      }
+      if (currentUser?.email && email && email.toLowerCase() === currentUser.email.toLowerCase()) {
+        currMemId = m.id;
+      }
+    });
+
+    return {
+      memberIdToUserIdMap: mToU,
+      userIdToMemberIdMap: uToM,
+      memberEmailMap: emails,
+      currentMemberId: currMemId,
+    };
+  }, [boardMembers, currentUser?.id, currentUser?.email]);
+
   // Compute card counts for each filter option
   const counts = useMemo(() => {
     const now = new Date();
@@ -146,20 +306,52 @@ export default function BoardFilterModal({
         c.no_members++;
       }
       if (
-        currentUser?.id &&
-        assignees.some(
-          (ca: any) =>
-            ca.board_member?.user?.id === currentUser.id ||
-            ca.board_member?.user_id === currentUser.id ||
-            ca.user_id === currentUser.id
+        checkAssigneeMatchesTarget(
+          card.card_assignees ? { card_assignees: assignees } : null,
+          'assigned_to_me',
+          currentUser?.id,
+          currentMemberId,
+          memberIdToUserIdMap,
+          userIdToMemberIdMap,
+          currentUser?.email
+        ) ||
+        assignees.some((ca: any) =>
+          checkAssigneeMatchesTarget(
+            ca,
+            'assigned_to_me',
+            currentUser?.id,
+            currentMemberId,
+            memberIdToUserIdMap,
+            userIdToMemberIdMap,
+            currentUser?.email
+          )
         )
       ) {
         c.assigned_to_me++;
       }
-      assignees.forEach((ca: any) => {
-        const uId = ca.board_member?.user?.id || ca.board_member?.user_id || ca.user_id;
-        if (uId) {
-          c.members[uId] = (c.members[uId] || 0) + 1;
+
+      boardMembers.forEach((m) => {
+        const uId = m.user_id || m.user?.id;
+        const memId = m.id;
+        const targetEmail = m.user?.email || (uId ? memberEmailMap.get(uId) : undefined);
+
+        const matchesMember = assignees.some((ca: any) => {
+          if (uId && checkAssigneeMatchesTarget(ca, uId, currentUser?.id, currentMemberId, memberIdToUserIdMap, userIdToMemberIdMap, targetEmail)) {
+            return true;
+          }
+          if (memId && checkAssigneeMatchesTarget(ca, memId, currentUser?.id, currentMemberId, memberIdToUserIdMap, userIdToMemberIdMap, targetEmail)) {
+            return true;
+          }
+          return false;
+        });
+
+        if (matchesMember) {
+          if (uId) {
+            c.members[uId] = (c.members[uId] || 0) + 1;
+          }
+          if (memId && memId !== uId) {
+            c.members[memId] = (c.members[memId] || 0) + 1;
+          }
         }
       });
 
@@ -169,7 +361,7 @@ export default function BoardFilterModal({
         c.no_labels++;
       }
       cardLabels.forEach((cl: any) => {
-        const lId = cl.label_id || cl.label?.id;
+        const lId = cl.label_id || cl.label?.id || cl.id;
         if (lId) {
           c.labels[lId] = (c.labels[lId] || 0) + 1;
         }
@@ -218,7 +410,16 @@ export default function BoardFilterModal({
     });
 
     return c;
-  }, [allCards, currentUser?.id]);
+  }, [
+    allCards,
+    currentUser?.id,
+    currentUser?.email,
+    currentMemberId,
+    memberIdToUserIdMap,
+    userIdToMemberIdMap,
+    memberEmailMap,
+    boardMembers,
+  ]);
 
   if (!isOpen) return null;
 
@@ -241,12 +442,29 @@ export default function BoardFilterModal({
     });
   };
 
+  const handleToggleMember = (uid: string, mId?: string) => {
+    const list = filters.members || [];
+    const targetKey = uid || mId;
+    if (!targetKey) return;
+    const exists = list.includes(uid) || (!!mId && list.includes(mId));
+    let updated: string[];
+    if (exists) {
+      updated = list.filter((id) => id !== uid && id !== mId);
+    } else {
+      updated = [...list, uid];
+    }
+    onChangeFilters({
+      ...filters,
+      members: updated,
+    });
+  };
+
   const currentInitial = (currentUser?.name || currentUser?.email || 'N')
     .charAt(0)
     .toUpperCase();
 
   return (
-    <div className="fixed inset-0 z-50 pointer-events-none flex items-start justify-end sm:p-4">
+    <div className="fixed inset-0 z-35 pointer-events-none flex items-start justify-end sm:p-4">
       {/* Trong suốt - KHÔNG làm mờ và KHÔNG làm tối toàn màn hình */}
       <div
         className="fixed inset-0 pointer-events-auto bg-transparent"
@@ -412,27 +630,34 @@ export default function BoardFilterModal({
               {/* Specific members in board */}
               {boardMembers.length > 0 &&
                 boardMembers
-                  .filter((m) => m.user?.id && m.user.id !== currentUser?.id)
+                  .filter((m) => !!(m.user?.id || m.user_id || m.id))
                   .map((m) => {
                     const u = m.user;
-                    if (!u) return null;
-                    const initial = (u.name || u.email || '?').charAt(0).toUpperCase();
+                    const uid = (m.user?.id || m.user_id || m.id)!;
+                    const initial = (u?.name || u?.email || '?').charAt(0).toUpperCase();
+                    const isCurrentUser =
+                      (!!currentUser?.id && (m.user_id === currentUser.id || m.user?.id === currentUser.id)) ||
+                      (!!currentUser?.email && !!u?.email && u.email.toLowerCase() === currentUser.email.toLowerCase());
+                    const isSelected = filters.members.includes(uid) || (!!m.id && filters.members.includes(m.id));
+                    const memberBadgeCount =
+                      counts.members[uid] ?? (m.id ? counts.members[m.id] : 0) ?? 0;
+
                     return (
                       <label
-                        key={u.id}
+                        key={m.id || uid}
                         className="flex items-center gap-2.5 cursor-pointer group hover:bg-slate-50 p-1.5 rounded-md -mx-1 transition-colors"
                       >
                         <input
                           type="checkbox"
-                          checked={filters.members.includes(u.id)}
-                          onChange={() => toggleArrayItem('members', u.id)}
+                          checked={isSelected}
+                          onChange={() => handleToggleMember(uid, m.id)}
                           className="w-3.5 h-3.5 rounded-xs border-slate-300 text-[#f28d8d] focus:ring-[#87ceeb] cursor-pointer"
                         />
-                        {u.avatar ? (
+                        {u?.avatar ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={u.avatar}
-                            alt={u.name}
+                            alt={u?.name || ''}
                             className="w-5 h-5 rounded-full object-cover border border-slate-200 shrink-0"
                           />
                         ) : (
@@ -440,11 +665,16 @@ export default function BoardFilterModal({
                             {initial}
                           </div>
                         )}
-                        <span className="font-medium text-slate-700 group-hover:text-slate-900 truncate max-w-[190px]">
-                          {u.name || u.email}
+                        <span className="font-medium text-slate-700 group-hover:text-slate-900 truncate max-w-[190px] flex items-center gap-1">
+                          <span className="truncate">{u?.name || u?.email || 'Thành viên'}</span>
+                          {isCurrentUser && (
+                            <span className="text-[10px] font-normal text-slate-500 shrink-0">
+                              (Bạn)
+                            </span>
+                          )}
                         </span>
                         <span className="ml-auto text-[10px] font-semibold text-slate-500 px-1.5 py-0.2 rounded-xs bg-slate-100 border border-slate-200">
-                          {counts.members[u.id] || 0}
+                          {memberBadgeCount}
                         </span>
                       </label>
                     );

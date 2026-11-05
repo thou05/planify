@@ -1725,7 +1725,7 @@ export default function ProfilePage() {
       {/* POPUP MODAL: ĐỔI ẢNH ĐẠI DIỆN (AVATAR) */}
       {isAvatarModalOpen && (
         <div
-          className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4"
+          className="fixed inset-0 z-70 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4"
           onClick={() => setIsAvatarModalOpen(false)}
         >
           <div
@@ -1875,7 +1875,7 @@ export default function ProfilePage() {
       {/* POPUP MODAL: ĐỔI ẢNH BÌA (COVER BANNER) */}
       {isCoverModalOpen && (
         <div
-          className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4"
+          className="fixed inset-0 z-70 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4"
           onClick={() => setIsCoverModalOpen(false)}
         >
           <div

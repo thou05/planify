@@ -62,7 +62,7 @@ export default function MoveCardModal({
   };
 
   return (
-    <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Di chuyển thẻ" tabIndex={-1} className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+    <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Di chuyển thẻ" tabIndex={-1} className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-80 animate-in fade-in duration-150">
       <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-md overflow-hidden">
         <div className="p-4 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-2.5">

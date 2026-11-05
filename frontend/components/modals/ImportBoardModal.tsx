@@ -464,7 +464,7 @@ export default function ImportBoardModal({
   const isFileValid = Boolean(validationResult && (validationResult.isValid ?? validationResult.valid));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
+    <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
       <div className="w-full max-w-lg bg-white rounded-lg shadow-xl border border-slate-300 p-6 sm:p-7 relative overflow-hidden flex flex-col max-h-[90vh]">
         <button
           onClick={handleClose}

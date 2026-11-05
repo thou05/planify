@@ -34,6 +34,7 @@ import BoardFilterModal, {
   BoardFilterState,
   defaultFilterState,
   getActiveFilterCount,
+  checkAssigneeMatchesTarget,
 } from '@/components/board/BoardFilterModal';
 import {
   Star,
@@ -558,6 +559,45 @@ export default function BoardDetailPage({
     return (board?.lists || []).flatMap((l: any) => l.cards || []);
   }, [board?.lists]);
 
+  // Helper to extract assignee user ID reliably
+  const getAssigneeUserId = (ca: any): string | undefined => {
+    return ca?.user_id || ca?.user?.id || ca?.board_member?.user_id || ca?.board_member?.user?.id;
+  };
+
+  // Universal Bidirectional Member Matching maps
+  const { memberIdToUserIdMap, userIdToMemberIdMap, memberEmailMap, currentMemberId } = React.useMemo(() => {
+    const mToU = new Map<string, string>();
+    const uToM = new Map<string, string>();
+    const emails = new Map<string, string>();
+    let currMemId: string | undefined = undefined;
+
+    (board?.members || []).forEach((m: any) => {
+      const uId = m.user_id || m.user?.id;
+      const email = m.user?.email;
+      if (m.id && uId) {
+        mToU.set(m.id, uId);
+        uToM.set(uId, m.id);
+      }
+      if (email) {
+        if (uId) emails.set(uId, email);
+        if (m.id) emails.set(m.id, email);
+      }
+      if (user?.id && uId === user.id) {
+        currMemId = m.id;
+      }
+      if (user?.email && email && email.toLowerCase() === user.email.toLowerCase()) {
+        currMemId = m.id;
+      }
+    });
+
+    return {
+      memberIdToUserIdMap: mToU,
+      userIdToMemberIdMap: uToM,
+      memberEmailMap: emails,
+      currentMemberId: currMemId,
+    };
+  }, [board?.members, user?.id, user?.email]);
+
   // Reactive filtered lists matching multi-criteria filter state
   const filteredLists = React.useMemo(() => {
     if (!board?.lists) return [];
@@ -580,8 +620,18 @@ export default function BoardDetailPage({
             (cl.label?.name || '').toLowerCase().includes(q)
           );
           const memberMatch = (card.card_assignees || []).some((ca: any) => {
-            const name = (ca.board_member?.user?.name || '').toLowerCase();
-            const email = (ca.board_member?.user?.email || '').toLowerCase();
+            let name = (ca.user?.name || ca.board_member?.user?.name || '').toLowerCase();
+            let email = (ca.user?.email || ca.board_member?.user?.email || '').toLowerCase();
+            if (!name && !email) {
+              const uId = ca.user_id || (ca.board_member_id && memberIdToUserIdMap.get(ca.board_member_id));
+              const m = (board?.members || []).find(
+                (bm: any) => bm.user_id === uId || bm.user?.id === uId || bm.id === ca.board_member_id
+              );
+              if (m) {
+                name = (m.user?.name || '').toLowerCase();
+                email = (m.user?.email || '').toLowerCase();
+              }
+            }
             return name.includes(q) || email.includes(q);
           });
           if (!titleMatch && !descMatch && !labelMatch && !memberMatch) {
@@ -591,28 +641,36 @@ export default function BoardDetailPage({
 
         // 2. Members check
         if (boardFilters.members.length > 0) {
-          const hasNoMembers = !card.card_assignees || card.card_assignees.length === 0;
-          const isAssignedToMe = (card.card_assignees || []).some((ca: any) =>
-            ca.board_member?.user?.id === user?.id || ca.board_member?.user_id === user?.id
-          );
+          const assignees = card.card_assignees || [];
+          const hasNoMembers = assignees.length === 0;
+
+          const checkMember = (targetMemberKey: string) => {
+            if (targetMemberKey === 'no_members') {
+              return hasNoMembers;
+            }
+            const targetEmail =
+              targetMemberKey === 'assigned_to_me'
+                ? user?.email
+                : memberEmailMap.get(targetMemberKey);
+
+            return assignees.some((ca: any) =>
+              checkAssigneeMatchesTarget(
+                ca,
+                targetMemberKey,
+                user?.id,
+                currentMemberId,
+                memberIdToUserIdMap,
+                userIdToMemberIdMap,
+                targetEmail
+              )
+            );
+          };
 
           if (boardFilters.matchMode === 'all') {
-            const allMembersMatch = boardFilters.members.every((m) => {
-              if (m === 'no_members') return hasNoMembers;
-              if (m === 'assigned_to_me') return isAssignedToMe;
-              return (card.card_assignees || []).some(
-                (ca: any) => ca.board_member?.user?.id === m || ca.board_member?.user_id === m
-              );
-            });
+            const allMembersMatch = boardFilters.members.every(checkMember);
             if (!allMembersMatch) return false;
           } else {
-            const anyMemberMatch = boardFilters.members.some((m) => {
-              if (m === 'no_members') return hasNoMembers;
-              if (m === 'assigned_to_me') return isAssignedToMe;
-              return (card.card_assignees || []).some(
-                (ca: any) => ca.board_member?.user?.id === m || ca.board_member?.user_id === m
-              );
-            });
+            const anyMemberMatch = boardFilters.members.some(checkMember);
             if (!anyMemberMatch) return false;
           }
         }
@@ -620,23 +678,17 @@ export default function BoardDetailPage({
         // 3. Labels check
         if (boardFilters.labels && boardFilters.labels.length > 0) {
           const hasNoLabels = !card.card_labels || card.card_labels.length === 0;
+          const checkLabel = (lId: string) => {
+            if (lId === 'no_labels') return hasNoLabels;
+            return (card.card_labels || []).some(
+              (cl: any) => (cl.label_id || cl.label?.id || cl.id) === lId
+            );
+          };
 
           if (boardFilters.matchMode === 'all') {
-            const allLabelsMatch = boardFilters.labels.every((lId) => {
-              if (lId === 'no_labels') return hasNoLabels;
-              return (card.card_labels || []).some(
-                (cl: any) => (cl.label_id || cl.label?.id) === lId
-              );
-            });
-            if (!allLabelsMatch) return false;
+            if (!boardFilters.labels.every(checkLabel)) return false;
           } else {
-            const anyLabelMatch = boardFilters.labels.some((lId) => {
-              if (lId === 'no_labels') return hasNoLabels;
-              return (card.card_labels || []).some(
-                (cl: any) => (cl.label_id || cl.label?.id) === lId
-              );
-            });
-            if (!anyLabelMatch) return false;
+            if (!boardFilters.labels.some(checkLabel)) return false;
           }
         }
 
@@ -711,7 +763,17 @@ export default function BoardDetailPage({
         cards: matchingCards,
       };
     });
-  }, [board?.lists, boardFilters, user?.id]);
+  }, [
+    board?.lists,
+    boardFilters,
+    user?.id,
+    user?.email,
+    currentMemberId,
+    memberIdToUserIdMap,
+    userIdToMemberIdMap,
+    memberEmailMap,
+    board?.members,
+  ]);
 
   const totalFilteredCards = React.useMemo(() => {
     return filteredLists.reduce(
@@ -1852,12 +1914,16 @@ export default function BoardDetailPage({
 
         {/* Board Top Navigation Bar */}
         <div
-          className={`h-14 px-6 border-b flex items-center justify-between shrink-0 select-none transition-colors duration-200 relative z-40 ${
+          className={`h-14 px-6 border-b flex items-center justify-between shrink-0 select-none transition-colors duration-200 relative z-20 ${
             board?.background
-              ? 'bg-white/85 backdrop-blur-md border-white/20 shadow-xs'
+              ? 'border-white/20 shadow-xs'
               : 'bg-white border-slate-200'
           }`}
         >
+          {/* Isolated Background Layer (Fixes Chromium backdrop-filter child stacking/clipping bug) */}
+          {board?.background && (
+            <div className="absolute inset-0 bg-white/85 backdrop-blur-md pointer-events-none -z-10" />
+          )}
           {/* Left: Back button & Board Name & Badges */}
           <div className="flex items-center gap-3 min-w-0">
             <Link
@@ -1909,7 +1975,7 @@ export default function BoardDetailPage({
 
                 {/* Styled Tooltip on hover */}
                 {board?.name && (
-                  <div className="absolute left-0 top-full mt-1.5 z-60 px-2.5 py-1 bg-slate-900 text-white text-xs font-medium rounded-md shadow-md pointer-events-none opacity-0 group-hover/boardTitle:opacity-100 transition-opacity duration-150 whitespace-normal min-w-max max-w-xs break-words">
+                  <div className="absolute left-0 top-full mt-1.5 z-30 px-2.5 py-1 bg-slate-900 text-white text-xs font-medium rounded-md shadow-md pointer-events-none opacity-0 group-hover/boardTitle:opacity-100 transition-opacity duration-150 whitespace-normal min-w-max max-w-xs break-words">
                     {board.name}
                   </div>
                 )}
@@ -2000,7 +2066,7 @@ export default function BoardDetailPage({
 
                 {/* Dropdown Popover */}
                 {isVisibilityMenuOpen && canChangeVisibility && (
-                  <div className="absolute left-0 mt-1.5 w-72 bg-white rounded-lg shadow-xl border border-slate-200 p-2 z-50 animate-in fade-in zoom-in-95">
+                  <div className="absolute left-0 mt-1.5 w-72 bg-white rounded-lg shadow-xl border border-slate-200 p-2 z-30 animate-in fade-in zoom-in-95">
                     <div className="px-2 py-1.5 border-b border-slate-100 mb-1">
                       <div className="text-xs font-bold text-slate-800">
                         Quyền hiển thị Bảng
@@ -2214,7 +2280,7 @@ export default function BoardDetailPage({
               </button>
 
               {isBoardMenuOpen && (
-                <div className="absolute right-0 top-full mt-1.5 w-56 p-1 bg-white rounded-lg shadow-md border border-slate-200 space-y-0.5 text-xs select-none z-50">
+                <div className="absolute right-0 top-full mt-1.5 w-56 p-1 bg-white rounded-lg shadow-md border border-slate-200 space-y-0.5 text-xs select-none z-30">
                   <button
                     onClick={() => {
                       setIsBoardMenuOpen(false);
@@ -2575,38 +2641,46 @@ export default function BoardDetailPage({
 
         {/* Table View */}
         {activeView === 'table' && (
-          <BoardTableView
-            board={effectiveBoard || board}
-            onOpenCardDetail={handleOpenCardDetail}
-            onRefreshBoard={() => fetchBoard(true)}
-            onDeleteCard={handleDeleteCard}
-          />
+          <div className="flex-1 min-h-0 overflow-hidden relative z-10">
+            <BoardTableView
+              board={effectiveBoard || board}
+              onOpenCardDetail={handleOpenCardDetail}
+              onRefreshBoard={() => fetchBoard(true)}
+              onDeleteCard={handleDeleteCard}
+            />
+          </div>
         )}
 
         {/* Calendar View */}
         {activeView === 'calendar' && (
-          <BoardCalendarView
-            board={effectiveBoard || board}
-            onOpenCardDetail={handleOpenCardDetail}
-            onRefreshBoard={() => fetchBoard(true)}
-          />
+          <div className="flex-1 min-h-0 overflow-hidden relative z-10">
+            <BoardCalendarView
+              board={effectiveBoard || board}
+              onOpenCardDetail={handleOpenCardDetail}
+              onRefreshBoard={() => fetchBoard(true)}
+            />
+          </div>
         )}
 
         {/* Schedule / Timeline View */}
         {activeView === 'schedule' && (
-          <BoardScheduleView
-            board={effectiveBoard || board}
-            onOpenCardDetail={handleOpenCardDetail}
-            onRefreshBoard={() => fetchBoard(true)}
-          />
+          <div className="flex-1 min-h-0 overflow-hidden relative z-10">
+            <BoardScheduleView
+              board={effectiveBoard || board}
+              onOpenCardDetail={handleOpenCardDetail}
+              onRefreshBoard={() => fetchBoard(true)}
+            />
+          </div>
         )}
 
         {/* Analytics / Statistics View */}
         {activeView === 'analytics' && (
-          <BoardAnalyticsView
-            boardId={boardId}
-            onCardClick={handleOpenCardDetail}
-          />
+          <div className="flex-1 min-h-0 overflow-y-auto relative z-10">
+            <BoardAnalyticsView
+              boardId={boardId}
+              onCardClick={handleOpenCardDetail}
+            />
+          </div>
         )}
       </div>
 
@@ -2681,7 +2755,7 @@ export default function BoardDetailPage({
 
       {/* Confirmation Modal for Visibility Change */}
       {confirmingVisibility && (
-        <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-80 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-sm bg-white rounded-xl shadow-2xl border border-slate-200 p-5 sm:p-6 relative animate-in zoom-in-95 duration-150 space-y-4">
             <button
               type="button"
@@ -2841,7 +2915,7 @@ export default function BoardDetailPage({
 
       {/* AI DAILY STANDUP & SUMMARY MODAL */}
       {isAiStandupOpen && (
-        <div className="fixed inset-0 z-60 overflow-hidden flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-70 overflow-hidden flex items-center justify-center p-4">
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
@@ -3239,7 +3313,7 @@ export default function BoardDetailPage({
       {/* Floating AI Copilot Trigger */}
       <button
         onClick={() => setIsCopilotOpen(true)}
-        className="fixed bottom-6 right-6 z-40 px-3.5 py-2 rounded-md bg-[#f28d8d] hover:bg-[#e57a7a] text-white shadow-sm border border-[#d86969] transition-colors flex items-center gap-2 cursor-pointer group"
+        className="fixed bottom-6 right-6 z-30 px-3.5 py-2 rounded-md bg-[#f28d8d] hover:bg-[#e57a7a] text-white shadow-sm border border-[#d86969] transition-colors flex items-center gap-2 cursor-pointer group"
         title="Mở Trợ lý AI Copilot"
       >
         <Sparkles className="w-4 h-4 text-amber-300" />

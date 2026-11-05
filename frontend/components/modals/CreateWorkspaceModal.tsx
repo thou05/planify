@@ -51,7 +51,7 @@ export default function CreateWorkspaceModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+    <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
       <div className="w-full max-w-md bg-white rounded-lg border border-slate-300 shadow-xl p-6 sm:p-7 relative">
         <button
           onClick={onClose}

@@ -423,7 +423,7 @@ export default function BoardCalendarView({
 
       {/* Quick Add Card Modal for Date */}
       {quickAddDate && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-70 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="w-full max-w-sm bg-white rounded-lg p-5 shadow-xl border border-slate-300 animate-fade-in">
             <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-200">
               <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-1.5">
