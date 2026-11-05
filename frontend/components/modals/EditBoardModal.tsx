@@ -25,15 +25,20 @@ export default function EditBoardModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const isWsAdminUser = Boolean(board?.isWorkspaceAdmin || board?.isWorkspaceOwner);
+
   const isGuest = Boolean(
     board?.isGuest ||
-      (board && !board?.isWorkspaceOwner && !board?.isWorkspaceMember && board?.currentUserBoardRole !== 'ADMIN')
+      (board && !board?.isWorkspaceOwner && !isWsAdminUser && !board?.isWorkspaceMember && board?.currentUserBoardRole !== 'ADMIN')
   );
 
   const canChangeVisibility = Boolean(
     !isGuest &&
-      (board?.canChangeVisibility ??
-        (board?.currentUserBoardRole === 'ADMIN' || board?.isWorkspaceOwner || board?.canManageMembers))
+      (board?.canChangeVisibility ||
+        isWsAdminUser ||
+        board?.currentUserBoardRole === 'ADMIN' ||
+        board?.isWorkspaceOwner ||
+        board?.canManageMembers)
   );
 
   useEffect(() => {

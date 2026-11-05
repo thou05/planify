@@ -10,6 +10,7 @@ export interface BoardPermissionContext {
   boardRole?: BoardRole | null;
   workspaceRole?: WorkspaceRole | null;
   isWorkspaceOwner?: boolean;
+  isWorkspaceAdmin?: boolean;
   canEdit?: boolean;
   canManageMembers?: boolean;
   canInviteMembers?: boolean;
@@ -43,7 +44,7 @@ export function canManageWorkspaceMembers(ctx?: WorkspacePermissionContext | nul
 export function canManageBoard(ctx?: BoardPermissionContext | null): boolean {
   if (!ctx) return false;
   if (ctx.canDelete !== undefined) return ctx.canDelete;
-  return ctx.isWorkspaceOwner === true || ctx.boardRole === 'ADMIN';
+  return ctx.isWorkspaceOwner === true || ctx.isWorkspaceAdmin === true || ctx.workspaceRole === 'ADMIN' || ctx.boardRole === 'ADMIN';
 }
 
 export function canEditBoardContent(ctx?: BoardPermissionContext | null): boolean {
@@ -51,6 +52,8 @@ export function canEditBoardContent(ctx?: BoardPermissionContext | null): boolea
   if (ctx.canEdit !== undefined) return ctx.canEdit;
   return (
     ctx.isWorkspaceOwner === true ||
+    ctx.isWorkspaceAdmin === true ||
+    ctx.workspaceRole === 'ADMIN' ||
     ctx.boardRole === 'ADMIN' ||
     ctx.boardRole === 'EDITOR' ||
     ctx.boardRole === 'MEMBER'
@@ -62,6 +65,8 @@ export function canInviteBoardMember(ctx?: BoardPermissionContext | null): boole
   if (ctx.canInviteMembers !== undefined) return ctx.canInviteMembers;
   return (
     ctx.isWorkspaceOwner === true ||
+    ctx.isWorkspaceAdmin === true ||
+    ctx.workspaceRole === 'ADMIN' ||
     ctx.boardRole === 'ADMIN' ||
     ctx.boardRole === 'EDITOR' ||
     ctx.boardRole === 'MEMBER'
@@ -71,7 +76,7 @@ export function canInviteBoardMember(ctx?: BoardPermissionContext | null): boole
 export function canManageBoardMembers(ctx?: BoardPermissionContext | null): boolean {
   if (!ctx) return false;
   if (ctx.canManageMembers !== undefined) return ctx.canManageMembers;
-  return ctx.isWorkspaceOwner === true || ctx.boardRole === 'ADMIN';
+  return ctx.isWorkspaceOwner === true || ctx.isWorkspaceAdmin === true || ctx.workspaceRole === 'ADMIN' || ctx.boardRole === 'ADMIN';
 }
 
 export function canAssignCard(ctx?: BoardPermissionContext | null): boolean {

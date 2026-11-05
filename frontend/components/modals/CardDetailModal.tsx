@@ -1819,7 +1819,16 @@ function CardDetailSession({
     return (
       <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-70">
         <div role="dialog" aria-modal="true" aria-label="Chi tiết thẻ" aria-busy={!loadError} className="bg-white rounded-lg border border-slate-300 w-full max-w-5xl h-[88vh] max-h-[850px] flex flex-col">
-          <div className="p-4 border-b border-slate-200 flex justify-end"><button onClick={onClose} aria-label="Đóng" className="p-2"><X className="w-5 h-5" /></button></div>
+          <div className="p-4 border-b border-slate-200 flex justify-end">
+            <button
+              onClick={onClose}
+              aria-label="Đóng"
+              title="Đóng (Esc)"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:text-white bg-slate-100 hover:bg-[#f28d8d] border border-slate-200 hover:border-[#f28d8d] shadow-2xs hover:shadow-xs transition-all duration-150 cursor-pointer group shrink-0"
+            >
+              <X className="w-4 h-4 stroke-[2.5] transition-transform group-hover:scale-110" />
+            </button>
+          </div>
           <div className="flex-1 flex items-center justify-center gap-3 p-6 text-sm text-slate-500">
             {loadError ? <div role="alert">{loadError}<button className="ml-3 underline" onClick={() => void fetchCardDetails(activeCardId || cardId!)}>Thử lại</button></div> : <span role="status">Đang tải thông tin thẻ…</span>}
           </div>
@@ -2674,10 +2683,13 @@ function CardDetailSession({
           </div>
 
           <button
-            disabled={isSaving} onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
+            disabled={isSaving}
+            onClick={onClose}
+            aria-label="Đóng"
+            title="Đóng (Esc)"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:text-white bg-slate-100 hover:bg-[#f28d8d] border border-slate-200 hover:border-[#f28d8d] shadow-2xs hover:shadow-xs transition-all duration-150 cursor-pointer group shrink-0"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 stroke-[2.5] transition-transform group-hover:scale-110" />
           </button>
         </div>
 
@@ -5018,17 +5030,13 @@ function CardDetailSession({
           </div>
         )}
 
-        {/* Modal Footer */}
-        <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
-          <button
-            disabled={isSaving} onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-md transition-colors cursor-pointer"
-          >
-            Đóng
-          </button>
-          <span role="status" aria-live="polite" className="text-xs text-slate-500">{textSaveStatus || 'Tự lưu khi rời ô nhập'}</span>
-          {textSaveError && <span role="alert" className="text-xs text-red-600">{textSaveError} <button className="underline" onClick={() => failedTextSave.current?.()}>Thử lại</button></span>}
-        </div>
+        {/* Floating Auto-save Error Toast (nếu có lỗi lưu) */}
+        {textSaveError && (
+          <div className="absolute bottom-4 right-4 z-50 px-3.5 py-2 bg-rose-50 border border-rose-200 rounded-lg shadow-lg flex items-center gap-2 text-xs text-rose-700 animate-in fade-in slide-in-from-bottom-2">
+            <span role="alert">{textSaveError}</span>
+            <button className="underline font-semibold cursor-pointer hover:text-rose-900" onClick={() => failedTextSave.current?.()}>Thử lại</button>
+          </div>
+        )}
 
         {/* AI TASK BREAKDOWN MODAL */}
         {isAiBreakdownOpen && (
