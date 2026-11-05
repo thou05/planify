@@ -305,7 +305,7 @@ export default function BoardAppearanceModal({
   const safePreviewBgUrl = isPhoto && selectedBg ? encodeURI(selectedBg).replace(/["'()\\]/g, '\\$&') : '';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/45 animate-fade-in">
+    <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-slate-900/45 animate-fade-in">
       <div className="w-full max-w-xl bg-white rounded-lg border border-slate-300 shadow-md overflow-hidden flex flex-col max-h-[90vh]">
         {/* Modal Header */}
         <div className="px-6 py-4.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">

@@ -137,7 +137,7 @@ export default function LivePresenceBar({
               )}
 
               {/* Tooltip phong cách Google Docs */}
-              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 hidden group-hover:flex flex-col items-center z-50 pointer-events-none whitespace-nowrap">
+              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 hidden group-hover:flex flex-col items-center z-30 pointer-events-none whitespace-nowrap">
                 <div className="px-2.5 py-1.5 rounded-lg bg-slate-900/95 text-white shadow-xl backdrop-blur-xs text-center border border-slate-700/60">
                   <div className="text-xs font-semibold flex items-center gap-1.5 justify-center">
                     <span>{u.name}</span>
@@ -176,7 +176,7 @@ export default function LivePresenceBar({
 
       {/* Dropdown chi tiết người đang trực tuyến */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-white rounded-xl shadow-xl border border-slate-200 p-3 z-50 text-xs animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-white rounded-xl shadow-xl border border-slate-200 p-3 z-30 text-xs animate-in fade-in zoom-in-95 duration-150">
           <div className="flex items-center justify-between pb-2.5 mb-2 border-b border-slate-100">
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>

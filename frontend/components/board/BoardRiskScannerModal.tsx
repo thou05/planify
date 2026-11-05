@@ -152,7 +152,7 @@ export const BoardRiskScannerModal: React.FC<BoardRiskScannerModalProps> = ({
   const scoreTheme = data ? getScoreColor(data.riskScore) : getScoreColor(0);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 backdrop-blur-2xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-70 overflow-y-auto bg-black/40 backdrop-blur-2xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
       <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-98 duration-150">
         {/* Header */}
         <div className="px-5 py-3.5 bg-white text-slate-900 flex items-center justify-between shrink-0 border-b border-slate-200">

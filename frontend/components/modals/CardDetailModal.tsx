@@ -1817,7 +1817,7 @@ function CardDetailSession({
 
   if (!card || card.id !== (activeCardId || cardId)) {
     return (
-      <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50">
+      <div className="fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-70">
         <div role="dialog" aria-modal="true" aria-label="Chi tiết thẻ" aria-busy={!loadError} className="bg-white rounded-lg border border-slate-300 w-full max-w-5xl h-[88vh] max-h-[850px] flex flex-col">
           <div className="p-4 border-b border-slate-200 flex justify-end"><button onClick={onClose} aria-label="Đóng" className="p-2"><X className="w-5 h-5" /></button></div>
           <div className="flex-1 flex items-center justify-center gap-3 p-6 text-sm text-slate-500">
@@ -2609,7 +2609,7 @@ function CardDetailSession({
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-70 animate-in fade-in duration-150">
       <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-5xl h-[88vh] max-h-[850px] flex flex-col overflow-hidden relative">
         {/* Modal Header */}
         <div className="p-4 sm:p-5 pb-3 border-b border-slate-200 flex items-start justify-between gap-4 shrink-0">
@@ -4996,7 +4996,7 @@ function CardDetailSession({
         {/* AI TASK BREAKDOWN MODAL */}
         {isAiBreakdownOpen && (
           <div
-            className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-60 animate-in fade-in duration-150"
+            className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-80 animate-in fade-in duration-150"
             onClick={() => setIsAiBreakdownOpen(false)}
           >
             <div
@@ -5261,7 +5261,7 @@ function CardDetailSession({
         {/* MEMBERS ASSIGNMENT POPOVER / MODAL */}
         {isMembersModalOpen && (
           <div
-            className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-60 animate-in fade-in duration-150"
+            className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-80 animate-in fade-in duration-150"
             onClick={() => setIsMembersModalOpen(false)}
           >
             <div
@@ -5450,7 +5450,7 @@ function CardDetailSession({
         {/* DATES CONFIGURATION POPOVER / MODAL */}
         {isDatesModalOpen && (
           <div
-            className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-60 animate-in fade-in duration-150"
+            className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-80 animate-in fade-in duration-150"
             onClick={() => setIsDatesModalOpen(false)}
           >
             <div
@@ -5581,7 +5581,7 @@ function CardDetailSession({
         {/* LABELS POPOVER / MODAL */}
         {isLabelsModalOpen && (
           <div
-            className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-60 animate-in fade-in duration-150"
+            className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-80 animate-in fade-in duration-150"
             onClick={() => {
               setIsLabelsModalOpen(false);
               setIsCreatingLabel(false);
@@ -5797,7 +5797,7 @@ function CardDetailSession({
         {/* CHECKLIST ITEM DEADLINE POPOVER / MODAL */}
         {activeItemDate && (
           <div
-            className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-60 animate-in fade-in duration-150"
+            className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-80 animate-in fade-in duration-150"
             onClick={() => setActiveItemDate(null)}
           >
             <div
@@ -5920,7 +5920,7 @@ function CardDetailSession({
         {/* CHECKLIST ITEM MEMBER ASSIGNMENT POPOVER / MODAL */}
         {activeItemMember && (
           <div
-            className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-60 animate-in fade-in duration-150"
+            className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-80 animate-in fade-in duration-150"
             onClick={() => setActiveItemMember(null)}
           >
             <div
@@ -6112,7 +6112,7 @@ function CardDetailSession({
         {/* ATTACHMENT MODAL / POPOVER */}
         {isAttachmentsModalOpen && (
           <div
-            className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-60 animate-in fade-in duration-100"
+            className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-80 animate-in fade-in duration-100"
             onClick={() => setIsAttachmentsModalOpen(false)}
           >
             <div
@@ -6318,7 +6318,7 @@ function CardDetailSession({
         {/* IMAGE LIGHTBOX MODAL */}
         {previewImageAttachment && (
           <div
-            className="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 z-80 animate-in fade-in duration-150"
+            className="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 z-90 animate-in fade-in duration-150"
             onClick={() => setPreviewImageAttachment(null)}
           >
             <div
@@ -6369,7 +6369,7 @@ function CardDetailSession({
 
         {/* CUSTOM CONFIRMATION POPUP MODAL */}
         {confirmDialog.isOpen && (
-          <div className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-70 animate-in fade-in duration-150">
+          <div className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-80 animate-in fade-in duration-150">
             <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-sm overflow-hidden p-5 space-y-4 animate-in zoom-in-95 duration-150">
               <div className="flex items-start gap-3.5">
                 <div className="w-9 h-9 rounded-md bg-red-100 text-red-600 border border-red-200 flex items-center justify-center shrink-0">
@@ -6413,7 +6413,7 @@ function CardDetailSession({
         {/* ADD CARD RELATION MODAL POPUP */}
         {isRelationsModalOpen && (
           <div
-            className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-70 animate-in fade-in duration-150"
+            className="fixed inset-0 bg-slate-900/30 flex items-center justify-center p-4 z-80 animate-in fade-in duration-150"
             onClick={() => setIsRelationsModalOpen(false)}
           >
             <div
@@ -6647,7 +6647,7 @@ function CardDetailSession({
         {/* Blocked Warning Popup Modal */}
         {blockedPopup.isOpen && (
           <div
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200"
+            className="fixed inset-0 z-90 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200"
             onClick={() => setBlockedPopup({ isOpen: false, blockers: [] })}
           >
             <div
@@ -6746,7 +6746,7 @@ function CardDetailSession({
 
         {/* Dropdown Options Quick Manager Modal */}
         {managingDropdownField && (
-          <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-60 animate-in fade-in duration-150">
+          <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-80 animate-in fade-in duration-150">
             <div className="bg-white rounded-lg shadow-md border border-slate-300 p-5 max-w-md w-full space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">

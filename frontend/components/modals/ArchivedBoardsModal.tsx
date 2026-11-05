@@ -81,7 +81,7 @@ export default function ArchivedBoardsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
+    <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
       <div className="w-full max-w-lg bg-white border border-slate-300 rounded-lg p-6 sm:p-7 relative shadow-xl">
         <button
           onClick={onClose}

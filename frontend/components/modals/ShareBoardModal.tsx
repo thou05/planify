@@ -295,7 +295,7 @@ export default function ShareBoardModal({
   const availableWsMembers = workspaceMembers.filter((m: any) => !existingBoardUserIds.has(m.user_id));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
+    <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
       <div className="w-full max-w-xl bg-white border border-slate-300 rounded-lg p-6 sm:p-7 relative shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
         <button
           onClick={onClose}
@@ -758,7 +758,7 @@ export default function ShareBoardModal({
 
       {/* Confirmation Modal for Visibility Change */}
       {confirmingVisibility && (
-        <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-80 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="w-full max-w-sm bg-white rounded-xl shadow-2xl border border-slate-200 p-5 sm:p-6 relative animate-in zoom-in-95 duration-150 space-y-4">
             <button
               type="button"
