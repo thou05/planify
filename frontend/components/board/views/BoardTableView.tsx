@@ -124,7 +124,7 @@ export default function BoardTableView({
       });
       await onRefreshBoard();
     } catch (err) {
-      console.error('Lỗi khi đổi trạng thái hoàn thành thẻ:', err);
+      window.alert(err instanceof Error ? err.message : 'Không thể đổi trạng thái thẻ');
     }
   };
 
@@ -139,7 +139,7 @@ export default function BoardTableView({
       });
       await onRefreshBoard();
     } catch (err) {
-      console.error('Lỗi chuyển danh sách:', err);
+      window.alert(err instanceof Error ? err.message : 'Không thể chuyển thẻ');
     }
   };
 

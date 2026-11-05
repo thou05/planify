@@ -1,3 +1,4 @@
+import { assertBoardWritable } from '../../common/board-access';
 import {
   Injectable,
   NotFoundException,
@@ -169,7 +170,8 @@ export class ListsService {
         .eq('board_id', boardId)
     );
 
-    await Promise.all(updates);
+    const results = await Promise.all(updates);
+    if (results.some(result => result.error)) throw new BadRequestException('Không thể cập nhật vị trí');
 
     this.supabase.emitBoardEvent(boardId, 'LISTS_REORDERED', {
       listIds: dto.listIds,
@@ -320,7 +322,7 @@ export class ListsService {
   async moveAllCards(listId: string, userId: string, dto: MoveAllCardsDto) {
     const { data: sourceList } = await this.supabase
       .from('lists')
-      .select('board_id')
+      .select('board_id, limit')
       .eq('id', listId)
       .maybeSingle();
 
@@ -330,7 +332,7 @@ export class ListsService {
 
     const { data: targetList } = await this.supabase
       .from('lists')
-      .select('board_id')
+      .select('board_id, limit')
       .eq('id', dto.targetListId)
       .maybeSingle();
 
@@ -362,6 +364,10 @@ export class ListsService {
       .eq('list_id', listId)
       .order('position', { ascending: true });
 
+    if (targetList.limit > 0) {
+      const { count, error } = await this.supabase.from('cards').select('*', { count: 'exact', head: true }).eq('list_id', dto.targetListId);
+      if (error || count === null || count + (sourceCards?.length || 0) > targetList.limit) throw new BadRequestException('Danh sách đích vượt giới hạn thẻ');
+    }
     if (sourceCards && sourceCards.length > 0) {
       for (const card of sourceCards) {
         await this.supabase
@@ -434,6 +440,7 @@ export class ListsService {
   }
 
   private async verifyBoardAccess(boardId: string, userId: string, requireEdit = true) {
+    if (requireEdit) await assertBoardWritable(this.supabase, boardId);
     const { data: board } = await this.supabase
       .from('boards')
       .select('id, workspace_id, visibility, workspace:workspaces (owner_id)')

@@ -1,5 +1,6 @@
 'use client';
 
+import { useModalAccessibility } from '@/lib/use-modal-accessibility';
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { X, Copy } from 'lucide-react';
@@ -22,6 +23,7 @@ export default function CopyCardModal({
   const [title, setTitle] = useState('');
   const [targetListId, setTargetListId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const dialogRef = useModalAccessibility(isOpen, () => { if (!isLoading) onClose(); });
 
   useEffect(() => {
     if (card) {
@@ -59,7 +61,7 @@ export default function CopyCardModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+    <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Sao chép thẻ" tabIndex={-1} className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
       <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-md overflow-hidden">
         <div className="p-4 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -69,7 +71,7 @@ export default function CopyCardModal({
             <h3 className="font-bold text-sm text-slate-900">Sao chép thẻ</h3>
           </div>
           <button
-            onClick={onClose}
+            disabled={isLoading} onClick={onClose}
             className="p-1.5 text-slate-400 hover:text-slate-700 rounded-md hover:bg-slate-100 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
@@ -116,7 +118,7 @@ export default function CopyCardModal({
           <div className="flex items-center justify-end gap-2.5 pt-2">
             <button
               type="button"
-              onClick={onClose}
+              disabled={isLoading} onClick={onClose}
               className="px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-md border border-slate-300 transition-colors cursor-pointer"
             >
               Hủy

@@ -14,8 +14,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="vi">
-      <body className="min-h-screen flex flex-col antialiased">
+    <html lang="vi" suppressHydrationWarning>
+      {/* Extensions can inject attributes on body before React hydrates. */}
+      <body suppressHydrationWarning className="min-h-screen flex flex-col antialiased">
         <AuthProvider>
           <AppLayoutClient>{children}</AppLayoutClient>
         </AuthProvider>

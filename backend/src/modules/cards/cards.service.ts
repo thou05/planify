@@ -1,3 +1,4 @@
+import { assertBoardWritable } from '../../common/board-access';
 import {
   Injectable,
   NotFoundException,
@@ -304,6 +305,9 @@ export class CardsService {
       updateData.is_due_date_completed = dto.is_due_date_completed;
     }
 
+    if (dto.is_due_date_completed !== undefined) updateData.status = dto.is_due_date_completed ? 'DONE' : 'TODO';
+    else if (dto.status !== undefined && dto.status !== 'ARCHIVED') updateData.is_due_date_completed = dto.status === 'DONE';
+
     // Nếu đánh dấu hoàn thành (is_due_date_completed = true hoặc status = DONE), kiểm tra xem có bị chặn bởi thẻ chưa hoàn thành không
     if (dto.is_due_date_completed === true || dto.status === 'DONE') {
       const { data: blockers } = await this.supabase
@@ -573,7 +577,8 @@ export class CardsService {
           .update({ position: index })
           .eq('id', c.id)
       );
-      await Promise.all(updatePromises);
+      const results = await Promise.all(updatePromises);
+      if (results.some(result => result.error)) throw new BadRequestException('Không thể cập nhật vị trí thẻ');
     } else {
       // Moving across lists
       // 1. Re-normalize source list cards (excluding moved card)
@@ -612,7 +617,8 @@ export class CardsService {
           .eq('id', c.id)
       );
 
-      await Promise.all([...sourceUpdatePromises, ...targetUpdatePromises]);
+      const results = await Promise.all([...sourceUpdatePromises, ...targetUpdatePromises]);
+      if (results.some(result => result.error)) throw new BadRequestException('Không thể cập nhật vị trí thẻ');
 
       const { data: sList } = await this.supabase.from('lists').select('title, board:boards(workspace_id)').eq('id', sourceCard.list_id).maybeSingle();
       const { data: tList } = await this.supabase.from('lists').select('title').eq('id', dto.targetListId).maybeSingle();
@@ -697,11 +703,14 @@ export class CardsService {
 
     const { data: targetList } = await this.supabase
       .from('lists')
-      .select('id, limit')
+      .select('id, board_id, limit')
       .eq('id', targetListId)
       .maybeSingle();
 
-    if (targetList?.limit && targetList.limit > 0) {
+    if (!targetList) throw new NotFoundException('Không tìm thấy danh sách đích');
+    await this.verifyBoardAccess(targetList.board_id, userId, true);
+
+    if (targetList.limit && targetList.limit > 0) {
       const { count } = await this.supabase
         .from('cards')
         .select('*', { count: 'exact', head: true })
@@ -982,6 +991,7 @@ export class CardsService {
   }
 
   private async verifyBoardAccess(boardId: string, userId: string, requireEdit = false) {
+    if (requireEdit) await assertBoardWritable(this.supabase, boardId);
     const { data: board } = await this.supabase
       .from('boards')
       .select('id, workspace_id, visibility, workspace:workspaces (owner_id)')
@@ -1028,6 +1038,7 @@ export class CardsService {
       .maybeSingle();
 
     if (wsMember) {
+      if (wsMember.role === 'GUEST' && board.visibility !== 'PUBLIC') throw new ForbiddenException('Bạn chưa được mời vào bảng này');
       if (board.visibility === 'PRIVATE') {
         throw new ForbiddenException('Bảng này ở chế độ Riêng tư (Private), bạn không có quyền truy cập');
       }

@@ -1,3 +1,4 @@
+import { assertBoardWritable } from '../../common/board-access';
 import {
   Injectable,
   NotFoundException,
@@ -72,10 +73,11 @@ export class ImportExportService {
   /**
    * Verify user has access to a board
    */
-  private async verifyBoardAccess(boardId: string, userId: string): Promise<any> {
+  private async verifyBoardAccess(boardId: string, userId: string, requireEdit = false): Promise<any> {
+    if (requireEdit) await assertBoardWritable(this.supabase, boardId);
     const { data: board, error } = await this.supabase
       .from('boards')
-      .select('id, name, description, workspace_id')
+      .select('id, name, description, workspace_id, visibility')
       .eq('id', boardId)
       .maybeSingle();
 
@@ -106,7 +108,9 @@ export class ImportExportService {
       .eq('user_id', userId)
       .maybeSingle();
 
-    if (!member && !wsMember && !isWsOwner) {
+    const canRead = isWsOwner || !!member || board.visibility === 'PUBLIC' || (wsMember && wsMember.role !== 'GUEST' && board.visibility !== 'PRIVATE');
+    const canEdit = isWsOwner || (member && ['ADMIN', 'EDITOR', 'MEMBER'].includes(member.role));
+    if (!canRead || (requireEdit && !canEdit)) {
       throw new ForbiddenException('Bạn không có quyền truy cập vào Bảng này');
     }
 
@@ -696,7 +700,7 @@ export class ImportExportService {
 
       if (listError || !newList) {
         this.logger.error(`Failed to insert list "${list.name}": ${listError?.message}`);
-        continue;
+        throw new BadRequestException('Nhập dữ liệu bị gián đoạn. Một phần dữ liệu có thể đã được lưu; hãy kiểm tra bảng trước khi nhập lại.');
       }
 
       for (let cIdx = 0; cIdx < (list.cards || []).length; cIdx++) {
@@ -731,7 +735,7 @@ export class ImportExportService {
 
         if (cError || !newCard) {
           this.logger.error(`Failed to insert card "${cardTitle}" in list "${newList.id}": ${cError?.message}`);
-          continue;
+          throw new BadRequestException('Nhập dữ liệu bị gián đoạn. Một phần dữ liệu có thể đã được lưu; hãy kiểm tra bảng trước khi nhập lại.');
         }
 
         // Assign Labels to Card
@@ -793,7 +797,7 @@ export class ImportExportService {
 
             if (ckError || !newCk) {
               this.logger.error(`Failed to insert checklist "${ckTitle}": ${ckError?.message}`);
-              continue;
+              throw new BadRequestException('Nhập dữ liệu bị gián đoạn. Một phần dữ liệu có thể đã được lưu; hãy kiểm tra bảng trước khi nhập lại.');
             }
 
             if (ck.items && ck.items.length > 0) {
@@ -839,7 +843,7 @@ export class ImportExportService {
     userId: string,
     dto: ImportIntoBoardDto,
   ): Promise<{ boardId: string; message: string; importedCardsCount: number }> {
-    const board = await this.verifyBoardAccess(boardId, userId);
+    const board = await this.verifyBoardAccess(boardId, userId, true);
 
     const rawPayload = dto.data || (dto as any).boardData;
     const validation = this.validateImportData(rawPayload);
@@ -917,7 +921,7 @@ export class ImportExportService {
         }
       }
 
-      if (!targetList) continue;
+      if (!targetList) throw new BadRequestException('Không thể tạo danh sách đích. Một phần dữ liệu có thể đã được lưu; hãy kiểm tra bảng trước khi nhập lại.');
 
       const existingCardsInList = targetList.cards || [];
       let maxCardPos = existingCardsInList.reduce((m: number, c: any) => Math.max(m, c.position || 0), 0);
@@ -1005,7 +1009,7 @@ export class ImportExportService {
 
         if (nCardError || !nCard) {
           this.logger.error(`Failed to insert card "${cardTitle}" in board "${boardId}": ${nCardError?.message}`);
-          continue;
+          throw new BadRequestException('Nhập dữ liệu bị gián đoạn. Một phần dữ liệu có thể đã được lưu; hãy kiểm tra bảng trước khi nhập lại.');
         }
 
         totalImported++;

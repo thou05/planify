@@ -1,3 +1,4 @@
+import { assertBoardWritable } from '../../common/board-access';
 import {
   Injectable,
   NotFoundException,
@@ -82,6 +83,7 @@ export class CustomFieldsService {
   }
 
   private async verifyBoardAccess(boardId: string, userId: string, requireEdit = false) {
+    if (requireEdit) await assertBoardWritable(this.supabase, boardId);
     const { data: board, error } = await this.supabase
       .from('boards')
       .select('id, workspace_id, visibility, workspace:workspaces (owner_id)')
@@ -173,7 +175,7 @@ export class CustomFieldsService {
 
     const { data: fields, error } = await this.supabase
       .from('custom_fields')
-      .select('id, board_id, name, field_type')
+      .select('id, board_id, name, field_type, options')
       .eq('board_id', boardId)
       .order('name', { ascending: true });
 
@@ -221,7 +223,7 @@ export class CustomFieldsService {
         name: cleanName,
         field_type: dto.field_type.toUpperCase(),
       })
-      .select('id, board_id, name, field_type')
+      .select('id, board_id, name, field_type, options')
       .single();
 
     if (error || !created) {
@@ -317,7 +319,7 @@ export class CustomFieldsService {
         .from('custom_fields')
         .update(updateData)
         .eq('id', id)
-        .select('id, board_id, name, field_type')
+        .select('id, board_id, name, field_type, options')
         .single();
 
       if (error || !u) {
@@ -450,7 +452,7 @@ export class CustomFieldsService {
     // Verify custom field belongs to the same board
     const { data: field, error: fErr } = await this.supabase
       .from('custom_fields')
-      .select('id, board_id, name, field_type')
+      .select('id, board_id, name, field_type, options')
       .eq('id', fieldId)
       .maybeSingle();
 

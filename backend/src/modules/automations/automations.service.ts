@@ -1,3 +1,4 @@
+import { assertBoardWritable } from '../../common/board-access';
 import {
   Injectable,
   NotFoundException,
@@ -142,6 +143,7 @@ export class AutomationsService {
   // ============================================================================
 
   private async verifyBoardAccess(boardId: string, userId: string, requireEdit = false) {
+    if (requireEdit) await assertBoardWritable(this.supabase, boardId);
     const { data: board, error: bError } = await this.supabase
       .from('boards')
       .select('id, workspace_id, visibility, workspace:workspaces (owner_id)')
@@ -469,6 +471,7 @@ export class AutomationsService {
     triggerEvent = 'EVENT',
     depth = 0,
   ): Promise<{ success: boolean; log: AutomationExecutionLog }> {
+    await assertBoardWritable(this.supabase, automation.board_id);
     const startedAt = new Date().toISOString();
     let actionsSucceeded = 0;
     const actionDetails: Array<{ type: string; status: 'SUCCESS' | 'FAILED'; error?: string }> = [];
@@ -497,6 +500,23 @@ export class AutomationsService {
       } catch {}
     }
 
+    if (cardId && (!card || card.list?.board_id !== automation.board_id)) throw new ForbiddenException('Thẻ không thuộc bảng của quy tắc');
+    for (const action of automation.actions) {
+      if (['ADD_LABEL', 'REMOVE_LABEL'].includes(action.type)) {
+        const { data: label, error } = await this.supabase.from('labels').select('board_id').eq('id', action.params?.labelId).maybeSingle();
+        if (error || !label || label.board_id !== automation.board_id) throw new ForbiddenException('Nhãn không thuộc bảng của quy tắc');
+      }
+      if (['ASSIGN_MEMBER', 'REMOVE_MEMBER'].includes(action.type)) {
+        const memberId = action.params?.memberId === 'current_user' ? actorId : action.params?.memberId;
+        const { data: member, error } = await this.supabase.from('board_members').select('id, role').eq('board_id', automation.board_id).eq('user_id', memberId).maybeSingle();
+        if (error || !member || (action.type === 'ASSIGN_MEMBER' && !['ADMIN', 'EDITOR', 'MEMBER'].includes(member.role))) throw new ForbiddenException('Thành viên không đủ quyền nhận việc trong bảng');
+      }
+      const listId = action.params?.targetListId || action.params?.destination_list_id || action.params?.listId;
+      if (listId) {
+        const { data: list, error } = await this.supabase.from('lists').select('board_id, limit').eq('id', listId).maybeSingle();
+        if (error || !list || list.board_id !== automation.board_id) throw new ForbiddenException('Danh sách không thuộc bảng của quy tắc');
+      }
+    }
     // Process actions sequentially
     let lastError: string | null = null;
     for (const action of automation.actions) {
@@ -543,6 +563,11 @@ export class AutomationsService {
     return { success: status !== 'FAILED', log };
   }
 
+  private async requireWrite(query: PromiseLike<{ error: any }>) {
+    const result = await query;
+    if (result.error) throw new BadRequestException('Không thể lưu hành động tự động');
+  }
+
   private async executeSingleAction(
     action: { type: string; params: Record<string, any> },
     automation: AutomationRuleItem,
@@ -574,7 +599,13 @@ export class AutomationsService {
       case 'MOVE_CARD': {
         if (!card?.id) break;
         const targetListId = params.targetListId || params.destination_list_id;
-        if (!targetListId) break;
+        if (!targetListId) throw new BadRequestException('Thiếu danh sách đích');
+        const { data: destination, error: destinationError } = await this.supabase.from('lists').select('limit').eq('id', targetListId).maybeSingle();
+        if (destinationError || !destination) throw new BadRequestException('Không tìm thấy danh sách đích');
+        if (card.list_id !== targetListId && destination.limit > 0) {
+          const { count, error } = await this.supabase.from('cards').select('*', { count: 'exact', head: true }).eq('list_id', targetListId);
+          if (error || count === null || count >= destination.limit) throw new BadRequestException('Danh sách đích đã đầy');
+        }
 
         // Fetch cards in target list to determine position
         const { data: targetCards } = await this.supabase
@@ -583,12 +614,12 @@ export class AutomationsService {
           .eq('list_id', targetListId)
           .order('position', { ascending: true });
 
-        const position = params.position === 'top' ? 0 : (targetCards?.length || 0);
-
-        await this.supabase
-          .from('cards')
-          .update({ list_id: targetListId, position })
-          .eq('id', card.id);
+        const ordered = (targetCards || []).filter(c => c.id !== card.id);
+        const position = params.position === 'top' ? 0 : ordered.length;
+        ordered.splice(position, 0, { id: card.id, position });
+        for (let i = 0; i < ordered.length; i++) {
+          await this.requireWrite(this.supabase.from('cards').update({ position: i, ...(ordered[i].id === card.id ? { list_id: targetListId } : {}) }).eq('id', ordered[i].id));
+        }
 
         this.supabase.emitBoardEvent(automation.board_id, 'CARD_MOVED', {
           cardId: card.id,
@@ -597,15 +628,21 @@ export class AutomationsService {
           position,
           senderId: actorId,
         });
+        card.list_id = targetListId;
+        const { data: movedList } = await this.supabase.from('lists').select('id, title, board_id').eq('id', targetListId).maybeSingle();
+        card.list = movedList;
         break;
       }
 
       case 'MARK_COMPLETED': {
-        if (!card?.id) break;
-        await this.supabase
+        if (!card?.id) throw new BadRequestException('Cần chọn thẻ');
+        const { data: blockers, error } = await this.supabase.from('card_relations').select('related_card:cards!related_card_id(status, is_due_date_completed)').eq('card_id', card.id).eq('type', 'BLOCKED_BY');
+        if (error) throw new BadRequestException('Không thể kiểm tra thẻ chặn');
+        if ((blockers || []).some((b: any) => b.related_card && !b.related_card.is_due_date_completed && b.related_card.status !== 'DONE')) throw new BadRequestException('Thẻ đang bị chặn bởi công việc chưa hoàn thành');
+        await this.requireWrite(this.supabase
           .from('cards')
           .update({ is_due_date_completed: true, status: 'DONE' })
-          .eq('id', card.id);
+          .eq('id', card.id));
 
         this.supabase.emitBoardEvent(automation.board_id, 'CARD_UPDATED', {
           cardId: card.id,
@@ -617,10 +654,10 @@ export class AutomationsService {
 
       case 'MARK_INCOMPLETE': {
         if (!card?.id) break;
-        await this.supabase
+        await this.requireWrite(this.supabase
           .from('cards')
           .update({ is_due_date_completed: false, status: 'TODO' })
-          .eq('id', card.id);
+          .eq('id', card.id));
 
         this.supabase.emitBoardEvent(automation.board_id, 'CARD_UPDATED', {
           cardId: card.id,
@@ -660,14 +697,14 @@ export class AutomationsService {
         }
 
         if (dueDate) {
-          await this.supabase
+          await this.requireWrite(this.supabase
             .from('cards')
-            .update({ due_date: dueDate, is_due_date_completed: false })
-            .eq('id', card.id);
+            .update({ due_date: dueDate, is_due_date_completed: false, status: 'TODO' })
+            .eq('id', card.id));
 
           this.supabase.emitBoardEvent(automation.board_id, 'CARD_UPDATED', {
             cardId: card.id,
-            updated: { due_date: dueDate },
+            updated: { due_date: dueDate, is_due_date_completed: false, status: 'TODO' },
             senderId: actorId,
           });
         }
@@ -676,10 +713,10 @@ export class AutomationsService {
 
       case 'ADD_LABEL': {
         if (!card?.id || !params.labelId) break;
-        await this.supabase
+        await this.requireWrite(this.supabase
           .from('card_labels')
           .insert({ card_id: card.id, label_id: params.labelId })
-          .maybeSingle();
+          .maybeSingle());
 
         this.supabase.emitBoardEvent(automation.board_id, 'CARD_UPDATED', {
           cardId: card.id,
@@ -690,11 +727,11 @@ export class AutomationsService {
 
       case 'REMOVE_LABEL': {
         if (!card?.id || !params.labelId) break;
-        await this.supabase
+        await this.requireWrite(this.supabase
           .from('card_labels')
           .delete()
           .eq('card_id', card.id)
-          .eq('label_id', params.labelId);
+          .eq('label_id', params.labelId));
 
         this.supabase.emitBoardEvent(automation.board_id, 'CARD_UPDATED', {
           cardId: card.id,
@@ -708,10 +745,10 @@ export class AutomationsService {
         const memberId = params.memberId === 'current_user' ? actorId : params.memberId;
         if (!memberId) break;
 
-        await this.supabase
+        await this.requireWrite(this.supabase
           .from('card_assignees')
           .insert({ card_id: card.id, user_id: memberId })
-          .maybeSingle();
+          .maybeSingle());
 
         this.supabase.emitBoardEvent(automation.board_id, 'CARD_UPDATED', {
           cardId: card.id,
@@ -724,11 +761,11 @@ export class AutomationsService {
         if (!card?.id || !params.memberId) break;
         const memberId = params.memberId === 'current_user' ? actorId : params.memberId;
 
-        await this.supabase
+        await this.requireWrite(this.supabase
           .from('card_assignees')
           .delete()
           .eq('card_id', card.id)
-          .eq('user_id', memberId);
+          .eq('user_id', memberId));
 
         this.supabase.emitBoardEvent(automation.board_id, 'CARD_UPDATED', {
           cardId: card.id,
@@ -741,11 +778,11 @@ export class AutomationsService {
         if (!card?.id || !params.content) break;
         const content = replaceVariables(params.content);
 
-        await this.supabase.from('comments').insert({
+        await this.requireWrite(this.supabase.from('comments').insert({
           card_id: card.id,
           user_id: actorId,
           content,
-        });
+        }));
 
         this.supabase.emitBoardEvent(automation.board_id, 'COMMENT_CREATED', {
           cardId: card.id,
@@ -756,10 +793,10 @@ export class AutomationsService {
 
       case 'ARCHIVE_CARD': {
         if (!card?.id) break;
-        await this.supabase
+        await this.requireWrite(this.supabase
           .from('cards')
           .update({ status: 'ARCHIVED' })
-          .eq('id', card.id);
+          .eq('id', card.id));
 
         this.supabase.emitBoardEvent(automation.board_id, 'CARD_UPDATED', {
           cardId: card.id,
@@ -803,10 +840,10 @@ export class AutomationsService {
           });
 
           for (let i = 0; i < sorted.length; i++) {
-            await this.supabase
+            await this.requireWrite(this.supabase
               .from('cards')
               .update({ position: i })
-              .eq('id', sorted[i].id);
+              .eq('id', sorted[i].id));
           }
 
           this.supabase.emitBoardEvent(automation.board_id, 'CARDS_REORDERED', {
@@ -834,10 +871,10 @@ export class AutomationsService {
 
           if (doneCards && doneCards.length > 0) {
             for (const c of doneCards) {
-              await this.supabase
+              await this.requireWrite(this.supabase
                 .from('cards')
                 .update({ status: 'ARCHIVED' })
-                .eq('id', c.id);
+                .eq('id', c.id));
             }
 
             this.supabase.emitBoardEvent(automation.board_id, 'CARDS_ARCHIVED', {

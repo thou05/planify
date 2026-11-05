@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { apiClient } from '@/lib/api-client';
-import { supabase } from '@/lib/supabase';
+import { createRealtimeClient } from '@/lib/supabase';
 import { useShell } from '@/components/layout/ShellContext';
 import {
   Layers,
@@ -46,7 +46,8 @@ export default function DashboardPage() {
     fetchDashboardData();
 
     if (!user?.id) return;
-    const channel = supabase.channel(`user-dashboard:${user.id}`, {
+    const realtime = createRealtimeClient();
+    const channel = realtime.channel(`user:${user.id}`, {
       config: { broadcast: { self: false } },
     });
 
@@ -57,7 +58,7 @@ export default function DashboardPage() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      realtime.removeChannel(channel);
     };
   }, [user?.id]);
 
