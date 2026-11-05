@@ -244,6 +244,7 @@ export class BoardsService {
             title,
             description,
             position,
+            status,
             start_date,
             due_date,
             reminder_at,

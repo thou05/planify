@@ -1,6 +1,7 @@
 'use client';
 
 import { getContrastTextColor } from '@/lib/color-utils';
+import { apiClient } from '@/lib/api-client';
 
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
@@ -121,6 +122,28 @@ export default function KanbanCard({
   useEffect(() => { if (!isCardDragActive || isDraggingCard) setDropPosition(null); }, [isCardDragActive, isDraggingCard]);
   const [mounted, setMounted] = useState(false);
   const [isCoverError, setIsCoverError] = useState(false);
+  const [isTogglingComplete, setIsTogglingComplete] = useState(false);
+
+  const isCardDone = Boolean(card.is_due_date_completed || card.status === 'DONE' || card.status === 'COMPLETED');
+
+  const handleToggleCardComplete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!canEdit || isTogglingComplete) return;
+
+    try {
+      setIsTogglingComplete(true);
+      await apiClient(`/cards/${card.id}`, {
+        method: 'PATCH',
+        data: { is_due_date_completed: !isCardDone },
+      });
+      onCardUpdated();
+    } catch (err: any) {
+      alert(err.message || 'Không thể cập nhật trạng thái hoàn thành của thẻ');
+    } finally {
+      setIsTogglingComplete(false);
+    }
+  };
 
   const coverImage = card.attachments?.find((att: any) => isImageFile(att.file_name, att.file_url));
   const firstDocAttachment = card.attachments?.find((att: any) => !isImageFile(att.file_name, att.file_url));
@@ -383,22 +406,53 @@ export default function KanbanCard({
 
         {/* Card Header & Title */}
         <div className="flex items-start justify-between gap-2">
-          {isEditingTitle && canEdit ? (
-            <input
-              ref={inputRef}
-              type="text"
-              value={titleValue}
-              onChange={(e) => setTitleValue(e.target.value)}
-              onBlur={handleSaveTitle}
-              onKeyDown={handleKeyDown}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full text-xs font-semibold text-slate-900 bg-white border border-[#87ceeb] rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#87ceeb]/40"
-            />
-          ) : (
-            <h4 className="text-xs font-semibold text-slate-900 leading-snug break-words flex-1 group-hover:text-[#d86969] transition-colors">
-              {card.title}
-            </h4>
-          )}
+          <div className="flex items-start gap-1.5 flex-1 min-w-0">
+            {/* Completion Radio Button */}
+            <button
+              type="button"
+              disabled={!canEdit || isTogglingComplete}
+              onClick={handleToggleCardComplete}
+              className={`mt-0.5 w-4 h-4 rounded-full flex items-center justify-center shrink-0 transition-all ${
+                !canEdit
+                  ? isCardDone
+                    ? 'bg-emerald-600 text-white cursor-default'
+                    : 'border-2 border-slate-300 bg-white cursor-default'
+                  : isCardDone
+                    ? 'bg-emerald-600 text-white shadow-2xs hover:bg-emerald-700 cursor-pointer'
+                    : 'border-2 border-slate-300 hover:border-slate-500 bg-white/90 hover:bg-slate-100 cursor-pointer'
+              } ${isTogglingComplete ? 'opacity-60 cursor-wait' : ''}`}
+              title={
+                !canEdit
+                  ? isCardDone ? 'Đã hoàn tất' : 'Chưa hoàn tất'
+                  : isCardDone ? 'Đánh dấu chưa hoàn tất' : 'Đánh dấu đã hoàn thành'
+              }
+            >
+              {isCardDone && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+            </button>
+
+            {isEditingTitle && canEdit ? (
+              <input
+                ref={inputRef}
+                type="text"
+                value={titleValue}
+                onChange={(e) => setTitleValue(e.target.value)}
+                onBlur={handleSaveTitle}
+                onKeyDown={handleKeyDown}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full text-xs font-semibold text-slate-900 bg-white border border-[#87ceeb] rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#87ceeb]/40"
+              />
+            ) : (
+              <h4
+                className={`text-xs font-semibold leading-snug break-words flex-1 transition-colors ${
+                  isCardDone
+                    ? 'line-through text-slate-400 group-hover:text-slate-500'
+                    : 'text-slate-900 group-hover:text-[#d86969]'
+                }`}
+              >
+                {card.title}
+              </h4>
+            )}
+          </div>
 
           {/* Quick Menu Trigger Button */}
           {canEdit && (

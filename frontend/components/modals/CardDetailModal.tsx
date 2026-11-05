@@ -2613,27 +2613,64 @@ function CardDetailSession({
       <div className="bg-white rounded-lg shadow-xl border border-slate-300 w-full max-w-5xl h-[88vh] max-h-[850px] flex flex-col overflow-hidden relative">
         {/* Modal Header */}
         <div className="p-4 sm:p-5 pb-3 border-b border-slate-200 flex items-start justify-between gap-4 shrink-0">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
               <span>Trong danh sách</span>
               <span className="font-semibold text-slate-800 underline underline-offset-2">
                 {card?.list?.title || 'Đang tải...'}
               </span>
             </div>
-            {canEdit ? (
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                onBlur={() => handleSaveText('title')}
-                className="w-full text-base sm:text-lg font-bold text-slate-900 bg-transparent hover:bg-slate-50 focus:bg-white border border-transparent hover:border-slate-200 focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 rounded-md px-2 py-1 -ml-2 focus:outline-none transition-all"
-                placeholder="Tiêu đề thẻ..."
-              />
-            ) : (
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 px-2 py-1 -ml-2 select-text">
-                {title || card?.title || 'Tiêu đề thẻ'}
-              </h2>
-            )}
+            <div className="flex items-center gap-2.5">
+              {/* Radio Button hoàn thành cạnh tiêu đề */}
+              <button
+                type="button"
+                onClick={canEdit ? handleToggleCompleted : undefined}
+                disabled={!canEdit}
+                className={`w-5 h-5 rounded-full shrink-0 flex items-center justify-center transition-all ${
+                  !canEdit
+                    ? isCompleted
+                      ? 'bg-emerald-600 text-white cursor-default'
+                      : 'border-2 border-slate-300 bg-white cursor-default'
+                    : isCompleted
+                      ? 'bg-emerald-600 text-white shadow-2xs hover:bg-emerald-700 cursor-pointer'
+                      : relations.some(r => r.type === 'BLOCKED_BY' && !r.related_card?.is_due_date_completed && r.related_card?.status !== 'DONE')
+                        ? 'border-2 border-rose-400 bg-rose-50 text-rose-600 hover:border-rose-600 cursor-pointer'
+                        : 'border-2 border-slate-400 hover:border-slate-600 bg-white/50 hover:bg-slate-100 cursor-pointer'
+                }`}
+                title={
+                  !canEdit
+                    ? isCompleted ? 'Đã hoàn tất' : 'Chưa hoàn tất'
+                    : isCompleted
+                      ? 'Đánh dấu chưa hoàn tất'
+                      : relations.some(r => r.type === 'BLOCKED_BY' && !r.related_card?.is_due_date_completed && r.related_card?.status !== 'DONE')
+                        ? '⛔ Thẻ đang bị chặn bởi thẻ khác chưa hoàn thành (Bấm để xem chi tiết)'
+                        : 'Đánh dấu đã hoàn thành'
+                }
+              >
+                {isCompleted ? (
+                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                ) : relations.some(r => r.type === 'BLOCKED_BY' && !r.related_card?.is_due_date_completed && r.related_card?.status !== 'DONE') ? (
+                  <Ban className="w-3 h-3 text-rose-500" />
+                ) : null}
+              </button>
+
+              <div className="flex-1 min-w-0">
+                {canEdit ? (
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    onBlur={() => handleSaveText('title')}
+                    className="w-full text-base sm:text-lg font-bold text-slate-900 bg-transparent hover:bg-slate-50 focus:bg-white border border-transparent hover:border-slate-200 focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 rounded-md px-2 py-1 -ml-2 focus:outline-none transition-all"
+                    placeholder="Tiêu đề thẻ..."
+                  />
+                ) : (
+                  <h2 className="text-base sm:text-lg font-bold text-slate-900 px-2 py-1 -ml-2 select-text">
+                    {title || card?.title || 'Tiêu đề thẻ'}
+                  </h2>
+                )}
+              </div>
+            </div>
           </div>
 
           <button
