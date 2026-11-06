@@ -5,10 +5,11 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { User, Mail, Lock, Eye, EyeOff, LayoutGrid, ArrowRight, Loader2 } from 'lucide-react';
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
+import OtpModal from '@/components/auth/OtpModal';
 
 function getSafeRedirectUrl(url: string | null): string {
   if (!url) return '/dashboard';
-  // Ensure the redirect is a relative path and not a protocol-relative (//) or external URL
   if (url.startsWith('/') && !url.startsWith('//') && !url.includes('\\')) {
     return url;
   }
@@ -19,7 +20,7 @@ function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectUrl = getSafeRedirectUrl(searchParams.get('redirect'));
-  const { register } = useAuth();
+  const { sendRegisterOtp, verifyRegisterOtp } = useAuth();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -27,6 +28,8 @@ function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,126 +43,177 @@ function RegisterForm() {
     setIsLoading(true);
 
     try {
-      await register(name, email, password);
-      router.push(redirectUrl);
+      // Step 1: Send OTP to user's email
+      await sendRegisterOtp(email.trim().toLowerCase(), name.trim());
+      // Step 2: Open OTP verification modal
+      setIsOtpModalOpen(true);
     } catch (err: any) {
-      setError(err.message || 'Đăng ký không thành công, vui lòng thử lại');
+      setError(err.message || 'Không thể gửi mã xác thực. Vui lòng kiểm tra lại email.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleVerifyOtp = async (otp: string) => {
+    setIsVerifying(true);
+    try {
+      await verifyRegisterOtp({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        password,
+        otp,
+      });
+      setIsOtpModalOpen(false);
+      router.push(redirectUrl);
+    } catch (err: any) {
+      throw err; // Let OtpModal display the specific verification error
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    await sendRegisterOtp(email.trim().toLowerCase(), name.trim());
+  };
+
   return (
-    <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-300 p-8 sm:p-10 relative">
-      <div className="flex flex-col items-center mb-8">
-        <div className="w-12 h-12 rounded-xl bg-[#f28d8d] flex items-center justify-center text-white shadow-xs mb-3">
-          <LayoutGrid className="w-6 h-6" />
+    <>
+      <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-300 p-8 sm:p-10 relative">
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-12 h-12 rounded-xl bg-[#f28d8d] flex items-center justify-center text-white shadow-xs mb-3">
+            <LayoutGrid className="w-6 h-6" />
+          </div>
+          <h1 className="text-xl sm:text-2xl font-semibold text-slate-900">Tạo tài khoản Planify</h1>
+          <p className="text-xs text-slate-500 mt-1 text-center">
+            Bắt đầu trải nghiệm quản lý công việc thế hệ mới
+          </p>
         </div>
-        <h1 className="text-xl sm:text-2xl font-semibold text-slate-900">Tạo tài khoản Planify</h1>
-        <p className="text-xs text-slate-500 mt-1 text-center">
-          Bắt đầu trải nghiệm quản lý công việc thế hệ mới
-        </p>
-      </div>
 
-      {error && (
-        <div className="mb-4 p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
-          <span>⚠️</span>
-          <span>{error}</span>
-        </div>
-      )}
+        {error && (
+          <div className="mb-4 p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
+            <span>⚠️</span>
+            <span>{error}</span>
+          </div>
+        )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-            Họ và tên
-          </label>
-          <div className="relative">
-            <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Nguyễn Văn A"
-              className="w-full pl-10 pr-4 py-2.5 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-colors"
-            />
+        {/* Google Sign-In */}
+        <div className="mb-6">
+          <GoogleSignInButton text="Đăng ký với Google" />
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-white px-3 text-slate-400 font-medium">hoặc đăng ký bằng email</span>
+            </div>
           </div>
         </div>
 
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-            Email
-          </label>
-          <div className="relative">
-            <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="tenban@example.com"
-              className="w-full pl-10 pr-4 py-2.5 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-colors"
-            />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Họ và tên
+            </label>
+            <div className="relative">
+              <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Nguyễn Văn A"
+                className="w-full pl-10 pr-4 py-2.5 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-colors"
+              />
+            </div>
           </div>
-        </div>
 
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-            Mật khẩu
-          </label>
-          <div className="relative">
-            <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type={showPassword ? 'text' : 'password'}
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Tối thiểu 6 ký tự"
-              className="w-full pl-10 pr-10 py-2.5 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-colors"
-            />
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Email
+            </label>
+            <div className="relative">
+              <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="tenban@example.com"
+                className="w-full pl-10 pr-4 py-2.5 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-colors"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Mật khẩu
+            </label>
+            <div className="relative">
+              <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Tối thiểu 6 ký tự"
+                className="w-full pl-10 pr-10 py-2.5 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-colors"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="pt-2">
             <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-2.5 px-4 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-xs"
             >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Đang gửi mã xác thực...</span>
+                </>
+              ) : (
+                <>
+                  <span>Đăng ký tài khoản</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
           </div>
-        </div>
+        </form>
 
-        <div className="pt-2">
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full py-2.5 px-4 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-xs"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Đang khởi tạo tài khoản...</span>
-              </>
-            ) : (
-              <>
-                <span>Đăng ký tài khoản</span>
-                <ArrowRight className="w-4 h-4" />
-              </>
-            )}
-          </button>
+        <div className="mt-8 pt-6 border-t border-slate-200 text-center">
+          <p className="text-xs text-slate-500">
+            Đã có tài khoản?{' '}
+            <Link
+              href={`/login${redirectUrl !== '/dashboard' ? `?redirect=${encodeURIComponent(redirectUrl)}` : ''}`}
+              className="font-semibold text-[#d86969] hover:text-[#f28d8d] hover:underline"
+            >
+              Đăng nhập ngay
+            </Link>
+          </p>
         </div>
-      </form>
-
-      <div className="mt-8 pt-6 border-t border-slate-200 text-center">
-        <p className="text-xs text-slate-500">
-          Đã có tài khoản?{' '}
-          <Link
-            href={`/login${redirectUrl !== '/dashboard' ? `?redirect=${encodeURIComponent(redirectUrl)}` : ''}`}
-            className="font-semibold text-[#d86969] hover:text-[#f28d8d] hover:underline"
-          >
-            Đăng nhập ngay
-          </Link>
-        </p>
       </div>
-    </div>
+
+      {/* OTP Verification Modal */}
+      <OtpModal
+        isOpen={isOtpModalOpen}
+        email={email}
+        onClose={() => setIsOtpModalOpen(false)}
+        onVerify={handleVerifyOtp}
+        onResendOtp={handleResendOtp}
+        isLoading={isVerifying}
+        title="Xác thực đăng ký tài khoản"
+        description="Vui lòng nhập mã OTP 6 chữ số đã được gửi tới email để hoàn tất đăng ký"
+      />
+    </>
   );
 }
 

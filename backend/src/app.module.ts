@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { SupabaseModule } from './integrations/supabase/supabase.module';
+import { MailModule } from './modules/mail/mail.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
@@ -38,6 +39,7 @@ import { AutomationsModule } from './modules/automations/automations.module';
       ],
     }),
     SupabaseModule,
+    MailModule,
     AuthModule,
     UsersModule,
     WorkspacesModule,
