@@ -5,10 +5,10 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Mail, Lock, Eye, EyeOff, LayoutGrid, ArrowRight, Loader2 } from 'lucide-react';
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 
 function getSafeRedirectUrl(url: string | null): string {
   if (!url) return '/dashboard';
-  // Ensure the redirect is a relative path and not a protocol-relative (//) or external URL
   if (url.startsWith('/') && !url.startsWith('//') && !url.includes('\\')) {
     return url;
   }
@@ -33,7 +33,7 @@ function LoginForm() {
     setIsLoading(true);
 
     try {
-      await login(email, password);
+      await login(email.trim().toLowerCase(), password);
       router.push(redirectUrl);
     } catch (err: any) {
       setError(err.message || 'Đăng nhập không thành công, vui lòng thử lại');
@@ -61,6 +61,19 @@ function LoginForm() {
         </div>
       )}
 
+      {/* Google Sign-In */}
+      <div className="mb-6">
+        <GoogleSignInButton text="Đăng nhập với Google" />
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-white px-3 text-slate-400 font-medium">hoặc đăng nhập bằng email</span>
+          </div>
+        </div>
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1.5">
@@ -80,9 +93,17 @@ function LoginForm() {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-            Mật khẩu
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700">
+              Mật khẩu
+            </label>
+            <Link
+              href="/forgot-password"
+              className="text-xs font-semibold text-[#d86969] hover:text-[#f28d8d] hover:underline"
+            >
+              Quên mật khẩu?
+            </Link>
+          </div>
           <div className="relative">
             <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input

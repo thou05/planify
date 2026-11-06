@@ -14,6 +14,7 @@ model User {
   name          String            @db.VarChar(100)
   email         String            @unique @db.VarChar(255)
   password_hash String?           @db.VarChar(255)
+  google_id     String?           @unique @db.VarChar(255)
   avatar        String?           @db.Text
   cover_image   String?           @db.Text
   job_title     String?           @db.VarChar(100)
@@ -389,4 +390,19 @@ model AutomationAction {
   rule    AutomationRule @relation(fields: [rule_id], references: [id], onDelete: Cascade)
 
   @@map("automation_actions")
+}
+
+// 24. AUTH OTPS (EMAIL VERIFICATION & FORGOT PASSWORD)
+model AuthOtp {
+  id         String   @id @default(uuid()) @db.Uuid
+  email      String   @db.VarChar(255)
+  otp_code   String   @db.VarChar(10)
+  type       String   @db.VarChar(50) // REGISTER, FORGOT_PASSWORD
+  attempts   Int      @default(0)
+  is_used    Boolean  @default(false)
+  expires_at DateTime @db.Timestamptz
+  created_at DateTime @default(now()) @db.Timestamptz
+
+  @@index([email, type, is_used])
+  @@map("auth_otps")
 }

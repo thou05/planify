@@ -16,6 +16,7 @@ export default function AppLayoutClient({
     pathname === '/' ||
     pathname?.startsWith('/login') ||
     pathname?.startsWith('/register') ||
+    pathname?.startsWith('/forgot-password') ||
     pathname?.startsWith('/invite');
 
   if (isStandalone) {

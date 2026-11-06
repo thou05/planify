@@ -34,12 +34,28 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  loginWithGoogle: (credential: string) => Promise<void>;
+  sendRegisterOtp: (email: string, name?: string) => Promise<void>;
+  verifyRegisterOtp: (data: { name: string; email: string; password: string; otp: string }) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (email: string, otp: string, newPassword: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   updateUser: (data: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+function getSafeRedirectUrl(): string {
+  if (typeof window !== 'undefined') {
+    const params = new URLSearchParams(window.location.search);
+    const redirect = params.get('redirect');
+    if (redirect && redirect.startsWith('/') && !redirect.startsWith('//') && !redirect.includes('\\')) {
+      return redirect;
+    }
+  }
+  return '/dashboard';
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [sessionError, setSessionError] = useState('');
@@ -73,8 +89,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch (error) {
-      if (error instanceof ApiError && error.status === 401) logout();
-      else { setToken(savedToken); setSessionError('Không thể kết nối máy chủ. Vui lòng thử lại.'); }
+      if (error instanceof ApiError && error.status === 401) {
+        logout();
+      } else {
+        setToken(savedToken);
+        setSessionError('Không thể kết nối máy chủ. Vui lòng thử lại.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -108,6 +128,72 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const loginWithGoogle = async (credential: string) => {
+    const res = await apiClient<{ user: User; accessToken?: string; token?: string }>('/auth/google', {
+      data: { credential },
+    });
+
+    const authToken = res.data?.accessToken || res.data?.token;
+    if (authToken) {
+      localStorage.setItem('planify_token', authToken);
+      setToken(authToken);
+      if (res.data?.user) {
+        setUser(res.data.user);
+      }
+      if (typeof window !== 'undefined') {
+        window.location.href = getSafeRedirectUrl();
+      }
+    }
+  };
+
+  const sendRegisterOtp = async (email: string, name?: string) => {
+    await apiClient('/auth/send-register-otp', {
+      data: { email, name },
+    });
+  };
+
+  const verifyRegisterOtp = async (data: { name: string; email: string; password: string; otp: string }) => {
+    const res = await apiClient<{ user: User; accessToken?: string; token?: string }>('/auth/verify-register-otp', {
+      data,
+    });
+
+    const authToken = res.data?.accessToken || res.data?.token;
+    if (authToken) {
+      localStorage.setItem('planify_token', authToken);
+      setToken(authToken);
+      if (res.data?.user) {
+        setUser(res.data.user);
+      }
+      if (typeof window !== 'undefined') {
+        window.location.href = getSafeRedirectUrl();
+      }
+    }
+  };
+
+  const forgotPassword = async (email: string) => {
+    await apiClient('/auth/forgot-password', {
+      data: { email },
+    });
+  };
+
+  const resetPassword = async (email: string, otp: string, newPassword: string) => {
+    const res = await apiClient<{ user: User; accessToken?: string; token?: string }>('/auth/reset-password', {
+      data: { email, otp, newPassword },
+    });
+
+    const authToken = res.data?.accessToken || res.data?.token;
+    if (authToken) {
+      localStorage.setItem('planify_token', authToken);
+      setToken(authToken);
+      if (res.data?.user) {
+        setUser(res.data.user);
+      }
+      if (typeof window !== 'undefined') {
+        window.location.href = getSafeRedirectUrl();
+      }
+    }
+  };
+
   const updateUser = (data: Partial<User>) => {
     setUser((prev) => (prev ? { ...prev, ...data } : null));
   };
@@ -116,7 +202,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('planify_token');
     setToken(null);
     setUser(null);
-    if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register') && !window.location.pathname.startsWith('/invite')) {
+    if (
+      typeof window !== 'undefined' &&
+      !window.location.pathname.startsWith('/login') &&
+      !window.location.pathname.startsWith('/register') &&
+      !window.location.pathname.startsWith('/invite') &&
+      !window.location.pathname.startsWith('/forgot-password')
+    ) {
       window.location.href = '/login';
     }
   };
@@ -129,12 +221,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         login,
         register,
+        loginWithGoogle,
+        sendRegisterOtp,
+        verifyRegisterOtp,
+        forgotPassword,
+        resetPassword,
         logout,
         refreshUser,
         updateUser,
       }}
     >
-      {sessionError ? <div role="alert" className="m-6 rounded border border-amber-300 bg-amber-50 p-4 text-sm text-slate-900">{sessionError}<button className="ml-4 underline" onClick={() => { void refreshUser(); }}>Thử lại</button></div> : children}
+      {sessionError ? (
+        <div role="alert" className="m-6 rounded border border-amber-300 bg-amber-50 p-4 text-sm text-slate-900">
+          {sessionError}
+          <button
+            className="ml-4 underline"
+            onClick={() => {
+              void refreshUser();
+            }}
+          >
+            Thử lại
+          </button>
+        </div>
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   );
 }

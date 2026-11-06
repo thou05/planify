@@ -193,6 +193,15 @@ export default function AppShell({
 
   useEffect(() => {
     if (!isLoading && !user) {
+      if (
+        pathname === '/' ||
+        pathname?.startsWith('/login') ||
+        pathname?.startsWith('/register') ||
+        pathname?.startsWith('/forgot-password') ||
+        pathname?.startsWith('/invite')
+      ) {
+        return;
+      }
       router.push('/login');
     } else if (user) {
       fetchWorkspaces();
