@@ -4,7 +4,8 @@ import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { Mail, Lock, Eye, EyeOff, KeyRound, ArrowRight, ArrowLeft, Loader2, RotateCcw } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft, Loader2, RotateCcw } from 'lucide-react';
+import { DoodleIdeaBulb } from '@/components/playful/DoodleIcons';
 
 function ForgotPasswordForm() {
   const router = useRouter();
@@ -25,7 +26,7 @@ function ForgotPasswordForm() {
 
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Focus on first OTP input when transitioning to Step 2
+  // Focus vào ô OTP đầu tiên khi chuyển sang bước 2
   useEffect(() => {
     if (step === 2) {
       setTimer(60);
@@ -36,7 +37,7 @@ function ForgotPasswordForm() {
     }
   }, [step]);
 
-  // Countdown timer for step 2
+  // Bộ đếm ngược 60 giây ở bước 2
   useEffect(() => {
     if (step !== 2 || timer <= 0) return;
 
@@ -47,7 +48,7 @@ function ForgotPasswordForm() {
     return () => clearInterval(interval);
   }, [step, timer]);
 
-  // Handle Step 1: Request password reset OTP
+  // Bước 1: Yêu cầu gửi OTP đặt lại mật khẩu
   const handleRequestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -69,7 +70,7 @@ function ForgotPasswordForm() {
     }
   };
 
-  // Handle Step 2: Resend OTP
+  // Bước 2: Gửi lại mã OTP
   const handleResendOtp = async () => {
     if (timer > 0 || isResending) return;
 
@@ -87,7 +88,7 @@ function ForgotPasswordForm() {
     }
   };
 
-  // Handle OTP digit changes
+  // Xử lý nhập từng ô OTP và tự động chuyển ô tiếp theo
   const handleDigitChange = (index: number, val: string) => {
     setError('');
     const clean = val.replace(/\D/g, '');
@@ -113,6 +114,7 @@ function ForgotPasswordForm() {
     }
   };
 
+  // Xử lý paste chuỗi OTP (hỗ trợ paste nhanh 6 số)
   const handlePastedOtp = (pasted: string, startIndex: number = 0) => {
     const clean = pasted.replace(/\D/g, '');
     if (!clean) return;
@@ -127,6 +129,7 @@ function ForgotPasswordForm() {
     otpInputRefs.current[nextIndex]?.focus();
   };
 
+  // Hỗ trợ phím Backspace, ArrowLeft, ArrowRight
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace') {
       if (!otpDigits[index] && index > 0) {
@@ -148,7 +151,7 @@ function ForgotPasswordForm() {
     }
   };
 
-  // Handle Step 2: Reset password
+  // Bước 2: Xác thực OTP và đặt lại mật khẩu
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -181,13 +184,14 @@ function ForgotPasswordForm() {
   };
 
   return (
-    <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-300 p-8 sm:p-10 relative">
+    <div className="w-full bg-white/85 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl shadow-[0_20px_50px_rgba(15,23,42,0.08)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/60 dark:border-slate-700/60 p-8 sm:p-10 relative transition-all duration-300">
+      {/* Idea Bulb Badge Header */}
       <div className="flex flex-col items-center mb-8">
-        <div className="w-12 h-12 rounded-xl bg-[#f28d8d] flex items-center justify-center text-white shadow-xs mb-3">
-          <KeyRound className="w-6 h-6" />
+        <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#f28d8d] to-[#ffc0cb] flex items-center justify-center shadow-md shadow-rose-200/50 dark:shadow-rose-950/30 mb-3 animate-doodle-bob-gentle">
+          <DoodleIdeaBulb className="w-10 h-10" />
         </div>
-        <h1 className="text-xl sm:text-2xl font-semibold text-slate-900">Quên mật khẩu</h1>
-        <p className="text-xs text-slate-500 mt-1 text-center">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Quên mật khẩu</h1>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 text-center max-w-xs">
           {step === 1
             ? 'Nhập địa chỉ email của bạn để nhận mã xác thực đặt lại mật khẩu'
             : 'Nhập mã xác thực 6 số và thiết lập mật khẩu mới của bạn'}
@@ -195,7 +199,7 @@ function ForgotPasswordForm() {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
+        <div className="mb-4 p-3 rounded-xl bg-rose-50/90 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-900/50 text-rose-700 dark:text-rose-300 text-xs font-medium flex items-center gap-2">
           <span>⚠️</span>
           <span>{error}</span>
         </div>
@@ -204,18 +208,18 @@ function ForgotPasswordForm() {
       {step === 1 ? (
         <form onSubmit={handleRequestOtp} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
               Email tài khoản
             </label>
             <div className="relative">
-              <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tenban@example.com"
-                className="w-full pl-10 pr-4 py-2.5 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-colors"
+                className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-2 focus:ring-[#87ceeb]/40 transition-all"
               />
             </div>
           </div>
@@ -224,7 +228,7 @@ function ForgotPasswordForm() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-2.5 px-4 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-xs"
+              className="w-full py-2.5 px-4 bg-gradient-to-r from-[#f28d8d] to-[#e57a7a] hover:from-[#e57a7a] hover:to-[#d86969] text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition-all shadow-md shadow-rose-200/50 dark:shadow-none active:scale-[0.98]"
             >
               {isLoading ? (
                 <>
@@ -242,9 +246,9 @@ function ForgotPasswordForm() {
         </form>
       ) : (
         <form onSubmit={handleResetPassword} className="space-y-4">
-          <div className="text-center p-3 rounded-md bg-slate-50 border border-slate-200">
-            <p className="text-xs text-slate-500">Mã xác thực đã gửi tới</p>
-            <p className="text-xs font-semibold text-slate-800">{email}</p>
+          <div className="text-center p-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
+            <p className="text-xs text-slate-500 dark:text-slate-400">Mã xác thực đã gửi tới</p>
+            <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">{email}</p>
             <button
               type="button"
               onClick={() => {
@@ -257,9 +261,9 @@ function ForgotPasswordForm() {
             </button>
           </div>
 
-          {/* 6 OTP Boxes */}
+          {/* 6 Ô Nhập OTP */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5 text-center">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 text-center">
               Mã xác thực OTP (6 chữ số)
             </label>
             <div className="flex items-center justify-center gap-2 sm:gap-2.5 my-2">
@@ -282,19 +286,19 @@ function ForgotPasswordForm() {
                   }}
                   disabled={isLoading}
                   autoComplete="one-time-code"
-                  className={`w-10 h-12 sm:w-11 sm:h-13 text-center text-lg font-bold rounded-lg border transition-all outline-none ${
+                  className={`w-10 h-12 sm:w-11 sm:h-13 text-center text-lg font-bold rounded-xl border transition-all outline-none ${
                     digit
-                      ? 'border-[#f28d8d] bg-rose-50/40 text-slate-900 ring-2 ring-[#f28d8d]/25'
-                      : 'border-slate-300 bg-white text-slate-900 focus:border-[#f28d8d] focus:ring-2 focus:ring-[#f28d8d]/30'
+                      ? 'border-[#f28d8d] bg-rose-50/40 dark:bg-rose-950/30 text-slate-900 dark:text-white ring-2 ring-[#f28d8d]/25'
+                      : 'border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 text-slate-900 dark:text-white focus:border-[#f28d8d] focus:ring-2 focus:ring-[#f28d8d]/30'
                   } disabled:opacity-50`}
                 />
               ))}
             </div>
 
-            {/* Resend button */}
+            {/* Nút gửi lại mã */}
             <div className="text-center mt-2 text-xs">
               {timer > 0 ? (
-                <p className="text-slate-500">
+                <p className="text-slate-500 dark:text-slate-400">
                   Gửi lại mã sau <span className="font-semibold text-[#d86969]">{timer}s</span>
                 </p>
               ) : (
@@ -321,23 +325,23 @@ function ForgotPasswordForm() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
               Mật khẩu mới
             </label>
             <div className="relative">
-              <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
               <input
                 type={showNewPassword ? 'text' : 'password'}
                 required
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Tối thiểu 6 ký tự"
-                className="w-full pl-10 pr-10 py-2.5 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-colors"
+                className="w-full pl-10 pr-10 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-2 focus:ring-[#87ceeb]/40 transition-all"
               />
               <button
                 type="button"
                 onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors cursor-pointer"
               >
                 {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -345,23 +349,23 @@ function ForgotPasswordForm() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
               Xác nhận mật khẩu mới
             </label>
             <div className="relative">
-              <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Nhập lại mật khẩu mới"
-                className="w-full pl-10 pr-10 py-2.5 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-colors"
+                className="w-full pl-10 pr-10 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-2 focus:ring-[#87ceeb]/40 transition-all"
               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors cursor-pointer"
               >
                 {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -372,7 +376,7 @@ function ForgotPasswordForm() {
             <button
               type="submit"
               disabled={isLoading || otpDigits.some((d) => !d) || !newPassword || !confirmPassword}
-              className="w-full py-2.5 px-4 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-xs"
+              className="w-full py-2.5 px-4 bg-gradient-to-r from-[#f28d8d] to-[#e57a7a] hover:from-[#e57a7a] hover:to-[#d86969] text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition-all shadow-md shadow-rose-200/50 dark:shadow-none active:scale-[0.98]"
             >
               {isLoading ? (
                 <>
@@ -390,10 +394,10 @@ function ForgotPasswordForm() {
         </form>
       )}
 
-      <div className="mt-8 pt-6 border-t border-slate-200 text-center">
+      <div className="mt-8 pt-6 border-t border-slate-200/80 dark:border-slate-800 text-center">
         <Link
           href="/login"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Quay lại Đăng nhập</span>
@@ -405,11 +409,8 @@ function ForgotPasswordForm() {
 
 export default function ForgotPasswordPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative bg-grid-pattern">
-      <Suspense fallback={<div className="text-xs font-semibold text-slate-700">Đang tải...</div>}>
-        <ForgotPasswordForm />
-      </Suspense>
-    </div>
+    <Suspense fallback={<div className="text-xs font-semibold text-slate-700 dark:text-slate-300">Đang tải...</div>}>
+      <ForgotPasswordForm />
+    </Suspense>
   );
 }
-

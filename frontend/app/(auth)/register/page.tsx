@@ -4,9 +4,10 @@ import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { User, Mail, Lock, Eye, EyeOff, LayoutGrid, ArrowRight, Loader2 } from 'lucide-react';
+import { User, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 import OtpModal from '@/components/auth/OtpModal';
+import { DoodleRocket } from '@/components/playful/DoodleIcons';
 
 function getSafeRedirectUrl(url: string | null): string {
   if (!url) return '/dashboard';
@@ -43,9 +44,7 @@ function RegisterForm() {
     setIsLoading(true);
 
     try {
-      // Step 1: Send OTP to user's email
       await sendRegisterOtp(email.trim().toLowerCase(), name.trim());
-      // Step 2: Open OTP verification modal
       setIsOtpModalOpen(true);
     } catch (err: any) {
       setError(err.message || 'Không thể gửi mã xác thực. Vui lòng kiểm tra lại email.');
@@ -66,7 +65,7 @@ function RegisterForm() {
       setIsOtpModalOpen(false);
       router.push(redirectUrl);
     } catch (err: any) {
-      throw err; // Let OtpModal display the specific verification error
+      throw err;
     } finally {
       setIsVerifying(false);
     }
@@ -78,19 +77,20 @@ function RegisterForm() {
 
   return (
     <>
-      <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-300 p-8 sm:p-10 relative">
+      <div className="w-full bg-white/85 dark:bg-slate-900/80 backdrop-blur-xl rounded-2xl shadow-[0_20px_50px_rgba(15,23,42,0.08)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/60 dark:border-slate-700/60 p-8 sm:p-10 relative transition-all duration-300">
+        {/* Rocket Badge Header */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-[#f28d8d] flex items-center justify-center text-white shadow-xs mb-3">
-            <LayoutGrid className="w-6 h-6" />
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#f28d8d] to-[#ffc0cb] flex items-center justify-center shadow-md shadow-rose-200/50 dark:shadow-rose-950/30 mb-3 animate-doodle-bob-gentle">
+            <DoodleRocket className="w-10 h-10" />
           </div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-slate-900">Tạo tài khoản Planify</h1>
-          <p className="text-xs text-slate-500 mt-1 text-center">
-            Bắt đầu trải nghiệm quản lý công việc thế hệ mới
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Tạo tài khoản Planify</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 text-center max-w-xs">
+            Bắt đầu trải nghiệm quản lý công việc thế hệ mới đầy cảm hứng
           </p>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
+          <div className="mb-4 p-3 rounded-xl bg-rose-50/90 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-900/50 text-rose-700 dark:text-rose-300 text-xs font-medium flex items-center gap-2">
             <span>⚠️</span>
             <span>{error}</span>
           </div>
@@ -101,67 +101,69 @@ function RegisterForm() {
           <GoogleSignInButton text="Đăng ký với Google" />
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200" />
+              <div className="w-full border-t border-slate-200/80 dark:border-slate-800" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-white px-3 text-slate-400 font-medium">hoặc đăng ký bằng email</span>
+              <span className="bg-white/85 dark:bg-slate-900/80 px-3 text-slate-400 dark:text-slate-500 font-medium">
+                hoặc đăng ký bằng email
+              </span>
             </div>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
               Họ và tên
             </label>
             <div className="relative">
-              <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Nguyễn Văn A"
-                className="w-full pl-10 pr-4 py-2.5 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-colors"
+                className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-2 focus:ring-[#87ceeb]/40 transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
               Email
             </label>
             <div className="relative">
-              <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tenban@example.com"
-                className="w-full pl-10 pr-4 py-2.5 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-colors"
+                className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-2 focus:ring-[#87ceeb]/40 transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
               Mật khẩu
             </label>
             <div className="relative">
-              <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Tối thiểu 6 ký tự"
-                className="w-full pl-10 pr-10 py-2.5 text-xs rounded-md border border-slate-300 bg-white placeholder:text-slate-400 text-slate-900 font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-1 focus:ring-[#87ceeb]/40 transition-colors"
+                className="w-full pl-10 pr-10 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-slate-900 dark:text-white font-medium focus:outline-none focus:border-[#87ceeb] focus:ring-2 focus:ring-[#87ceeb]/40 transition-all"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors cursor-pointer"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -172,7 +174,7 @@ function RegisterForm() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-2.5 px-4 bg-[#f28d8d] hover:bg-[#e57a7a] text-white rounded-md text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition-colors shadow-xs"
+              className="w-full py-2.5 px-4 bg-gradient-to-r from-[#f28d8d] to-[#e57a7a] hover:from-[#e57a7a] hover:to-[#d86969] text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition-all shadow-md shadow-rose-200/50 dark:shadow-none active:scale-[0.98]"
             >
               {isLoading ? (
                 <>
@@ -189,12 +191,12 @@ function RegisterForm() {
           </div>
         </form>
 
-        <div className="mt-8 pt-6 border-t border-slate-200 text-center">
-          <p className="text-xs text-slate-500">
+        <div className="mt-8 pt-6 border-t border-slate-200/80 dark:border-slate-800 text-center">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Đã có tài khoản?{' '}
             <Link
               href={`/login${redirectUrl !== '/dashboard' ? `?redirect=${encodeURIComponent(redirectUrl)}` : ''}`}
-              className="font-semibold text-[#d86969] hover:text-[#f28d8d] hover:underline"
+              className="font-semibold text-[#d86969] hover:text-[#f28d8d] hover:underline transition-colors"
             >
               Đăng nhập ngay
             </Link>
@@ -219,10 +221,8 @@ function RegisterForm() {
 
 export default function RegisterPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative bg-grid-pattern">
-      <Suspense fallback={<div className="text-xs font-semibold text-slate-700">Đang tải...</div>}>
-        <RegisterForm />
-      </Suspense>
-    </div>
+    <Suspense fallback={<div className="text-xs font-semibold text-slate-700 dark:text-slate-300">Đang tải...</div>}>
+      <RegisterForm />
+    </Suspense>
   );
 }
