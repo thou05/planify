@@ -188,7 +188,7 @@ interface CardDetailModalProps {
   realtimeUpdatedCardId?: { id: string; timestamp: number } | null;
   isOpen: boolean;
   onClose: () => void;
-  onCardUpdated: () => void;
+  onCardUpdated: (updatedCard?: any) => void;
   onMoveRequest: (card: any) => void;
   onCopyRequest: (card: any) => void;
   workspaceMembers?: any[];
@@ -1261,7 +1261,7 @@ function CardDetailSession({
       setReminderAt(finalReminderAt);
       setReminderMinutes(tempReminderMinutes);
       setIsDatesModalOpen(false);
-      onCardUpdated();
+      onCardUpdated({ id: cardId, start_date: finalStartDate, due_date: finalDueDate, reminder_at: finalReminderAt });
     } catch (err: any) {
       void alertDialog({ message: err.message || 'Không thể lưu thời hạn', variant: 'error' });
     } finally {
@@ -1853,7 +1853,7 @@ function CardDetailSession({
           await apiClient(`/cards/${id}`, { method: 'PATCH', data: { [field]: value || null } });
           if (failedTextSave.current === save) { failedTextSave.current = null; setTextSaveError(''); }
           setTextSaveStatus('Đã lưu');
-          onCardUpdated();
+          onCardUpdated({ id, [field]: value });
         } catch (error) {
           failedTextSave.current = save;
           setTextSaveError(error instanceof Error ? error.message : 'Không thể lưu. Vui lòng thử lại.');
@@ -1877,14 +1877,15 @@ function CardDetailSession({
     }
 
     setIsCompleted(nextVal);
+    onCardUpdated({ id: cardId, is_due_date_completed: nextVal, status: nextVal ? 'DONE' : 'TODO' });
     try {
       await apiClient(`/cards/${cardId}`, {
         method: 'PATCH',
         data: { is_due_date_completed: nextVal },
       });
-      onCardUpdated();
     } catch (err: any) {
       setIsCompleted(!nextVal);
+      onCardUpdated({ id: cardId, is_due_date_completed: !nextVal, status: !nextVal ? 'DONE' : 'TODO' });
       const activeBlockers = relations.filter(
         (r) => r.type === 'BLOCKED_BY' && !r.related_card?.is_due_date_completed && r.related_card?.status !== 'DONE'
       );

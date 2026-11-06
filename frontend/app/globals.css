@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 :root {
   /* Brand Solid Colors (Trio: #f28d8d, #ffc0cb, #87ceeb) */
   --color-coral: #f28d8d;
@@ -19,6 +21,11 @@
   --color-brand-dark: #d86969;
   --color-brand-light: #fff0f3;
   --color-primary: #f28d8d;
+  --color-primary-hover: #e57a7a;
+  --color-primary-dark: #d86969;
+  --color-primary-light: #fff0f3;
+  --color-primary-rgb: 242, 141, 141;
+  --color-primary-contrast: #ffffff;
   --color-primary-strong: #e57a7a;
   --color-danger: #dc2626;
   --color-danger-hover: #b91c1c;
@@ -43,6 +50,10 @@
   --border-strong: #94a3b8;
   --border-dark: #64748b;
 
+  /* Grid & Matrix Patterns */
+  --grid-line: rgba(15, 23, 42, 0.035);
+  --dot-color: rgba(15, 23, 42, 0.12);
+
   /* Corner Radius (Crisp Engineering-Grade: 4px - 8px) */
   --radius-xs: 2px;
   --radius-sm: 4px;
@@ -58,38 +69,59 @@
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
 }
 
+/* Dark Mode Tokens */
+.dark {
+  --bg-canvas: #0b0f19;
+  --bg-surface: #111827;
+  --bg-subtle: #1e293b;
+  --bg-muted: #334155;
+
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  --border-subtle: #1e293b;
+  --border-default: #2d3748;
+  --border-strong: #4a5568;
+  --border-dark: #718096;
+
+  --grid-line: rgba(255, 255, 255, 0.04);
+  --dot-color: rgba(255, 255, 255, 0.12);
+}
+
 /* ==================================================================== */
 /* 1. Body & Canvas Background (Technical Grid & Dot Matrix Patterns)   */
 /* ==================================================================== */
 body {
   min-height: 100vh;
   color: var(--text-primary);
-  background-color: #f8fafc;
+  background-color: var(--bg-canvas);
   background-image: 
-    linear-gradient(to right, rgba(15, 23, 42, 0.035) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(15, 23, 42, 0.035) 1px, transparent 1px);
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
   background-size: 24px 24px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", Helvetica, Arial, sans-serif;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 200ms ease, color 200ms ease;
 }
 
 /* Technical Grid Canvas Utility (Nền lưới thưa 24px dịu mắt cho tất cả các trang) */
 .bg-grid-pattern,
 .app-canvas,
 .grid-canvas {
-  background-color: #f8fafc;
+  background-color: var(--bg-canvas);
   background-image: 
-    linear-gradient(to right, rgba(15, 23, 42, 0.035) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(15, 23, 42, 0.035) 1px, transparent 1px);
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
 /* Dot Matrix / Dot Grid Pattern (Nền chấm mặc định thoáng mắt cho Board) */
 .bg-dot-pattern,
 .pattern-dots {
-  background-color: #f8fafc;
-  background-image: radial-gradient(rgba(15, 23, 42, 0.12) 1.2px, transparent 1.2px);
+  background-color: var(--bg-canvas);
+  background-image: radial-gradient(var(--dot-color) 1.2px, transparent 1.2px);
   background-size: 24px 24px;
 }
 
@@ -99,26 +131,26 @@ body {
 .glass-surface,
 .panel-surface,
 .app-card {
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
 }
 
 .glass-weak,
 .panel-subtle {
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.02);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
 }
 
 .glass-strong,
 .panel-elevated {
-  background-color: #ffffff;
-  border: 1px solid #cbd5e1;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
-  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.03);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
 }
 
 .glass-dark,
@@ -132,16 +164,16 @@ body {
 
 /* Interactive Card Utility */
 .app-card-interactive {
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.02);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.02);
   transition: all 160ms cubic-bezier(0.2, 0, 0, 1);
 }
 
 .app-card-interactive:hover {
-  border-color: #94a3b8;
-  box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  border-color: var(--border-strong);
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
   transform: translateY(-1px);
 }
 
@@ -149,24 +181,24 @@ body {
 /* 3. Kanban Columns & Cards (Section 6.3)                               */
 /* ==================================================================== */
 .kanban-list {
-  background-color: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.02);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.02);
 }
 
 .kanban-card {
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
   transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
 }
 
 .kanban-card:hover {
-  background-color: #ffffff;
-  border-color: #94a3b8;
-  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.03);
+  background-color: var(--bg-surface);
+  border-color: var(--border-strong);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.03);
   transform: translateY(-1px);
 }
 
@@ -174,47 +206,47 @@ body {
 /* 4. Buttons (100% Solid, Zero Gradient — Section 6.1)                */
 /* ==================================================================== */
 .btn-primary {
-  background-color: var(--color-brand);
-  color: #ffffff;
+  background-color: var(--color-primary);
+  color: var(--color-primary-contrast, #ffffff);
   font-weight: 600;
-  border: 1px solid var(--color-brand-dark);
+  border: 1px solid var(--color-primary-dark);
   border-radius: var(--radius-md);
-  box-shadow: 0 1px 2px 0 rgba(242, 141, 141, 0.35);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.12);
   transition: background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
 }
 
 .btn-primary:hover {
-  background-color: var(--color-brand-hover);
-  border-color: var(--color-brand-dark);
-  box-shadow: 0 2px 5px 0 rgba(242, 141, 141, 0.45);
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-dark);
+  box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.18);
 }
 
 .btn-primary-glass {
-  background-color: var(--color-brand);
-  color: #ffffff;
+  background-color: var(--color-primary);
+  color: var(--color-primary-contrast, #ffffff);
   font-weight: 600;
-  border: 1px solid var(--color-brand-dark);
+  border: 1px solid var(--color-primary-dark);
   border-radius: var(--radius-md);
-  box-shadow: 0 1px 2px 0 rgba(242, 141, 141, 0.35);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.12);
   transition: background-color 140ms ease;
 }
 
 .btn-primary-glass:hover {
-  background-color: var(--color-brand-hover);
+  background-color: var(--color-primary-hover);
 }
 
 .btn-secondary {
-  background-color: #ffffff;
-  color: #0f172a;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
   font-weight: 500;
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   box-shadow: none;
-  transition: background-color 140ms ease, border-color 140ms ease;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
 }
 
 .btn-secondary:hover {
-  background-color: #f1f5f9;
+  background-color: var(--bg-subtle);
   border-color: var(--border-strong);
 }
 
@@ -228,12 +260,21 @@ body {
   transition: background-color 140ms ease;
 }
 
+.dark .btn-ai {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
 .btn-ai:hover {
   background-color: #1e293b;
 }
 
+.dark .btn-ai:hover {
+  background-color: #334155;
+}
+
 .btn-danger {
-  background-color: #ffffff;
+  background-color: var(--bg-surface);
   color: var(--color-danger);
   border: 1px solid #fca5a5;
   border-radius: var(--radius-md);
@@ -242,10 +283,22 @@ body {
   transition: background-color 140ms ease, color 140ms ease;
 }
 
+.dark .btn-danger {
+  background-color: #1e293b;
+  border-color: #7f1d1d;
+  color: #f87171;
+}
+
 .btn-danger:hover {
   background-color: #fef2f2;
   border-color: #f87171;
   color: #b91c1c;
+}
+
+.dark .btn-danger:hover {
+  background-color: #450a0a;
+  border-color: #ef4444;
+  color: #fca5a5;
 }
 
 /* ==================================================================== */
@@ -253,7 +306,7 @@ body {
 /* ==================================================================== */
 .glass-input,
 .input-flat {
-  background-color: #ffffff;
+  background-color: var(--bg-surface);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   color: var(--text-primary);
@@ -263,7 +316,7 @@ body {
 
 .glass-input:focus,
 .input-flat:focus {
-  background-color: #ffffff;
+  background-color: var(--bg-surface);
   border-color: var(--color-primary);
   outline: 1px solid var(--color-primary);
 }
@@ -278,12 +331,25 @@ body {
   border-radius: var(--radius-sm);
 }
 
+.dark .badge-success {
+  background-color: rgba(22, 163, 74, 0.15);
+  color: #4ade80;
+  border-color: rgba(74, 222, 128, 0.3);
+}
+
 .badge-error,
 .badge-danger {
   background-color: #fef2f2;
   color: #b91c1c;
   border: 1px solid #fecaca;
   border-radius: var(--radius-sm);
+}
+
+.dark .badge-error,
+.dark .badge-danger {
+  background-color: rgba(220, 38, 38, 0.15);
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.3);
 }
 
 .badge-ai {
@@ -293,6 +359,12 @@ body {
   border-radius: var(--radius-sm);
 }
 
+.dark .badge-ai {
+  background-color: #1e293b;
+  color: #cbd5e1;
+  border-color: #334155;
+}
+
 .badge-info {
   background-color: #f0f9ff;
   color: #0369a1;
@@ -300,11 +372,23 @@ body {
   border-radius: var(--radius-sm);
 }
 
+.dark .badge-info {
+  background-color: rgba(2, 132, 199, 0.15);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
 .badge-warning {
   background-color: #fffbeb;
   color: #b45309;
   border: 1px solid #fde68a;
   border-radius: var(--radius-sm);
+}
+
+.dark .badge-warning {
+  background-color: rgba(217, 119, 6, 0.15);
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.3);
 }
 
 /* ==================================================================== */
@@ -316,17 +400,29 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--bg-subtle);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--border-default);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--border-strong);
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }
 
 /* Shake animation for full WIP limit lists */
@@ -358,4 +454,8 @@ select:not([multiple]) {
   background-repeat: no-repeat;
   background-size: 1.15em 1.15em;
   padding-right: 2.2rem !important;
+}
+
+.dark select:not([multiple]) {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
 }
