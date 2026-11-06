@@ -181,10 +181,9 @@ export default function LivePresenceBar({
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
               <span className="font-bold text-slate-900 text-xs">
-                Cộng tác viên trực tuyến ({uniqueUsers.length})
+                Online ({uniqueUsers.length})
               </span>
             </div>
-            <span className="text-[10px] text-slate-500 font-medium">Google Docs Realtime</span>
           </div>
 
           <div className="max-h-60 overflow-y-auto divide-y divide-slate-100 space-y-1 pr-1">

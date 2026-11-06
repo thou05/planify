@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   User,
@@ -170,6 +171,7 @@ export function checkAssigneeMatchesTarget(
 
 interface BoardFilterModalProps {
   isOpen: boolean;
+  anchorRef: React.RefObject<HTMLButtonElement | null>;
   onClose: () => void;
   filters: BoardFilterState;
   onChangeFilters: (filters: BoardFilterState) => void;
@@ -193,6 +195,7 @@ interface BoardFilterModalProps {
 
 export default function BoardFilterModal({
   isOpen,
+  anchorRef,
   onClose,
   filters,
   onChangeFilters,
@@ -207,6 +210,49 @@ export default function BoardFilterModal({
   const [isMatchDropdownOpen, setIsMatchDropdownOpen] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
   const matchDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Anchor the non-modal panel to its trigger and keep it inside the viewport.
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    const updatePosition = () => {
+      const panel = modalRef.current;
+      const anchor = anchorRef.current;
+      if (!panel || !anchor) return;
+      const rect = anchor.getBoundingClientRect();
+      const margin = 12;
+      const width = Math.min(360, window.innerWidth - margin * 2);
+      const left = Math.max(margin, Math.min(rect.right - width, window.innerWidth - width - margin));
+      const top = Math.max(margin, Math.min(rect.bottom + 8, window.innerHeight - 240));
+      panel.style.setProperty('--filter-left', `${left}px`);
+      panel.style.setProperty('--filter-top', `${top}px`);
+      panel.style.setProperty('--filter-width', `${width}px`);
+      panel.style.setProperty('--filter-max-height', `${Math.min(640, window.innerHeight - top - margin)}px`);
+      panel.style.visibility = 'visible';
+    };
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    const observer = new ResizeObserver(updatePosition);
+    if (anchorRef.current) observer.observe(anchorRef.current);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+      observer.disconnect();
+    };
+  }, [isOpen, anchorRef]);
+
+  // Dismiss without an overlay so board scrolling and clicks remain available.
+  useEffect(() => {
+    if (!isOpen) return;
+    const handlePointerDown = (e: PointerEvent) => {
+      const target = e.target as Node;
+      if (!modalRef.current?.contains(target) && !anchorRef.current?.contains(target)) {
+        onClose();
+      }
+    };
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [isOpen, onClose, anchorRef]);
 
   // Close match dropdown when clicking outside
   useEffect(() => {
@@ -463,19 +509,22 @@ export default function BoardFilterModal({
     .charAt(0)
     .toUpperCase();
 
-  return (
-    <div className="fixed inset-0 z-35 pointer-events-none flex items-start justify-end sm:p-4">
-      {/* Trong suốt - KHÔNG làm mờ và KHÔNG làm tối toàn màn hình */}
-      <div
-        className="fixed inset-0 pointer-events-auto bg-transparent"
-        onClick={onClose}
-        aria-label="Đóng bảng lọc"
-      />
-
+  return createPortal(
+    <>
       {/* Floating Filter Popover Panel */}
       <div
         ref={modalRef}
-        className="pointer-events-auto relative w-full sm:w-[380px] bg-white rounded-lg shadow-xl border border-slate-300 flex flex-col max-h-screen sm:max-h-[86vh] overflow-hidden mt-0 sm:mt-12 mr-0 sm:mr-4 animate-fade-in"
+        id="board-filter-panel"
+        role="dialog"
+        aria-modal={false}
+        aria-labelledby="board-filter-title"
+        className="invisible fixed z-35 bg-white rounded-lg shadow-sm border border-slate-300 flex flex-col overflow-hidden"
+        style={{
+          top: 'var(--filter-top, 12px)',
+          left: 'var(--filter-left, 12px)',
+          width: 'var(--filter-width, calc(100vw - 24px))',
+          maxHeight: 'var(--filter-max-height, calc(100dvh - 24px))',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -485,7 +534,7 @@ export default function BoardFilterModal({
               <Filter className="w-3.5 h-3.5" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-slate-900">Lọc thẻ</h3>
+              <h3 id="board-filter-title" className="text-sm font-semibold text-slate-900">Lọc thẻ</h3>
               <p className="text-[11px] text-slate-500 font-medium">
                 {activeCount > 0 ? (
                   <span className="text-slate-900 font-semibold">
@@ -522,7 +571,7 @@ export default function BoardFilterModal({
 
         {/* Live Filter Result Banner */}
         {activeCount > 0 && (
-          <div className="px-4 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs">
+          <div className="shrink-0 px-4 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs">
             <div className="flex items-center gap-1.5 text-slate-700 font-medium text-[11px]">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
               <span>Đang áp dụng <b>{activeCount}</b> điều kiện</span>
@@ -534,7 +583,7 @@ export default function BoardFilterModal({
         )}
 
         {/* Scrollable Filter Content */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs text-slate-700 select-none">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-4 text-xs text-slate-700 select-none">
           {/* Section 1: Từ khóa */}
           <div>
             <label className="block text-xs font-semibold text-slate-800 mb-1.5">
@@ -1021,6 +1070,7 @@ export default function BoardFilterModal({
           </div>
         </div>
       </div>
-    </div>
+    </>,
+    document.body
   );
 }

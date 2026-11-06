@@ -226,9 +226,9 @@ export default function BoardTableView({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden p-6 max-w-7xl mx-auto w-full">
+    <div className="flex-1 flex flex-col h-full min-h-0 overflow-hidden p-6 max-w-7xl mx-auto w-full">
       {/* Table Filter & Action Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 p-2.5 rounded-lg bg-white border border-slate-300 shadow-2xs">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 mb-4 p-2.5 rounded-lg bg-white border border-slate-300 shadow-2xs">
         <div className="flex flex-wrap items-center gap-3">
           {/* Search Bar */}
           <div className="relative">
@@ -326,10 +326,10 @@ export default function BoardTableView({
       </div>
 
       {/* Main Table View Container */}
-      <div className="flex-1 overflow-auto rounded-lg bg-white border border-slate-300 shadow-2xs">
+      <div className="relative isolate flex-1 min-h-0 overflow-auto rounded-lg bg-white border border-slate-300 shadow-2xs">
         <table className="w-full text-left border-collapse text-xs">
           {/* Sticky Header */}
-          <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
+          <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 [&_th]:bg-slate-50">
             <tr className="text-slate-700 font-semibold text-[11px] uppercase tracking-wider">
               <th className="py-2.5 px-3 w-10 text-center">Xong</th>
               <th
@@ -376,7 +376,7 @@ export default function BoardTableView({
           </thead>
 
           {/* Table Body */}
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="relative z-0 divide-y divide-slate-100">
             {/* Inline Quick Add Card Row */}
             {isAddingCard && (
               <tr className="bg-slate-50 border-b border-slate-200 animate-fade-in">

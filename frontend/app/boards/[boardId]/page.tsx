@@ -184,6 +184,7 @@ export default function BoardDetailPage({
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isBoardMenuOpen, setIsBoardMenuOpen] = useState(false);
+  const [isAiMenuOpen, setIsAiMenuOpen] = useState(false);
   const [isCustomFieldsModalOpen, setIsCustomFieldsModalOpen] = useState(false);
   const [isAutomationModalOpen, setIsAutomationModalOpen] = useState(false);
   const [boardButtons, setBoardButtons] = useState<any[]>([]);
@@ -197,6 +198,7 @@ export default function BoardDetailPage({
   const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
   const visibilityMenuRef = useRef<HTMLDivElement>(null);
   const boardMenuRef = useRef<HTMLDivElement>(null);
+  const aiMenuRef = useRef<HTMLDivElement>(null);
 
   // Board Editor Join Mode states
   const [editorJoinMode, setEditorJoinMode] = useState<EditorJoinMode>('REQUEST');
@@ -212,14 +214,25 @@ export default function BoardDetailPage({
       if (boardMenuRef.current && !boardMenuRef.current.contains(e.target as Node)) {
         setIsBoardMenuOpen(false);
       }
+      if (aiMenuRef.current && !aiMenuRef.current.contains(e.target as Node)) {
+        setIsAiMenuOpen(false);
+      }
     };
-    if (isVisibilityMenuOpen || isBoardMenuOpen) {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsAiMenuOpen(false);
+        setIsBoardMenuOpen(false);
+      }
+    };
+    if (isVisibilityMenuOpen || isBoardMenuOpen || isAiMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscape);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
     };
-  }, [isVisibilityMenuOpen, isBoardMenuOpen]);
+  }, [isVisibilityMenuOpen, isBoardMenuOpen, isAiMenuOpen]);
 
   const isBoardMember = Boolean(
     board?.isBoardMember ||
@@ -593,6 +606,7 @@ export default function BoardDetailPage({
   // Board in-page comprehensive filter state
   const [boardFilters, setBoardFilters] = useState<BoardFilterState>(defaultFilterState);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const filterButtonRef = useRef<HTMLButtonElement>(null);
   const boardSearchInputRef = useRef<HTMLInputElement>(null);
 
   const activeFilterCount = React.useMemo(() => {
@@ -2348,8 +2362,12 @@ export default function BoardDetailPage({
           <div className="flex items-center gap-2 shrink-0">
             {/* Filter Button */}
             <button
+              ref={filterButtonRef}
               type="button"
-              onClick={() => setIsFilterModalOpen(true)}
+              onClick={() => setIsFilterModalOpen((open) => !open)}
+              aria-expanded={isFilterModalOpen}
+              aria-controls="board-filter-panel"
+              aria-haspopup="dialog"
               className={`h-7 px-2.5 text-xs font-semibold rounded-md flex items-center gap-1.5 transition-colors cursor-pointer border ${activeFilterCount > 0
                 ? 'bg-[#87ceeb] text-slate-900 border-[#72bde0] shadow-2xs'
                 : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -2364,6 +2382,59 @@ export default function BoardDetailPage({
                 </span>
               )}
             </button>
+
+            {/* AI tools */}
+            <div className="relative" ref={aiMenuRef}>
+              <button
+                type="button"
+                onClick={() => setIsAiMenuOpen(!isAiMenuOpen)}
+                className="h-7 px-2.5 text-xs font-semibold rounded-md flex items-center gap-1.5 transition-colors cursor-pointer border bg-white text-slate-700 border-slate-200 hover:bg-slate-100 aria-expanded:bg-slate-100 aria-expanded:text-slate-900"
+                title="Mở công cụ AI"
+                aria-expanded={isAiMenuOpen}
+                aria-controls="board-ai-tools"
+              >
+                <Bot className="w-3.5 h-3.5" />
+                <span>AI</span>
+                <ChevronDown className="w-3 h-3" />
+              </button>
+              {isAiMenuOpen && (
+                <div id="board-ai-tools" className="absolute right-0 top-full mt-1.5 w-64 p-1 bg-white rounded-lg shadow-md border border-slate-200 space-y-0.5 text-xs select-none z-30">
+                  <button
+                    onClick={() => {
+                      setIsAiMenuOpen(false);
+                      setIsCopilotOpen(true);
+                    }}
+                    className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
+                  >
+                    <Bot className="w-3.5 h-3.5 text-slate-500" />
+                    <span>AI Copilot (Hỏi đáp)</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsAiMenuOpen(false);
+                      setIsRiskScannerOpen(true);
+                    }}
+                    className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
+                  >
+                    <ShieldAlert className="w-3.5 h-3.5 text-slate-500" />
+                    <span>AI Quét rủi ro & Điểm nghẽn</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsAiMenuOpen(false);
+                      setIsAiStandupOpen(true);
+                      if (!aiStandupData) handleGenerateDailyStandup();
+                    }}
+                    className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-slate-500" />
+                    <span>AI Daily Standup</span>
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Filter / Result count badge */}
             {activeFilterCount > 0 && (
@@ -2434,224 +2505,198 @@ export default function BoardDetailPage({
             {/* Board Settings & Options Dropdown Menu */}
             <div className="relative" ref={boardMenuRef}>
               <button
+                type="button"
                 onClick={() => setIsBoardMenuOpen(!isBoardMenuOpen)}
-                className="p-1.5 rounded-md hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer border border-slate-200"
+                className="h-7 w-7 flex items-center justify-center rounded-md bg-white hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer border border-slate-200 aria-expanded:bg-slate-100 aria-expanded:text-slate-900"
                 title="Tùy chọn Bảng"
+                aria-expanded={isBoardMenuOpen}
+                aria-controls="board-options-panel"
               >
                 <MoreHorizontal className="w-4 h-4" />
               </button>
 
               {isBoardMenuOpen && (
-                <div className="absolute right-0 top-full mt-1.5 w-56 p-1 bg-white rounded-lg shadow-md border border-slate-200 space-y-0.5 text-xs select-none z-30">
-                  <button
-                    onClick={() => {
-                      setIsBoardMenuOpen(false);
-                      setIsCopilotOpen(true);
-                    }}
-                    className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
-                  >
-                    <Bot className="w-3.5 h-3.5 text-slate-500" />
-                    <span>AI Copilot (Hỏi đáp)</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setIsBoardMenuOpen(false);
-                      setIsRiskScannerOpen(true);
-                    }}
-                    className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
-                  >
-                    <ShieldAlert className="w-3.5 h-3.5 text-slate-500" />
-                    <span>AI Quét rủi ro & Điểm nghẽn</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setIsBoardMenuOpen(false);
-                      setIsAiStandupOpen(true);
-                      if (!aiStandupData) handleGenerateDailyStandup();
-                    }}
-                    className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-slate-500" />
-                    <span>AI Daily Standup</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setIsBoardMenuOpen(false);
-                      setIsBoardActivityOpen(true);
-                      fetchBoardActivities();
-                    }}
-                    className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
-                  >
-                    <History className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Lịch sử hoạt động Bảng</span>
-                  </button>
-
-                  {canEditBoard && (
+                <div id="board-options-panel" className="absolute right-0 top-full mt-1.5 w-64 max-w-[calc(100vw-24px)] bg-white rounded-lg shadow-sm border border-slate-200 text-xs select-none z-30 overflow-hidden">
+                  <div className="px-3 py-2 border-b border-slate-200 font-semibold text-slate-900">
+                    Tùy chọn bảng
+                  </div>
+                  <div className="max-h-[calc(100dvh-11rem)] overflow-y-auto overscroll-contain p-1">
                     <button
                       onClick={() => {
                         setIsBoardMenuOpen(false);
-                        setIsAutomationModalOpen(true);
+                        setIsBoardActivityOpen(true);
+                        fetchBoardActivities();
                       }}
-                      className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
+                      className="w-full min-h-7 text-left px-2.5 py-1 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 leading-4 cursor-pointer transition-colors"
                     >
-                      <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                      <span>Tự động hóa (Automation)</span>
+                      <History className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+                      <span>Lịch sử hoạt động Bảng</span>
                     </button>
-                  )}
 
-                  {canEditBoard && (
-                    <button
-                      onClick={() => {
-                        setIsBoardMenuOpen(false);
-                        setIsCustomFieldsModalOpen(true);
-                      }}
-                      className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
-                    >
-                      <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Trường tùy chỉnh (Custom Fields)</span>
-                    </button>
-                  )}
-
-                  {canEditBoard && !board?.is_archived && (
-                    <>
+                    {canEditBoard && (
                       <button
                         onClick={() => {
                           setIsBoardMenuOpen(false);
-                          setIsAppearanceOpen(true);
+                          setIsAutomationModalOpen(true);
                         }}
-                        className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
+                        className="w-full min-h-7 text-left px-2.5 py-1 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 leading-4 cursor-pointer transition-colors"
                       >
-                        <Palette className="w-3.5 h-3.5 text-slate-500" />
-                        <span>Đổi hình nền & Biểu tượng</span>
+                        <Zap className="w-3.5 h-3.5 shrink-0 text-amber-500 fill-amber-500" />
+                        <span>Tự động hóa (Automation)</span>
                       </button>
+                    )}
 
+                    {canEditBoard && (
                       <button
                         onClick={() => {
                           setIsBoardMenuOpen(false);
-                          setIsEditOpen(true);
+                          setIsCustomFieldsModalOpen(true);
                         }}
-                        className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
+                        className="w-full min-h-7 text-left px-2.5 py-1 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 leading-4 cursor-pointer transition-colors"
                       >
-                        <Edit3 className="w-3.5 h-3.5 text-slate-500" />
-                        <span>Chỉnh sửa thông tin Bảng</span>
+                        <SlidersHorizontal className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+                        <span>Trường tùy chỉnh (Custom Fields)</span>
                       </button>
-                    </>
-                  )}
+                    )}
 
-                  <button
-                    onClick={() => {
-                      setIsBoardMenuOpen(false);
-                      setIsCopyOpen(true);
-                    }}
-                    className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
-                  >
-                    <Copy className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Nhân bản Bảng (Copy)</span>
-                  </button>
-
-                  {!isGuest && (
-                    <button
-                      onClick={() => {
-                        setIsBoardMenuOpen(false);
-                        setIsSaveAsTemplateOpen(true);
-                      }}
-                      className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
-                    >
-                      <LayoutTemplate className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Lưu thành Mẫu (Template)</span>
-                    </button>
-                  )}
-
-                  {canEditBoard && (
-                    <button
-                      onClick={() => {
-                        setIsBoardMenuOpen(false);
-                        setIsImportModalOpen(true);
-                      }}
-                      className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
-                    >
-                      <Upload className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Nhập dữ liệu (Import)</span>
-                    </button>
-                  )}
-
-                  <button
-                    onClick={() => {
-                      setIsBoardMenuOpen(false);
-                      setIsExportModalOpen(true);
-                    }}
-                    className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
-                  >
-                    <Download className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Xuất dữ liệu (Export)</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setIsBoardMenuOpen(false);
-                      setIsShareOpen(true);
-                    }}
-                    className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer transition-colors"
-                  >
-                    <Users className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Quản lý thành viên & Quyền</span>
-                  </button>
-
-                  {board?.canDelete && !isGuest && (
-                    <>
-                      <div className="h-[1px] bg-slate-100 my-1" />
-                      {board.is_archived ? (
+                    {canEditBoard && !board?.is_archived && (
+                      <>
                         <button
                           onClick={() => {
                             setIsBoardMenuOpen(false);
-                            handleRestoreBoard();
+                            setIsAppearanceOpen(true);
                           }}
-                          className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-amber-700 hover:bg-amber-50 flex items-center gap-2 cursor-pointer transition-colors"
+                          className="w-full min-h-7 text-left px-2.5 py-1 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 leading-4 cursor-pointer transition-colors"
                         >
-                          <RotateCcw className="w-3.5 h-3.5 text-amber-600" />
-                          <span>Khôi phục Bảng</span>
+                          <Palette className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+                          <span>Đổi hình nền & Biểu tượng</span>
                         </button>
-                      ) : (
+
                         <button
-                          onClick={handleArchiveBoard}
-                          className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-amber-700 hover:bg-amber-50 flex items-center gap-2 cursor-pointer transition-colors"
+                          onClick={() => {
+                            setIsBoardMenuOpen(false);
+                            setIsEditOpen(true);
+                          }}
+                          className="w-full min-h-7 text-left px-2.5 py-1 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 leading-4 cursor-pointer transition-colors"
                         >
-                          <Archive className="w-3.5 h-3.5 text-amber-600" />
-                          <span>Lưu trữ Bảng (Archive)</span>
+                          <Edit3 className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+                          <span>Chỉnh sửa thông tin Bảng</span>
                         </button>
-                      )}
+                      </>
+                    )}
 
+                    <button
+                      onClick={() => {
+                        setIsBoardMenuOpen(false);
+                        setIsCopyOpen(true);
+                      }}
+                      className="w-full min-h-7 text-left px-2.5 py-1 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 leading-4 cursor-pointer transition-colors"
+                    >
+                      <Copy className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+                      <span>Nhân bản Bảng (Copy)</span>
+                    </button>
+
+                    {!isGuest && (
                       <button
                         onClick={() => {
                           setIsBoardMenuOpen(false);
-                          handleDeleteBoard();
+                          setIsSaveAsTemplateOpen(true);
                         }}
-                        className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-[#dc2626] hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors"
+                        className="w-full min-h-7 text-left px-2.5 py-1 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 leading-4 cursor-pointer transition-colors"
                       >
-                        <Trash2 className="w-3.5 h-3.5 text-[#dc2626]" />
-                        <span>Xóa Bảng vĩnh viễn</span>
+                        <LayoutTemplate className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+                        <span>Lưu thành Mẫu (Template)</span>
                       </button>
-                    </>
-                  )}
+                    )}
 
-                  {!board?.canDelete && (
-                    <>
-                      <div className="h-[1px] bg-slate-100 my-1" />
+                    {canEditBoard && (
                       <button
                         onClick={() => {
                           setIsBoardMenuOpen(false);
-                          handleLeaveBoard();
+                          setIsImportModalOpen(true);
                         }}
-                        className="w-full text-left px-2.5 py-1.5 rounded-md font-medium text-[#dc2626] hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors"
+                        className="w-full min-h-7 text-left px-2.5 py-1 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 leading-4 cursor-pointer transition-colors"
                       >
-                        <LogOut className="w-3.5 h-3.5 text-[#dc2626]" />
-                        <span>Rời khỏi Bảng</span>
+                        <Upload className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+                        <span>Nhập dữ liệu (Import)</span>
                       </button>
-                    </>
-                  )}
+                    )}
+
+                    <button
+                      onClick={() => {
+                        setIsBoardMenuOpen(false);
+                        setIsExportModalOpen(true);
+                      }}
+                      className="w-full min-h-7 text-left px-2.5 py-1 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 leading-4 cursor-pointer transition-colors"
+                    >
+                      <Download className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+                      <span>Xuất dữ liệu (Export)</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setIsBoardMenuOpen(false);
+                        setIsShareOpen(true);
+                      }}
+                      className="w-full min-h-7 text-left px-2.5 py-1 rounded-md font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 leading-4 cursor-pointer transition-colors"
+                    >
+                      <Users className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+                      <span>Quản lý thành viên & Quyền</span>
+                    </button>
+
+                    {board?.canDelete && !isGuest && (
+                      <>
+                        <div className="h-[1px] bg-slate-100 my-1" />
+                        {board.is_archived ? (
+                          <button
+                            onClick={() => {
+                              setIsBoardMenuOpen(false);
+                              handleRestoreBoard();
+                            }}
+                            className="w-full min-h-7 text-left px-2.5 py-1 rounded-md font-medium text-amber-700 hover:bg-amber-50 flex items-center gap-2 leading-4 cursor-pointer transition-colors"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5 shrink-0 text-amber-600" />
+                            <span>Khôi phục Bảng</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={handleArchiveBoard}
+                            className="w-full min-h-7 text-left px-2.5 py-1 rounded-md font-medium text-amber-700 hover:bg-amber-50 flex items-center gap-2 leading-4 cursor-pointer transition-colors"
+                          >
+                            <Archive className="w-3.5 h-3.5 shrink-0 text-amber-600" />
+                            <span>Lưu trữ Bảng (Archive)</span>
+                          </button>
+                        )}
+
+                        <button
+                          onClick={() => {
+                            setIsBoardMenuOpen(false);
+                            handleDeleteBoard();
+                          }}
+                          className="w-full min-h-7 text-left px-2.5 py-1 rounded-md font-medium text-[#dc2626] hover:bg-rose-50 flex items-center gap-2 leading-4 cursor-pointer transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 shrink-0 text-[#dc2626]" />
+                          <span>Xóa Bảng vĩnh viễn</span>
+                        </button>
+                      </>
+                    )}
+
+                    {!board?.canDelete && (
+                      <>
+                        <div className="h-[1px] bg-slate-100 my-1" />
+                        <button
+                          onClick={() => {
+                            setIsBoardMenuOpen(false);
+                            handleLeaveBoard();
+                          }}
+                          className="w-full min-h-7 text-left px-2.5 py-1 rounded-md font-medium text-[#dc2626] hover:bg-rose-50 flex items-center gap-2 leading-4 cursor-pointer transition-colors"
+                        >
+                          <LogOut className="w-3.5 h-3.5 shrink-0 text-[#dc2626]" />
+                          <span>Rời khỏi Bảng</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -3575,6 +3620,7 @@ export default function BoardDetailPage({
       {/* Comprehensive Board Filter Modal matching Trello design */}
       <BoardFilterModal
         isOpen={isFilterModalOpen}
+        anchorRef={filterButtonRef}
         onClose={() => setIsFilterModalOpen(false)}
         filters={boardFilters}
         onChangeFilters={setBoardFilters}
