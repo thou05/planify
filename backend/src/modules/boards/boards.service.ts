@@ -224,9 +224,10 @@ export class BoardsService {
   }
 
   async findById(boardId: string, userId: string) {
-    const { data: board, error } = await this.supabase
-      .from('boards')
-      .select(`
+    const [boardQueryRes, pendingReqRes] = await Promise.all([
+      this.supabase
+        .from('boards')
+        .select(`
         id,
         workspace_id,
         name,
@@ -301,8 +302,24 @@ export class BoardsService {
         labels (id, name, color),
         custom_fields (id, name, field_type)
       `)
-      .eq('id', boardId)
-      .maybeSingle();
+        .eq('id', boardId)
+        .maybeSingle(),
+      (async () => {
+        try {
+          return await this.supabase
+            .from('board_editor_requests')
+            .select('id')
+            .eq('board_id', boardId)
+            .eq('user_id', userId)
+            .eq('status', 'PENDING')
+            .maybeSingle();
+        } catch {
+          return { data: null };
+        }
+      })(),
+    ]);
+
+    const { data: board, error } = boardQueryRes;
 
     if (error || !board) {
       throw new NotFoundException('Không tìm thấy Board');
@@ -312,15 +329,20 @@ export class BoardsService {
     const isWorkspaceOwner = (b.workspace as any)?.owner_id === userId;
     const currentMember = (b.members || []).find((m: any) => m.user_id === userId);
 
-    // Kiểm tra xem user có phải là workspace member không
-    const { data: wsMember } = await this.supabase
-      .from('workspace_members')
-      .select('id, role')
-      .eq('workspace_id', board.workspace_id)
-      .eq('user_id', userId)
-      .maybeSingle();
+    let isWorkspaceAdmin = isWorkspaceOwner;
+    let wsMember: any = null;
 
-    const isWorkspaceAdmin = Boolean(isWorkspaceOwner || wsMember?.role === 'ADMIN');
+    // Short-circuit: Nếu là Workspace Owner, không cần query lại bảng workspace_members
+    if (!isWorkspaceOwner) {
+      const { data } = await this.supabase
+        .from('workspace_members')
+        .select('id, role')
+        .eq('workspace_id', board.workspace_id)
+        .eq('user_id', userId)
+        .maybeSingle();
+      wsMember = data;
+      isWorkspaceAdmin = wsMember?.role === 'ADMIN';
+    }
 
     // Cho phép nếu là Workspace Owner, Workspace Admin, Workspace Member, Board Member HOẶC Board ở chế độ PUBLIC
     if (!isWorkspaceOwner && !isWorkspaceAdmin && (!wsMember || wsMember.role === 'GUEST') && !currentMember) {
@@ -371,21 +393,7 @@ export class BoardsService {
     }
 
     const { background, icon } = extractBoardAppearance(b.background, b.icon);
-
-    let hasPendingEditorRequest = false;
-    try {
-      const { data: pendingReq } = await this.supabase
-        .from('board_editor_requests')
-        .select('id')
-        .eq('board_id', boardId)
-        .eq('user_id', userId)
-        .eq('status', 'PENDING')
-        .maybeSingle();
-
-      hasPendingEditorRequest = Boolean(pendingReq);
-    } catch {
-      hasPendingEditorRequest = false;
-    }
+    const hasPendingEditorRequest = Boolean(pendingReqRes?.data);
 
     return {
       ...b,

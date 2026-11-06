@@ -10,6 +10,7 @@ import Sidebar, { WorkspaceItem } from './Sidebar';
 import CreateWorkspaceModal from '../modals/CreateWorkspaceModal';
 import CreateBoardModal from '../modals/CreateBoardModal';
 import ImportBoardModal from '../modals/ImportBoardModal';
+import ThemeCustomizerModal from '../theme/ThemeCustomizerModal';
 import { ShellContext, ShellContextType } from './ShellContext';
 
 interface AppShellProps {
@@ -333,6 +334,8 @@ export default function AppShell({
         </div>
 
         {/* Modals */}
+        <ThemeCustomizerModal />
+
         <CreateWorkspaceModal
           isOpen={isCreateWsOpen}
           onClose={() => setIsCreateWsOpen(false)}

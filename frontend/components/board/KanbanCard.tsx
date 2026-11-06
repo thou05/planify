@@ -73,6 +73,7 @@ interface KanbanCardProps {
   listTitle: string;
   onOpenDetail: (cardId: string) => void;
   onCardUpdated: () => void;
+  onToggleComplete?: (cardId: string, nextCompleted: boolean) => Promise<void> | void;
   onMoveCardRequest: (card: any) => void;
   onCopyCardRequest: (card: any) => void;
   onDeleteCard: (cardId: string) => void;
@@ -95,6 +96,7 @@ export default function KanbanCard({
   listTitle,
   onOpenDetail,
   onCardUpdated,
+  onToggleComplete,
   onMoveCardRequest,
   onCopyCardRequest,
   onDeleteCard,
@@ -132,11 +134,17 @@ export default function KanbanCard({
     e.preventDefault();
     if (!canEdit || isTogglingComplete) return;
 
+    const nextVal = !isCardDone;
+    if (onToggleComplete) {
+      onToggleComplete(card.id, nextVal);
+      return;
+    }
+
     try {
       setIsTogglingComplete(true);
       await apiClient(`/cards/${card.id}`, {
         method: 'PATCH',
-        data: { is_due_date_completed: !isCardDone },
+        data: { is_due_date_completed: nextVal },
       });
       onCardUpdated();
     } catch (err: any) {
@@ -370,7 +378,7 @@ export default function KanbanCard({
         onClick={() => {
           if (!isEditingTitle && !isMenuOpen) onOpenDetail(card.id);
         }}
-        className={`kanban-card group relative p-3 bg-white rounded-md border border-slate-200 hover:border-slate-400 transition-colors duration-150 cursor-pointer select-none active:cursor-grabbing overflow-hidden ${
+        className={`kanban-card group relative p-3 bg-white dark:bg-slate-900 rounded-md border border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600 transition-colors duration-150 cursor-pointer select-none active:cursor-grabbing overflow-hidden ${
           dropPosition ? 'ring-1 ring-[#87ceeb]' : ''
         } ${isMenuOpen ? '!z-30 ring-1 ring-slate-400' : ''}`}
       >
@@ -417,10 +425,10 @@ export default function KanbanCard({
                 !canEdit
                   ? isCardDone
                     ? 'bg-emerald-600 text-white cursor-default'
-                    : 'border-2 border-slate-300 bg-white cursor-default'
+                    : 'border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 cursor-default'
                   : isCardDone
                     ? 'bg-emerald-600 text-white shadow-2xs hover:bg-emerald-700 cursor-pointer'
-                    : 'border-2 border-slate-300 hover:border-slate-500 bg-white/90 hover:bg-slate-100 cursor-pointer'
+                    : 'border-2 border-slate-300 dark:border-slate-600 hover:border-slate-500 bg-white/90 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer'
               } ${isTogglingComplete ? 'opacity-60 cursor-wait' : ''}`}
               title={
                 !canEdit
@@ -440,14 +448,14 @@ export default function KanbanCard({
                 onBlur={handleSaveTitle}
                 onKeyDown={handleKeyDown}
                 onClick={(e) => e.stopPropagation()}
-                className="w-full text-xs font-semibold text-slate-900 bg-white border border-[#87ceeb] rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#87ceeb]/40"
+                className="w-full text-xs font-semibold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 border border-[#87ceeb] rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#87ceeb]/40"
               />
             ) : (
               <h4
                 className={`text-xs font-semibold leading-snug break-words flex-1 transition-colors ${
                   isCardDone
-                    ? 'line-through text-slate-400 group-hover:text-slate-500'
-                    : 'text-slate-900 group-hover:text-[#d86969]'
+                    ? 'line-through text-slate-400 dark:text-slate-500'
+                    : 'text-slate-900 dark:text-slate-100 group-hover:text-[var(--color-primary)]'
                 }`}
               >
                 {card.title}
@@ -688,7 +696,8 @@ export default function KanbanCard({
                       />
                     ) : (
                       <div
-                        className="w-5 h-5 rounded-full bg-[#f28d8d] border border-white text-white flex items-center justify-center text-[9px] font-bold shrink-0"
+                        className="w-5 h-5 rounded-full border border-white text-white flex items-center justify-center text-[9px] font-bold shrink-0"
+                        style={{ backgroundColor: 'var(--color-primary)' }}
                       >
                         {firstLetter}
                       </div>
@@ -705,7 +714,7 @@ export default function KanbanCard({
 
               {card.card_assignees.length > 3 && (
                 <div
-                  className="w-5 h-5 rounded-full bg-slate-200 border border-white text-slate-700 flex items-center justify-center text-[8px] font-bold shrink-0"
+                  className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 border border-white dark:border-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center text-[8px] font-bold shrink-0"
                   title={`+${card.card_assignees.length - 3} thành viên khác`}
                 >
                   +{card.card_assignees.length - 3}
@@ -717,8 +726,14 @@ export default function KanbanCard({
 
         {/* Copy link feedback toast overlay */}
         {copySuccess && (
-          <div className="absolute inset-0 bg-[#f28d8d] rounded-md flex items-center justify-center gap-1.5 text-white text-xs font-semibold z-20 animate-in fade-in duration-150 shadow-md">
-            <Check className="w-4 h-4 text-white" />
+          <div
+            className="absolute inset-0 rounded-md flex items-center justify-center gap-1.5 text-xs font-semibold z-20 animate-in fade-in duration-150 shadow-md"
+            style={{
+              backgroundColor: 'var(--color-primary)',
+              color: 'var(--color-primary-contrast, #ffffff)',
+            }}
+          >
+            <Check className="w-4 h-4" />
             <span>Đã sao chép liên kết thẻ!</span>
           </div>
         )}
@@ -746,7 +761,7 @@ export default function KanbanCard({
             }}
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
-            className="bg-white rounded-md shadow-md border border-slate-200 py-1 animate-in fade-in zoom-in-95 duration-100"
+            className="bg-white dark:bg-slate-900 rounded-md shadow-md border border-slate-200 dark:border-slate-800 py-1 animate-in fade-in zoom-in-95 duration-100"
           >
             <button
               onClick={(e) => {
@@ -754,7 +769,7 @@ export default function KanbanCard({
                 setIsMenuOpen(false);
                 setIsEditingTitle(true);
               }}
-              className="w-full px-2.5 py-1.5 text-left text-xs text-slate-700 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 transition-colors cursor-pointer"
+              className="w-full px-2.5 py-1.5 text-left text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white flex items-center gap-2 transition-colors cursor-pointer"
             >
               <Edit2 className="w-3.5 h-3.5 text-slate-500" />
               <span>Sửa tiêu đề nhanh</span>
