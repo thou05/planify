@@ -15,7 +15,6 @@ declare global {
             auto_select?: boolean;
             cancel_on_tap_outside?: boolean;
           }) => void;
-          prompt: (momentListener?: (notification: any) => void) => void;
           renderButton: (
             parent: HTMLElement,
             options: {
@@ -74,25 +73,29 @@ export default function GoogleSignInButton({
 }: GoogleSignInButtonProps) {
   const { loginWithGoogle } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleReady, setIsGoogleReady] = useState(false);
+  const [googleError, setGoogleError] = useState<string | null>(null);
   const [showDevModal, setShowDevModal] = useState(false);
   const [devEmail, setDevEmail] = useState('demo.user@gmail.com');
   const [devName, setDevName] = useState('Google Demo User');
-  const hiddenBtnRef = useRef<HTMLDivElement>(null);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
 
-  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim();
 
   const handleCredential = useCallback(
     async (credential: string) => {
       try {
         setIsLoading(true);
+        setGoogleError(null);
         if (onSuccess) {
           await onSuccess(credential);
         } else {
           await loginWithGoogle(credential);
         }
-      } catch (err: any) {
-        if (onError) onError(err);
-        else console.error('Google Sign-In failed:', err);
+      } catch (err: unknown) {
+        const error = err instanceof Error ? err : new Error('Không thể đăng nhập với Google.');
+        setGoogleError(error.message);
+        onError?.(error);
       } finally {
         setIsLoading(false);
       }
@@ -106,9 +109,20 @@ export default function GoogleSignInButton({
 
     const scriptId = 'google-gsi-client-script';
     let script = document.getElementById(scriptId) as HTMLScriptElement | null;
-
+    let active = true;
+    let resizeObserver: ResizeObserver | undefined;
+    const handleScriptError = () => {
+      if (!active) return;
+      script?.setAttribute('data-load-error', 'true');
+      setGoogleError('Không tải được dịch vụ đăng nhập Google. Hãy kiểm tra kết nối hoặc tiện ích chặn nội dung rồi tải lại trang.');
+    };
     const initGsi = () => {
-      if (window.google?.accounts?.id) {
+      if (!active) return;
+      if (!window.google?.accounts?.id) {
+        handleScriptError();
+        return;
+      }
+      try {
         window.google.accounts.id.initialize({
           client_id: clientId,
           callback: (response: { credential?: string }) => {
@@ -120,61 +134,81 @@ export default function GoogleSignInButton({
           cancel_on_tap_outside: true,
         });
 
-        if (hiddenBtnRef.current) {
-          window.google.accounts.id.renderButton(hiddenBtnRef.current, {
+        const container = googleButtonRef.current;
+        if (!container) return;
+        const google = window.google.accounts.id;
+        let previousWidth = 0;
+        const renderButton = () => {
+          const width = Math.min(400, Math.floor(container.clientWidth) || 250);
+          if (width === previousWidth) return;
+          previousWidth = width;
+          container.replaceChildren();
+          google.renderButton(container, {
             type: 'standard',
             theme: 'outline',
             size: 'large',
-            width: 250,
+            text: text.includes('Đăng ký') ? 'signup_with' : 'signin_with',
+            width,
           });
-        }
+        };
+        renderButton();
+        resizeObserver?.disconnect();
+        resizeObserver = new ResizeObserver(renderButton);
+        resizeObserver.observe(container);
+        setIsGoogleReady(true);
+        setGoogleError(null);
+      } catch {
+        setGoogleError('Không khởi tạo được đăng nhập Google. Hãy kiểm tra cấu hình OAuth và tải lại trang.');
       }
     };
 
+    if (script?.getAttribute('data-load-error') === 'true') {
+      script.remove();
+      script = null;
+    }
+    let shouldAppend = false;
     if (!script) {
       script = document.createElement('script');
       script.id = scriptId;
       script.src = 'https://accounts.google.com/gsi/client';
       script.async = true;
       script.defer = true;
-      script.onload = initGsi;
-      document.head.appendChild(script);
-    } else if (window.google?.accounts?.id) {
-      initGsi();
-    } else {
-      script.addEventListener('load', initGsi);
-      return () => script?.removeEventListener('load', initGsi);
+      shouldAppend = true;
     }
-  }, [clientId, handleCredential]);
+    script.addEventListener('load', initGsi);
+    script.addEventListener('error', handleScriptError);
+    if (window.google?.accounts?.id) {
+      initGsi();
+    } else if (shouldAppend) {
+      document.head.appendChild(script);
+    }
+    const timeout = window.setTimeout(() => {
+      if (!window.google?.accounts?.id) handleScriptError();
+    }, 15000);
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+      resizeObserver?.disconnect();
+      script?.removeEventListener('load', initGsi);
+      script?.removeEventListener('error', handleScriptError);
+    };
+  }, [clientId, handleCredential, text]);
 
   const handleClick = () => {
     if (disabled || isLoading) return;
 
     if (!clientId) {
-      // Fallback dev modal when NEXT_PUBLIC_GOOGLE_CLIENT_ID is not configured
-      setShowDevModal(true);
-      return;
-    }
-
-    if (window.google?.accounts?.id) {
-      // Ưu tiên kích hoạt nút do Google render để mở Google popup đăng nhập chuẩn
-      const innerBtn = hiddenBtnRef.current?.querySelector('div[role="button"]') as HTMLElement | null;
-      if (innerBtn) {
-        innerBtn.click();
+      if (process.env.NODE_ENV === 'development') {
+        setShowDevModal(true);
       } else {
-        window.google.accounts.id.prompt((notification: any) => {
-          if (notification.isNotDisplayed?.() || notification.isSkippedMoment?.()) {
-            setShowDevModal(true);
-          }
-        });
+        setGoogleError('Bản triển khai này chưa có NEXT_PUBLIC_GOOGLE_CLIENT_ID. Hãy kiểm tra biến môi trường của frontend và build lại.');
       }
-    } else {
-      setShowDevModal(true);
     }
   };
 
   const handleDevSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (process.env.NODE_ENV !== 'development' || clientId) return;
     setShowDevModal(false);
 
     // Create mock JWT payload for development testing
@@ -201,30 +235,44 @@ export default function GoogleSignInButton({
 
   return (
     <>
-      {/* Element ẩn cho Google renderButton để click mở popup Google chuẩn */}
-      <div ref={hiddenBtnRef} className="absolute -top-[9999px] -left-[9999px] opacity-0 pointer-events-none" aria-hidden="true" />
-
-      <button
-        type="button"
-        onClick={handleClick}
-        disabled={disabled || isLoading}
-        className={`w-full py-2.5 px-4 bg-white hover:bg-slate-50 border border-slate-300 hover:border-slate-400 text-slate-700 rounded-md text-xs font-semibold flex items-center justify-center gap-2.5 transition-colors shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
-      >
-        {isLoading ? (
-          <>
-            <Loader2 className="w-4 h-4 animate-spin text-[#f28d8d]" />
-            <span>Đang xác thực Google...</span>
-          </>
-        ) : (
-          <>
-            <GoogleLogo className="w-4 h-4 shrink-0" />
-            <span>{text}</span>
-          </>
+      <div className={`relative w-full ${className}`}>
+        {/* Let the user click Google's button directly, including its iframe. */}
+        <div
+          ref={googleButtonRef}
+          inert={disabled || isLoading || !isGoogleReady}
+          aria-hidden={!isGoogleReady}
+          className={`w-full flex justify-center ${isGoogleReady && !isLoading ? '' : 'invisible absolute inset-x-0 top-0'} ${disabled ? 'opacity-50' : ''}`}
+        />
+        {(!isGoogleReady || isLoading) && (
+          <button
+            type="button"
+            onClick={handleClick}
+            disabled={disabled || isLoading || Boolean(clientId)}
+            className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 border border-slate-300 hover:border-slate-400 text-slate-700 rounded-md text-xs font-semibold flex items-center justify-center gap-2.5 transition-colors shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading || (clientId && !googleError) ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-[#f28d8d]" />
+                <span>{isLoading ? 'Đang xác thực Google...' : 'Đang tải Google...'}</span>
+              </>
+            ) : (
+              <>
+                <GoogleLogo className="w-4 h-4 shrink-0" />
+                <span>{text}</span>
+              </>
+            )}
+          </button>
         )}
-      </button>
+      </div>
+      {googleError && (
+        <p role="alert" className="flex items-start gap-1.5 text-xs text-rose-600 mt-2">
+          <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+          <span>{googleError}</span>
+        </p>
+      )}
 
       {/* Dev Simulation Modal when NEXT_PUBLIC_GOOGLE_CLIENT_ID is not configured */}
-      {showDevModal && (
+      {process.env.NODE_ENV === 'development' && !clientId && showDevModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
           <div className="w-full max-w-sm bg-white rounded-lg shadow-2xl border border-slate-200 p-6 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center gap-2.5 mb-3 text-amber-600">
