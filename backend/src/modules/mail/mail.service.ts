@@ -20,8 +20,14 @@ export class MailService {
   private readonly smtpPass: string;
   private readonly smtpFrom: string;
   private readonly smtpSecure: boolean;
+  private readonly mailProvider: string;
+  private readonly brevoApiKey: string;
+  private readonly mailFromEmail: string;
 
   constructor(private readonly configService: ConfigService) {
+    this.mailProvider = this.configService.get<string>('MAIL_PROVIDER') || 'smtp';
+    this.brevoApiKey = this.configService.get<string>('BREVO_API_KEY') || '';
+    this.mailFromEmail = this.configService.get<string>('MAIL_FROM_EMAIL') || '';
     this.smtpHost =
       this.configService.get<string>('SMTP_HOST') ||
       process.env.SMTP_HOST ||
@@ -47,7 +53,9 @@ export class MailService {
       this.configService.get<string>('SMTP_SECURE') === 'true' ||
       this.smtpPort === 465;
 
-    if (!this.smtpHost || !this.smtpUser || !this.smtpPass) {
+    if (this.mailProvider === 'brevo') {
+      this.logger.log('Email provider: Brevo HTTPS API');
+    } else if (!this.smtpHost || !this.smtpUser || !this.smtpPass) {
       this.logger.warn(
         'SMTP chưa được cấu hình đầy đủ. Không thể gửi email OTP.',
       );
@@ -120,6 +128,34 @@ export class MailService {
     recipientName?: string;
   }): Promise<{ success: boolean; message: string }> {
     const { to, subject, html } = params;
+
+    if (this.mailProvider === 'brevo') {
+      if (!this.brevoApiKey || !this.mailFromEmail) {
+        throw new ServiceUnavailableException('Dịch vụ email chưa được cấu hình. Vui lòng liên hệ quản trị viên.');
+      }
+      try {
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: { 'api-key': this.brevoApiKey, 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            sender: { name: 'Planify', email: this.mailFromEmail },
+            to: [{ email: to }], subject, htmlContent: html,
+          }),
+          signal: AbortSignal.timeout(10000),
+        });
+        if (!response.ok) {
+          this.logger.error(`Brevo từ chối email (HTTP ${response.status}).`);
+          throw new Error('Email provider rejected request');
+        }
+        return { success: true, message: 'Email đã được gửi thành công' };
+      } catch {
+        this.logger.error('Không thể gửi email qua Brevo HTTPS API.');
+        throw new ServiceUnavailableException('Không thể gửi email xác thực lúc này. Vui lòng thử lại sau.');
+      }
+    }
+    if (this.mailProvider !== 'smtp') {
+      throw new ServiceUnavailableException('Nhà cung cấp email không hợp lệ.');
+    }
 
     if (!this.smtpHost || !this.smtpUser || !this.smtpPass) {
       throw new ServiceUnavailableException(
