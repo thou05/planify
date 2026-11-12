@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as net from 'node:net';
 import * as tls from 'node:tls';
@@ -42,14 +42,14 @@ export class MailService {
     this.smtpFrom =
       this.configService.get<string>('SMTP_FROM') ||
       process.env.SMTP_FROM ||
-      'Planify <no-reply@planify.app>';
+      `Planify <${this.smtpUser}>`;
     this.smtpSecure =
       this.configService.get<string>('SMTP_SECURE') === 'true' ||
       this.smtpPort === 465;
 
-    if (!this.smtpHost || !this.smtpUser) {
-      this.logger.log(
-        'ℹ️ SMTP chưa được cấu hình đầy đủ. Hệ thống sẽ tự động sử dụng Fallback Dev Console Log để hiển thị mã OTP.',
+    if (!this.smtpHost || !this.smtpUser || !this.smtpPass) {
+      this.logger.warn(
+        'SMTP chưa được cấu hình đầy đủ. Không thể gửi email OTP.',
       );
     } else {
       this.logger.log(
@@ -73,7 +73,7 @@ export class MailService {
       email: toEmail,
     });
 
-    return this.sendMailWithFallback({
+    return this.sendOtpEmail({
       to: toEmail,
       subject: `[Planify] Mã xác thực đăng ký tài khoản: ${otp}`,
       html,
@@ -98,7 +98,7 @@ export class MailService {
       email: toEmail,
     });
 
-    return this.sendMailWithFallback({
+    return this.sendOtpEmail({
       to: toEmail,
       subject: `[Planify] Mã xác thực đặt lại mật khẩu: ${otp}`,
       html,
@@ -109,9 +109,9 @@ export class MailService {
   }
 
   /**
-   * Gửi mail qua SMTP socket hoặc tự động fallback sang Dev Console
+   * Chỉ báo thành công khi máy chủ SMTP chấp nhận email.
    */
-  private async sendMailWithFallback(params: {
+  private async sendOtpEmail(params: {
     to: string;
     subject: string;
     html: string;
@@ -119,32 +119,25 @@ export class MailService {
     purpose: string;
     recipientName?: string;
   }): Promise<{ success: boolean; message: string }> {
-    const { to, subject, html, otp, purpose, recipientName } = params;
+    const { to, subject, html } = params;
 
-    if (this.smtpHost && this.smtpUser && this.smtpPass) {
+    if (!this.smtpHost || !this.smtpUser || !this.smtpPass) {
+      throw new ServiceUnavailableException(
+        'Dịch vụ email chưa được cấu hình. Vui lòng liên hệ quản trị viên.',
+      );
+    }
+
       try {
         await this.sendViaSmtpSocket({ to, subject, html });
         this.logger.log(`✅ Đã gửi email thành công qua SMTP tới: ${to}`);
         return { success: true, message: 'Email đã được gửi thành công' };
       } catch (err: any) {
-        this.logger.warn(
-          `⚠️ Không thể gửi mail qua SMTP (${err?.message || err}). Đang chuyển sang Fallback Dev Console Log...`,
+        this.logger.error('Không thể gửi email qua SMTP.');
+        throw new ServiceUnavailableException(
+          'Không thể gửi email xác thực lúc này. Vui lòng thử lại sau.',
         );
-      }
     }
 
-    // Fallback: Console in mã OTP viền ASCII nổi bật
-    this.printOtpToConsole({
-      to,
-      otp,
-      purpose,
-      recipientName,
-    });
-
-    return {
-      success: true,
-      message: 'Mã xác thực OTP đã được xử lý (Dev mode: kiểm tra console log)',
-    };
   }
 
   /**
